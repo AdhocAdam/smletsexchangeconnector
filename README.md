@@ -1,6 +1,6 @@
 
 # SCSM Exchange Connector via SMlets
-This PowerShell script leverages the [SMlets module](https://www.powershellgallery.com/packages/smlets/0.5.0.1) to build an open framework Exchange Connector for controlling Microsoft System Center Service Manager 2012+
+This PowerShell script leverages the [SMlets module](https://www.powershellgallery.com/packages/smlets/0.5.0.1) to build an open  Exchange Connector for controlling Microsoft System Center Service Manager 2012+
 
 
 ## So what is this for?
