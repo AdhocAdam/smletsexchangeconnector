@@ -6,6 +6,9 @@ This PowerShell script leverages the [SMlets module](https://www.powershellgalle
 ## So what is this for?
 The stock Exchange Connector is a seperate download for SCSM 2012+ that enables SCSM deployments to leverage an Exchange mailbox to process updates to work items. While incredibly useful, some feel limited by the lack of customization given its nature as a sealed management pack. This PowerShell script replicates all functionality of [Exchange Connector 3.1](https://www.microsoft.com/en-ca/download/details.aspx?id=45291) introduces several new features, and enables SCSM Administrators to further customize the solution to their needs.
 
+## Who is this for?
+This is aimed at SCSM administrators looking to further push the automation limits of what their SCSM deployment can do with inbound email processing. As such, you should be comfortable with PowerShell and navigating SCSM via SMlets.
+
 ## What new things can it do?
 Minimum File Attachment Size
 - You can set a minimum size in KB. In doing so, files less than the defined size will not be added to the work item (i.e. corporate signature graphics won't be added)
