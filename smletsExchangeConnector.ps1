@@ -19,7 +19,10 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     function. Navigate to that function to read more. If you don't make use of their HTML KB, you'll want to keep $searchCiresonHTMLKB = $false
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
-Version: 1.0
+Version: 1.1 = GitHub issue raised on updating work items. Per discussion was pinpointed to the
+    Get-WorkItem function wherein passed in values were including brackets in the search (i.e. [IRxxxx] instead of IRxxxx). Also
+    updated the email subject matching regex, so that the update-workitem took the $result.id instead of the $matches[0]. Again, this
+    ensures the brackets aren't passed when performing the search/update.
 #>
 
 #region #### Configuration ####
@@ -556,6 +559,13 @@ function Attach-FileToWorkItem ($message, $workItemId)
 
 function Get-WorkItem ($workItemID, $workItemClass)
 {
+    #removes [] surrounding a Work Item ID if neccesary
+    if ($workitemID.StartsWith("[") -and $workitemID.EndsWith("]"))
+    {
+        $workitemID = $workitemID.TrimStart("[").TrimEnd("]")
+    }
+
+    #get the work item
     $wi = get-scsmobject -Class $workItemClass -Filter "Name -eq '$workItemID'" -computername $scsmMGMTServer
     return $wi
 }
@@ -921,14 +931,14 @@ foreach ($message in $inbox)
     switch -Regex ($email.subject) 
     { 
         #### primary work item types ####
-        "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $matches[0]} else {new-workitem $email $defaultNewWorkItem}}
-        "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $matches[0]} else {new-workitem $email $defaultNewWorkItem}}
-        "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $matches[0]} else {new-workitem $email $defaultNewWorkItem}}
-        "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $matches[0]} else {new-workitem $email $defaultNewWorkItem}}
+        "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+        "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+        "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+        "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
  
         #### activities ####
-        "\[[R][A][0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $matches[0]}}
-        "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $matches[0]}}
+        "\[[R][A][0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
+        "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
 
         #### 3rd party classes, work items, etc. add here ####
 
