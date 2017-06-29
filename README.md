@@ -10,6 +10,12 @@ The stock Exchange Connector is a seperate download for SCSM 2012+ that enables 
 This is aimed at SCSM administrators looking to further push the automation limits of what their SCSM deployment can do with inbound email processing. As such, you should be comfortable with PowerShell and navigating SCSM via SMlets.
 
 ## What new things can it do?
+Schedule Work Items
+- When a Calendar Appointment is sent, the Scheduled Start Date and Scheduled End Date will be set based on the start/end times of the appointment
+
+SCOM Integration
+- Obtain the Health and Alerts of a Distributed Application
+
 Minimum File Attachment Size
 - You can set a minimum size in KB. In doing so, files less than the defined size will not be added to the work item (i.e. corporate signature graphics won't be added)
 
