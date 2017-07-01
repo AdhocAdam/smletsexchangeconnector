@@ -30,6 +30,12 @@ Version: 1.2b = created Send-EmailFromWorkflowAccount for future functions to le
                 created config variable for LoggingLevel
                     could just reference the same key for the native Exchange Connector
                     need to build what the levels of logging represent and create said functions
+                began creating logic to identify potentially duplicate messages/append them to current/recent Work Items
+                    This gives rise to a Verify-WorkItem style function that scrubs SCSM on things other than WorkItemID
+                    Trying to address scenario where someone emails WF and CC's others. If the others reply back before a notification
+                        about the current Work Item ID goes out, they queue more messages for the connector, and in turn create more
+                        default work items rather than updating the "original" thread/Work Item that was created in the same processing
+                        loop. Also looking to use this function to address 3rd party ticketing systems.
 Version: 1.1 = GitHub issue raised on updating work items. Per discussion was pinpointed to the
                 Get-WorkItem function wherein passed in values were including brackets in the search (i.e. [IRxxxx] instead of IRxxxx). Also
                 updated the email subject matching regex, so that the Update-WorkItem took the $result.id instead of the $matches[0]. Again, this
@@ -1131,6 +1137,11 @@ foreach ($message in $inbox)
             "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
 
             #### 3rd party classes, work items, etc. add here ####
+
+            #### Email is a Reply and does not contain a [Work Item ID]
+            # Check if Work Item (Title, Body, Sender, CC, etc.) exists
+            # and the user was replying too fast to receive Work Item ID notification
+            #"([R][E][:])(?!.*\[(([I|S|P|C][R])|([M|R][A]))[0-9]+\])(.+)" {<# Verify-WorkItem $email #>}
 
 
             #### default action, create work item ####
