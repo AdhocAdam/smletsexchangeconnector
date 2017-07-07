@@ -30,12 +30,11 @@ Version: 1.2b = created Send-EmailFromWorkflowAccount for future functions to le
                 created config variable for LoggingLevel
                     could just reference the same key for the native Exchange Connector
                     need to build what the levels of logging represent and create said functions
-                began creating logic to identify potentially duplicate messages/append them to current/recent Work Items
-                    This gives rise to a Verify-WorkItem style function that scrubs SCSM on things other than WorkItemID
-                    Trying to address scenario where someone emails WF and CC's others. If the others reply back before a notification
-                        about the current Work Item ID goes out, they queue more messages for the connector, and in turn create more
-                        default work items rather than updating the "original" thread/Work Item that was created in the same processing
-                        loop. Also looking to use this function to address 3rd party ticketing systems.
+                created Verify-Workitem to attempt to begin identifying potentially quickly responded messages/append them to
+                    current/recently created Work Items. Trying to address scenario where someone emails WF and CC's others. If the others
+                    reply back before a notification about the current Work Item ID goes out, they queue more messages for the connector
+                    and in turn create more default work items rather than updating the "original" thread/Work Item that was created in 
+                    the same/previous processing loop. Also looking to use this function to potentially address 3rd party ticketing systems.
 Version: 1.1 = GitHub issue raised on updating work items. Per discussion was pinpointed to the
                 Get-WorkItem function wherein passed in values were including brackets in the search (i.e. [IRxxxx] instead of IRxxxx). Also
                 updated the email subject matching regex, so that the Update-WorkItem took the $result.id instead of the $matches[0]. Again, this
@@ -981,6 +980,63 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
     #3 - when scheduling, a Update-WorkItem should probably be triggered so as to update the Action Log. Given how Update-WorkItem is designed it will work as is
     #this is more of a talking point in the event there is something else that should be done with said event. give the option to add scheduled triggers to Action Log?
 }
+
+function Verify-WorkItem ($message)
+{
+    #load all the properties on the current inbox set
+    $inbox.load($propertySet)
+
+    #get all of the conversations in the thread from the current processing loop
+    $conversationThread = $inbox | ?{$_.conversationID -eq $message.ConversationID} | select-object * | sort-object DateTimeReceived
+
+    #see if any threads exist in Deleted Items from a previous loop
+    #unsure how potentially expensive this against exchange/overall processing time of the connector
+    $deletedItemsFolderName = [Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems
+    $deletedItemsFolder = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($exchangeService,$deletedItemsFolderName)
+    $delItemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 10
+    $propertySetDelItems = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.BasePropertySet]::FirstClassProperties)
+    $propertySetDelItems.RequestedBodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::Text
+    $mimeContentSchemaDelItems = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.ItemSchema]::MimeContent)
+    $dateTimeItem = [Microsoft.Exchange.WebServices.Data.ItemSchema]::DateTimeReceived
+    $now = get-date
+    $searchFilter = New-Object -TypeName Microsoft.Exchange.WebServices.Data.SearchFilter+IsLessThanOrEqualTo -ArgumentList $dateTimeItem,$now
+    $trash = $exchangeService.FindItems($deletedItemsFolder.Id,$searchFilter,$delItemView) | where-object {($_.conversationid -eq $message.conversationid)}
+    $trash.load($propertySetDelItems)
+    $conversationThread += $trash | ?{$_.conversationID -eq $message.ConversationID} | select-object *
+
+    #as long as we have more than a single item in the conversation, obtain the first message in the thread
+    if ($conversationThread.count -gt 1)
+    {
+        #build the SCSM Search Criteria
+        $originalMessage = $conversationThread | sort-object DateTimeReceived | select -first 1
+        $originalMessageReceivedTime = $originalMessage.DateTimeReceived
+        $originalAffectedUserSMTP = $originalMessage.From.Address
+        $workItemTitle = $originalMessage.Subject
+        $workItemDescription = $originalMessage.Body.Text
+        
+        #Get the Affected User
+        $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$originalAffectedUserSMTP'" -computername $scsmMGMTServer
+        $affectedUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
+
+        #Get the Affected User's Work Items
+        $relatedWorkItems = (get-scsmrelationshipobject -ByTarget $affectedUser -ComputerName $scsmMGMTServer | ?{($_.relationshipid -eq $affectedUserRelClass.id)}).SourceObject | Select-Object id
+        
+        #cycle through work items matching Created Date/Received Time range and Title/Subject and Body/Description
+        foreach ($relatedWorkItem in $relatedWorkItems)
+        {
+            $relatedWorkItem = get-scsmobject -id $relatedWorkItem.id
+            if (($relatedWorkItem.title -like "*$workItemTitle*") -and ($relatedWorkItem.description -like "*$workItemDescription*"))
+            {
+                #Issue an Update-WorkItem against the discovered Work Item by passing the email Reply into the function
+                Update-WorkItem -message $message -wiType $relatedWorkItem.id.substring(0,2) -workItemID $relatedWorkItem.id
+            }
+        }
+    }
+    else
+    {
+        #### if the conversation is only a single thread/match then it isn't clear how this function would have engaged if it wasn't a Reply/RE: ####
+    }
+}
 #endregion
 
 #region #### SCOM Request Functions ####
@@ -1123,6 +1179,9 @@ foreach ($message in $inbox)
         $email | Add-Member -type NoteProperty -name Attachments -value $message.Attachments
         $email | Add-Member -type NoteProperty -name Body -value $message.Body.Text
         $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
+        $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
+        $email | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationID
+        $email | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
 
         switch -Regex ($email.subject) 
         { 
@@ -1141,8 +1200,7 @@ foreach ($message in $inbox)
             #### Email is a Reply and does not contain a [Work Item ID]
             # Check if Work Item (Title, Body, Sender, CC, etc.) exists
             # and the user was replying too fast to receive Work Item ID notification
-            #"([R][E][:])(?!.*\[(([I|S|P|C][R])|([M|R][A]))[0-9]+\])(.+)" {<# Verify-WorkItem $email #>}
-
+            #"([R][E][:])(?!.*\[(([I|S|P|C][R])|([M|R][A]))[0-9]+\])(.+)" {Verify-WorkItem $email}
 
             #### default action, create work item ####
             default {new-workitem $email $defaultNewWorkItem} 
@@ -1164,6 +1222,8 @@ foreach ($message in $inbox)
         $appointment | Add-Member -type NoteProperty -name From -value $message.From.Address
         $appointment | Add-Member -type NoteProperty -name Attachments -value $message.Attachments
         $appointment | Add-Member -type NoteProperty -name Subject -value $message.Subject
+        $appointment | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
+        $appointment | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
         $appointment | Add-Member -type NoteProperty -name Body -value $message.Body.Text
 
         switch -Regex ($appointment.subject) 
