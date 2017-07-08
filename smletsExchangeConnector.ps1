@@ -28,13 +28,14 @@ Version: 1.2b = created Send-EmailFromWorkflowAccount for future functions to le
                 created Get-SCOMAuthorizedRequester as a means to validate user requesting information from SCOM
                 created Get-SCOMDistributedAppHealth so as to request the health of a SCOM DA
                 created config variable for LoggingLevel
-                    could just reference the same key for the native Exchange Connector
+                    could just reference the same registry key for the native Exchange Connector
                     need to build what the levels of logging represent and create said functions
-                created Verify-Workitem to attempt to begin identifying potentially quickly responded messages/append them to
+                created Verify-WorkItem to attempt to begin identifying potentially quickly responded messages/append them to
                     current/recently created Work Items. Trying to address scenario where someone emails WF and CC's others. If the others
-                    reply back before a notification about the current Work Item ID goes out, they queue more messages for the connector
-                    and in turn create more default work items rather than updating the "original" thread/Work Item that was created in 
-                    the same/previous processing loop. Also looking to use this function to potentially address 3rd party ticketing systems.
+                    reply back before a notification about the current Work Item ID goes out (or they ignore it), they queue more messages
+                    for the connector and in turn create more default work items rather than updating the "original" thread/Work Item that
+                    was created in the same/previous processing loop. Also looking to use this function to potentially address 3rd party
+                    ticketing systems
 Version: 1.1 = GitHub issue raised on updating work items. Per discussion was pinpointed to the
                 Get-WorkItem function wherein passed in values were including brackets in the search (i.e. [IRxxxx] instead of IRxxxx). Also
                 updated the email subject matching regex, so that the Update-WorkItem took the $result.id instead of the $matches[0]. Again, this
@@ -986,11 +987,12 @@ function Verify-WorkItem ($message)
     #load all the properties on the current inbox set
     $inbox.load($propertySet)
 
-    #get all of the conversations in the thread from the current processing loop
+    #see if any conversations in the thread exist in the current processing loop
     $conversationThread = $inbox | ?{$_.conversationID -eq $message.ConversationID} | select-object * | sort-object DateTimeReceived
 
     #see if any threads exist in Deleted Items from a previous loop
-    #unsure how potentially expensive this against exchange/overall processing time of the connector
+    #It doesn't appear EWS can filter on ConversationID, but it can on ConversationTopic
+    #https://msdn.microsoft.com/en-us/library/microsoft.exchange.webservices.data.emailmessageschema_members(v=exchg.80).aspx
     $deletedItemsFolderName = [Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems
     $deletedItemsFolder = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($exchangeService,$deletedItemsFolderName)
     $delItemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 10
@@ -998,13 +1000,14 @@ function Verify-WorkItem ($message)
     $propertySetDelItems.RequestedBodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::Text
     $mimeContentSchemaDelItems = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.ItemSchema]::MimeContent)
     $dateTimeItem = [Microsoft.Exchange.WebServices.Data.ItemSchema]::DateTimeReceived
-    $now = get-date
-    $searchFilter = New-Object -TypeName Microsoft.Exchange.WebServices.Data.SearchFilter+IsLessThanOrEqualTo -ArgumentList $dateTimeItem,$now
-    $trash = $exchangeService.FindItems($deletedItemsFolder.Id,$searchFilter,$delItemView) | where-object {($_.conversationid -eq $message.conversationid)}
+    $searchFilter = New-Object -TypeName Microsoft.Exchange.WebServices.Data.SearchFilter+IsEqualTo([Microsoft.Exchange.WebServices.Data.EmailMessageSchema]::ConversationTopic,”$($message.ConversationTopic)”)
+    $trash = $exchangeService.FindItems($deletedItemsFolder.Id,$searchFilter,$delItemView) | select-object *
     $trash.load($propertySetDelItems)
+
+    #append Trash/Deleted threads to Conversation Thread array which may contain threads from the Inbox/current processing loop
     $conversationThread += $trash | ?{$_.conversationID -eq $message.ConversationID} | select-object *
 
-    #as long as we have more than a single item in the conversation, obtain the first message in the thread
+    #as long as we have more than a single item in the conversation, obtain the first message in the thread by DateTimeReceived
     if ($conversationThread.count -gt 1)
     {
         #build the SCSM Search Criteria
@@ -1016,15 +1019,15 @@ function Verify-WorkItem ($message)
         
         #Get the Affected User
         $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$originalAffectedUserSMTP'" -computername $scsmMGMTServer
-        $affectedUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
+        $affectedUser = Get-SCSMObject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
 
         #Get the Affected User's Work Items
-        $relatedWorkItems = (get-scsmrelationshipobject -ByTarget $affectedUser -ComputerName $scsmMGMTServer | ?{($_.relationshipid -eq $affectedUserRelClass.id)}).SourceObject | Select-Object id
+        $relatedWorkItems = (Get-SCSMRelationshipObject -ByTarget $affectedUser -ComputerName $scsmMGMTServer | ?{($_.relationshipid -eq $affectedUserRelClass.id)}).SourceObject | Select-Object id
         
-        #cycle through work items matching Created Date/Received Time range and Title/Subject and Body/Description
+        #cycle through Affected User's Work Items matching Created Date/Received Time range, Title/Subject, Body/Description, etc.
         foreach ($relatedWorkItem in $relatedWorkItems)
         {
-            $relatedWorkItem = get-scsmobject -id $relatedWorkItem.id
+            $relatedWorkItem = Get-SCSMObject -id $relatedWorkItem.id -computername $scsmMGMTServer
             if (($relatedWorkItem.title -like "*$workItemTitle*") -and ($relatedWorkItem.description -like "*$workItemDescription*"))
             {
                 #Issue an Update-WorkItem against the discovered Work Item by passing the email Reply into the function
