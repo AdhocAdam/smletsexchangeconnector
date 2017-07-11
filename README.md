@@ -3,14 +3,14 @@ This PowerShell script leverages the [SMlets module](https://www.powershellgalle
 
 
 ## So what is this for?
-The stock Exchange Connector is a seperate download for SCSM 2012+ that enables SCSM deployments to leverage an Exchange mailbox to process updates to work items. While incredibly useful, some feel limited by the lack of customization given its nature as a sealed management pack. This PowerShell script replicates all functionality of [Exchange Connector 3.1](https://www.microsoft.com/en-ca/download/details.aspx?id=45291) introduces several new features, and enables SCSM Administrators to further customize the solution to their needs.
+The stock Exchange Connector is a seperate download for SCSM 2012+ that enables SCSM deployments to leverage an Exchange mailbox to lprocess updates to work items. While incredibly useful, some feel limited by the lack of customization given its nature as a sealed management pack. This PowerShell script replicates all functionality of [Exchange Connector 3.1](https://www.microsoft.com/en-ca/download/details.aspx?id=45291) introduces several new features, and enables SCSM Administrators to further customize the solution to their needs.
 
 ## Who is this for?
 This is aimed at SCSM administrators looking to further push the automation limits of what their SCSM deployment can do with inbound email processing. As such, you should be comfortable with PowerShell and navigating SCSM via SMlets.
 
 ## What new things can it do?
 Merge Replies from Related Users instead of Creating New Default Work Items
-- If a user emails the SCSM Workflow Account and also adds additional users to the To/CC lines those related users are automatically added to the Related Items tab of a New Work Item. However in these scenarios, it's possibe that one of those users could reply within the same processing loop of the Exchange Connector. As a result, they will queue more emails to be turned into New Default Work Items. This feature aims to address the scenario by querying Exchange Inbox/Deleted Items for matching Conversation Topics and ConversationIDs, finding the original item in the thread, searching for the Work Item that already exists in SCSM, and then appending their Reply to its Action Log
+- If a user emails the SCSM Workflow Account and also adds additional users to the To/CC lines those related users are automatically added to the Related Items tab of a New Work Item. However in these scenarios, it's possible that one of those users could reply within the same processing loop of the Exchange Connector. As a result, they will queue more emails to be turned into New Default Work Items. This feature aims to address the scenario by querying Exchange Inbox/Deleted Items for matching Conversation Topics and ConversationIDs, finding the original item in the thread, searching for the Work Item that already exists in SCSM, and then appending their Reply to its Action Log
 
 Schedule Work Items
 - When a Calendar Appointment is sent, the Scheduled Start Date and Scheduled End Date will be set based on the start/end times of the appointment
