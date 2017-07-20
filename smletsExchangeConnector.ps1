@@ -990,8 +990,13 @@ function Verify-WorkItem ($message)
     if ($attachEmailToWorkItem -eq $true)
     {
         $emailAttachmentSearchObject = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" -ComputerName $scsmMGMTServer | select-object -first 1
-        $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $emailAttachment -ComputerName $scsmMGMTServer).sourceobject.id -ComputerName $scsmMGMTServer
-        #Issue an Update-WorkItem
+        $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $emailAttachmentSearchObject -ComputerName $scsmMGMTServer).sourceobject.id -ComputerName $scsmMGMTServer
+
+        switch ($relatedWorkItemFromAttachmentSearch.ClassName)
+        {
+            "System.WorkItem.Incident" {Update-WorkItem -message $message -wiType "ir" -workItemID $relatedWorkItemFromAttachmentSearch.id}
+            "System.WorkItem.ServiceRequest" {Update-WorkItem -message $message -wiType "sr" -workItemID $relatedWorkItemFromAttachmentSearch.id}
+        }
     }
     else
     {
