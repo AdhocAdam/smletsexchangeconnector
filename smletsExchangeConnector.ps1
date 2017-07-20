@@ -30,6 +30,8 @@ Version: 1.2b = created Send-EmailFromWorkflowAccount for future functions to le
                 created config variable for LoggingLevel
                     could just reference the same registry key for the native Exchange Connector
                     need to build what the levels of logging represent and create said functions
+                updated Attach-EmailToWorkItem so the Exchange Conversation ID is written into the Description as "ExchangeConversationID:$id;"
+                issue on Attach-EmailToWorkItem/Attach-FileToWorkItem where the "AttachedBy" relationship was using the wrong variable
                 created Verify-WorkItem to attempt to begin identifying potentially quickly responded messages/append them to
                     current/recently created Work Items. Trying to address scenario where someone emails WF and CC's others. If the others
                     reply back before a notification about the current Work Item ID goes out (or they ignore it), they queue more messages
@@ -49,12 +51,12 @@ $scsmMGMTServer = ""
 #define/use SCSM WF credentials
 #$exchangeAuthenticationType - "windows" or "impersonation" are valid inputs here.
     #Windows will use the credentials that start this script in order to authenticate to Exchange and retrieve messages
-        #choosing this option only requires the $email variable to be defined
+        #choosing this option only requires the $workflowEmailAddress variable to be defined
         #this is ideal if you'll be using Task Manager or SMA to initiate this
     #Impersonation will use the credentials that are defined here to connect to Exchange and retrieve messages
-        #choosing this option requires the $email, $username, $password, and $domain variables to be defined
+        #choosing this option requires the $workflowEmailAddress, $username, $password, and $domain variables to be defined
 $exchangeAuthenticationType = "windows"
-$email = ""
+$workflowEmailAddress = ""
 $username = ""
 $password = ""
 $domain = ""
@@ -534,14 +536,14 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
 
 function Attach-EmailToWorkItem ($message, $workItemID)
 {
-    $messageMime = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.Id,$mimeContentSchema)
+    $messageMime = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
     $MemoryStream = New-Object System.IO.MemoryStream($messageMime.MimeContent.Content,0,$messageMime.MimeContent.Content.Length)
 
     #Create the attachment object itself and set its properties for SCSM
     $emailAttachment = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
     $emailAttachment.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
     $emailAttachment.Item($fileAttachmentClass, "DisplayName").Value = "message.eml"
-    #$emailAttachment.Item($fileAttachmentClass, "Description").Value = $attachment.Description
+    $emailAttachment.Item($fileAttachmentClass, "Description").Value = "ExchangeConversationID:$($message.ConversationID);"
     $emailAttachment.Item($fileAttachmentClass, "Extension").Value =   "eml"
     $emailAttachment.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
     $emailAttachment.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
@@ -557,7 +559,7 @@ function Attach-EmailToWorkItem ($message, $workItemID)
     if ($userSMTPNotification) 
     { 
         $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
-        New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $user -Bulk
+        New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser -Bulk
     }
 }
 
@@ -597,7 +599,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
             if ($userSMTPNotification) 
             { 
                 $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
-                New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $user -Bulk
+                New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser -Bulk
             }
         }
     }
@@ -984,61 +986,18 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
 
 function Verify-WorkItem ($message)
 {
-    #load all the properties on the current inbox set
-    $inbox.load($propertySet)
-
-    #see if any conversations in the thread exist in the current processing loop
-    $conversationThread = $inbox | ?{$_.conversationID -eq $message.ConversationID} | select-object * | sort-object DateTimeReceived
-
-    #see if any threads exist in Deleted Items from a previous loop
-    #It doesn't appear EWS can filter on ConversationID, but it can on ConversationTopic
-    #https://msdn.microsoft.com/en-us/library/microsoft.exchange.webservices.data.emailmessageschema_members(v=exchg.80).aspx
-    $deletedItemsFolderName = [Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems
-    $deletedItemsFolder = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($exchangeService,$deletedItemsFolderName)
-    $delItemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 10
-    $propertySetDelItems = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.BasePropertySet]::FirstClassProperties)
-    $propertySetDelItems.RequestedBodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::Text
-    $mimeContentSchemaDelItems = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.ItemSchema]::MimeContent)
-    $dateTimeItem = [Microsoft.Exchange.WebServices.Data.ItemSchema]::DateTimeReceived
-    $searchFilter = New-Object -TypeName Microsoft.Exchange.WebServices.Data.SearchFilter+IsEqualTo([Microsoft.Exchange.WebServices.Data.EmailMessageSchema]::ConversationTopic,”$($message.ConversationTopic)”)
-    $trash = $exchangeService.FindItems($deletedItemsFolder.Id,$searchFilter,$delItemView) | select-object *
-    $trash.load($propertySetDelItems)
-
-    #append Trash/Deleted threads to Conversation Thread array which may contain threads from the Inbox/current processing loop
-    $conversationThread += $trash | ?{$_.conversationID -eq $message.ConversationID} | select-object *
-
-    #as long as we have more than a single item in the conversation, obtain the first message in the thread by DateTimeReceived
-    if ($conversationThread.count -gt 1)
+    #If emails are being attached to New Work Items, filter on the File Attachment Description that equals the Exchange Conversation ID as defined in the Attach-EmailToWorkItem function
+    if ($attachEmailToWorkItem -eq $true)
     {
-        #build the SCSM Search Criteria
-        $originalMessage = $conversationThread | sort-object DateTimeReceived | select -first 1
-        $originalMessageReceivedTime = $originalMessage.DateTimeReceived
-        $originalAffectedUserSMTP = $originalMessage.From.Address
-        $workItemTitle = $originalMessage.Subject
-        $workItemDescription = $originalMessage.Body.Text
-        
-        #Get the Affected User
-        $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$originalAffectedUserSMTP'" -computername $scsmMGMTServer
-        $affectedUser = Get-SCSMObject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
-
-        #Get the Affected User's Work Items
-        $relatedWorkItems = (Get-SCSMRelationshipObject -ByTarget $affectedUser -ComputerName $scsmMGMTServer | ?{($_.relationshipid -eq $affectedUserRelClass.id)}).SourceObject | Select-Object id
-        
-        #cycle through Affected User's Work Items matching Created Date/Received Time range, Title/Subject, Body/Description, etc.
-        foreach ($relatedWorkItem in $relatedWorkItems)
-        {
-            $relatedWorkItem = Get-SCSMObject -id $relatedWorkItem.id -computername $scsmMGMTServer
-            if (($relatedWorkItem.title -like "*$workItemTitle*") -and ($relatedWorkItem.description -like "*$workItemDescription*"))
-            {
-                #Issue an Update-WorkItem against the discovered Work Item by passing the email Reply into the function
-                Update-WorkItem -message $message -wiType $relatedWorkItem.id.substring(0,2) -workItemID $relatedWorkItem.id
-            }
-        }
+        $emailAttachmentSearchObject = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" -ComputerName $scsmMGMTServer | select-object -first 1
+        $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $emailAttachment -ComputerName $scsmMGMTServer).sourceobject.id -ComputerName $scsmMGMTServer
+        #Issue an Update-WorkItem
     }
     else
     {
-        #### if the conversation is only a single thread/match then it isn't clear how this function would have engaged if it wasn't a Reply/RE: ####
+        #need to define alternative search critiera when emails aren't being attached to Work Items
     }
+
 }
 #endregion
 
@@ -1148,7 +1107,7 @@ switch ($exchangeAuthenticationType)
     "impersonation" {$exchangeService.Credentials = New-Object Net.NetworkCredential($username, $password, $domain)}
     "windows" {$exchangeService.UseDefaultCredentials = $true}
 }
-$exchangeService.AutodiscoverUrl($email)
+$exchangeService.AutodiscoverUrl($workflowEmailAddress)
 
 #define search parameters and search on the Message class (IPM.Note). This will skip calendar appointments, OOO, etc.
 $inboxFolderName = [Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox
@@ -1183,6 +1142,7 @@ foreach ($message in $inbox)
         $email | Add-Member -type NoteProperty -name Body -value $message.Body.Text
         $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
         $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
+        $email | Add-Member -type NoteProperty -name ID -Value $message.ID
         $email | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationID
         $email | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
 
@@ -1228,6 +1188,9 @@ foreach ($message in $inbox)
         $appointment | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
         $appointment | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
         $appointment | Add-Member -type NoteProperty -name Body -value $message.Body.Text
+        $appointment | Add-Member -type NoteProperty -name ID -Value $message.ID
+        $appointment | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationID
+        $appointment | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
 
         switch -Regex ($appointment.subject) 
         { 
