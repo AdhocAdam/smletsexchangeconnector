@@ -23,7 +23,8 @@ Version: 1.2b = created Send-EmailFromWorkflowAccount for future functions to le
                 updated Search-CiresonKnowledgeBase to use Send-EmailFromWorkflowAccount
                 created $exchangeAuthenticationType so as to introduce Windows Authentication or Impersonation to bring to closer parity with stock EC connector
                 expanded email processing loop to prepare for things other than IPM.Note message class (i.e. Calendar appointments, custom message classes per org.)
-                created Schedule-WorkItem function to enable setting Scheduled Start/End Dates on Work Items based on the Calendar Start/End times
+                created Schedule-WorkItem function to enable setting Scheduled Start/End Dates on Work Items based on the Calendar Start/End times.
+                    introduced configuration variable for this feature ($processCalendarAppointment)
                 created initial SCOM functionality/integrations to obtaining Health of a Distributed Application and other items
                 created Get-SCOMAuthorizedRequester as a means to validate user requesting information from SCOM
                 created Get-SCOMDistributedAppHealth so as to request the health of a SCOM DA
@@ -37,7 +38,8 @@ Version: 1.2b = created Send-EmailFromWorkflowAccount for future functions to le
                     reply back before a notification about the current Work Item ID goes out (or they ignore it), they queue more messages
                     for the connector and in turn create more default work items rather than updating the "original" thread/Work Item that
                     was created in the same/previous processing loop. Also looking to use this function to potentially address 3rd party
-                    ticketing systems
+                    ticketing systems.
+                    Introduced configuration variable for this feature ($mergeReplies)
 Version: 1.1 = GitHub issue raised on updating work items. Per discussion was pinpointed to the
                 Get-WorkItem function wherein passed in values were including brackets in the search (i.e. [IRxxxx] instead of IRxxxx). Also
                 updated the email subject matching regex, so that the Update-WorkItem took the $result.id instead of the $matches[0]. Again, this
@@ -65,7 +67,7 @@ $domain = ""
 #minFileSizeInKB = Set the minimum file size in kilobytes to be attached to work items
 #createUsersNotInCMDB = If someone from outside your org emails into SCSM this allows you to take that email and create a User in your CMDB
 #includeWholeEmail = If long chains get forwarded into SCSM, you can choose to write the whole email to a single action log entry OR the beginning to the first finding of "From:"
-#attachEmailToWorkItem = attach email as an *.eml to each work item
+#attachEmailToWorkItem = If $true, attach email as an *.eml to each work item. Additionally, write the Exchange Conversation ID into the Description of the Attachment object
 #fromKeyword = If $includeWholeEmail is set to true, messages will be parsed UNTIL they find this word
 $defaultNewWorkItem = "ir"
 $defaultIRTemplate = Get-SCSMObjectTemplate -DisplayName "IR Template Name Goes Here" -computername $scsmMGMTServer
@@ -75,6 +77,13 @@ $createUsersNotInCMDB = $true
 $includeWholeEmail = $false
 $attachEmailToWorkItem = $false
 $fromKeyword = "From"
+
+#processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
+    #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
+#mergeReplies = If $true, emails that are Replies (signified by RE: in the subject) will attempt to be matched to a Work Item in SCSM by their
+    #Exchange Conversation ID and will also override $attachEmailToWorkItem to be $true if set to $false
+$processCalendarAppointment = $false
+$mergeReplies = $false
 
 #optional, enable KB search of your Cireson HTML KB
 #this uses the now depricated Cireson KB API Search by Text, it works as of v7.x but should be noted it could be entirely removed in future portals
@@ -989,20 +998,26 @@ function Verify-WorkItem ($message)
     #If emails are being attached to New Work Items, filter on the File Attachment Description that equals the Exchange Conversation ID as defined in the Attach-EmailToWorkItem function
     if ($attachEmailToWorkItem -eq $true)
     {
-        $emailAttachmentSearchObject = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" -ComputerName $scsmMGMTServer | select-object -first 1
+        $emailAttachmentSearchObject = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" -ComputerName $scsmMGMTServer | select-object -first 1 
         $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $emailAttachmentSearchObject -ComputerName $scsmMGMTServer).sourceobject.id -ComputerName $scsmMGMTServer
-
-        switch ($relatedWorkItemFromAttachmentSearch.ClassName)
+        if ($emailAttachmentSearchObject -and $relatedWorkItemFromAttachmentSearch)
         {
-            "System.WorkItem.Incident" {Update-WorkItem -message $message -wiType "ir" -workItemID $relatedWorkItemFromAttachmentSearch.id}
-            "System.WorkItem.ServiceRequest" {Update-WorkItem -message $message -wiType "sr" -workItemID $relatedWorkItemFromAttachmentSearch.id}
+            switch ($relatedWorkItemFromAttachmentSearch.ClassName)
+            {
+                "System.WorkItem.Incident" {Update-WorkItem -message $message -wiType "ir" -workItemID $relatedWorkItemFromAttachmentSearch.id}
+                "System.WorkItem.ServiceRequest" {Update-WorkItem -message $message -wiType "sr" -workItemID $relatedWorkItemFromAttachmentSearch.id}
+            }
+        }
+        else
+        {
+            #no match was found, Create a New Work Item
+            New-WorkItem $message $defaultNewWorkItem
         }
     }
     else
     {
-        #need to define alternative search critiera when emails aren't being attached to Work Items
+        #will never engage as Verify-WorkItem currently only works when attaching emails to work items 
     }
-
 }
 #endregion
 
@@ -1104,6 +1119,12 @@ function Get-SCOMDistributedAppHealth ($message)
 }
 #endregion
 
+#determine merge logic
+if ($mergeReplies -eq $true)
+{
+    $attachEmailToWorkItem = $true
+}
+
 #define Exchange assembly and connect to EWS
 [void] [Reflection.Assembly]::LoadFile("$exchangeEWSAPIPath")
 $exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService
@@ -1114,7 +1135,7 @@ switch ($exchangeAuthenticationType)
 }
 $exchangeService.AutodiscoverUrl($workflowEmailAddress)
 
-#define search parameters and search on the Message class (IPM.Note). This will skip calendar appointments, OOO, etc.
+#define search parameters and search on the defined classes
 $inboxFolderName = [Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox
 $inboxFolder = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($exchangeService,$inboxFolderName)
 $itemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 10
@@ -1124,10 +1145,23 @@ $mimeContentSchema = New-Object Microsoft.Exchange.WebServices.Data.PropertySet(
 $dateTimeItem = [Microsoft.Exchange.WebServices.Data.ItemSchema]::DateTimeReceived
 $now = get-date
 $searchFilter = New-Object -TypeName Microsoft.Exchange.WebServices.Data.SearchFilter+IsLessThanOrEqualTo -ArgumentList $dateTimeItem,$now
-$inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView)
 
-#filter inbox based on message class
-$inbox | where-object {(($_.ItemClass -eq "IPM.Note") -or ($_.ItemClass -eq "IPM.Schedule.Meeting.Request")) -and ($_.isRead -eq $false)}
+#build the Where-Object scriptblock based on defined configuration
+$emailFilterString = '($_.ItemClass -eq "IPM.Note")'
+$calendarFilterString = '($_.ItemClass -eq "IPM.Schedule.Meeting.Request")'
+$unreadFilterString = '($_.isRead -eq $false)'
+$inboxFilterString = $emailFilterString
+if ($processCalendarAppointment -eq $true)
+{
+    $inboxFilterString = $emailFilterString + " -or " + $calendarFilterString
+}
+
+#finalize the where-object string by ensuring to look for all Unread Items
+$inboxFilterString = "(" + $inboxFilterString + ")" + " -and " + $readString
+$inboxFilterString = [scriptblock]::Create("$inboxFilterString")
+
+#filter the inbox
+$inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString
 
 #parse each message
 foreach ($message in $inbox)
@@ -1168,7 +1202,7 @@ foreach ($message in $inbox)
             #### Email is a Reply and does not contain a [Work Item ID]
             # Check if Work Item (Title, Body, Sender, CC, etc.) exists
             # and the user was replying too fast to receive Work Item ID notification
-            #"([R][E][:])(?!.*\[(([I|S|P|C][R])|([M|R][A]))[0-9]+\])(.+)" {Verify-WorkItem $email}
+            "([R][E][:])(?!.*\[(([I|S|P|C][R])|([M|R][A]))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
 
             #### default action, create work item ####
             default {new-workitem $email $defaultNewWorkItem} 
