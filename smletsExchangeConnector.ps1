@@ -976,7 +976,7 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
     }
 
     #accept the meeting
-    $acceptingMeetingMessage = $calAppt.CreateAcceptMessage($true)
+    $acceptingMeetingMessage = $calAppt.CreateAcceptMessage($false)
     $acceptingMeetingMessage.Body = "Scheduled Start and End times have been updated for $($workItem.id)"
     $acceptingMeetingMessage.Send()
 
