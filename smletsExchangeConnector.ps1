@@ -1157,7 +1157,7 @@ if ($processCalendarAppointment -eq $true)
 }
 
 #finalize the where-object string by ensuring to look for all Unread Items
-$inboxFilterString = "(" + $inboxFilterString + ")" + " -and " + $readString
+$inboxFilterString = "(" + $inboxFilterString + ")" + " -and " + $unreadFilterString
 $inboxFilterString = [scriptblock]::Create("$inboxFilterString")
 
 #filter the inbox
