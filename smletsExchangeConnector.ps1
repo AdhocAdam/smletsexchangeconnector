@@ -975,22 +975,13 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
         "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
     }
 
-    #ideas
-    #1 - when scheduling, update the workflow accounts calendar. append portal URL to work item in body of appointment
-    #this gives way to the idea of allowing org wide read-access to the WF account's calendar, using an Exchange Calendar for Scheduled Work Items, etc.
-    #would have to address how to reschedule and/or cancelled appointments.
+    #accept the meeting
+    $acceptingMeetingMessage = $calAppt.CreateAcceptMessage($true)
+    $acceptingMeetingMessage.Body = "Scheduled Start and End times have been updated for $($workItem.id)"
+    $acceptingMeetingMessage.Send()
 
-    #2 - when scheduling, there has to be something to be taken advantage of between who scheduled the meeting, Affected User, and Assigned User relationships
-    
-        <#determine meeting organizer, recipients, and additional work item user relationships
-        $appointment.From
-        $appointment.To 
-        $affectedUser = get-scsmobject -id (Get-SCSMRelationshipObject -BySource $workItem ?{$_.relationshipid -eq $affectedUserRelClass.id}).TargetObject.Id
-        $assignedToUser = get-scsmobject -id (Get-SCSMRelationshipObject -BySource $workItem ?{$_.relationshipid -eq $assignedToUserRelClass.id}).TargetObject.Id
-        #>
-
-    #3 - when scheduling, a Update-WorkItem should probably be triggered so as to update the Action Log. Given how Update-WorkItem is designed it will work as is
-    #this is more of a talking point in the event there is something else that should be done with said event. give the option to add scheduled triggers to Action Log?
+    #Trigger Update to update the Action log of the item
+    Update-WorkItem -message $calAppt -wiType $wiType -workItemID $workItem.id
 }
 
 function Verify-WorkItem ($message)
