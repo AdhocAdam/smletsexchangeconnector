@@ -1241,10 +1241,5 @@ foreach ($message in $inbox)
             #### default action, ??? ####
             #default {????????} 
         }
-
-        #mark the message as read on Exchange, move to deleted items
-        $appointment.IsRead = $true
-        $hideInVar01 = $appointment.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve)
-        $hideInVar02 = $appointment.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)
     }
 }
