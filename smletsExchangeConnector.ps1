@@ -149,6 +149,7 @@ $maClass = get-scsmclass "System.WorkItem.Activity.ManualActivity$" -computernam
 $raClass = get-scsmclass "System.WorkItem.Activity.ReviewActivity$" -computername $scsmMGMTServer
 $paClass = get-scsmclass "System.WorkItem.Activity.ParallelActivity$" -computername $scsmMGMTServer
 $saClass = get-scsmclass "System.WorkItem.Activity.SequentialActivity$" -computername $scsmMGMTServer
+$daClass = get-scsmclass "System.WorkItem.Activity.DependentActivity$" -computername $scsmMGMTServer
 
 $raHasReviewerRelClass = Get-SCSMRelationshipClass "System.ReviewActivityHasReviewer$" -computername $scsmMGMTServer
 $raReviewerIsUserRelClass = Get-SCSMRelationshipClass "System.ReviewerIsUser$" -computername $scsmMGMTServer
@@ -968,17 +969,14 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
         "sr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
         "pr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
         "cr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+        "rr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
 
         #activities
         "ma" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
         "pa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
         "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+        "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
     }
-
-    #accept the meeting
-    $acceptingMeetingMessage = $calAppt.CreateAcceptMessage($false)
-    $acceptingMeetingMessage.Body = "Scheduled Start and End times have been updated for $($workItem.id)"
-    $acceptingMeetingMessage.Send()
 
     #Trigger Update to update the Action log of the item
     Update-WorkItem -message $calAppt -wiType $wiType -workItemID $workItem.id
@@ -1225,21 +1223,22 @@ foreach ($message in $inbox)
         switch -Regex ($appointment.subject) 
         { 
             #### primary work item types ####
-            "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){schedule-workitem $appointment "ir" $result}}
-            "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){schedule-workitem $appointment "sr" $result}}
-            "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){schedule-workitem $appointment "pr" $result}}
-            "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){schedule-workitem $appointment "cr" $result}}
+            "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){schedule-workitem $appointment "ir" $result; $message.Accept($true)}}
+            "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){schedule-workitem $appointment "sr" $result; $message.Accept($true)}}
+            "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){schedule-workitem $appointment "pr" $result; $message.Accept($true)}}
+            "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){schedule-workitem $appointment "cr" $result; $message.Accept($true)}}
+            "\[[R][R][0-9]+\]" {$result = get-workitem $matches[0] $rrClass; if ($result){schedule-workitem $appointment "rr" $result; $message.Accept($true)}}
 
             #### activities ####
-            "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){schedule-workitem $appointment "ma" $result}}
-            "\[[P][A][0-9]+\]" {$result = get-workitem $matches[0] $paClass; if ($result){schedule-workitem $appointment "pa" $result}}
-            "\[[S][A][0-9]+\]" {$result = get-workitem $matches[0] $saClass; if ($result){schedule-workitem $appointment "sa" $result}}
+            "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){schedule-workitem $appointment "ma" $result; $message.Accept($true)}}
+            "\[[P][A][0-9]+\]" {$result = get-workitem $matches[0] $paClass; if ($result){schedule-workitem $appointment "pa" $result; $message.Accept($true)}}
+            "\[[S][A][0-9]+\]" {$result = get-workitem $matches[0] $saClass; if ($result){schedule-workitem $appointment "sa" $result; $message.Accept($true)}}
+            "\[[D][A][0-9]+\]" {$result = get-workitem $matches[0] $daClass; if ($result){schedule-workitem $appointment "da" $result; $message.Accept($true)}}
 
             #### 3rd party classes, work items, etc. add here ####
 
-
-            #### default action, ??? ####
-            #default {????????} 
+            #### default action, create/schedule a new default work item ####
+            default {$returnedNewWorkItemToSchedule = new-workitem $appointment $defaultNewWorkItem $true; schedule-workitem -calAppt $appointment -wiType $defaultNewWorkItem -workItem $returnedNewWorkItemToSchedule; $message.Accept($true)} 
         }
     }
 }
