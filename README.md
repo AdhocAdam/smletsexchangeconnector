@@ -13,7 +13,7 @@ Merge Replies from Related Users instead of Creating New Default Work Items
 - If a user emails the SCSM Workflow Account and also adds additional users to the To/CC lines those related users are automatically added to the Related Items tab of a New Work Item. However in these scenarios, it's possible that one of those users could reply within the same processing loop of the Exchange Connector. As a result, they will queue more emails to be turned into New Default Work Items. This feature aims to address the scenario by querying Exchange Inbox/Deleted Items for matching Conversation Topics and ConversationIDs, finding the original item in the thread, searching for the Work Item that already exists in SCSM, and then appending their Reply to its Action Log
 
 Schedule Work Items
-- When a Calendar Appointment is sent, the Scheduled Start Date and Scheduled End Date will be set on the Work Item based on the start/end times of the appointment. Upon success, the appointment will be accepted onto the workflow account's calendar
+- When a Calendar Appointment is sent, the Scheduled Start Date and Scheduled End Date will be set on the Work Item based on the start/end times of the appointment. If the work item cannot be found/does not exist, a new default work item is created and it's scheduled start/end tiems set accordingly. Upon success, the appointment will be accepted onto the workflow account's calendar and the requester will receive confirmation of the booking.
 
 SCOM Integration
 - Obtain the Health and Alerts of a Distributed Application
