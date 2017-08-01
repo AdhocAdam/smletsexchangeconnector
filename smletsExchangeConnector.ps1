@@ -8,7 +8,7 @@ out of box SCSM Exchange Connector as well as help enable new functionality arou
 Work Item scenarios, runbook automation, 3rd party customizations, and
 enabling other organizational level processes via email
 
-.NOTES
+.NOTES 
 Author: Adam Dzyacky
 Contributors: Martin Blomgren, Leigh Kilday
 Reviewers: Tom Hendricks, Brian Weist
