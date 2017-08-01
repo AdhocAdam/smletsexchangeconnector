@@ -19,15 +19,12 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     function. Navigate to that function to read more. If you don't make use of their HTML KB, you'll want to keep $searchCiresonHTMLKB = $false
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
-Version: 1.2b = created Send-EmailFromWorkflowAccount for future functions to leverage the SCSM workflow account defined therein
+Version: 1.2 = created Send-EmailFromWorkflowAccount for future functions to leverage the SCSM workflow account defined therein
                 updated Search-CiresonKnowledgeBase to use Send-EmailFromWorkflowAccount
                 created $exchangeAuthenticationType so as to introduce Windows Authentication or Impersonation to bring to closer parity with stock EC connector
                 expanded email processing loop to prepare for things other than IPM.Note message class (i.e. Calendar appointments, custom message classes per org.)
                 created Schedule-WorkItem function to enable setting Scheduled Start/End Dates on Work Items based on the Calendar Start/End times.
                     introduced configuration variable for this feature ($processCalendarAppointment)
-                created initial SCOM functionality/integrations to obtaining Health of a Distributed Application and other items
-                created Get-SCOMAuthorizedRequester as a means to validate user requesting information from SCOM
-                created Get-SCOMDistributedAppHealth so as to request the health of a SCOM DA
                 created config variable for LoggingLevel
                     could just reference the same registry key for the native Exchange Connector
                     need to build what the levels of logging represent and create said functions
@@ -1010,104 +1007,6 @@ function Verify-WorkItem ($message)
 }
 #endregion
 
-#region #### SCOM Request Functions ####
-function Get-SCOMAuthorizedRequester ($sender)
-{
-    switch ($approvedMemberTypeForSCOM)
-    {
-        "users" {if ($approvedUsersForSCOM -match $sender)
-                    {
-                        return $true
-                    }
-                    else
-                    {
-                        return $false
-                    }        
-                }
-        "group" {$group = Get-ADGroup $approvedMemberTypeForSCOM
-                    $adUser = Get-ADUser -Filter "EmailAddress -eq '$sender'"
-                    if ($adUser)
-                    {
-                        if ((Get-ADUser $adUser -Properties memberof).memberof -eq $group.distinguishedname)
-                        {
-                            return $true
-                        }
-                        else
-                        {
-                            return $false
-                        }
-                    }
-                }
-    }
-}
-
-function Get-SCOMDistributedAppHealth ($message)
-{
-    #determine if the sender is authorized to make SCOM Health requests
-    $isAuthorized = Get-SCOMAuthorizedRequester $message.From.Address
-
-    if (($isAuthorized -eq $true))
-    {
-        #find the distributed application to search for based on the [Distributed App Name] from the email body
-        #"\[(.*?)\]" - will match something [Service Manager] or [Operations Manager Management Group]
-        if ($message.body -match "\[(.*?)\]"){$appName = $Matches[0].Replace("[", "").Replace("]", "")}
-        else {<#body not [formed] correctly#>}
-
-        #get Distributed Applications that meet search criteria
-        $distributedApps = invoke-command -scriptblock {(Get-SCOMClass | Where-Object {$_.displayname -like “*$appName*”} | Get-SCOMMonitoringObject) | select-object Displayname, healthstate} -ComputerName $scomMGMTServer
-        $healthySCOMApps = @()
-        $unhealthySCOMApps = @()
-        $notMonitoredSCOMApps = @()
-        $unhealthySCOMAppsAlerts = @()
-        $emailBody = @()
-
-        #create, define, and load custom PS Object from SCOM DA Objects
-        foreach ($distributedApp in $distributedApps)
-        {
-            #Healthy app - Green Agent state
-            if ($distributedApp.HealthState -eq "Success")
-            {
-                $scomDAObject = New-Object System.Object
-                $scomDAObject | Add-Member -Type NoteProperty –Name Name –Value $distributedApp.displayname
-                $scomDAObject | Add-Member -Type NoteProperty –Name Status –Value "Healthy"
-                $healthySCOMApps += $scomDAObject
-                $emailBody += $scomDAObject.Name + " is " + $scomDAObject.Status + "<br />"
-            }
-            #Unhealthy App - Red Agent state
-            elseif ($result.HealthState -eq "Error")
-            {
-                $scomDAObject = New-Object System.Object
-                $scomDAObject | Add-Member -Type NoteProperty –Name Name –Value $distributedApp.displayname
-                $scomDAObject | Add-Member -Type NoteProperty –Name Status –Value "Critical"
-                $unhealthySCOMApps += $scomDAObject
-                $emailBody += $scomDAObject.Name + " is " + $scomDAObject.Status + "<br />"
-            }
-            #Gray Agent state
-            elseif ($result.HealthState -eq "Uninitialized")
-            {
-                $scomDAObject = New-Object System.Object
-                $scomDAObject | Add-Member -Type NoteProperty –Name Name –Value $distributedApp.displayname
-                $scomDAObject | Add-Member -Type NoteProperty –Name Status –Value "Not Monitored"
-                $notMonitoredSCOMApps += $scomDAObject
-                $emailBody += $scomDAObject.Name + " is " + $scomDAObject.Status + "<br />"
-            } 
-        }
-
-        #if there are unhealthy apps/red agent states, get their Active alerts in SCOM
-        if ($unhealthySCOMApps)
-        {
-            foreach ($unhealthySCOMApp in $unhealthySCOMApps)
-            {
-                $unhealthySCOMAppsAlerts += invoke-command -scriptblock {Get-SCOMClass | Where-Object {$_.displayname -like “$($unhealthySCOMApp.displayname)”} | Get-SCOMClassInstance | %{$_.GetRelatedMonitoringObjects()} | Get-SCOMAlert -ResolutionState 0} -computername $scomMGMTServer
-            }
-        }
-        
-        $emailBody = $emailBody + "<br /><br />" + "NOTE: Responding to this message will trigger the creation of a New Work Item in Service Manager!"
-        Send-EmailFromWorkflowAccount -subject "SCOM Health Status" -body $emailBody -bodyType "HTML" -toRecipients $message.From
-    }
-}
-#endregion
-
 #determine merge logic
 if ($mergeReplies -eq $true)
 {
@@ -1127,7 +1026,7 @@ $exchangeService.AutodiscoverUrl($workflowEmailAddress)
 #define search parameters and search on the defined classes
 $inboxFolderName = [Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox
 $inboxFolder = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($exchangeService,$inboxFolderName)
-$itemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 10
+$itemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 1000
 $propertySet = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.BasePropertySet]::FirstClassProperties)
 $propertySet.RequestedBodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::Text
 $mimeContentSchema = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.ItemSchema]::MimeContent)
