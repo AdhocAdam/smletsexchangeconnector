@@ -94,22 +94,6 @@ $ciresonPortalWindowsAuth = $true
 $ciresonPortalUsername = ""
 $ciresonPortalPassword = ""
 
-#optional, enable SCOM functionality
-#To prevent unintended 3rd parties from gaining knowledge of your environment via SCSM about SCOM, you must choose to set either an AD Group that the sender must be a part of
-#or you must manually define email addresses of users allowed to make these requests
-#enableSCOMIntegration = set to $true or $false to enable this functionality
-#scomMGMTServer = set equal to the name of your scom management server
-#approvedMemberTypeForSCOM = set to either "users" or "group"
-#approvedADGroupForSCOM = if approvedUsersForSCOM = group, set this to the AD Group that contains groups/members that are allowed to make SCOM email requests
-    #this approach allows you control access through Active Directory
-#approvedUsersForSCOM = if approvedUsersForSCOM = users, set this to a comma seperated list of email addresses that are allowed to make SCOM email requests
-    #this approach allows you to control through this script
-$enableSCOMIntegration = $false
-$scomMGMTServer = ""
-$approvedMemberTypeForSCOM = "group"
-$approvedADGroupForSCOM = "my custom AD SCOM group"
-$approvedUsersForSCOM = "myfirst.email@domain.com", "mysecond.address@domain.com"
-
 #define SCSM Work Item keywords to be used
 $acknowledgedKeyword = "acknowledge"
 $reactivateKeyword = "reactivate"
