@@ -15,9 +15,6 @@ Merge Replies from Related Users instead of Creating New Default Work Items
 Schedule Work Items
 - When a Calendar Appointment is sent, the Scheduled Start Date and Scheduled End Date will be set on the Work Item based on the start/end times of the appointment. If the work item cannot be found/does not exist, a new default work item is created and it's scheduled start/end tiems set accordingly. Upon success, the appointment will be accepted onto the workflow account's calendar and the requester will receive confirmation of the booking.
 
-SCOM Integration
-- Obtain the Health and Alerts of a Distributed Application
-
 Minimum File Attachment Size
 - You can set a minimum size in KB. In doing so, files less than the defined size will not be added to the work item (i.e. corporate signature graphics won't be added)
 
