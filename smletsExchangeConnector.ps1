@@ -13,33 +13,55 @@ Author: Adam Dzyacky
 Contributors: Martin Blomgren, Leigh Kilday
 Reviewers: Tom Hendricks, Brian Weist
 Inspiration: The Cireson Community, Anders Asp, Stefan Roth, and (of course) Travis Wright for SMlets examples
-Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installed on SCSM workflow server)
+Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installed on SCSM workflow server).
 3rd party option: If you're a Cireson customer and make use of their paid SCSM Portal with HTML Knowledge Base this will work as is
     if you aren't, you'll need to create your own Type Projection for Change Requests for the Add-ChangeRequestComment
     function. Navigate to that function to read more. If you don't make use of their HTML KB, you'll want to keep $searchCiresonHTMLKB = $false
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.2 = created Send-EmailFromWorkflowAccount for future functions to leverage the SCSM workflow account defined therein
+                updated Search-CiresonKnowledgeBase to use Send-EmailFromWorkflowAccount
+                created $exchangeAuthenticationType so as to introduce Windows Authentication or Impersonation to bring to closer parity with stock EC connector
+                expanded email processing loop to prepare for things other than IPM.Note message class (i.e. Calendar appointments, custom message classes per org.)
+                created Schedule-WorkItem function to enable setting Scheduled Start/End Dates on Work Items based on the Calendar Start/End times.
+                    introduced configuration variable for this feature ($processCalendarAppointment)
+                updated Attach-EmailToWorkItem so the Exchange Conversation ID is written into the Description as "ExchangeConversationID:$id;"
+                issue on Attach-EmailToWorkItem/Attach-FileToWorkItem where the "AttachedBy" relationship was using the wrong variable
+                created Verify-WorkItem to attempt to begin identifying potentially quickly responded messages/append them to
+                    current/recently created Work Items. Trying to address scenario where someone emails WF and CC's others. If the others
+                    reply back before a notification about the current Work Item ID goes out (or they ignore it), they queue more messages
+                    for the connector and in turn create more default work items rather than updating the "original" thread/Work Item that
+                    was created in the same/previous processing loop. Also looking to use this function to potentially address 3rd party
+                    ticketing systems.
+                    Introduced configuration variable for this feature ($mergeReplies)
 Version: 1.1 = GitHub issue raised on updating work items. Per discussion was pinpointed to the
-    Get-WorkItem function wherein passed in values were including brackets in the search (i.e. [IRxxxx] instead of IRxxxx). Also
-    updated the email subject matching regex, so that the update-workitem took the $result.id instead of the $matches[0]. Again, this
-    ensures the brackets aren't passed when performing the search/update.
+                Get-WorkItem function wherein passed in values were including brackets in the search (i.e. [IRxxxx] instead of IRxxxx). Also
+                updated the email subject matching regex, so that the Update-WorkItem took the $result.id instead of the $matches[0]. Again, this
+                ensures the brackets aren't passed when performing the search/update.
 #>
 
 #region #### Configuration ####
 #define the an SCSM management server, this could be a remote name or localhost
 $scsmMGMTServer = ""
 
-#define/get SCSM WF exchange credentials
+#define/use SCSM WF credentials
+#$exchangeAuthenticationType - "windows" or "impersonation" are valid inputs here.
+    #Windows will use the credentials that start this script in order to authenticate to Exchange and retrieve messages
+        #choosing this option only requires the $workflowEmailAddress variable to be defined
+        #this is ideal if you'll be using Task Manager or SMA to initiate this
+    #Impersonation will use the credentials that are defined here to connect to Exchange and retrieve messages
+        #choosing this option requires the $workflowEmailAddress, $username, $password, and $domain variables to be defined
+$exchangeAuthenticationType = "windows"
+$workflowEmailAddress = ""
 $username = ""
 $password = ""
 $domain = ""
-$email = ""
 
 #defaultNewWorkItem = set to either "ir" or "sr"
 #minFileSizeInKB = Set the minimum file size in kilobytes to be attached to work items
 #createUsersNotInCMDB = If someone from outside your org emails into SCSM this allows you to take that email and create a User in your CMDB
 #includeWholeEmail = If long chains get forwarded into SCSM, you can choose to write the whole email to a single action log entry OR the beginning to the first finding of "From:"
-#attachEmailToWorkItem = attach email as an *.eml to each work item
+#attachEmailToWorkItem = If $true, attach email as an *.eml to each work item. Additionally, write the Exchange Conversation ID into the Description of the Attachment object
 #fromKeyword = If $includeWholeEmail is set to true, messages will be parsed UNTIL they find this word
 $defaultNewWorkItem = "ir"
 $defaultIRTemplate = Get-SCSMObjectTemplate -DisplayName "IR Template Name Goes Here" -computername $scsmMGMTServer
@@ -49,6 +71,13 @@ $createUsersNotInCMDB = $true
 $includeWholeEmail = $false
 $attachEmailToWorkItem = $false
 $fromKeyword = "From"
+
+#processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
+    #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
+#mergeReplies = If $true, emails that are Replies (signified by RE: in the subject) will attempt to be matched to a Work Item in SCSM by their
+    #Exchange Conversation ID and will also override $attachEmailToWorkItem to be $true if set to $false
+$processCalendarAppointment = $false
+$mergeReplies = $false
 
 #optional, enable KB search of your Cireson HTML KB
 #this uses the now depricated Cireson KB API Search by Text, it works as of v7.x but should be noted it could be entirely removed in future portals
@@ -65,7 +94,23 @@ $ciresonPortalWindowsAuth = $true
 $ciresonPortalUsername = ""
 $ciresonPortalPassword = ""
 
-#define work item keywords to be used
+#optional, enable SCOM functionality
+#To prevent unintended 3rd parties from gaining knowledge of your environment via SCSM about SCOM, you must choose to set either an AD Group that the sender must be a part of
+#or you must manually define email addresses of users allowed to make these requests
+#enableSCOMIntegration = set to $true or $false to enable this functionality
+#scomMGMTServer = set equal to the name of your scom management server
+#approvedMemberTypeForSCOM = set to either "users" or "group"
+#approvedADGroupForSCOM = if approvedUsersForSCOM = group, set this to the AD Group that contains groups/members that are allowed to make SCOM email requests
+    #this approach allows you control access through Active Directory
+#approvedUsersForSCOM = if approvedUsersForSCOM = users, set this to a comma seperated list of email addresses that are allowed to make SCOM email requests
+    #this approach allows you to control through this script
+$enableSCOMIntegration = $false
+$scomMGMTServer = ""
+$approvedMemberTypeForSCOM = "group"
+$approvedADGroupForSCOM = "my custom AD SCOM group"
+$approvedUsersForSCOM = "myfirst.email@domain.com", "mysecond.address@domain.com"
+
+#define SCSM Work Item keywords to be used
 $acknowledgedKeyword = "acknowledge"
 $reactivateKeyword = "reactivate"
 $resolvedKeyword = "resolved"
@@ -80,6 +125,7 @@ $rejectedKeyword = "rejected"
 
 #define the path to the Exchange Web Services API. the following is the default install directory for EWS API
 $exchangeEWSAPIPath = "C:\Program Files\Microsoft\Exchange\Web Services\1.2\Microsoft.Exchange.WebServices.dll"
+
 #endregion
 
 #region #### SCSM Classes ####
@@ -92,6 +138,7 @@ $maClass = get-scsmclass "System.WorkItem.Activity.ManualActivity$" -computernam
 $raClass = get-scsmclass "System.WorkItem.Activity.ReviewActivity$" -computername $scsmMGMTServer
 $paClass = get-scsmclass "System.WorkItem.Activity.ParallelActivity$" -computername $scsmMGMTServer
 $saClass = get-scsmclass "System.WorkItem.Activity.SequentialActivity$" -computername $scsmMGMTServer
+$daClass = get-scsmclass "System.WorkItem.Activity.DependentActivity$" -computername $scsmMGMTServer
 
 $raHasReviewerRelClass = Get-SCSMRelationshipClass "System.ReviewActivityHasReviewer$" -computername $scsmMGMTServer
 $raReviewerIsUserRelClass = Get-SCSMRelationshipClass "System.ReviewerIsUser$" -computername $scsmMGMTServer
@@ -488,14 +535,14 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
 
 function Attach-EmailToWorkItem ($message, $workItemID)
 {
-    $messageMime = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.Id,$mimeContentSchema)
+    $messageMime = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
     $MemoryStream = New-Object System.IO.MemoryStream($messageMime.MimeContent.Content,0,$messageMime.MimeContent.Content.Length)
 
     #Create the attachment object itself and set its properties for SCSM
     $emailAttachment = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
     $emailAttachment.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
     $emailAttachment.Item($fileAttachmentClass, "DisplayName").Value = "message.eml"
-    #$emailAttachment.Item($fileAttachmentClass, "Description").Value = $attachment.Description
+    $emailAttachment.Item($fileAttachmentClass, "Description").Value = "ExchangeConversationID:$($message.ConversationID);"
     $emailAttachment.Item($fileAttachmentClass, "Extension").Value =   "eml"
     $emailAttachment.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
     $emailAttachment.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
@@ -511,7 +558,7 @@ function Attach-EmailToWorkItem ($message, $workItemID)
     if ($userSMTPNotification) 
     { 
         $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
-        New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $user -Bulk
+        New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser -Bulk
     }
 }
 
@@ -551,7 +598,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
             if ($userSMTPNotification) 
             { 
                 $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
-                New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $user -Bulk
+                New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser -Bulk
             }
         }
     }
@@ -837,7 +884,7 @@ function Add-ChangeRequestComment {
     }
 }
 
-#search the Cireson KB based on content from a New Work Item and notify the Affected User of the results
+#search the Cireson KB based on content from a New Work Item and notify the Affected User
 function Search-CiresonKnowledgeBase ($message, $workItem)
 {
     $searchQuery = $workItem.Title.Trim() + " " + $workItem.Description.Trim()
@@ -885,70 +932,204 @@ function Search-CiresonKnowledgeBase ($message, $workItem)
             If one of these articles resolves your request, you can use the following
             link to $resolveMailTo your request."
     
-        #add the Work Item ID in the subject, so a potential reply doesn't trigger the creation of a New Work Item but instead updates it
-        $kbEmail = New-Object Microsoft.Exchange.WebServices.Data.EmailMessage -ArgumentList $exchangeService
-        $kbEmail.Subject = "[" + $workItem.id + "]" - $message.subject
-        $kbEmail.Body = $body
-        $kbEmail.ToRecipients.Add($message.From)
-        $kbEmail.Body.BodyType = 'HTML'
-        $kbEmail.Send()
+        #add the Work Item ID, so a potential reply doesn't trigger the creation of a new work item but instead updates it
+        Send-EmailFromWorkflowAccount -subject ("[" + $workItem.id + "]" - $message.subject) -body $body -bodyType "HTML" -toRecipients $message.From
     }
 }
 
+#send an email from the SCSM Workflow Account
+function Send-EmailFromWorkflowAccount ($subject, $body, $bodyType, $toRecipients)
+{
+    $emailToSendOut = New-Object Microsoft.Exchange.WebServices.Data.EmailMessage -ArgumentList $exchangeService
+    $emailToSendOut.Subject = $subject
+    $emailToSendOut.Body = $body
+    $emailToSendOut.ToRecipients.Add($toRecipients)
+    $emailToSendOut.Body.BodyType = $bodyType
+    $emailToSendOut.Send()
+}
+
+function Schedule-WorkItem ($calAppt, $wiType, $workItem)
+{
+    #set the Scheduled Start/End dates on the Work Item
+    $scheduledHashTable =  @{"ScheduledStartDate" = $calAppt.StartTime.ToUniversalTime(); "ScheduledEndDate" = $calAppt.EndTime.ToUniversalTime()}  
+    switch ($wiType)
+    {
+        "ir" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+        "sr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+        "pr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+        "cr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+        "rr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+
+        #activities
+        "ma" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+        "pa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+        "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+        "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+    }
+
+    #Trigger Update to update the Action log of the item
+    Update-WorkItem -message $calAppt -wiType $wiType -workItemID $workItem.id
+}
+
+function Verify-WorkItem ($message)
+{
+    #If emails are being attached to New Work Items, filter on the File Attachment Description that equals the Exchange Conversation ID as defined in the Attach-EmailToWorkItem function
+    if ($attachEmailToWorkItem -eq $true)
+    {
+        $emailAttachmentSearchObject = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" -ComputerName $scsmMGMTServer | select-object -first 1 
+        $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $emailAttachmentSearchObject -ComputerName $scsmMGMTServer).sourceobject.id -ComputerName $scsmMGMTServer
+        if ($emailAttachmentSearchObject -and $relatedWorkItemFromAttachmentSearch)
+        {
+            switch ($relatedWorkItemFromAttachmentSearch.ClassName)
+            {
+                "System.WorkItem.Incident" {Update-WorkItem -message $message -wiType "ir" -workItemID $relatedWorkItemFromAttachmentSearch.id}
+                "System.WorkItem.ServiceRequest" {Update-WorkItem -message $message -wiType "sr" -workItemID $relatedWorkItemFromAttachmentSearch.id}
+            }
+        }
+        else
+        {
+            #no match was found, Create a New Work Item
+            New-WorkItem $message $defaultNewWorkItem
+        }
+    }
+    else
+    {
+        #will never engage as Verify-WorkItem currently only works when attaching emails to work items 
+    }
+}
 #endregion
+
+#determine merge logic
+if ($mergeReplies -eq $true)
+{
+    $attachEmailToWorkItem = $true
+}
 
 #define Exchange assembly and connect to EWS
 [void] [Reflection.Assembly]::LoadFile("$exchangeEWSAPIPath")
 $exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService
-$exchangeService.Credentials = New-Object Net.NetworkCredential($username, $password, $domain)
-$exchangeService.AutodiscoverUrl($email)
+switch ($exchangeAuthenticationType)
+{
+    "impersonation" {$exchangeService.Credentials = New-Object Net.NetworkCredential($username, $password, $domain)}
+    "windows" {$exchangeService.UseDefaultCredentials = $true}
+}
+$exchangeService.AutodiscoverUrl($workflowEmailAddress)
 
-#define search parameters and search on the Message class (IPM.Note). This will skip calendar appointments, OOO, etc.
+#define search parameters and search on the defined classes
 $inboxFolderName = [Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox
 $inboxFolder = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($exchangeService,$inboxFolderName)
-$itemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 10
+$itemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 1000
 $propertySet = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.BasePropertySet]::FirstClassProperties)
 $propertySet.RequestedBodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::Text
 $mimeContentSchema = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.ItemSchema]::MimeContent)
 $dateTimeItem = [Microsoft.Exchange.WebServices.Data.ItemSchema]::DateTimeReceived
 $now = get-date
 $searchFilter = New-Object -TypeName Microsoft.Exchange.WebServices.Data.SearchFilter+IsLessThanOrEqualTo -ArgumentList $dateTimeItem,$now
-$inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object {($_.ItemClass -eq "IPM.Note") -and ($_.isRead -eq $false)}
+
+#build the Where-Object scriptblock based on defined configuration
+$emailFilterString = '($_.ItemClass -eq "IPM.Note")'
+$calendarFilterString = '($_.ItemClass -eq "IPM.Schedule.Meeting.Request")'
+$unreadFilterString = '($_.isRead -eq $false)'
+$inboxFilterString = $emailFilterString
+if ($processCalendarAppointment -eq $true)
+{
+    $inboxFilterString = $emailFilterString + " -or " + $calendarFilterString
+}
+
+#finalize the where-object string by ensuring to look for all Unread Items
+$inboxFilterString = "(" + $inboxFilterString + ")" + " -and " + $unreadFilterString
+$inboxFilterString = [scriptblock]::Create("$inboxFilterString")
+
+#filter the inbox
+$inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString
 
 #parse each message
 foreach ($message in $inbox)
 {
+    #load the entire message
     $message.Load($propertySet)
-    $email = New-Object System.Object 
-    $email | Add-Member -type NoteProperty -name From -value $message.From.Address
-    $email | Add-Member -type NoteProperty -name To -value $message.ToRecipients
-    $email | Add-Member -type NoteProperty -name CC -value $message.CcRecipients
-    $email | Add-Member -type NoteProperty -name Subject -value $message.Subject
-    $email | Add-Member -type NoteProperty -name Attachments -value $message.Attachments
-    $email | Add-Member -type NoteProperty -name Body -value $message.Body.Text
-    $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
 
-    switch -Regex ($email.subject) 
-    { 
-        #### primary work item types ####
-        "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-        "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-        "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-        "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+    #Process an Email
+    if ($message.ItemClass -eq "IPM.Note")
+    {
+        $email = New-Object System.Object 
+        $email | Add-Member -type NoteProperty -name From -value $message.From.Address
+        $email | Add-Member -type NoteProperty -name To -value $message.ToRecipients
+        $email | Add-Member -type NoteProperty -name CC -value $message.CcRecipients
+        $email | Add-Member -type NoteProperty -name Subject -value $message.Subject
+        $email | Add-Member -type NoteProperty -name Attachments -value $message.Attachments
+        $email | Add-Member -type NoteProperty -name Body -value $message.Body.Text
+        $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
+        $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
+        $email | Add-Member -type NoteProperty -name ID -Value $message.ID
+        $email | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationID
+        $email | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
+
+        switch -Regex ($email.subject) 
+        { 
+            #### primary work item types ####
+            "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
  
-        #### activities ####
-        "\[[R][A][0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
-        "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
+            #### activities ####
+            "\[[R][A][0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
+            "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
 
-        #### 3rd party classes, work items, etc. add here ####
+            #### 3rd party classes, work items, etc. add here ####
 
+            #### Email is a Reply and does not contain a [Work Item ID]
+            # Check if Work Item (Title, Body, Sender, CC, etc.) exists
+            # and the user was replying too fast to receive Work Item ID notification
+            "([R][E][:])(?!.*\[(([I|S|P|C][R])|([M|R][A]))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
 
-        #### default action, create work item ####
-        default {new-workitem $email $defaultNewWorkItem} 
+            #### default action, create work item ####
+            default {new-workitem $email $defaultNewWorkItem} 
+        }
+
+        #mark the message as read on Exchange, move to deleted items
+        $message.IsRead = $true
+        $hideInVar01 = $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve)
+        $hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)
     }
 
-    #mark the message as read on Exchange, move to deleted items
-    $message.IsRead = $true
-    $hideInVar01 = $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve)
-    $hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)
+    #Process a Calendar Appointment
+    elseif ($message.ItemClass -eq "IPM.Schedule.Meeting.Request")
+    {
+        $appointment = New-Object System.Object 
+        $appointment | Add-Member -type NoteProperty -name StartTime -value $message.Start
+        $appointment | Add-Member -type NoteProperty -name EndTime -value $message.End
+        $appointment | Add-Member -type NoteProperty -name To -value $message.ToRecipients
+        $appointment | Add-Member -type NoteProperty -name From -value $message.From.Address
+        $appointment | Add-Member -type NoteProperty -name Attachments -value $message.Attachments
+        $appointment | Add-Member -type NoteProperty -name Subject -value $message.Subject
+        $appointment | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
+        $appointment | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
+        $appointment | Add-Member -type NoteProperty -name Body -value $message.Body.Text
+        $appointment | Add-Member -type NoteProperty -name ID -Value $message.ID
+        $appointment | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationID
+        $appointment | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
+
+        switch -Regex ($appointment.subject) 
+        { 
+            #### primary work item types ####
+            "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){schedule-workitem $appointment "ir" $result; $message.Accept($true)}}
+            "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){schedule-workitem $appointment "sr" $result; $message.Accept($true)}}
+            "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){schedule-workitem $appointment "pr" $result; $message.Accept($true)}}
+            "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){schedule-workitem $appointment "cr" $result; $message.Accept($true)}}
+            "\[[R][R][0-9]+\]" {$result = get-workitem $matches[0] $rrClass; if ($result){schedule-workitem $appointment "rr" $result; $message.Accept($true)}}
+
+            #### activities ####
+            "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){schedule-workitem $appointment "ma" $result; $message.Accept($true)}}
+            "\[[P][A][0-9]+\]" {$result = get-workitem $matches[0] $paClass; if ($result){schedule-workitem $appointment "pa" $result; $message.Accept($true)}}
+            "\[[S][A][0-9]+\]" {$result = get-workitem $matches[0] $saClass; if ($result){schedule-workitem $appointment "sa" $result; $message.Accept($true)}}
+            "\[[D][A][0-9]+\]" {$result = get-workitem $matches[0] $daClass; if ($result){schedule-workitem $appointment "da" $result; $message.Accept($true)}}
+
+            #### 3rd party classes, work items, etc. add here ####
+
+            #### default action, create/schedule a new default work item ####
+            default {$returnedNewWorkItemToSchedule = new-workitem $appointment $defaultNewWorkItem $true; schedule-workitem -calAppt $appointment -wiType $defaultNewWorkItem -workItem $returnedNewWorkItemToSchedule; $message.Accept($true)} 
+        }
+    }
 }
