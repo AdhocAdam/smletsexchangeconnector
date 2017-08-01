@@ -25,9 +25,6 @@ Version: 1.2 = created Send-EmailFromWorkflowAccount for future functions to lev
                 expanded email processing loop to prepare for things other than IPM.Note message class (i.e. Calendar appointments, custom message classes per org.)
                 created Schedule-WorkItem function to enable setting Scheduled Start/End Dates on Work Items based on the Calendar Start/End times.
                     introduced configuration variable for this feature ($processCalendarAppointment)
-                created config variable for LoggingLevel
-                    could just reference the same registry key for the native Exchange Connector
-                    need to build what the levels of logging represent and create said functions
                 updated Attach-EmailToWorkItem so the Exchange Conversation ID is written into the Description as "ExchangeConversationID:$id;"
                 issue on Attach-EmailToWorkItem/Attach-FileToWorkItem where the "AttachedBy" relationship was using the wrong variable
                 created Verify-WorkItem to attempt to begin identifying potentially quickly responded messages/append them to
@@ -128,11 +125,6 @@ $rejectedKeyword = "rejected"
 
 #define the path to the Exchange Web Services API. the following is the default install directory for EWS API
 $exchangeEWSAPIPath = "C:\Program Files\Microsoft\Exchange\Web Services\1.2\Microsoft.Exchange.WebServices.dll"
-
-#enable logging per standard Exchange Connector registry keys
-#valid options on that registry key are 1 to 7 where 7 is the most verbose
-#$loggingLevel = (Get-ItemProperty "HKLM:\Software\Microsoft\System Center Service Manager Exchange Connector" -ErrorAction SilentlyContinue).LoggingLevel
-$loggingLevel = 1
 
 #endregion
 
