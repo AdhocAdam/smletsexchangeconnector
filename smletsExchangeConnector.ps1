@@ -582,7 +582,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
             if ($userSMTPNotification) 
             { 
                 $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
-                New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser -Bulk
+                New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser -Bulk
             }
         }
     }
