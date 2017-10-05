@@ -187,7 +187,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     }
 
     #find Related Users (To)       
-    if ($to -gt $0)
+    if ($to.count -gt 0)
     {
         $x = 0
         while ($x -lt $to.count)
@@ -212,7 +212,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     }
     
     #find Related Users (Cc)         
-    if ($cced -gt $0)
+    if ($cced.count -gt 0)
     {
         $x = 0
         while ($x -lt $cced.count)
