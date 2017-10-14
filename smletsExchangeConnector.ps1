@@ -48,7 +48,7 @@ $scsmMGMTServer = ""
 #$exchangeAuthenticationType - "windows" or "impersonation" are valid inputs here.
     #Windows will use the credentials that start this script in order to authenticate to Exchange and retrieve messages
         #choosing this option only requires the $workflowEmailAddress variable to be defined
-        #this is ideal if you'll be using Task Manager or SMA to initiate this
+        #this is ideal if you'll be using Task Scheduler or SMA to initiate this
     #Impersonation will use the credentials that are defined here to connect to Exchange and retrieve messages
         #choosing this option requires the $workflowEmailAddress, $username, $password, and $domain variables to be defined
 $exchangeAuthenticationType = "windows"
