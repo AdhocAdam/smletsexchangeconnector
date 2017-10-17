@@ -241,7 +241,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     {
         "ir" {
                     $newWorkItem = New-SCSMObject -Class $irClass -PropertyHashtable @{"ID" = "IR{0}"; "Status" = $irActiveStatus; "Title" = $title; "Description" = $description; "Classification" = $null; "Impact" = $irLowImpact; "Urgency" = $irLowUrgency; "Source" = "IncidentSourceEnum.Email$"} -PassThru -computername $scsmMGMTServer
-                    $irProjection = Get-SCSMObjectProjection -ProjectionName $irTypeProjection.Name -Filter "Name -eq $($newWorkItem.Name)" -computername $scsmMGMTServer
+                    $irProjection = Get-SCSMObjectProjection -ProjectionName $irTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" -computername $scsmMGMTServer
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Set-SCSMObjectTemplate -Projection $irProjection -Template $defaultIRTemplate -computername $scsmMGMTServer
@@ -264,7 +264,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                 }
         "sr" {
                     $newWorkItem = new-scsmobject -class $srClass -propertyhashtable @{"ID" = "SR{0}"; "Title" = $title; "Description" = $description; "Status" = "ServiceRequestStatusEnum.Submitted$"} -PassThru -computername $scsmMGMTServer
-                    $srProjection = Get-SCSMObjectProjection -ProjectionName $srTypeProjection.Name -Filter "Name -eq $($newWorkItem.Name)" -computername $scsmMGMTServer
+                    $srProjection = Get-SCSMObjectProjection -ProjectionName $srTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" -computername $scsmMGMTServer
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Set-SCSMObjectTemplate -projection $srProjection -Template $defaultSRTemplate -computername $scsmMGMTServer
@@ -375,7 +375,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     #relate the user to the work item
                     New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk -computername $scsmMGMTServer
                     #add any new attachments
-                    if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
+                    if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $workItem.ID}
                 } 
         "sr" {
                     $workItem = get-scsmobject -class $srClass -filter "Name -eq '$workItemID'" -computername $scsmMGMTServer
@@ -398,7 +398,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     #relate the user to the work item
                     New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk -computername $scsmMGMTServer
                     #add any new attachments
-                    if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
+                    if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $workItem.ID}
                 } 
         "pr" {
                     $workItem = get-scsmobject -class $prClass -filter "Name -eq '$workItemID'" -computername $scsmMGMTServer
@@ -421,7 +421,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     #relate the user to the work item
                     New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk -computername $scsmMGMTServer
                     #add any new attachments
-                    if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
+                    if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $workItem.ID}
                 }
         "cr" {
                     $workItem = get-scsmobject -class $crClass -filter "Name -eq '$workItemID'" -computername $scsmMGMTServer
@@ -443,7 +443,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     #relate the user to the work item
                     New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk -computername $scsmMGMTServer
                     #add any new attachments
-                    if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
+                    if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $workItem.ID}
                 }
         
         #### activities ####
@@ -560,7 +560,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
         #Create a new MemoryStream object out of the attachment data
         $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
 
-        if (([int]$MemoryStream.Length * 1000) -gt $minFileSizeInKB)
+        if (([int]$MemoryStream.Length) -gt ($minFileSizeInKB+"kb"))
         {
             #Create the attachment object itself and set its properties for SCSM
             $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
