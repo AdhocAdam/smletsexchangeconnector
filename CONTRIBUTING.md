@@ -9,7 +9,7 @@ for is encountered. Maybe something isn't working as designed. Whichever the cas
 bug. Depending on the specific nature, it is possible it maybe filed as a future enhancement.
 
 # Requesting a Feature
-You can use the Issues section to raise more than just bugs. Ideas for future releases can thrown in here and will be marked as an "enhancement."
+You can use the Issues section to raise more than just bugs. Ideas for future releases can thrown in here and will be marked as a "Feature Request"
 
 # Contributing Guidelines
 If you're interested in contributing, great! Given this script's purpose to completely swap itself with the default Exchange Connector,
