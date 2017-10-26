@@ -369,8 +369,8 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                         "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Resolved$" -computername $scsmMGMTServer; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy -computername $scsmMGMTServer -bulk}
                         "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Closed$" -computername $scsmMGMTServer}
                         "\[$takeKeyword]" {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy -computername $scsmMGMTServer -bulk}
-                        {("\[$reactivateKeyword]") -and ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved")} {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Active$" -computername $scsmMGMTServer}
-                        {("\[$reactivateKeyword]") -and ($workItem.Status.Name -eq "IncidentStatusEnum.Closed")} {if($message.Subject -match "[I][R][0-9]+"){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", "")}; $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk -computername $scsmMGMTServer}catch{}}
+                        "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Active$" -computername $scsmMGMTServer}}
+                        "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "[I][R][0-9]+")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk -computername $scsmMGMTServer}catch{}}}
                     }
                     #relate the user to the work item
                     New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk -computername $scsmMGMTServer
@@ -416,7 +416,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                          "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Resolved$" -computername $scsmMGMTServer; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy -computername $scsmMGMTServer -bulk}
                          "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Closed$" -computername $scsmMGMTServer}
                          "\[$takeKeyword]" {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy -computername $scsmMGMTServer -bulk}
-                        {("\[$reactivateKeyword]") -and ($workItem.Status.Name -eq "ProblemStatusEnum.Resolved")} {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Active$" -computername $scsmMGMTServer}
+                         "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "ProblemStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Active$" -computername $scsmMGMTServer}}
                     }
                     #relate the user to the work item
                     New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk -computername $scsmMGMTServer
