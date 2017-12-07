@@ -106,13 +106,18 @@ $processEncryptedMessages = $false
 $certStore = "user"
 $mergeReplies = $false
 
-#optional, enable KB search of your Cireson HTML KB
+#optional, enable integration with Cireson Knowledge Base/Service Catalog
 #this uses the now depricated Cireson KB API Search by Text, it works as of v7.x but should be noted it could be entirely removed in future portals
+#$numberOfWordsToMatchFromEmailToRO = defines the minimum number of words that must be matched from an email/new work item before Knowledge Articles will be
+    #suggested to the Affected User about them
+#searchAvailableCiresonPortalOfferings = search available Request Offerings within the Affected User's permission scope based words matched in
+    #their email/new work item
 #$ciresonPortalServer = URL that will be used to search for KB articles via invoke-webrequest. Make sure to leave the "/" after your tld!
 #$ciresonPortalWindowsAuth = how invoke-webrequest should attempt to authenticate to your portal server.
     #Leave true if your portal uses Windows Auth, change to False for Forms authentication.
     #If using forms, you'll need to set the ciresonPortalUsername and Password variables. For ease, you could set this equal to the username/password defined above
 $searchCiresonHTMLKB = $false
+$numberOfWordsToMatchFromEmailToRO = 1
 $searchAvailableCiresonPortalOfferings = $false
 $ciresonPortalServer = "https://portalserver.domain.tld/"
 $ciresonPortalWindowsAuth = $true
@@ -245,7 +250,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
 
     #find Affected User from the From Address
     $relatedUsers = @()
-    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$from'" -computername $scsmMGMTServer
+    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$from'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
     if ($userSMTPNotification) 
     { 
         $affectedUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
@@ -263,7 +268,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     {
         if ($to.count -eq 1)
         {
-            $userToSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($to.address)'"  -computername $scsmMGMTServer
+            $userToSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($to.address)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
             if ($userToSMTPNotification) 
             { 
                 $relatedUser = (Get-SCSMRelationshipObject -ByTarget $userToSMTPNotification -computername $scsmMGMTServer).sourceObject 
@@ -284,7 +289,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
             while ($x -lt $to.count)
             {
                 $ToSMTP = $to[$x]
-                $userToSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($ToSMTP.address)'"  -computername $scsmMGMTServer
+                $userToSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($ToSMTP.address)'"  -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
                 if ($userToSMTPNotification) 
                 { 
                     $relatedUser = (Get-SCSMRelationshipObject -ByTarget $userToSMTPNotification -computername $scsmMGMTServer).sourceObject 
@@ -308,7 +313,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     {
         if ($cced.count -eq 1)
         {
-            $userCCSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($cced.address)'" -computername $scsmMGMTServer
+            $userCCSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($cced.address)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
             if ($userCCSMTPNotification) 
             { 
                 $relatedUser = (Get-SCSMRelationshipObject -ByTarget $userCCSMTPNotification -computername $scsmMGMTServer).sourceObject 
@@ -329,7 +334,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
             while ($x -lt $cced.count)
             {
                 $ccSMTP = $cced[$x]
-                $userCCSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($ccSMTP.address)'" -computername $scsmMGMTServer
+                $userCCSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($ccSMTP.address)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
                 if ($userCCSMTPNotification) 
                 { 
                     $relatedUser = (Get-SCSMRelationshipObject -ByTarget $userCCSMTPNotification -computername $scsmMGMTServer).sourceObject 
@@ -558,7 +563,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
     }
 
     #determine who left the comment
-    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.From)'" -computername $scsmMGMTServer
+    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.From)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
     if ($userSMTPNotification) 
     { 
         $commentLeftBy = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
@@ -773,7 +778,7 @@ function Attach-EmailToWorkItem ($message, $workItemID)
     $WorkItemProjection.__base.Commit()
             
     #create the Attached By relationship if possible
-    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer
+    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
     if ($userSMTPNotification) 
     { 
         $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
@@ -813,7 +818,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $WorkItemProjection.__base.Commit()
 
                 #create the Attached By relationship if possible
-                $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer
+                $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
                 if ($userSMTPNotification) 
                 { 
                     $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
@@ -850,7 +855,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $WorkItemProjection.__base.Commit()
 
                 #create the Attached By relationship if possible
-                $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer
+                $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
                 if ($userSMTPNotification) 
                 { 
                     $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
@@ -1239,18 +1244,19 @@ function Search-AvailableCiresonPortalOfferings ($workItem, $ciresonPortalUser)
         $serviceCatalogResults = $serviceCatalogResults.Content | ConvertFrom-Json | Select-Object RequestOfferingTitle, RequestOfferingDescription, Service, RequestOfferingId, ServiceOfferingId
     }
 
-    #### Based on what the user has access to, what RO Titles/Description contain words from their original message ####
-    $emailWildcardSearch = $searchQuery.Replace(" ","|")
-    $serviceCatalogResults = $serviceCatalogResults | ?{$_.requestofferingtitle, $_.RequestOfferingDescription | Select-String -Pattern $emailWildcardSearch}
-
+    #### If the user has access to some Request Offerings, find which RO Titles/Description contain words from their original message ####
     if ($serviceCatalogResults)
     {
         #prepare the results by generating a URL array for the email
         $matchingRequestURLs = @()
         foreach ($serviceCatalogResult in $serviceCatalogResults)
         {
-            $ciresonPortalRequestURL = "`"" + $ciresonPortalServer + "SC/ServiceCatalog/RequestOffering/" + $serviceCatalogResult.RequestOfferingId + "," + $serviceCatalogResult.ServiceOfferingId + "`""
-            $matchingRequestURLs += "<a href=$ciresonPortalRequestURL/>$($serviceCatalogResult.RequestOfferingTitle)</a><br />"
+            $wordsMatched = ($searchQuery.Split() | ?{($serviceCatalogResult.title -match "\b$_\b") -or ($serviceCatalogResult.description -match "\b$_\b")}).count
+            if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToRO)
+            {
+                $ciresonPortalRequestURL = "`"" + $ciresonPortalServer + "SC/ServiceCatalog/RequestOffering/" + $serviceCatalogResult.RequestOfferingId + "," + $serviceCatalogResult.ServiceOfferingId + "`""
+                $matchingRequestURLs += "<a href=$ciresonPortalRequestURL/>$($serviceCatalogResult.RequestOfferingTitle)</a><br />"
+            }
         }
 
         return $matchingRequestURLs
@@ -1529,7 +1535,7 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
     }
 
     #Get the user that is posting the announcement (from) from the SCSM/Cireson Portal to determine their language code to post the announcement
-    $announcerSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer
+    $announcerSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
     $announcerSCSMObject = Get-SCSMObject -id (Get-SCSMRelationshipObject -ByTarget $announcerSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
     $ciresonPortalAnnouncer = Get-CiresonPortalUser -username $announcerSCSMObject.username -domain $announcerSCSMObject.domain
 
