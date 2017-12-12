@@ -20,6 +20,8 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signged/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.3.1 = Fixed issue matching users when AD connector syncs users that were renamed.
+                Changed how Request Offering suggestions are matched and made.
 Version: 1.3 = created Set-CiresonPortalAnnouncement and Set-CoreSCSMAnnouncement to introduce announcement integration into the connector
                     by leveraging the new configurable [announcement] keyword and #low or #high tags to set priority on the announcement.
                     absence of the tag results in a normal priority announcement being created
