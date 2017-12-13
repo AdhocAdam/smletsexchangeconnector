@@ -1,15 +1,6 @@
 ﻿<#
 .SYNOPSIS
-Provides SCSM Exchange Connector functionality through PoPortalAnnouncement and Set-CoreSCSMAnnouncement to introduce announcement integration into the connector
-                    by leveraging the new configurable [announcement] keyword and #low or #high tags to set priority on the announcement.
-                    absence of the tag results in a normal priority announcement being created
-                created Get-SCSMAuthorizedAnnouncer to verify the sender's permissions to post announcements
-                created Get-CiresonPortalAnnouncements to search/update announcements
-                created Read-MIMEMessage to allow parsing digitally signed or encryped emails. This feature leverages the
-                    open source project known as MimeKit by Jeffrey Stedfast. It can be found here - https://github.com/jstedfast/MimeKit   
-                created Get-CiresonPortalUser to query for a user through the Cireson Web API to retrieve user information (object)
-                created Get-CiresonPortalGroup to query for a group through the Cireson Web API to retrieve group information (object)                          
-                created Search-AwerShell
+Provides SCSM Exchange Connector functionality through PowerShell
 
 .DESCRIPTION
 This PowerShell script/runbook aims to address shortcomings and wants in the
@@ -32,7 +23,16 @@ Misc: The Release Record functionality does not exist in this as no out of box (
 Version: 1.3.2 = Fixed issue when using the script other than on the SCSM Workflow server
 Version: 1.3.1 = Fixed issue matching users when AD connector syncs users that were renamed.
                 Changed how Request Offering suggestions are matched and made.
-Version: 1.3 = created Set-CiresonvailableCiresonPortalOfferings in order to look for relevant request offerings within a user's
+Version: 1.3 = created Set-CiresonPortalAnnouncement and Set-CoreSCSMAnnouncement to introduce announcement integration into the connector
+                    by leveraging the new configurable [announcement] keyword and #low or #high tags to set priority on the announcement.
+                    absence of the tag results in a normal priority announcement being created
+                created Get-SCSMAuthorizedAnnouncer to verify the sender's permissions to post announcements
+                created Get-CiresonPortalAnnouncements to search/update announcements
+                created Read-MIMEMessage to allow parsing digitally signed or encryped emails. This feature leverages the
+                    open source project known as MimeKit by Jeffrey Stedfast. It can be found here - https://github.com/jstedfast/MimeKit   
+                created Get-CiresonPortalUser to query for a user through the Cireson Web API to retrieve user information (object)
+                created Get-CiresonPortalGroup to query for a group through the Cireson Web API to retrieve group information (object)                          
+                created Search-AvailableCiresonPortalOfferings in order to look for relevant request offerings within a user's
                     Service Catalog scope to suggest relevant requests to the Affected User based on the content of their email           
                 improved/simplified Search-CiresonKnowledgeBase by use of new Get-CiresonPortalUser function              
                 created Get-SCOMDistributedAppHealth (SCOM integration) allows an authorized user to retrieve the health of
