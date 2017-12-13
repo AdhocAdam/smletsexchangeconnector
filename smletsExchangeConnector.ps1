@@ -1,6 +1,15 @@
 ﻿<#
 .SYNOPSIS
-Provides SCSM Exchange Connector functionality through PowerShell
+Provides SCSM Exchange Connector functionality through PoPortalAnnouncement and Set-CoreSCSMAnnouncement to introduce announcement integration into the connector
+                    by leveraging the new configurable [announcement] keyword and #low or #high tags to set priority on the announcement.
+                    absence of the tag results in a normal priority announcement being created
+                created Get-SCSMAuthorizedAnnouncer to verify the sender's permissions to post announcements
+                created Get-CiresonPortalAnnouncements to search/update announcements
+                created Read-MIMEMessage to allow parsing digitally signed or encryped emails. This feature leverages the
+                    open source project known as MimeKit by Jeffrey Stedfast. It can be found here - https://github.com/jstedfast/MimeKit   
+                created Get-CiresonPortalUser to query for a user through the Cireson Web API to retrieve user information (object)
+                created Get-CiresonPortalGroup to query for a group through the Cireson Web API to retrieve group information (object)                          
+                created Search-AwerShell
 
 .DESCRIPTION
 This PowerShell script/runbook aims to address shortcomings and wants in the
@@ -23,16 +32,7 @@ Misc: The Release Record functionality does not exist in this as no out of box (
 Version: 1.3.2 = Fixed issue when using the script other than on the SCSM Workflow server
 Version: 1.3.1 = Fixed issue matching users when AD connector syncs users that were renamed.
                 Changed how Request Offering suggestions are matched and made.
-Version: 1.3 = created Set-CiresonPortalAnnouncement and Set-CoreSCSMAnnouncement to introduce announcement integration into the connector
-                    by leveraging the new configurable [announcement] keyword and #low or #high tags to set priority on the announcement.
-                    absence of the tag results in a normal priority announcement being created
-                created Get-SCSMAuthorizedAnnouncer to verify the sender's permissions to post announcements
-                created Get-CiresonPortalAnnouncements to search/update announcements
-                created Read-MIMEMessage to allow parsing digitally signed or encryped emails. This feature leverages the
-                    open source project known as MimeKit by Jeffrey Stedfast. It can be found here - https://github.com/jstedfast/MimeKit   
-                created Get-CiresonPortalUser to query for a user through the Cireson Web API to retrieve user information (object)
-                created Get-CiresonPortalGroup to query for a group through the Cireson Web API to retrieve group information (object)                          
-                created Search-AvailableCiresonPortalOfferings in order to look for relevant request offerings within a user's
+Version: 1.3 = created Set-CiresonvailableCiresonPortalOfferings in order to look for relevant request offerings within a user's
                     Service Catalog scope to suggest relevant requests to the Affected User based on the content of their email           
                 improved/simplified Search-CiresonKnowledgeBase by use of new Get-CiresonPortalUser function              
                 created Get-SCOMDistributedAppHealth (SCOM integration) allows an authorized user to retrieve the health of
@@ -594,7 +594,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass -computername $scsmMGMTServer).id -computername $scsmMGMTServer} catch {}
                     if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser -computername $scsmMGMTServer | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                     try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass -computername $scsmMGMTServer).id -computername $scsmMGMTServer} catch {}
-                    if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+                    if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo -computername $scsmMGMTServer | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                     #write to the Action log
                     switch ($message.From)
                     {
@@ -946,7 +946,7 @@ function Create-UserInCMDB ($userEmail)
     $newID = $domain + "_" + $username + "_SMTP"
 
     #create the new user
-    $newUser = New-SCSMObject -Class $domainUserClass -PropertyHashtable @{"domain" = "$domainAndTLD"; "username" = "$username"; "displayname" = "$userEmail"} -PassThru
+    $newUser = New-SCSMObject -Class $domainUserClass -PropertyHashtable @{"domain" = "$domainAndTLD"; "username" = "$username"; "displayname" = "$userEmail"} -computername $scsmMGMTServer -PassThru
 
     #create the user notification projection
     $userNoticeProjection = @{__CLASS = "$($domainUserClass.Name)";
@@ -957,7 +957,7 @@ function Create-UserInCMDB ($userEmail)
                                 }
 
     #create the user's email notification channel
-    New-SCSMObjectProjection -Type "$($userHasPrefProjection.Name)" -Projection $userNoticeProjection
+    New-SCSMObjectProjection -Type "$($userHasPrefProjection.Name)" -Projection $userNoticeProjection -ComputerName $scsmMGMTServer
 
     return $newUser
 }
@@ -1321,17 +1321,17 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
         
         switch ($wiType)
         {
-            "ir" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "sr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "pr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "cr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "rr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+            "ir" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "sr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "pr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "cr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "rr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
 
             #activities
-            "ma" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "pa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+            "ma" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "pa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
         }
     }
 
@@ -1343,17 +1343,17 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
         
         switch ($wiType)
         {
-            "ir" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "sr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "pr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "cr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "rr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+            "ir" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "sr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "pr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "cr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "rr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
 
             #activities
-            "ma" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "pa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+            "ma" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "pa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
         }
     }
 }
@@ -1465,7 +1465,7 @@ function Set-CoreSCSMAnnouncement ($message, $workItem)
         if ($message.EndTime -eq $null) {$message.EndTime = $message.StartTime.AddHours($normalAnnouncemnentExpirationInHours)}
     }
 
-    $announcementClass = get-scsmclass "System.Announcement.Item$" -ComputerName $scsmMGMTServer
+    $announcementClass = get-scsmclass -name "System.Announcement.Item$" -ComputerName $scsmMGMTServer
     $announcementPropertyHashtable = @{"Title" = $announcementTitle; "Body" = $announcementBody; "ExpirationDate" = $message.EndTime.ToUniversalTime(); "Priority" = $scsmPriorityName}
 
     #get any current announcement to update, otherwise create
