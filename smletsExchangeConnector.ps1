@@ -21,6 +21,7 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
 Version: 1.3.2 = Fixed issue when using the script other than on the SCSM Workflow server
+                 Fixed issue when enabling/disabling features
 Version: 1.3.1 = Fixed issue matching users when AD connector syncs users that were renamed.
                 Changed how Request Offering suggestions are matched and made.
 Version: 1.3 = created Set-CiresonPortalAnnouncement and Set-CoreSCSMAnnouncement to introduce announcement integration into the connector
@@ -1824,7 +1825,14 @@ if ($processEncryptedMessages -eq $true)
 
 #finalize the where-object string by ensuring to look for all Unread Items
 $inboxFilterString = $inboxFilterString -join ' -or '
-$inboxFilterString = "(" + $inboxFilterString + " -or " +  $emailFilterString + ")" + " -and " + $unreadFilterString
+if ($inboxFilterString.length -eq 0)
+{
+    $inboxFilterString = "(" + $emailFilterString + ")" + " -and " + $unreadFilterString
+}
+else 
+{
+    $inboxFilterString = "(" + $inboxFilterString + " -or " + $emailFilterString + ")" + " -and " + $unreadFilterString
+}
 $inboxFilterString = [scriptblock]::Create("$inboxFilterString")
 
 #filter the inbox
