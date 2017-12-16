@@ -20,6 +20,8 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signged/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.3.2 = Fixed issue when using the script other than on the SCSM Workflow server
+                 Fixed issue when enabling/disabling features
 Version: 1.3.1 = Fixed issue matching users when AD connector syncs users that were renamed.
                 Changed how Request Offering suggestions are matched and made.
 Version: 1.3 = created Set-CiresonPortalAnnouncement and Set-CoreSCSMAnnouncement to introduce announcement integration into the connector
@@ -192,47 +194,47 @@ $mimeKitDLLPath = "c:\smletsExchangeConnector\mimekit.dll"
 #endregion
 
 #region #### SCSM Classes ####
-$irClass = get-scsmclass "System.WorkItem.Incident$" -computername $scsmMGMTServer
-$srClass = get-scsmclass "System.WorkItem.ServiceRequest$" -computername $scsmMGMTServer
-$prClass = get-scsmclass "System.WorkItem.Problem$" -computername $scsmMGMTServer
-$crClass = get-scsmclass "System.Workitem.ChangeRequest$" -computername $scsmMGMTServer
-$rrClass = get-scsmclass "System.Workitem.ReleaseRecord$" -computername $scsmMGMTServer
-$maClass = get-scsmclass "System.WorkItem.Activity.ManualActivity$" -computername $scsmMGMTServer
-$raClass = get-scsmclass "System.WorkItem.Activity.ReviewActivity$" -computername $scsmMGMTServer
-$paClass = get-scsmclass "System.WorkItem.Activity.ParallelActivity$" -computername $scsmMGMTServer
-$saClass = get-scsmclass "System.WorkItem.Activity.SequentialActivity$" -computername $scsmMGMTServer
-$daClass = get-scsmclass "System.WorkItem.Activity.DependentActivity$" -computername $scsmMGMTServer
+$irClass = get-scsmclass -name "System.WorkItem.Incident$" -computername $scsmMGMTServer
+$srClass = get-scsmclass -name "System.WorkItem.ServiceRequest$" -computername $scsmMGMTServer
+$prClass = get-scsmclass -name "System.WorkItem.Problem$" -computername $scsmMGMTServer
+$crClass = get-scsmclass -name "System.Workitem.ChangeRequest$" -computername $scsmMGMTServer
+$rrClass = get-scsmclass -name "System.Workitem.ReleaseRecord$" -computername $scsmMGMTServer
+$maClass = get-scsmclass -name "System.WorkItem.Activity.ManualActivity$" -computername $scsmMGMTServer
+$raClass = get-scsmclass -name "System.WorkItem.Activity.ReviewActivity$" -computername $scsmMGMTServer
+$paClass = get-scsmclass -name "System.WorkItem.Activity.ParallelActivity$" -computername $scsmMGMTServer
+$saClass = get-scsmclass -name "System.WorkItem.Activity.SequentialActivity$" -computername $scsmMGMTServer
+$daClass = get-scsmclass -name "System.WorkItem.Activity.DependentActivity$" -computername $scsmMGMTServer
 
-$raHasReviewerRelClass = Get-SCSMRelationshipClass "System.ReviewActivityHasReviewer$" -computername $scsmMGMTServer
-$raReviewerIsUserRelClass = Get-SCSMRelationshipClass "System.ReviewerIsUser$" -computername $scsmMGMTServer
-$raVotedByUserRelClass = Get-SCSMRelationshipClass "System.ReviewerVotedByUser$" -computername $scsmMGMTServer
+$raHasReviewerRelClass = Get-SCSMRelationshipClass -name "System.ReviewActivityHasReviewer$" -computername $scsmMGMTServer
+$raReviewerIsUserRelClass = Get-SCSMRelationshipClass -name "System.ReviewerIsUser$" -computername $scsmMGMTServer
+$raVotedByUserRelClass = Get-SCSMRelationshipClass -name "System.ReviewerVotedByUser$" -computername $scsmMGMTServer
 
-$userClass = get-scsmclass "System.User$" -computername $scsmMGMTServer
-$domainUserClass = get-scsmclass "System.Domain.User$" -computername $scsmMGMTServer
-$notificationClass = get-scsmclass "System.Notification.Endpoint$" -computername $scsmMGMTServer
+$userClass = get-scsmclass -name "System.User$" -computername $scsmMGMTServer
+$domainUserClass = get-scsmclass -name "System.Domain.User$" -computername $scsmMGMTServer
+$notificationClass = get-scsmclass -name "System.Notification.Endpoint$" -computername $scsmMGMTServer
 
-$irLowImpact = Get-SCSMEnumeration "System.WorkItem.TroubleTicket.ImpactEnum.Low$" -computername $scsmMGMTServer
-$irLowUrgency = Get-SCSMEnumeration "System.WorkItem.TroubleTicket.ImpactEnum.Low$" -computername $scsmMGMTServer
-$irActiveStatus = Get-SCSMEnumeration "IncidentStatusEnum.Active$" -computername $scsmMGMTServer
+$irLowImpact = Get-SCSMEnumeration -name "System.WorkItem.TroubleTicket.ImpactEnum.Low$" -computername $scsmMGMTServer
+$irLowUrgency = Get-SCSMEnumeration -name "System.WorkItem.TroubleTicket.ImpactEnum.Low$" -computername $scsmMGMTServer
+$irActiveStatus = Get-SCSMEnumeration -name "IncidentStatusEnum.Active$" -computername $scsmMGMTServer
 
-$affectedUserRelClass = get-scsmrelationshipclass "System.WorkItemAffectedUser$" -computername $scsmMGMTServer
-$assignedToUserRelClass  = Get-SCSMRelationshipClass "System.WorkItemAssignedToUser$" -computername $scsmMGMTServer
-$createdByUserRelClass = Get-SCSMRelationshipClass "System.WorkItemCreatedByUser$" -computername $scsmMGMTServer
-$workResolvedByUserRelClass = Get-SCSMRelationshipClass "System.WorkItem.TroubleTicketResolvedByUser$" -computername $scsmMGMTServer
-$wiRelatesToCIRelClass = Get-SCSMRelationshipClass "System.WorkItemRelatesToConfigItem$" -computername $scsmMGMTServer
-$wiRelatesToWIRelClass = Get-SCSMRelationshipClass "System.WorkItemRelatesToWorkItem$" -computername $scsmMGMTServer
-$wiContainsActivityRelClass = Get-SCSMRelationshipClass "System.WorkItemContainsActivity$" -computername $scsmMGMTServer
-$sysUserHasPrefRelClass = Get-SCSMRelationshipClass "System.UserHasPreference$" -ComputerName $scsmMGMTServer
+$affectedUserRelClass = get-scsmrelationshipclass -name "System.WorkItemAffectedUser$" -computername $scsmMGMTServer
+$assignedToUserRelClass  = Get-SCSMRelationshipClass -name "System.WorkItemAssignedToUser$" -computername $scsmMGMTServer
+$createdByUserRelClass = Get-SCSMRelationshipClass -name "System.WorkItemCreatedByUser$" -computername $scsmMGMTServer
+$workResolvedByUserRelClass = Get-SCSMRelationshipClass -name "System.WorkItem.TroubleTicketResolvedByUser$" -computername $scsmMGMTServer
+$wiRelatesToCIRelClass = Get-SCSMRelationshipClass -name "System.WorkItemRelatesToConfigItem$" -computername $scsmMGMTServer
+$wiRelatesToWIRelClass = Get-SCSMRelationshipClass -name "System.WorkItemRelatesToWorkItem$" -computername $scsmMGMTServer
+$wiContainsActivityRelClass = Get-SCSMRelationshipClass -name "System.WorkItemContainsActivity$" -computername $scsmMGMTServer
+$sysUserHasPrefRelClass = Get-SCSMRelationshipClass -name "System.UserHasPreference$" -ComputerName $scsmMGMTServer
 
 $fileAttachmentClass = Get-SCSMClass -Name "System.FileAttachment$" -computername $scsmMGMTServer
-$fileAttachmentRelClass = Get-SCSMRelationshipClass "System.WorkItemHasFileAttachment$" -computername $scsmMGMTServer
-$fileAddedByUserRelClass = Get-SCSMRelationshipClass "System.FileAttachmentAddedByUser$" -ComputerName $scsmMGMTServer
+$fileAttachmentRelClass = Get-SCSMRelationshipClass -name "System.WorkItemHasFileAttachment$" -computername $scsmMGMTServer
+$fileAddedByUserRelClass = Get-SCSMRelationshipClass -name "System.FileAttachmentAddedByUser$" -ComputerName $scsmMGMTServer
 $managementGroup = New-Object Microsoft.EnterpriseManagement.EnterpriseManagementGroup $scsmMGMTServer
 
-$irTypeProjection = Get-SCSMTypeProjection "system.workitem.incident.projectiontype$" -computername $scsmMGMTServer
-$srTypeProjection = Get-SCSMTypeProjection "system.workitem.servicerequestprojection$" -computername $scsmMGMTServer
+$irTypeProjection = Get-SCSMTypeProjection -name "system.workitem.incident.projectiontype$" -computername $scsmMGMTServer
+$srTypeProjection = Get-SCSMTypeProjection -name "system.workitem.servicerequestprojection$" -computername $scsmMGMTServer
 
-$userHasPrefProjection = Get-SCSMTypeProjection "System.User.Preferences.Projection$" -computername $scsmMGMTServer
+$userHasPrefProjection = Get-SCSMTypeProjection -name "System.User.Preferences.Projection$" -computername $scsmMGMTServer
 #endregion
 
 #region #### Exchange Connector Functions ####
@@ -593,7 +595,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass -computername $scsmMGMTServer).id -computername $scsmMGMTServer} catch {}
                     if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser -computername $scsmMGMTServer | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                     try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass -computername $scsmMGMTServer).id -computername $scsmMGMTServer} catch {}
-                    if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+                    if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo -computername $scsmMGMTServer | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                     #write to the Action log
                     switch ($message.From)
                     {
@@ -945,7 +947,7 @@ function Create-UserInCMDB ($userEmail)
     $newID = $domain + "_" + $username + "_SMTP"
 
     #create the new user
-    $newUser = New-SCSMObject -Class $domainUserClass -PropertyHashtable @{"domain" = "$domainAndTLD"; "username" = "$username"; "displayname" = "$userEmail"} -PassThru
+    $newUser = New-SCSMObject -Class $domainUserClass -PropertyHashtable @{"domain" = "$domainAndTLD"; "username" = "$username"; "displayname" = "$userEmail"} -computername $scsmMGMTServer -PassThru
 
     #create the user notification projection
     $userNoticeProjection = @{__CLASS = "$($domainUserClass.Name)";
@@ -956,7 +958,7 @@ function Create-UserInCMDB ($userEmail)
                                 }
 
     #create the user's email notification channel
-    New-SCSMObjectProjection -Type "$($userHasPrefProjection.Name)" -Projection $userNoticeProjection
+    New-SCSMObjectProjection -Type "$($userHasPrefProjection.Name)" -Projection $userNoticeProjection -ComputerName $scsmMGMTServer
 
     return $newUser
 }
@@ -1320,17 +1322,17 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
         
         switch ($wiType)
         {
-            "ir" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "sr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "pr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "cr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "rr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+            "ir" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "sr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "pr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "cr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "rr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
 
             #activities
-            "ma" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "pa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+            "ma" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "pa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
         }
     }
 
@@ -1342,17 +1344,17 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
         
         switch ($wiType)
         {
-            "ir" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "sr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "pr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "cr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "rr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+            "ir" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "sr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "pr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "cr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "rr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
 
             #activities
-            "ma" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "pa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
-            "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable}
+            "ma" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "pa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
+            "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable -ComputerName $scsmMGMTServer}
         }
     }
 }
@@ -1464,7 +1466,7 @@ function Set-CoreSCSMAnnouncement ($message, $workItem)
         if ($message.EndTime -eq $null) {$message.EndTime = $message.StartTime.AddHours($normalAnnouncemnentExpirationInHours)}
     }
 
-    $announcementClass = get-scsmclass "System.Announcement.Item$" -ComputerName $scsmMGMTServer
+    $announcementClass = get-scsmclass -name "System.Announcement.Item$" -ComputerName $scsmMGMTServer
     $announcementPropertyHashtable = @{"Title" = $announcementTitle; "Body" = $announcementBody; "ExpirationDate" = $message.EndTime.ToUniversalTime(); "Priority" = $scsmPriorityName}
 
     #get any current announcement to update, otherwise create
@@ -1823,7 +1825,14 @@ if ($processEncryptedMessages -eq $true)
 
 #finalize the where-object string by ensuring to look for all Unread Items
 $inboxFilterString = $inboxFilterString -join ' -or '
-$inboxFilterString = "(" + $inboxFilterString + " -or " +  $emailFilterString + ")" + " -and " + $unreadFilterString
+if ($inboxFilterString.length -eq 0)
+{
+    $inboxFilterString = "(" + $emailFilterString + ")" + " -and " + $unreadFilterString
+}
+else 
+{
+    $inboxFilterString = "(" + $inboxFilterString + " -or " + $emailFilterString + ")" + " -and " + $unreadFilterString
+}
 $inboxFilterString = [scriptblock]::Create("$inboxFilterString")
 
 #filter the inbox
