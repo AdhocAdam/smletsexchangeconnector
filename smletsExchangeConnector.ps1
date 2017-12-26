@@ -20,6 +20,8 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signged/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.4 = created $voteOnBehalfOfGroups configuration variable so as to introduce the ability for users to Vote on Behalf of a Group
+                created Get-SCSMUserByEmailAddress to simplify how often users are retrieved by email address
 Version: 1.3.2 = Fixed issue when using the script other than on the SCSM Workflow server
                  Fixed issue when enabling/disabling features
 Version: 1.3.1 = Fixed issue matching users when AD connector syncs users that were renamed.
@@ -83,6 +85,7 @@ $domain = ""
 #createUsersNotInCMDB = If someone from outside your org emails into SCSM this allows you to take that email and create a User in your CMDB
 #includeWholeEmail = If long chains get forwarded into SCSM, you can choose to write the whole email to a single action log entry OR the beginning to the first finding of "From:"
 #attachEmailToWorkItem = If $true, attach email as an *.eml to each work item. Additionally, write the Exchange Conversation ID into the Description of the Attachment object
+#voteOnBehalfOfGroups = If $true, Review Activities featuring an AD group can be Voted on Behalf of if one of the groups members Approve or Reject
 #fromKeyword = If $includeWholeEmail is set to true, messages will be parsed UNTIL they find this word
 $defaultNewWorkItem = "ir"
 $defaultIRTemplate = Get-SCSMObjectTemplate -DisplayName "IR Template Name Goes Here" -computername $scsmMGMTServer
@@ -91,6 +94,7 @@ $minFileSizeInKB = "25"
 $createUsersNotInCMDB = $true
 $includeWholeEmail = $false
 $attachEmailToWorkItem = $false
+$voteOnBehalfOfGroups = $false
 $fromKeyword = "From"
 
 #processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
@@ -525,7 +529,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         #both options are set to $false
                         #don't suggest anything to the Affected User based on their recently created Default Work Item
                     }
-                } 
+                }
     }
 
     if ($returnWIBool -eq $true)
@@ -699,29 +703,66 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                         $reviewingUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $reviewer -Relationship $raReviewerIsUserRelClass -computername $scsmMGMTServer).id -computername $scsmMGMTServer
                         $reviewingUserSMTP = Get-SCSMRelatedObject -SMObject $reviewingUser -computername $scsmMGMTServer | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress
                         
-                        #approved
-                        if (($reviewingUserSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$approvedKeyword]"))
+                        #Reviewer is a User
+                        if ([bool] (Get-ADUser -filter {samaccountname -eq $reviewingUser.UserName}))
                         {
-                            Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $commentToAdd} -computername $scsmMGMTServer
-                            New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk -computername $scsmMGMTServer
-                        }
-                        #rejected
-                        elseif (($reviewingUserSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$rejectedKeyword]"))
-                        {
-                            Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $commentToAdd} -computername $scsmMGMTServer
-                            New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk -computername $scsmMGMTServer
-                        }
-                        #no keyword, add a comment to parent work item
-                        elseif (($reviewingUserSMTP.TargetAddress -eq $message.From) -and (($commentToAdd -notmatch "\[$approvedKeyword]") -or ($commentToAdd -notmatch "\[$rejectedKeyword]")))
-                        {
-                            $parentWorkItem = Get-SCSMWorkItemParent $workItem.Get_Id().Guid
-                            switch ($parentWorkItem.Classname)
+                            #approved
+                            if (($reviewingUserSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$approvedKeyword]"))
                             {
-                                "System.WorkItem.ChangeRequest" {Add-ChangeRequestComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $false -IsPrivate $false}
-                                "System.WorkItem.ServiceRequest" {Add-ServiceRequestComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $false -IsPrivate $false}
-                                "System.WorkItem.Incident" {Add-IncidentComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $false -IsPrivate $false}
+                                    Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $commentToAdd} -computername $scsmMGMTServer
+                                    New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk -computername $scsmMGMTServer
                             }
-                            
+                            #rejected
+                            elseif (($reviewingUserSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$rejectedKeyword]"))
+                            {
+                                    Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $commentToAdd} -computername $scsmMGMTServer
+                                    New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk -computername $scsmMGMTServer
+                            }
+                            #no keyword, add a comment to parent work item
+                            elseif (($reviewingUserSMTP.TargetAddress -eq $message.From) -and (($commentToAdd -notmatch "\[$approvedKeyword]") -or ($commentToAdd -notmatch "\[$rejectedKeyword]")))
+                            {
+                                $parentWorkItem = Get-SCSMWorkItemParent $workItem.Get_Id().Guid
+                                switch ($parentWorkItem.Classname)
+                                {
+                                    "System.WorkItem.ChangeRequest" {Add-ChangeRequestComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $false -IsPrivate $false}
+                                    "System.WorkItem.ServiceRequest" {Add-ServiceRequestComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $false -IsPrivate $false}
+                                    "System.WorkItem.Incident" {Add-IncidentComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $false -IsPrivate $false}
+                                }                       
+                            }
+                        }
+                        #Reviewer is a Group and "Voting on Behalf of Groups" is enabled
+                        elseif  ([bool] (Get-ADGroup -filter {samaccountname -eq $reviewingUser.UserName}) -and ($voteOnBehalfOfGroups -eq $true))
+                        {
+                            $reviewerGroupMembers = Get-ADGroupMember $reviewingUser.UserName | Get-ADUser -Properties emailaddress
+                            $votedOnBehalfOfUser = Get-SCSMUserByEmailAddress -EmailAddress $message.From
+
+                            #approved on behalf of
+                            if (($reviewerGroupMembers.EmailAddress -contains $message.From) -and ($commentToAdd -match "\[$approvedKeyword]"))
+                            {
+                                Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $commentToAdd} -computername $scsmMGMTServer
+                                New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $votedOnBehalfOfUser -Bulk -computername $scsmMGMTServer
+                            }
+                            #rejected on behalf of
+                            elseif (($reviewerGroupMembers.EmailAddress -contains $message.From) -and ($commentToAdd -match "\[$rejectedKeyword]"))
+                            {
+                                Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $commentToAdd} -computername $scsmMGMTServer
+                                New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $votedOnBehalfOfUser -Bulk -computername $scsmMGMTServer
+                            }
+                            #no keyword, add a comment to parent work item
+                            elseif (($reviewerGroupMembers.EmailAddress -contains $message.From) -and (($commentToAdd -notmatch "\[$approvedKeyword]") -or ($commentToAdd -notmatch "\[$rejectedKeyword]")))
+                            {
+                                $parentWorkItem = Get-SCSMWorkItemParent $workItem.Get_Id().Guid
+                                switch ($parentWorkItem.Classname)
+                                {
+                                    "System.WorkItem.ChangeRequest" {Add-ChangeRequestComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -AnalystComment $false -IsPrivate $false}
+                                    "System.WorkItem.ServiceRequest" {Add-ServiceRequestComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -AnalystComment $false -IsPrivate $false}
+                                    "System.WorkItem.Incident" {Add-IncidentComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -AnalystComment $false -IsPrivate $false}
+                                }
+                            }
+                        }
+                        else
+                        {
+                            #not a user or a group 
                         }
                     }
                 }
@@ -881,6 +922,16 @@ function Get-WorkItem ($workItemID, $workItemClass)
     #get the work item
     $wi = get-scsmobject -Class $workItemClass -Filter "Name -eq '$workItemID'" -computername $scsmMGMTServer
     return $wi
+}
+
+function Get-SCSMUserByEmailAddress ($EmailAddress)
+{
+    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$EmailAddress'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
+    if ($userSMTPNotification) 
+    { 
+        $user = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
+    }
+    return $user
 }
 
 #courtesy of Leigh Kilday. Modified.
