@@ -13,7 +13,7 @@ Author: Adam Dzyacky
 Contributors: Martin Blomgren, Leigh Kilday
 Reviewers: Tom Hendricks, Brian Weist
 Inspiration: The Cireson Community, Anders Asp, Stefan Roth, and (of course) Travis Wright for SMlets examples
-Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installed on SCSM workflow server).
+Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installed on SCSM workflow server by virtue of stock Exchange Connector).
     3rd party option: If you're a Cireson customer and make use of their paid SCSM Portal with HTML Knowledge Base this will work as is
         if you aren't, you'll need to create your own Type Projection for Change Requests for the Add-ChangeRequestComment
         function. Navigate to that function to read more. If you don't make use of their HTML KB, you'll want to keep $searchCiresonHTMLKB = $false
@@ -22,6 +22,8 @@ Misc: The Release Record functionality does not exist in this as no out of box (
     You would have to create your own Type Projection in order to leverage this.
 Version: 1.4 = created $voteOnBehalfOfGroups configuration variable so as to introduce the ability for users to Vote on Behalf of a Group
                 created Get-SCSMUserByEmailAddress to simplify how often users are retrieved by email address
+                changed areas that request a user object by email with the new Get-SCSMUserByEmailAddress function
+                added ability to create Problems as the default new work item
 Version: 1.3.2 = Fixed issue when using the script other than on the SCSM Workflow server
                  Fixed issue when enabling/disabling features
 Version: 1.3.1 = Fixed issue matching users when AD connector syncs users that were renamed.
@@ -80,7 +82,8 @@ $username = ""
 $password = ""
 $domain = ""
 
-#defaultNewWorkItem = set to either "ir" or "sr"
+#defaultNewWorkItem = set to either "ir" or "sr" or "pr"
+#default*RTemplate = define the displayname of the template you'll be using based on what you've set for $defaultNewWorkItem
 #minFileSizeInKB = Set the minimum file size in kilobytes to be attached to work items
 #createUsersNotInCMDB = If someone from outside your org emails into SCSM this allows you to take that email and create a User in your CMDB
 #includeWholeEmail = If long chains get forwarded into SCSM, you can choose to write the whole email to a single action log entry OR the beginning to the first finding of "From:"
@@ -90,6 +93,7 @@ $domain = ""
 $defaultNewWorkItem = "ir"
 $defaultIRTemplate = Get-SCSMObjectTemplate -DisplayName "IR Template Name Goes Here" -computername $scsmMGMTServer
 $defaultSRTemplate = Get-SCSMObjectTemplate -DisplayName "SR Template Name Goes Here" -computername $scsmMGMTServer
+$defaultPRTemplate = Get-SCSMObjectTemplate -DisplayName "PR Template Name Goes Here" -computername $scsmMGMTServer
 $minFileSizeInKB = "25"
 $createUsersNotInCMDB = $true
 $includeWholeEmail = $false
@@ -116,7 +120,7 @@ $mergeReplies = $false
 
 #optional, enable integration with Cireson Knowledge Base/Service Catalog
 #this uses the now depricated Cireson KB API Search by Text, it works as of v7.x but should be noted it could be entirely removed in future portals
-#$numberOfWordsToMatchFromEmailToRO = defines the minimum number of words that must be matched from an email/new work item before Knowledge Articles will be
+#$numberOfWordsToMatchFromEmailToRO = defines the minimum number of words that must be matched from an email/new work item before Request Offerings will be
     #suggested to the Affected User about them
 #searchAvailableCiresonPortalOfferings = search available Request Offerings within the Affected User's permission scope based words matched in
     #their email/new work item
@@ -237,6 +241,7 @@ $managementGroup = New-Object Microsoft.EnterpriseManagement.EnterpriseManagemen
 
 $irTypeProjection = Get-SCSMTypeProjection -name "system.workitem.incident.projectiontype$" -computername $scsmMGMTServer
 $srTypeProjection = Get-SCSMTypeProjection -name "system.workitem.servicerequestprojection$" -computername $scsmMGMTServer
+$prTypeProjection = Get-SCSMTypeProjection -name "system.workitem.problem.projectiontype$" -computername $scsmMGMTServer
 
 $userHasPrefProjection = Get-SCSMTypeProjection -name "System.User.Preferences.Projection$" -computername $scsmMGMTServer
 #endregion
@@ -528,6 +533,21 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     {
                         #both options are set to $false
                         #don't suggest anything to the Affected User based on their recently created Default Work Item
+                    }
+                }
+        "pr" {
+                    $newWorkItem = new-scsmobject -class $prClass -propertyhashtable @{"ID" = "PR{0}"; "Title" = $title; "Description" = $description; "Status" = "ProblemStatusEnum.Active$"} -PassThru -computername $scsmMGMTServer
+                    $prProjection = Get-SCSMObjectProjection -ProjectionName $prTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" -computername $scsmMGMTServer
+                    if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
+                    if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
+                    Set-SCSMObjectTemplate -Projection $prProjection -Template $defaultPRTemplate -computername $scsmMGMTServer
+                    #no Affected User to set on a Problem, jump to adding Related Users
+                    if ($relatedUsers)
+                    {
+                        foreach ($relatedUser in $relatedUsers)
+                        {
+                            New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $newWorkItem -Target $relatedUser -Bulk -computername $scsmMGMTServer
+                        }
                     }
                 }
     }
@@ -930,8 +950,12 @@ function Get-SCSMUserByEmailAddress ($EmailAddress)
     if ($userSMTPNotification) 
     { 
         $user = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
+        return $user
     }
-    return $user
+    else
+    {
+        return $null
+    }
 }
 
 #courtesy of Leigh Kilday. Modified.
