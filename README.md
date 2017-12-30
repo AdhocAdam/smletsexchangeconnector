@@ -9,8 +9,15 @@ The stock Exchange Connector is a seperate download for SCSM 2012+ that enables 
 This is aimed at SCSM administrators looking to further push the automation limits of what their SCSM deployment can do with inbound email processing. As such, you should be comfortable with PowerShell and navigating SCSM via SMlets.
 
 ## What new things can it do?
-Vote on Behalf of Active Directory Group (v1.4)
-- The connector can now optionally process Active Groups featured on Review Activities. Now, when a member of the group either approves or rejects the vote, their vote will be counted on behalf of the group through the "Voted By" relationship and their comment appended to the vote.
+<table border="0">
+  <tr>
+    <td colspan="3">Vote on Behalf of Active Directory Group (v1.4) </td>
+  </tr>
+  <tr>
+    <td>placeholder</td>
+    <td>The connector can now optionally process Active Groups featured on Review Activities. Now, when a member of the group either approves or rejects the vote, their vote will be counted on behalf of the group through the &quot;Voted By&quot; relationship and their comment appended to the vote. </td>
+  </tr>
+</table>
 
 Announcement Integration with Core SCSM and Cireson Portal (v1.3)
 - Using the configuable [announcement] keyword you can post announcements to core SCSM and/or the Cireson portal when this keyword is featured in the body of your message. The priority can be controlled through the optional and configurable #low or #high tags. Absence of these optional #hashtags will default to a normal priority announcement. If you're creating announcements in the Cireson Portal, an announcement will be created for each group discovered on the message's To or CC lines. Thus allowing you to email several distro groups and simultaneously create targeted announcements for them. Announcements created through either means (SCSM/Cireson Portal) can be updated in the future by simply keeping the [Work Item] in the subject of your [announcement] based messages. Finally, announcements can only be created when the Sender's email is in an allowed style list or the Sender is part of a configurable Active Directory group.
