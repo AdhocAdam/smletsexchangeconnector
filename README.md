@@ -15,7 +15,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
   </tr>
   <tr>
     <td>placeholder</td>
-    <td>The connector can now optionally process Active Groups featured on Review Activities. Now, when a member of the group either approves or rejects the vote, their vote will be counted on behalf of the group through the &quot;Voted By&quot; relationship and their comment appended to the vote. </td>
+    <td>The connector can now optionally process Active Directory Groups featured on Review Activities. Now, when a member of the group either approves or rejects the vote, their vote will be counted on behalf of the group through the &quot;Voted By&quot; relationship and their comment appended to the vote. </td>
   </tr>
 </table>
 
