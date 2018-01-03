@@ -69,7 +69,7 @@ File Attachment "Added by"
 
 <table border="0">
   <tr>
-    <td colspan="3">Incident, Service Request, Change Request, Problem</td>
+    <td colspan="3"><i>Incident, Service Request, Change Request, Problem</i></td>
   </tr>
   <tr>
     <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/take.png" /></td>
