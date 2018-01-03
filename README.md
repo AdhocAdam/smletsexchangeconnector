@@ -67,8 +67,15 @@ Minimum File Attachment Size
 File Attachment "Added by"
 - When an email is sent with attachments, the "File Attachment Added By User" relationship will be set based on the Sender if the user is found in the CMDB
 
-Incident, Service Request, Change Request, Problem
-- [Take] - When emailing your workflow account, it will assign the Incident, Service Request, Change Request, or Problem to you (from address) when this keyword is featured in the body of the email.
+<table border="0">
+  <tr>
+    <td colspan="3">Incident, Service Request, Change Request, Problem</td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/take.png" /></td>
+    <td width="auto">[Take] - When emailing your workflow account, it will assign the Incident, Service Request, Change Request, or Problem to you (from address) when this keyword is featured in the body of the email.</td>
+  </tr>
+</table>
 
 Incident
 - [Reactivate] - When submitted to a Resolved Incident, it will be reactivated. When submitted to a Closed Incident, a New Incident will be created and the two related to one another.
