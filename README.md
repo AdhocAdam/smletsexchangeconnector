@@ -14,7 +14,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3">Vote on Behalf of Active Directory Group (v1.4) </td>
   </tr>
   <tr>
-    <td>placeholder</td>
+    <td><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/voteOnBehalfOf.png" /></td>
     <td>The connector can now optionally process Active Directory Groups featured on Review Activities. Now, when a member of the group either approves or rejects the vote, their vote will be counted on behalf of the group through the &quot;Voted By&quot; relationship and their comment appended to the vote. </td>
   </tr>
 </table>
