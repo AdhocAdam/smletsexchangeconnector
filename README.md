@@ -19,8 +19,15 @@ This is aimed at SCSM administrators looking to further push the automation limi
   </tr>
 </table>
 
-Announcement Integration with Core SCSM and Cireson Portal (v1.3)
-- Using the configuable [announcement] keyword you can post announcements to core SCSM and/or the Cireson portal when this keyword is featured in the body of your message. The priority can be controlled through the optional and configurable #low or #high tags. Absence of these optional #hashtags will default to a normal priority announcement. If you're creating announcements in the Cireson Portal, an announcement will be created for each group discovered on the message's To or CC lines. Thus allowing you to email several distro groups and simultaneously create targeted announcements for them. Announcements created through either means (SCSM/Cireson Portal) can be updated in the future by simply keeping the [Work Item] in the subject of your [announcement] based messages. Finally, announcements can only be created when the Sender's email is in an allowed style list or the Sender is part of a configurable Active Directory group.
+<table border="0">
+  <tr>
+    <td colspan="3">Announcement Integration with Core SCSM and Cireson Portal (v1.3)</td>
+  </tr>
+  <tr>
+    <td><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/announcements.png" /></td>
+    <td>Using the configuable [announcement] keyword you can post announcements to core SCSM and/or the Cireson portal when this keyword is featured in the body of your message. The priority can be controlled through the optional and configurable #low or #high tags. Absence of these optional #hashtags will default to a normal priority announcement. If you're creating announcements in the Cireson Portal, an announcement will be created for each group discovered on the message's To or CC lines. Thus allowing you to email several distro groups and simultaneously create targeted announcements for them. Announcements created through either means (SCSM/Cireson Portal) can be updated in the future by simply keeping the [Work Item] in the subject of your [announcement] based messages. Finally, announcements can only be created when the Sender's email is in an allowed style list or the Sender is part of a configurable Active Directory group.</td>
+  </tr>
+</table>
 
 Search Cireson Portal Service Catalog (v1.3)
 - When enabled this feature will email the Affected User suggested Cireson Portal Request Offerings within the Affected User's Service Catalog permission scope based on the content of their email when a New Work Item is generated. This feature has been tested and confirmed working with v7.x and v8.x of their SCSM portal. If both this and the "Search Cireson HTML Knowledge Base" feature are enabled, only a single summarized email will be sent to the Affected User containing links to Knowledge Articles and Request Offerings.
@@ -28,8 +35,15 @@ Search Cireson Portal Service Catalog (v1.3)
 Send Outlook Meeting (v1.3)
 - Building upon the previous version's "Schedule Work Item", this feature introduces a Cireson SCSM Portal Task (via CustomSpace/custom.js) that kicks open your local Outlook client to send meeting requests on Work Items to the Affected User and your workflow account (or just your workflow if no Affected User is present). In doing so, further rounding out the Schedule Work Item feature by setting Scheduled Start/End Dates when the connector processes Calendar items.
 
-Digitally Signed and Encrypted Emails (v1.3)
-- Leveraging the open source [MimeKit](https://github.com/jstedfast/MimeKit) project by Jeffrey Stedfast, the connector can now process digitally signed or encrypted emails just like regular mail. This requires an appropriate certificate in either the user's personal cert store or the local machine's personal cert store.
+<table border="0">
+  <tr>
+    <td colspan="3">Digitally Signed and Encrypted Emails (v1.3)</td>
+  </tr>
+  <tr>
+    <td><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/digitalCertificates.png" /></td>
+    <td>Leveraging the open source <A href="https://github.com/jstedfast/MimeKit">MimeKit</A> project by Jeffrey Stedfast, the connector can now process digitally signed or encrypted emails just like regular mail. This requires an appropriate certificate in either the user's personal cert store or the local machine's personal cert store.</td>
+  </tr>
+</table>
 
 System Center Operations Manager (SCOM) Integration (v1.3)
 - Using the configurable [health] keyword in the subject, authorized users (as defined individually or through an Active Directory group) can request the overall Health and Alert counts of a [Distributed Application] by placing it in the body of the email. Unauthorized users will have New Default Work Items created within SCSM.
