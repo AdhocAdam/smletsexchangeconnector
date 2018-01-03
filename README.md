@@ -51,8 +51,15 @@ System Center Operations Manager (SCOM) Integration (v1.3)
 Merge Replies from Related Users instead of Creating New Default Work Items (v1.2)
 - If a user emails the SCSM Workflow Account and also adds additional users to the To/CC lines those related users are automatically added to the Related Items tab of a New Work Item. However in these scenarios, it's possible that one of those users could reply within the same processing loop of the Exchange Connector. As a result, they will queue more emails to be turned into New Default Work Items. This feature aims to address the scenario by querying Exchange Inbox/Deleted Items for matching Conversation Topics and ConversationIDs, finding the original item in the thread, searching for the Work Item that already exists in SCSM, and then appending their Reply to its Action Log
 
-Schedule Work Items (v1.2)
-- It's now possible to interact with SCSM via Outlook Calendar Meetings! When a Calendar Meeting is sent, the Scheduled Start Date and Scheduled End Date will be set on the Work Item based on the start/end times of the meeting. If the work item cannot be found/does not exist, a new default work item is created and it's scheduled start/end tiems set accordingly. Upon success, the meeting will be accepted onto the workflow account's calendar and the requester will receive confirmation of the booking. This introduces the possibility of leveraging the workflow's calendar as a central place to see all Scheduled Work Items. Using [Cireson's Outlook Plugin](http://cireson.com/apps/outlook-console/)? When setting a Work Item reminder in Outlook, you can now CC your workflow account to update values on the Work Item.
+<table border="0">
+  <tr>
+    <td colspan="3">Schedule Work Items (v1.2)</td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/outlookMeeting.png" /></td>
+    <td width="auto">It's now possible to interact with SCSM via Outlook Calendar Meetings! When a Calendar Meeting is sent, the Scheduled Start Date and Scheduled End Date will be set on the Work Item based on the start/end times of the meeting. If the work item cannot be found/does not exist, a new default work item is created and it's scheduled start/end tiems set accordingly. Upon success, the meeting will be accepted onto the workflow account's calendar and the requester will receive confirmation of the booking. This introduces the possibility of leveraging the workflow's calendar as a central place to see all Scheduled Work Items. Using [Cireson's Outlook Plugin](http://cireson.com/apps/outlook-console/)? When setting a Work Item reminder in Outlook, you can now CC your workflow account to update values on the Work Item.</td>
+  </tr>
+</table>
 
 Minimum File Attachment Size
 - You can set a minimum size in KB. In doing so, files less than the defined size will not be added to the work item (i.e. corporate signature graphics won't be added)
