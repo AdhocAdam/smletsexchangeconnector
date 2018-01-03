@@ -11,7 +11,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
-    <td colspan="3">Vote on Behalf of Active Directory Group (v1.4) </td>
+    <td colspan="3"><i>Vote on Behalf of Active Directory Group (v1.4)</i></td>
   </tr>
   <tr>
     <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/voteOnBehalfOf.png" /></td>
@@ -21,7 +21,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
 
 <table border="0">
   <tr>
-    <td colspan="3">Announcement Integration with Core SCSM and Cireson Portal (v1.3)</td>
+    <td colspan="3"><i>Announcement Integration with Core SCSM and Cireson Portal (v1.3)</i></td>
   </tr>
   <tr>
     <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/announcements.png" /></td>
@@ -37,7 +37,7 @@ Send Outlook Meeting (v1.3)
 
 <table border="0">
   <tr>
-    <td colspan="3">Digitally Signed and Encrypted Emails (v1.3)</td>
+    <td colspan="3"><i>Digitally Signed and Encrypted Emails (v1.3)</i></td>
   </tr>
   <tr>
     <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/digitalCertificates.png" /></td>
@@ -53,7 +53,7 @@ Merge Replies from Related Users instead of Creating New Default Work Items (v1.
 
 <table border="0">
   <tr>
-    <td colspan="3">Schedule Work Items (v1.2)</td>
+    <td colspan="3"><i>Schedule Work Items (v1.2)</i></td>
   </tr>
   <tr>
     <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/outlookMeeting.png" /></td>
