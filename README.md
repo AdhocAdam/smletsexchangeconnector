@@ -91,8 +91,15 @@ This is aimed at SCSM administrators looking to further push the automation limi
   </tr>
 </table>
 
-*Incident*
-- [Reactivate] - When submitted to a Resolved Incident, it will be reactivated. When submitted to a Closed Incident, a New Incident will be created and the two related to one another.
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Incident</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/reactivate.png" /></td>
+    <td width="auto">[Reactivate] - When submitted to a Resolved Incident, it will be reactivated. When submitted to a Closed Incident, a New Incident will be created and the two related to one another.</td>
+  </tr>
+</table>
 
 *Change Request*
 - [Hold] - Place the Change Request On-Hold when this keyword is featured in the body of the email
