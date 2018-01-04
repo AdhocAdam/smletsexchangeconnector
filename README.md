@@ -101,9 +101,19 @@ This is aimed at SCSM administrators looking to further push the automation limi
   </tr>
 </table>
 
-*Change Request*
-- [Hold] - Place the Change Request On-Hold when this keyword is featured in the body of the email
-- [Cancel] - Cancel the Change Request when this keyword is featured in the body of the email
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Change Request</i></td>
+  </tr>
+  <tr>
+    <td width="200">&nbsp;</td>
+    <td width="auto">[Hold] - Place the Change Request On-Hold when this keyword is featured in the body of the email</td>
+  </tr>
+  <tr>
+    <td width="200">&nbsp;</td>
+    <td width="auto">[Cancel] - Cancel the Change Request when this keyword is featured in the body of the email</td>
+  </tr>
+</table>
 
 *Manual Activity*
 - [Skipped] - Skip the activity when this keyword is featured in the body of the email
@@ -113,8 +123,15 @@ This is aimed at SCSM administrators looking to further push the automation limi
 *Review Activity*
 - Any reviewer who leaves a comment that doesn't contain [Approved] or [Rejected] will have their comment added to the highest level Parent Work Item. This addresses a scenario where users not familiar with SCSM (i.e. departments outside of IT) respond back to the email thinking someone is reading the message on your workflow account. Now their comments aren't simply lost, but instead given the visibility they deserve!
 
-*Incident and Service Request*
-- #private - When the message is attached to the action log, it will be marked as private if #private is featured in the body of the message.
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Incident and Service Request</i></td>
+  </tr>
+  <tr>
+    <td width="200">&nbsp;</td>
+    <td width="auto">#private - When the message is attached to the action log, it will be marked as private if #private is featured in the body of the message.</td>
+  </tr>
+</table>
 
 *Assigned To/Affected User relationships on the Action Log*
 - When someone who isn't the Assigned To/Affected User leaves a comment on the Action Log the comment's "IsPrivate" flag is marked as null (this is a bug in the EC v3.0 and v3.1 that has yet to be addressed by Microsoft). As such Cireson's Action Log Notify has no qualifier to go of off. With this script, the same functionality is present but now can be altered to get in line with SCSM and Cireson's MP.
