@@ -71,8 +71,15 @@ Merge Replies from Related Users instead of Creating New Default Work Items (v1.
 Minimum File Attachment Size
 - You can set a minimum size in KB. In doing so, files less than the defined size will not be added to the work item (i.e. corporate signature graphics won't be added)
 
-File Attachment "Added by"
-- When an email is sent with attachments, the "File Attachment Added By User" relationship will be set based on the Sender if the user is found in the CMDB
+<table border="0">
+  <tr>
+    <td colspan="3"><i>File Attachment &quot;Attached by&quot;</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/attachedBy.png" /></td>
+    <td width="auto">When an email is sent with attachments, the &quot;File Attachment Added By User&quot; relationship will be set based on the Sender if the user is found in the CMDB</td>
+  </tr>
+</table>
 
 <table border="0">
   <tr>
