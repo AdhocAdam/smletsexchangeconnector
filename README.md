@@ -9,6 +9,8 @@ The stock Exchange Connector is a seperate download for SCSM 2012+ that enables 
 This is aimed at SCSM administrators looking to further push the automation limits of what their SCSM deployment can do with inbound email processing. As such, you should be comfortable with PowerShell and navigating SCSM via SMlets.
 
 ## What new things can it do?
+*Create Problems or Change Requests by Default (v1.4)*
+- Whether you're dealing with external vendors or streamlining process, you can now configure the connector to create either Problems or Change Requests by default.
 <table border="0">
   <tr>
     <td colspan="3"><i>Vote on Behalf of Active Directory Group (v1.4)</i></td>
