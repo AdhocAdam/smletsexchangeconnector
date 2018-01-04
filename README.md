@@ -128,8 +128,8 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>Incident and Service Request</i></td>
   </tr>
   <tr>
-    <td width="200">&nbsp;</td>
-    <td width="auto">#private - When the message is attached to the action log, it will be marked as private if #private is featured in the body of the message.</td>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/privateComment.png" /></td>
+    <td width="auto">#private - When the message is attached to the Action Log, it will be marked as private if #private is featured in the body of the message.</td>
   </tr>
 </table>
 
