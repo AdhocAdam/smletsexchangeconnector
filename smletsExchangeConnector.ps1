@@ -23,7 +23,8 @@ Misc: The Release Record functionality does not exist in this as no out of box (
 Version: 1.4 = created $voteOnBehalfOfGroups configuration variable so as to introduce the ability for users to Vote on Behalf of a Group
                 created Get-SCSMUserByEmailAddress to simplify how often users are retrieved by email address
                 changed areas that request a user object by email with the new Get-SCSMUserByEmailAddress function
-                added ability to create Problems as the default new work item
+                added ability to create Problems and Change Requests as the default new work item
+                Fixed issue when creating a New SR with activities, used identical approach for New CR functionality
 Version: 1.3.2 = Fixed issue when using the script other than on the SCSM Workflow server
                  Fixed issue when enabling/disabling features
 Version: 1.3.1 = Fixed issue matching users when AD connector syncs users that were renamed.
@@ -82,7 +83,7 @@ $username = ""
 $password = ""
 $domain = ""
 
-#defaultNewWorkItem = set to either "ir" or "sr" or "pr"
+#defaultNewWorkItem = set to either "ir", "sr", "pr", or "cr"
 #default*RTemplate = define the displayname of the template you'll be using based on what you've set for $defaultNewWorkItem
 #minFileSizeInKB = Set the minimum file size in kilobytes to be attached to work items
 #createUsersNotInCMDB = If someone from outside your org emails into SCSM this allows you to take that email and create a User in your CMDB
@@ -94,6 +95,7 @@ $defaultNewWorkItem = "ir"
 $defaultIRTemplate = Get-SCSMObjectTemplate -DisplayName "IR Template Name Goes Here" -computername $scsmMGMTServer
 $defaultSRTemplate = Get-SCSMObjectTemplate -DisplayName "SR Template Name Goes Here" -computername $scsmMGMTServer
 $defaultPRTemplate = Get-SCSMObjectTemplate -DisplayName "PR Template Name Goes Here" -computername $scsmMGMTServer
+$defaultCRTemplate = Get-SCSMObjectTemplate -DisplayName "CR Template Name Goes Here" -computername $scsmMGMTServer
 $minFileSizeInKB = "25"
 $createUsersNotInCMDB = $true
 $includeWholeEmail = $false
@@ -242,6 +244,7 @@ $managementGroup = New-Object Microsoft.EnterpriseManagement.EnterpriseManagemen
 $irTypeProjection = Get-SCSMTypeProjection -name "system.workitem.incident.projectiontype$" -computername $scsmMGMTServer
 $srTypeProjection = Get-SCSMTypeProjection -name "system.workitem.servicerequestprojection$" -computername $scsmMGMTServer
 $prTypeProjection = Get-SCSMTypeProjection -name "system.workitem.problem.projectiontype$" -computername $scsmMGMTServer
+$crTypeProjection = Get-SCSMTypeProjection -Name "system.workitem.changerequestprojection$" -computername $scsmMGMTServer
 
 $userHasPrefProjection = Get-SCSMTypeProjection -name "System.User.Preferences.Projection$" -computername $scsmMGMTServer
 #endregion
@@ -263,7 +266,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
 
     #find Affected User from the From Address
     $relatedUsers = @()
-    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$from'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
+    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$from'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select-object -first 1
     if ($userSMTPNotification) 
     { 
         $affectedUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
@@ -281,7 +284,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     {
         if ($to.count -eq 1)
         {
-            $userToSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($to.address)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
+            $userToSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($to.address)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select-object -first 1
             if ($userToSMTPNotification) 
             { 
                 $relatedUser = (Get-SCSMRelationshipObject -ByTarget $userToSMTPNotification -computername $scsmMGMTServer).sourceObject 
@@ -302,7 +305,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
             while ($x -lt $to.count)
             {
                 $ToSMTP = $to[$x]
-                $userToSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($ToSMTP.address)'"  -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
+                $userToSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($ToSMTP.address)'"  -computername $scsmMGMTServer | sort-object lastmodified -Descending | select-object -first 1
                 if ($userToSMTPNotification) 
                 { 
                     $relatedUser = (Get-SCSMRelationshipObject -ByTarget $userToSMTPNotification -computername $scsmMGMTServer).sourceObject 
@@ -326,7 +329,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     {
         if ($cced.count -eq 1)
         {
-            $userCCSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($cced.address)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
+            $userCCSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($cced.address)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select-object -first 1
             if ($userCCSMTPNotification) 
             { 
                 $relatedUser = (Get-SCSMRelationshipObject -ByTarget $userCCSMTPNotification -computername $scsmMGMTServer).sourceObject 
@@ -347,7 +350,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
             while ($x -lt $cced.count)
             {
                 $ccSMTP = $cced[$x]
-                $userCCSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($ccSMTP.address)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
+                $userCCSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($ccSMTP.address)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select-object -first 1
                 if ($userCCSMTPNotification) 
                 { 
                     $relatedUser = (Get-SCSMRelationshipObject -ByTarget $userCCSMTPNotification -computername $scsmMGMTServer).sourceObject 
@@ -453,11 +456,12 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     }
                 }
         "sr" {
-                    $newWorkItem = new-scsmobject -class $srClass -propertyhashtable @{"ID" = "SR{0}"; "Title" = $title; "Description" = $description; "Status" = "ServiceRequestStatusEnum.Submitted$"} -PassThru -computername $scsmMGMTServer
+                    $newWorkItem = new-scsmobject -class $srClass -propertyhashtable @{"ID" = "SR{0}"; "Title" = $title; "Description" = $description; "Status" = "ServiceRequestStatusEnum.New$"} -PassThru -computername $scsmMGMTServer
                     $srProjection = Get-SCSMObjectProjection -ProjectionName $srTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" -computername $scsmMGMTServer
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
-                    Set-SCSMObjectTemplate -projection $srProjection -Template $defaultSRTemplate -computername $scsmMGMTServer
+                    Apply-SCSMTemplate -Projection $srProjection -Template $defaultSRTemplate
+                    #Set-SCSMObjectTemplate -projection $srProjection -Template $defaultSRTemplate -computername $scsmMGMTServer
                     if ($affectedUser)
                     {
                         New-SCSMRelationshipObject -Relationship $createdByUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk -computername $scsmMGMTServer
@@ -541,7 +545,33 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Set-SCSMObjectTemplate -Projection $prProjection -Template $defaultPRTemplate -computername $scsmMGMTServer
-                    #no Affected User to set on a Problem, jump to adding Related Users
+                    #no Affected User to set on a Problem, set Created By using the Affected User object if it exists
+                    if ($affectedUser)
+                    {
+                        New-SCSMRelationshipObject -Relationship $createdByUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk -computername $scsmMGMTServer
+                    }
+                    if ($relatedUsers)
+                    {
+                        foreach ($relatedUser in $relatedUsers)
+                        {
+                            New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $newWorkItem -Target $relatedUser -Bulk -computername $scsmMGMTServer
+                        }
+                    }
+                }
+        "cr" {
+                    $newWorkItem = new-scsmobject -class $crClass -propertyhashtable @{"ID" = "CR{0}"; "Title" = $title; "Description" = $description; "Status" = "ChangeStatusEnum.New$"} -PassThru -computername $scsmMGMTServer
+                    $crProjection = Get-SCSMObjectProjection -ProjectionName $crTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" -computername $scsmMGMTServer
+                    #Set-SCSMObjectTemplate -Projection $crProjection -Template $defaultCRTemplate -computername $scsmMGMTServer
+                    Apply-SCSMTemplate -Projection $crProjection -Template $defaultCRTemplate
+                    #The Affected User relationship exists on Change Requests, but does not exist on the CR Form out of box.
+                    #Cireson SCSM Portal customers may wish to set the Sender as the Affected User so that it follows Incident/Service Request style functionality in that the Sender/User
+                    #in question can see the CR in the "My Requests" section of their SCSM portal. This can be acheived by uncommenting the New-SCSMRelationshipObject seen below
+                    #Set Created By using the Affected User object if it exists
+                    if ($affectedUser)
+                    {
+                        New-SCSMRelationshipObject -Relationship $createdByUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk -computername $scsmMGMTServer
+                        #New-SCSMRelationshipObject -Relationship $affectedUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk -computername $scsmMGMTServer
+                    }
                     if ($relatedUsers)
                     {
                         foreach ($relatedUser in $relatedUsers)
@@ -591,7 +621,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
     }
 
     #determine who left the comment
-    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.From)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
+    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.From)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select-object -first 1
     if ($userSMTPNotification) 
     { 
         $commentLeftBy = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
@@ -843,7 +873,7 @@ function Attach-EmailToWorkItem ($message, $workItemID)
     $WorkItemProjection.__base.Commit()
             
     #create the Attached By relationship if possible
-    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
+    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select-object -first 1
     if ($userSMTPNotification) 
     { 
         $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
@@ -883,7 +913,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $WorkItemProjection.__base.Commit()
 
                 #create the Attached By relationship if possible
-                $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
+                $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select-object -first 1
                 if ($userSMTPNotification) 
                 { 
                     $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
@@ -920,7 +950,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $WorkItemProjection.__base.Commit()
 
                 #create the Attached By relationship if possible
-                $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
+                $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select-object -first 1
                 if ($userSMTPNotification) 
                 { 
                     $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
@@ -946,7 +976,7 @@ function Get-WorkItem ($workItemID, $workItemClass)
 
 function Get-SCSMUserByEmailAddress ($EmailAddress)
 {
-    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$EmailAddress'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
+    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$EmailAddress'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select-object -first 1
     if ($userSMTPNotification) 
     { 
         $user = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
@@ -1614,7 +1644,7 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
     }
 
     #Get the user that is posting the announcement (from) from the SCSM/Cireson Portal to determine their language code to post the announcement
-    $announcerSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select -first 1
+    $announcerSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" -computername $scsmMGMTServer | sort-object lastmodified -Descending | select-object -first 1
     $announcerSCSMObject = Get-SCSMObject -id (Get-SCSMRelationshipObject -ByTarget $announcerSMTPNotification -computername $scsmMGMTServer).sourceObject.id -computername $scsmMGMTServer
     $ciresonPortalAnnouncer = Get-CiresonPortalUser -username $announcerSCSMObject.username -domain $announcerSCSMObject.domain
 
@@ -1724,6 +1754,88 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
     }
 }
 #endregion
+
+#region #### Modified version of Set-SCSMTemplateWithActivities from Morton Meisler seen here http://blog.ctglobalservices.com/service-manager-scsm/mme/set-scsmtemplatewithactivities-powershell-script/
+function Get-SCSMObjectPrefix
+{
+    Param ([string]$ClassName =$(throw "Please provide a classname"))
+    
+    switch ($ClassName)
+    {
+        default 
+        {
+            #Get prefix from Activity Settings
+            if ($ClassName.StartsWith("System.WorkItem.Activity") -or ($ClassName.Equals("Microsoft.SystemCenter.Orchestrator.RunbookAutomationActivity")) -or ($ClassName.Equals("Cireson.Powershell.Activity")))
+            {
+                $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Id "5e04a50d-01d1-6fce-7946-15580aa8681d" -ComputerName $scsmMGMTServer) -ComputerName $scsmMGMTServer
+                
+                if ($ClassName.Equals("System.WorkItem.Activity.ReviewActivity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivityReviewActivityIdPrefix}
+                if ($ClassName.Equals("System.WorkItem.Activity.ManualActivity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivityManualActivityIdPrefix}
+                if ($ClassName.Equals("System.WorkItem.Activity.ParallelActivity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivityParallelActivityIdPrefix}
+                if ($ClassName.Equals("System.WorkItem.Activity.SequentialActivity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivitySequentialActivityIdPrefix}
+                if ($ClassName.Equals("System.WorkItem.Activity.DependentActivity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivityDependentActivityIdPrefix}
+                if ($ClassName.Equals("Microsoft.SystemCenter.Orchestrator.RunbookAutomationActivity")) {$prefix = $ActivitySettingsObj.MicrosoftSystemCenterOrchestratorRunbookAutomationActivityBaseIdPrefix}
+                if ($ClassName.Equals("System.WorkItem.Activity.SMARunbookActivity")) {$prefix = $ActivitySettingsObj.MicrosoftSystemCenterOrchestratorRunbookAutomationActivityBaseIdPrefix}
+                if ($ClassName.Equals("Cireson.Powershell.Activity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivityIdPrefix}
+            } 
+            else {throw "Class Name $ClassName is not supported"}
+        }
+    }
+    return $prefix
+}
+
+function Update-SCSMPropertyCollection
+{
+    Param ([Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateObject]$Object =$(throw "Please provide a valid template object")) 
+    
+    #Regex - Find class from template object property between ! and ']
+    $pattern = '(?<=!)[^!]+?(?=''\])'
+    if (($Object.Path -match $pattern) -and (($Matches[0].StartsWith("System.WorkItem.Activity")) -or ($Matches[0].StartsWith("Microsoft.SystemCenter.Orchestrator")) -or ($Matches[0].StartsWith("Cireson.Powershell.Activity"))))
+    {
+        #Set prefix from activity class
+        $prefix = Get-SCSMObjectPrefix -ClassName $Matches[0]
+       
+        #Create template property object
+        $propClass = [Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateProperty]
+        $propObject = New-Object $propClass
+ 
+        #Add new item to property object
+        $propObject.Path = "`$Context/Property[Type='$alias!System.WorkItem']/Id$"
+        $propObject.MixedValue = "$prefix{0}"
+        
+        #Add property to template
+        $Object.PropertyCollection.Add($propObject)
+        
+        #recursively update activities in activities
+        if ($Object.ObjectCollection.Count -ne 0)
+        {
+            foreach ($obj in $Object.ObjectCollection)
+            {  
+                Update-SCSMPropertyCollection -Object $obj
+            }        
+        }
+    } 
+}
+
+function Apply-SCSMTemplate 
+{
+    Param ([Microsoft.EnterpriseManagement.Common.EnterpriseManagementObjectProjection]$Projection =$(throw "Please provide a valid projection object"), 
+    [Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplate]$Template = $(throw 'Please provide an template object, ex. -template template'))
+ 
+    #Get alias from system.workitem.library managementpack to set id property
+    $templateMP = $Template.GetManagementPack() 
+    $alias = $templateMP.References.GetAlias((Get-SCSMManagementPack system.workitem.library -computername $scsmMGMTServer))
+    
+    #Update Activities in template
+    foreach ($TemplateObject in $Template.ObjectCollection)
+    {
+        Update-SCSMPropertyCollection -Object $TemplateObject
+    }
+    #Apply update template
+    Set-SCSMObjectTemplate -Projection $Projection -Template $Template -ErrorAction Stop -computername $scsmMGMTServer
+}
+
+#endregion 
 
 #region #### SCOM Request Functions ####
 function Get-SCOMAuthorizedRequester ($sender)
