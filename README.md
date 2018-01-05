@@ -108,11 +108,11 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>Change Request</i></td>
   </tr>
   <tr>
-    <td width="200">&nbsp;</td>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/hold.png" /></td>
     <td width="auto">[Hold] - Place the Change Request On-Hold when this keyword is featured in the body of the email</td>
   </tr>
   <tr>
-    <td width="200">&nbsp;</td>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/cancel.png" /></td>
     <td width="auto">[Cancel] - Cancel the Change Request when this keyword is featured in the body of the email</td>
   </tr>
 </table>
