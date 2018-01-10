@@ -25,6 +25,8 @@ Version: 1.4 = created $voteOnBehalfOfGroups configuration variable so as to int
                 changed areas that request a user object by email with the new Get-SCSMUserByEmailAddress function
                 added ability to create Problems and Change Requests as the default new work item
                 Fixed issue when creating a New SR with activities, used identical approach for New CR functionality
+Version: 1.3.3 = Fixed issue with [cancelled] keyword for Service Request 
+                 Added [take] keyword to Service Request 
 Version: 1.3.2 = Fixed issue when using the script other than on the SCSM Workflow server
                  Fixed issue when enabling/disabling features
 Version: 1.3.1 = Fixed issue matching users when AD connector syncs users that were renamed.
@@ -687,8 +689,9 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     }
                     switch -Regex ($commentToAdd)
                     {
+                        "\[$takeKeyword]" {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy -computername $scsmMGMTServer -bulk}
                         "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Completed$" -computername $scsmMGMTServer}
-                        "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Cancelled$" -computername $scsmMGMTServer}
+                        "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Canceled$" -computername $scsmMGMTServer}
                         "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Closed$" -computername $scsmMGMTServer}
                     }
                     #relate the user to the work item
