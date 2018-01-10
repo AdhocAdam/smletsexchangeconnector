@@ -20,6 +20,8 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signged/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.3.3 = Fixed issue with [cancelled] keyword for Service Request
+                Added [take] keyword to Service Request
 Version: 1.3.2 = Fixed issue when using the script other than on the SCSM Workflow server
                  Fixed issue when enabling/disabling features
 Version: 1.3.1 = Fixed issue matching users when AD connector syncs users that were renamed.
@@ -633,8 +635,9 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     }
                     switch -Regex ($commentToAdd)
                     {
+                        "\[$takeKeyword]" {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy -computername $scsmMGMTServer -bulk}
                         "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Completed$" -computername $scsmMGMTServer}
-                        "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Cancelled$" -computername $scsmMGMTServer}
+                        "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Canceled$" -computername $scsmMGMTServer}
                         "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Closed$" -computername $scsmMGMTServer}
                     }
                     #relate the user to the work item
