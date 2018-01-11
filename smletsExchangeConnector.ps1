@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
 Provides SCSM Exchange Connector functionality through PowerShell
 
@@ -20,7 +20,7 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signged/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
-Version: 1.4 = created $voteOnBehalfOfGroups configuration variable so as to introduce the ability for users to Vote on Behalf of a Group
+Version: 1.4b = created $voteOnBehalfOfGroups configuration variable so as to introduce the ability for users to Vote on Behalf of a Group
                 created Get-SCSMUserByEmailAddress to simplify how often users are retrieved by email address
                 changed areas that request a user object by email with the new Get-SCSMUserByEmailAddress function
                 added ability to create Problems and Change Requests as the default new work item
