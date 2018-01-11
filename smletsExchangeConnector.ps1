@@ -75,7 +75,7 @@ Version: 1.1 = GitHub issue raised on updating work items. Per discussion was pi
 #>
 
 #region #### Configuration ####
-#define the an SCSM management server, this could be a remote name or localhost
+#define the SCSM management server, this could be a remote name or localhost
 $scsmMGMTServer = "localhost"
 #if you are running this script in SMA or Orchestrator, you may need/want to present a credential object to the management server.  Leave empty, otherwise.
 $scsmMGMTCreds = $null
@@ -245,7 +245,7 @@ $scsmMGMTParams = @{ ComputerName = $scsmMGMTServer }
 if ($scsmMGMTCreds) { $scsmMGMTParams.Credential = $scsmMGMTCreds }
 
 # Set default templates and mailbox settings
-if ($UseMailboxRedirection) {
+if ($UseMailboxRedirection -eq $true) {
     $Mailboxes.add("$($defaultScsmMailbox)", @{"DefaultWiType"=$defaultNewWorkItem;"IRTemplate"=$DefaultIRTemplateName;"SRTemplate"=$DefaultSRTemplateName;"PRTemplate"=$DefaultPRTemplateName;"CRTemplate"=$DefaultCRTemplateName})
 }
 else {
@@ -737,7 +737,6 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     try {$existingWiStatusName = $workItem.Status.Name} catch {}
                     if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "IncidentStatusEnum.Closed") {
                         $newWi = New-WorkItem -message $message -wiType $wiType -returnWIBool $true
-                        #TODO: ADD RELATIONSHIP TO ORIGINAL WI HERE, ADD DETAILS FROM ORIGINAL WI TO NEW WI, AFTER THOSE THAT WERE ADDED FROM EMAIL
                     }
                     else {
                         try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
@@ -757,8 +756,6 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams}}
                             "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Resolved$" @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk}
                             "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Closed$" @scsmMGMTParams}
-                            #TODO: Only allow [take] if the sender is a member of the current support group
-                            #TODO: Send an email to let them know it failed?
                             "\[$takeKeyword]" {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk}
                             "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Active$" @scsmMGMTParams}}
                             "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "[I][R][0-9]+")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}}}
@@ -776,13 +773,12 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     try {$existingWiStatusName = $workItem.Status.Name} catch {}
                     if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "ServiceRequestStatusEnum.Closed") {
                         $newWi = New-WorkItem -message $message -wiType $wiType -returnWIBool $true
-                        #TODO: ADD RELATIONSHIP TO ORIGINAL WI HERE, ADD DETAILS FROM ORIGINAL WI TO NEW WI, AFTER THOSE THAT WERE ADDED FROM EMAIL
                     }
                     else {
                         try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
                         if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                         try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
-                        if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams| ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+                        if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                         switch ($message.From)
                         {
                             $affectedUserSMTP.TargetAddress {Add-ServiceRequestComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -AnalystComment $false -isPrivate $false}
@@ -791,7 +787,6 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                         }
                         switch -Regex ($commentToAdd)
                         {
-                            #TODO: Add [hold] keyword
                             "\[$takeKeyword]" {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk}
                             "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Completed$" @scsmMGMTParams}
                             "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Canceled$" @scsmMGMTParams}
@@ -920,7 +915,6 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                         else
                         {
                             #not a user or a group
-                            #TODO: Send an explanatory/error email?
                         }
                     }
                 }
@@ -962,7 +956,6 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
 
 function Attach-EmailToWorkItem ($message, $workItemID)
 {
-    #TODO: CHECK ATTACHMENT SIZE AND COUNT LIMITS IN SCSM BEFORE ALLOWING
     $messageMime = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
     $MemoryStream = New-Object System.IO.MemoryStream($messageMime.MimeContent.Content,0,$messageMime.MimeContent.Content.Length)
 
@@ -993,7 +986,6 @@ function Attach-EmailToWorkItem ($message, $workItemID)
 #inspired and modified from Stefan Roth here - https://stefanroth.net/2015/03/28/scsm-passing-attachments-via-web-service-e-g-sma-web-service/
 function Attach-FileToWorkItem ($message, $workItemId)
 {
-    #TODO: CHECK ATTACHMENT SIZE AND COUNT LIMITS IN SCSM BEFORE ALLOWING
     foreach ($attachment in $message.Attachments)
     {
         if ($attachment.gettype().BaseType.Name -like "Mime*")
