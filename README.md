@@ -11,6 +11,19 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 *Create Problems or Change Requests by Default (v1.4)*
 - Whether you're dealing with external vendors or streamlining process, you can now configure the connector to create either Problems or Change Requests by default.
+
+*Process multiple mailboxes with unique templates and default ticket types (v1.4)*
+- Redirect multiple mailboxes to a single inbox and this connector can process each message based on the default work item type and templates for the original mailbox, as though it was directly connected to each.
+- This can be helpful for multiple teams that each have their own mailbox, for example, but does not require many instances of the connector running against all mailboxes as the MS Exchange Connector did.
+
+*Generate a new, related work item when comments are emailed to closed tickets (v1.4)*
+- Optionally generate work items when a user comments on a closed ticket.
+- Was the affected user on vacation?  Did they try to add to an old incident ticket for a new instance of the same issue?  If enabled, a new work item will be generated that is related to the old work item and contains many of the same properties, but also contains the new details from their email message.
+
+*[take] Keyword will now optionally test for membership in the Support Group (v1.4)*
+- If this feature is enabled, the sender's membership in the current Support Group will be tested before they are assigned to a ticket.
+- Requires the Cireson Analyst Portal.  The Cireson Portal Group Mapping (to Active Directory groups) is utilized for this functionality.
+
 <table border="0">
   <tr>
     <td colspan="3"><i>Vote on Behalf of Active Directory Group (v1.4)</i></td>
@@ -20,6 +33,10 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td width="auto">The connector can now optionally process Active Directory Groups featured on Review Activities. Now, when a member of the group either approves or rejects the vote, their vote will be counted on behalf of the group through the &quot;Voted By&quot; relationship and their comment appended to the vote. </td>
   </tr>
 </table>
+
+*Service Requests can now use the [take] and [hold] keywords. (v1.4)*
+
+*Attachments can now follow the Service Manager settings for maximum size and attachment count (v1.4)*
 
 <table border="0">
   <tr>
