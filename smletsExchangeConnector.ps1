@@ -26,6 +26,7 @@ Version: 1.4b-TH =  Changed how credentials are (optionally) added to SMLets, if
                     Created optional per-mailbox IR, SR, PR, and CR template assignment, in support of multiple mailbox processing.
                     Created optional configs for non-autodiscover connections to Exchange, and to provide explicit credentials.
                     Created optional creation of new related ticket when comment is received on Closed ticket.
+		    Changed [take] behavior so that it only functions if the email sender belongs to the currently selected support group.
 Version: 1.4b = created $voteOnBehalfOfGroups configuration variable so as to introduce the ability for users to Vote on Behalf of a Group
                 created Get-SCSMUserByEmailAddress to simplify how often users are retrieved by email address
                 changed areas that request a user object by email with the new Get-SCSMUserByEmailAddress function
@@ -756,7 +757,14 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams}}
                             "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Resolved$" @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk}
                             "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Closed$" @scsmMGMTParams}
-                            "\[$takeKeyword]" {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk}
+                            "\[$takeKeyword]" {
+                                if ((Get-TierMembership $commentLeftBy.UserName, $workItem.TierQueue.Id) -eq $true) {
+                                    New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                                }
+                                else {
+                                    #TODO: Send an email to let them know it failed?
+                                }
+                            }
                             "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Active$" @scsmMGMTParams}}
                             "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "[I][R][0-9]+")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}}}
                             {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}}
@@ -787,7 +795,14 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                         }
                         switch -Regex ($commentToAdd)
                         {
-                            "\[$takeKeyword]" {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk}
+                            "\[$takeKeyword]" {
+                                if ((Get-TierMembership $commentLeftBy.UserName, $workItem.SupportGroup.Id) -eq $true) {
+                                    New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                                }
+                                else {
+                                    #TODO: Send an email to let them know it failed?
+                                }
+                            }
                             "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Completed$" @scsmMGMTParams}
                             "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Canceled$" @scsmMGMTParams}
                             "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Closed$" @scsmMGMTParams}
@@ -1088,6 +1103,33 @@ function Get-SCSMUserByEmailAddress ($EmailAddress)
     {
         return $null
     }
+}
+
+function Get-TierMembership ($UserSamAccountName, $TierId) {
+    $member = $false
+
+    #define classes
+    $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping"
+
+    #pull the group based on support tier mapping
+    $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId -eq $TierId }
+    $groupId = $mapping.AdGroupId
+
+    #get the AD group object name
+    $grpInScsm = (Get-ScsmObject @scsmMGMTParams -Id $groupId)
+    $grpSamAccountName = $grpInScsm.UserName
+    
+    # Get the user's group membership   
+    [array]$grps = Get-AdUser $UserSamAccountName -Property memberOf | Select -ExpandProperty memberOf | Get-AdGroup | Select Name
+
+    # loop through and look for the one that underpins this support group
+    $grps | % {
+        if ($_.samAccountName -match $grpSamAccountName) {
+            $member = $true
+        }
+    }
+
+    return $member
 }
 
 #courtesy of Leigh Kilday. Modified.
