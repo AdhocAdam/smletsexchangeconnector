@@ -26,8 +26,8 @@ Version: 1.4b-TH =  Changed how credentials are (optionally) added to SMLets, if
                     Created optional per-mailbox IR, SR, PR, and CR template assignment, in support of multiple mailbox processing.
                     Created optional configs for non-autodiscover connections to Exchange, and to provide explicit credentials.
                     Created optional creation of new related ticket when comment is received on Closed ticket.
-		    		Changed [take] behavior so that it only functions if the email sender belongs to the currently selected support group.
-					Created option to check SCSM attachment limits to determine if attachment(s) should be added or not.
+		    		Changed [take] behavior so that it (optionally) only functions if the email sender belongs to the currently selected support group.
+		    		Created option to check SCSM attachment limits to determine if attachment(s) should be added or not.
 Version: 1.4b = created $voteOnBehalfOfGroups configuration variable so as to introduce the ability for users to Vote on Behalf of a Group
                 created Get-SCSMUserByEmailAddress to simplify how often users are retrieved by email address
                 changed areas that request a user object by email with the new Get-SCSMUserByEmailAddress function
@@ -114,6 +114,8 @@ $ExchangeEndpoint = ""
         # Additional mailboxes may be added below it, using the following format:
         # "otherMailbox@domain.tld" = @{"DefaultWiType"="IR";"IRTemplate"="TemplateForNewIncidents";"SRTemplate"="TemplateForNewRequests";"PRTemplate"="TemplateForNewProblems";"CRTemplate"="TemplateForNewChanges"};
 #CreateNewWorkItemWhenClosed = When set to $true, replies to a closed work item will create a new work item.
+#takeRequiresGroupMembership = When set to $true, the [take] keyword only functions when the sender belongs to the ticket's support group.
+	#This functionality requires 
 $defaultNewWorkItem = "ir"
 $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
@@ -132,6 +134,7 @@ $Mailboxes = @{
 	"MyOtherMailbox@company.com" = @{"DefaultWiType"="SR";"IRTemplate"="My IR Template";"SRTemplate"="My SR Template";"PRTemplate"="My PR Template";"CRTemplate"="My CR Template"};
 }
 $CreateNewWorkItemWhenClosed = $false
+$takeRequiresGroupMembership = $false
 
 #processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
     #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
@@ -769,7 +772,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Resolved$" @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk}
                             "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Closed$" @scsmMGMTParams}
                             "\[$takeKeyword]" {
-                                if ((Get-TierMembership $commentLeftBy.UserName, $workItem.TierQueue.Id) -eq $true) {
+                                if ($takeRequiresGroupMembership -eq $false -or (Get-TierMembership $commentLeftBy.UserName, $workItem.TierQueue.Id) -eq $true) {
                                     New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
                                 }
                                 else {
@@ -814,8 +817,9 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                         }
                         switch -Regex ($commentToAdd)
                         {
+							"\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.OnHold$" @scsmMGMTParams}
                             "\[$takeKeyword]" {
-                                if ((Get-TierMembership $commentLeftBy.UserName, $workItem.SupportGroup.Id) -eq $true) {
+                                if ($takeRequiresGroupMembership -eq $false -or (Get-TierMembership $commentLeftBy.UserName, $workItem.SupportGroup.Id) -eq $true) {
                                     New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
                                 }
                                 else {
