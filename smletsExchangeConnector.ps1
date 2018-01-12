@@ -26,7 +26,8 @@ Version: 1.4b-TH =  Changed how credentials are (optionally) added to SMLets, if
                     Created optional per-mailbox IR, SR, PR, and CR template assignment, in support of multiple mailbox processing.
                     Created optional configs for non-autodiscover connections to Exchange, and to provide explicit credentials.
                     Created optional creation of new related ticket when comment is received on Closed ticket.
-		    Changed [take] behavior so that it only functions if the email sender belongs to the currently selected support group.
+		    		Changed [take] behavior so that it only functions if the email sender belongs to the currently selected support group.
+					Created option to check SCSM attachment limits to determine if attachment(s) should be added or not.
 Version: 1.4b = created $voteOnBehalfOfGroups configuration variable so as to introduce the ability for users to Vote on Behalf of a Group
                 created Get-SCSMUserByEmailAddress to simplify how often users are retrieved by email address
                 changed areas that request a user object by email with the new Get-SCSMUserByEmailAddress function
@@ -100,6 +101,7 @@ $ExchangeEndpoint = ""
 
 #defaultNewWorkItem = set to either "ir", "sr", "pr", or "cr"
 #default*RTemplate = define the displayname of the template you'll be using based on what you've set for $defaultNewWorkItem
+#checkAttachmentSettings = If $true, instructs the script to query SCSM for its attachment size and count limits per work item type.  If $false, neither is restricted.
 #minFileSizeInKB = Set the minimum file size in kilobytes to be attached to work items
 #createUsersNotInCMDB = If someone from outside your org emails into SCSM this allows you to take that email and create a User in your CMDB
 #includeWholeEmail = If long chains get forwarded into SCSM, you can choose to write the whole email to a single action log entry OR the beginning to the first finding of "From:"
@@ -117,6 +119,7 @@ $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
 $defaultPRTemplateName = "PR Template Name Goes Here"
 $defaultCRTemplateName = "CR Template Name Goes Here"
+$checkAttachmentSettings = $true
 $minFileSizeInKB = "25"
 $createUsersNotInCMDB = $true
 $includeWholeEmail = $false
@@ -738,6 +741,14 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     try {$existingWiStatusName = $workItem.Status.Name} catch {}
                     if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "IncidentStatusEnum.Closed") {
                         $newWi = New-WorkItem -message $message -wiType $wiType -returnWIBool $true
+			
+                        #copy essential info over from old to new
+                        $NewDesc = "New ticket generated from reply to $($workItem.Name) (Closed). `n ---- `n $(newWi.Description) `n --- `n Original description: `n --- `n $(workItem.Description)"
+                        $NewWiPropertiesFromOld = @{"Description"=$NewDesc;"TierQueue"=$($workItem.TierQueue);"Classification"=$($workItem.Classfification);"Impact"=$($workItem.Impact);"Urgency"=$($workItem.Urgency);}
+                        Set-SCSMObject -SMObject $newWi -PropertyHashTable $newWiPropertiesFromOld @scsmMGMTParams
+
+                        #relate old and new wi
+                        New-SCSMRelationshipObject -Relationship $wiRelatesToWiRelClass -Source $newWi -Target $workItem -Bulk @scsmMGMTParams
                     }
                     else {
                         try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
@@ -781,6 +792,14 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     try {$existingWiStatusName = $workItem.Status.Name} catch {}
                     if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "ServiceRequestStatusEnum.Closed") {
                         $newWi = New-WorkItem -message $message -wiType $wiType -returnWIBool $true
+			
+                        #copy essential info over from old to new
+                        $NewDesc = "New ticket generated from reply to $($workItem.Name) (Closed). `n ---- `n $(newWi.Description) `n --- `n Original description: `n --- `n $(workItem.Description)"
+                        $NewWiPropertiesFromOld = @{"Description"=$NewDesc;"SupportGroup"=$($workItem.SupportGroup);"ServiceRequestCategory"=$($workItem.ServiceRequestCategory);"Priority"=$($workItem.Priority);"Urgency"=$($workItem.Urgency)}
+                        Set-SCSMObject -SMObject $newWi -PropertyHashTable $newWiPropertiesFromOld @scsmMGMTParams
+
+                        #relate old and new wi
+                        New-SCSMRelationshipObject -Relationship $wiRelatesToWiRelClass -Source $newWi -Target $workItem -Bulk @scsmMGMTParams
                     }
                     else {
                         try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
@@ -971,111 +990,142 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
 
 function Attach-EmailToWorkItem ($message, $workItemID)
 {
+	# Get attachment limits and attachment count in ticket, if configured to
+    if ($checkAttachmentSettings -eq $true) {
+        $workItem = Get-ScsmObject @scsmMGMTParams -Id $workItemID
+        $workItemPrefix = $workItem.Name.Substring(0,2)
+        $attachLimits = Get-ScsmAttachmentSettings $workItemPrefix
+
+        # Get count of attachents already in ticket
+        try {$existingAttachmentsCount = (Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $fileAttachmentRelClass).Count} catch {}
+    }
+	
     $messageMime = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
     $MemoryStream = New-Object System.IO.MemoryStream($messageMime.MimeContent.Content,0,$messageMime.MimeContent.Content.Length)
 
-    #Create the attachment object itself and set its properties for SCSM
-    $emailAttachment = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
-    $emailAttachment.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
-    $emailAttachment.Item($fileAttachmentClass, "DisplayName").Value = "message.eml"
-    $emailAttachment.Item($fileAttachmentClass, "Description").Value = "ExchangeConversationID:$($message.ConversationID);"
-    $emailAttachment.Item($fileAttachmentClass, "Extension").Value =   "eml"
-    $emailAttachment.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
-    $emailAttachment.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
-    $emailAttachment.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
-    
-    #Add the attachment to the work item and commit the changes
-    $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemID'" @scsmMGMTParams
-    $WorkItemProjection.__base.Add($emailAttachment, $fileAttachmentRelClass.Target)
-    $WorkItemProjection.__base.Commit()
-            
-    #create the Attached By relationship if possible
-    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-    if ($userSMTPNotification) 
-    { 
-        $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
-        New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
-    }
+	# if #checkAttachmentSettings -eq $true, test whether the email size (IN KB!) exceeds the limit and if the number of existing attachments is under the limit
+    if ($checkAttachmentSettings -eq $false -or `
+        (($MemoryStream.Length / 1024) -le $($attachLimits["MaxAttachmentSize"]) -and $existingAttachmentsCount -le $($attachLimits["MaxAttachments"])))
+    {
+	    #Create the attachment object itself and set its properties for SCSM
+    	$emailAttachment = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
+	    $emailAttachment.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
+    	$emailAttachment.Item($fileAttachmentClass, "DisplayName").Value = "message.eml"
+	    $emailAttachment.Item($fileAttachmentClass, "Description").Value = "ExchangeConversationID:$($message.ConversationID);"
+    	$emailAttachment.Item($fileAttachmentClass, "Extension").Value =   "eml"
+	    $emailAttachment.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
+    	$emailAttachment.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
+	    $emailAttachment.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
+    	
+	    #Add the attachment to the work item and commit the changes
+    	$WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemID'" @scsmMGMTParams
+	    $WorkItemProjection.__base.Add($emailAttachment, $fileAttachmentRelClass.Target)
+    	$WorkItemProjection.__base.Commit()
+	            
+    	#create the Attached By relationship if possible
+	    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
+    	if ($userSMTPNotification) 
+	    { 
+    	    $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
+        	New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
+    	}
+	}
 }
 
 #inspired and modified from Stefan Roth here - https://stefanroth.net/2015/03/28/scsm-passing-attachments-via-web-service-e-g-sma-web-service/
 function Attach-FileToWorkItem ($message, $workItemId)
 {
-    foreach ($attachment in $message.Attachments)
-    {
-        if ($attachment.gettype().BaseType.Name -like "Mime*")
-        {
-            $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
-            $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
-            $AttachmentContent = [convert]::FromBase64String($base64attachment)
+	# Get attachment limits and attachment count in ticket, if configured to
+    if ($checkAttachmentSettings -eq $true) {
+        $workItem = Get-ScsmObject @scsmMGMTParams -Id $workItemID
+        $workItemPrefix = $workItem.Name.Substring(0,2)
+        $attachLimits = Get-ScsmAttachmentSettings $workItemPrefix
 
-            #Create a new MemoryStream object out of the attachment data
-            $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
-
-            if (([int]$MemoryStream.Length) -gt ($minFileSizeInKB+"kb"))
-            {
-                #Create the attachment object itself and set its properties for SCSM
-                $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
-                $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
-                $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.FileName
-                #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
-                #$NewFile.Item($fileAttachmentClass, "Extension").Value =   $attachment.Extension
-                $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
-                $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
-                $NewFile.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
-    
-                #Add the attachment to the work item and commit the changes
-                $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemId'" @scsmMGMTParams
-                $WorkItemProjection.__base.Add($NewFile, $fileAttachmentRelClass.Target)
-                $WorkItemProjection.__base.Commit()
-
-                #create the Attached By relationship if possible
-                $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-                if ($userSMTPNotification) 
-                { 
-                    $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
-                    New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
-                }
-            }
-        }
-        else
-        {
-            $attachment.Load()
-            $base64attachment = [System.Convert]::ToBase64String($attachment.Content)
-
-            #Convert the Base64String back to bytes
-            $AttachmentContent = [convert]::FromBase64String($base64attachment)
-
-            #Create a new MemoryStream object out of the attachment data
-            $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
-
-            if (([int]$MemoryStream.Length) -gt ($minFileSizeInKB+"kb"))
-            {
-                #Create the attachment object itself and set its properties for SCSM
-                $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
-                $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
-                $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name
-                #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
-                #$NewFile.Item($fileAttachmentClass, "Extension").Value =   $attachment.Extension
-                $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
-                $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
-                $NewFile.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
-    
-                #Add the attachment to the work item and commit the changes
-                $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemId'" @scsmMGMTParams
-                $WorkItemProjection.__base.Add($NewFile, $fileAttachmentRelClass.Target)
-                $WorkItemProjection.__base.Commit()
-
-                #create the Attached By relationship if possible
-                $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-                if ($userSMTPNotification) 
-                { 
-                    $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
-                    New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
-                }
-            }
-        }
+        # Get count of attachents already in ticket
+        $existingAttachments = Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $fileAttachmentRelClass
+        # Only use at before the loop
+        try {$existingAttachmentsCount = $existingAttachments.Count } catch {}
     }
+
+    if ($checkAttachmentSettings -eq $false -or $existingAttachmentsCount -lt $attachLimits["MaxAttachments"]) {
+	    foreach ($attachment in $message.Attachments)
+    	{
+        	if ($attachment.gettype().BaseType.Name -like "Mime*")
+        	{
+            	$signedAttachArray = $attachment.ContentObject.Stream.ToArray()
+	            $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
+    	        $AttachmentContent = [convert]::FromBase64String($base64attachment)
+	
+    	        #Create a new MemoryStream object out of the attachment data
+        	    $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
+	
+    	        if (([int]$MemoryStream.Length) -gt ($minFileSizeInKB+"kb") -and ($checkAttachmentSettings -eq $false `
+                    -or (($existingAttachments.Count -lt $attachLimits["MaxAttachments"]) -And ($MemoryStream.Length -le $attachLimits["MaxAttachmentSize"]))))
+        	    {
+            	    #Create the attachment object itself and set its properties for SCSM
+                	$NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
+	                $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
+    	            $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.FileName
+        	        #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
+            	    #$NewFile.Item($fileAttachmentClass, "Extension").Value =   $attachment.Extension
+                	$NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
+	                $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
+    	            $NewFile.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
+    	
+        	        #Add the attachment to the work item and commit the changes
+            	    $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemId'" @scsmMGMTParams
+                	$WorkItemProjection.__base.Add($NewFile, $fileAttachmentRelClass.Target)
+	                $WorkItemProjection.__base.Commit()
+	
+    	            #create the Attached By relationship if possible
+        	        $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
+            	    if ($userSMTPNotification) 
+	                { 
+    	                $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
+        	            New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
+            	    }
+	            }
+    	    }
+        	else
+	        {
+    	        $attachment.Load()
+        	    $base64attachment = [System.Convert]::ToBase64String($attachment.Content)
+	
+    	        #Convert the Base64String back to bytes
+	            $AttachmentContent = [convert]::FromBase64String($base64attachment)
+	
+    	        #Create a new MemoryStream object out of the attachment data
+        	    $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
+	
+    	        if (([int]$MemoryStream.Length) -gt ($minFileSizeInKB+"kb") -and ($checkAttachmentSettings -eq $false `
+                    -or (($existingAttachments.Count -lt $attachLimits["MaxAttachments"]) -And ($MemoryStream.Length -le $attachLimits["MaxAttachmentSize"]))))
+        	    {
+            	    #Create the attachment object itself and set its properties for SCSM
+                	$NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
+	                $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
+    	            $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name
+        	        #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
+            	    #$NewFile.Item($fileAttachmentClass, "Extension").Value =   $attachment.Extension
+                	$NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
+	                $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
+    	            $NewFile.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
+    	
+        	        #Add the attachment to the work item and commit the changes
+            	    $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemId'" @scsmMGMTParams
+                	$WorkItemProjection.__base.Add($NewFile, $fileAttachmentRelClass.Target)
+	                $WorkItemProjection.__base.Commit()
+	
+    	            #create the Attached By relationship if possible
+        	        $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
+            	    if ($userSMTPNotification) 
+                	{ 
+	                    $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
+    	                New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
+        	        }
+            	}
+        	}
+    	}
+	}
 }
 
 function Get-WorkItem ($workItemID, $workItemClass)
@@ -1668,6 +1718,43 @@ function Get-TemplatesByMailbox ($message)
         Write-Debug "No redirection from known mailbox.  Using Default templates"
         return $Mailboxes[$ScsmEmail]
     }
+}
+
+function Get-ScsmAttachmentSettings ($workItemType) {
+    switch ($workItemType) {
+        "ir" {
+            $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.WorkItem.Incident.GeneralSetting"
+            $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
+            $maxAttach = $settings.MaxAttachments
+            $maxSize = $settings.MaxAttachmentSize
+        }
+        "sr" {
+            $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ServiceRequestSettings"
+            $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
+            $maxAttach = $settings.MaxFileAttachmentsCount
+            $maxSize = $settings.MaxFileAttachmentSizeinKB
+        }
+        "cr" {
+            $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ChangeSettings"
+            $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
+            $maxAttach = $settings.MaxFileAttachmentsCount
+            $maxSize = $settings.MaxFileAttachmentSizeinKB
+        }
+        "pr" {
+            $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ProblemSettings"
+            $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
+            $maxAttach = $settings.MaxFileAttachmentsCount
+            $maxSize = $settings.MaxFileAttachmentSizeinKB
+        }
+        "rr" {
+            $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ReleaseSettings"
+            $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
+            $maxAttach = $settings.MaxFileAttachmentsCount
+            $maxSize = $settings.MaxFileAttachmentSizeinKB
+        }
+    }
+
+    return @{"MaxAttachments"=$maxAttach;"MaxAttachmentSize"=$maxSize}
 }
 
 #retrieve sender's ability to post announcement based on previously defined email addresses or an AD group
