@@ -115,7 +115,7 @@ $ExchangeEndpoint = ""
         # "otherMailbox@domain.tld" = @{"DefaultWiType"="IR";"IRTemplate"="TemplateForNewIncidents";"SRTemplate"="TemplateForNewRequests";"PRTemplate"="TemplateForNewProblems";"CRTemplate"="TemplateForNewChanges"};
 #CreateNewWorkItemWhenClosed = When set to $true, replies to a closed work item will create a new work item.
 #takeRequiresGroupMembership = When set to $true, the [take] keyword only functions when the sender belongs to the ticket's support group.
-	#This functionality requires 
+	#This functionality requires the Cireson Analyst Portal for Service Manager.  Set $false if you do not use the Cireson Analyst Portal.
 $defaultNewWorkItem = "ir"
 $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
