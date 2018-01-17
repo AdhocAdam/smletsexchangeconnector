@@ -28,239 +28,239 @@ Misc: The Release Record functionality does not exist in this as no out of box (
     You would have to create your own Type Projection in order to leverage this.
 #>
 
-Invoke-BeforeConnect {
+function Invoke-BeforeConnect {
   # This function occurs immediately before the connection to EWS is made
 
 }
 
-Invoke-OnOpenInbox {
+function Invoke-OnOpenInbox {
   # This function occurs after the inbox is opened but before individual messages are read.
 
 }
 
-Invoke-BeforeProcessEmail {
+function Invoke-BeforeProcessEmail {
   # This function occurs after an email message is open, but before it is processed.
   
 }
 
-Invoke-AfterProcessEmail {
+function Invoke-AfterProcessEmail {
   # This function occurs after an email message has been fully processed, before the next message is opened.
   
 }
 
-Invoke-BeforeProcessSignedEmail {
+function Invoke-BeforeProcessSignedEmail {
   # This function occurs before a digitally signed email message is opened, and before the "normal" email open event
   
 }
 
-Invoke-AfterProcessSignedEmail {
+function Invoke-AfterProcessSignedEmail {
   # This function occurs after a digitally signed email message is processed, and after the "normal" email processed event
 
 }
 
-Invoke-BeforeProcessEncryptedEmail {
+function Invoke-BeforeProcessEncryptedEmail {
   # This function occurs before an encrypted email message is opened, and before the "normal" email open event
   
 }
 
-Invoke-AfterProcessEncryptedEmail {
+function Invoke-AfterProcessEncryptedEmail {
   # This function occurs after an encrypted email message is processed, and after the "normal" email processed event
   
 }
 
-Invoke-BeforeProcessAppointment {
+function Invoke-BeforeProcessAppointment {
   # This function occurs after an appointment is open, but before it is processed.
   
 }
 
-Invoke-AfterProcessAppointment {
+function Invoke-AfterProcessAppointment {
   # This function occurs after an appointment has been fully processed, before the next message is opened.
 }
 
-Invoke-BeforeProcessCancelMeeting {
+function Invoke-BeforeProcessCancelMeeting {
   # This function occurs after an appointment is open, but before it is processed.
   
 }
 
-Invoke-AfterProcessCancelMeeting {
+function Invoke-AfterProcessCancelMeeting {
   # This function occurs after an appointment is fully processed, before the next message is opened.
   
 }
 
-Invoke-BeforeCreateAnyWorkItem {
+function Invoke-BeforeCreateAnyWorkItem {
   # This function occurs at the beginning of the new work item function.
   
 }
 
-Invoke-AfterCreateIR {
+function Invoke-AfterCreateIR {
   # This function occurs after a new incident work item is created.
   
 }
 
-Invoke-AfterCreateSR {
+function Invoke-AfterCreateSR {
   # This function occurs after a new service request work item is created.
   
 }
 
-Invoke-AfterCreatePR {
+function Invoke-AfterCreatePR {
   # This function occurs after a new problem work item is created.
   
 }
 
-Invoke-AfterCreateCR {
+function Invoke-AfterCreateCR {
   # This function occurs after a new change request work item is created.
   
 }
 
-Invoke-AfterCreateAnyWorkItem {
+function Invoke-AfterCreateAnyWorkItem {
   # This function occurs after any new work item is created.
   
 }
 
-Invoke-BeforeUpdateAnyWorkItem {
+function Invoke-BeforeUpdateAnyWorkItem {
   # This function occurs at the beginning of the update work item function.
   
 }
 
-Invoke-AfterUpdateIR {
+function Invoke-AfterUpdateIR {
   # This function occurs after an incident is updated.
   
 }
 
-Invoke-AfterUpdateSR {
+function Invoke-AfterUpdateSR {
   # This function occurs after a service request is updated.
   
 }
 
-Invoke-AfterUpdatePR {
+function Invoke-AfterUpdatePR {
   # This function occurs after a problem is updated.
   
 }
 
-Invoke-AfterUpdateCR {
+function Invoke-AfterUpdateCR {
   # This function occurs after a change request is updated.
   
 }
 
-Invoke-AfterUpdateRA {
+function Invoke-AfterUpdateRA {
   # This function occurs after a review activity is updated.
   
 }
 
-Invoke-AfterUpdateMA {
+function Invoke-AfterUpdateMA {
   # This function occurs after a manual activity is updated.
   
 }
 
-Invoke-AfterUpdateAnyWorkItem {
+function Invoke-AfterUpdateAnyWorkItem {
   # This function occurs after any work item is updated with a comment or by a token.
   
 }
 
-Invoke-AfterAcknowledge {
+function Invoke-AfterAcknowledge {
   # This function occurs after the acknowledge token is applied to a work item.
   
 }
 
-Invoke-AfterReactivate {
+function Invoke-AfterReactivate {
   # This function occurs after the reactivate token is applied to a work item.
   
 }
 
-Invoke-AfterResolved {
+function Invoke-AfterResolved {
   # This function occurs after the resolved token is applied to a work item.
   
 }
 
-Invoke-AfterClosed {
+function Invoke-AfterClosed {
   # This function occurs after the closed token is applied to a work item.
   
 }
 
-Invoke-AfterHold {
+function Invoke-AfterHold {
   # This function occurs after the acknowledge token is applied to a work item.
   
 }
 
-Invoke-AfterCancelled {
+function Invoke-AfterCancelled {
   # This function occurs after the cancelled token is applied to a work item.
   
 }
 
-Invoke-AfterTake {
+function Invoke-AfterTake {
   # This function occurs after the acknowledge token is applied to a work item.
   
 }
 
-Invoke-AfterCompleted {
+function Invoke-AfterCompleted {
   # This function occurs after the completed token is applied to a work item.
 }
 
-Invoke-AfterSkipped {
+function Invoke-AfterSkipped {
   # This function occurs after the skipped token is applied to a manual activity.
 }
 
-Invoke-AfterApproved {
+function Invoke-AfterApproved {
   # This function occurs after the approved token is applied to a review activity.
   
 }
 
-Invoke-AfterApprovedOnBehalf {
+function Invoke-AfterApprovedOnBehalf {
   # This function occurs after the approved token is applied to a review activity on behalf of a group.
   
 }
 
-Invoke-AfterRejected {
+function Invoke-AfterRejected {
   # This function occurs after the rejected token is applied to a review activity.
   
 }
 
-Invoke-RejectedOnBehalf {
+function Invoke-RejectedOnBehalf {
   # This function occurs after the rejected token is applied to a review activity on behalf of a group.
   
 }
 
-Invoke-BeforeAttachEmail {
+function Invoke-BeforeAttachEmail {
   # This function occurs after email attachments are loaded, but before adding them to a work item.
   
 }
 
-Invoke-AfterAttachEmail {
+function Invoke-AfterAttachEmail {
   # This function occurs after an email is attached to a work item.
   
 }
 
-Invoke-BeforeAttachFiles {
+function Invoke-BeforeAttachFiles {
   # This function occurs after email attachments are loaded, but before any files are attached to a work item.
   
 }
 
-Invoke-AfterAttachFiles {
+function Invoke-AfterAttachFiles {
   # This function occurs after file(s) have been attached to a work item.
   
 }
 
-Invoke-AfterUserCreatedInCMDB {
+function Invoke-AfterUserCreatedInCMDB {
   # This function occurs after a user has been created in the CMDB from an external email address.
   
 }
 
-Invoke-BeforeSetCoreScsmAnnouncement {
+function Invoke-BeforeSetCoreScsmAnnouncement {
   # This function occurs before an announcement is created in SCSM.
   
 }
 
-Invoke-AfterSetCoreScsmAnnouncement {
+function Invoke-AfterSetCoreScsmAnnouncement {
   # This function occurs after an announcement is created in SCSM.
   
 }
 
-Invoke-BeforeSetPortalAnnouncement {
+function Invoke-BeforeSetPortalAnnouncement {
   # This function occurs before an announcement is created in the Cireson Portal.
   
 }
 
-Invoke-AfterSetPortalAnnouncement {
+function Invoke-AfterSetPortalAnnouncement {
   # This function occurs after an announcement is created in the Cireson Portal.
   
 }
