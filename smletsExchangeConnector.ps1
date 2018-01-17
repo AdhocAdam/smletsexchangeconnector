@@ -28,6 +28,8 @@ Version: 1.4b-TH =  Changed how credentials are (optionally) added to SMLets, if
                     Created optional creation of new related ticket when comment is received on Closed ticket.
 		    		Changed [take] behavior so that it (optionally) only functions if the email sender belongs to the currently selected support group.
 		    		Created option to check SCSM attachment limits to determine if attachment(s) should be added or not.
+					Created event handlers that trigger customizable functions in an accompanying "custom events" file. This allows proprietary
+						or custom functionality to be added at critical points throughout the script without having to merge them with this script.
 Version: 1.4b = created $voteOnBehalfOfGroups configuration variable so as to introduce the ability for users to Vote on Behalf of a Group
                 created Get-SCSMUserByEmailAddress to simplify how often users are retrieved by email address
                 changed areas that request a user object by email with the new Get-SCSMUserByEmailAddress function
@@ -234,6 +236,10 @@ $mimeKitDLLPath = "C:\smletsExchangeConnector\mimekit.dll"
 #$loggingLevel = (Get-ItemProperty "HKLM:\Software\Microsoft\System Center Service Manager Exchange Connector" -ErrorAction SilentlyContinue).LoggingLevel
 #$loggingLevel = 1
 
+#define the path to the Custom Events script, which will optionally load custom/proprietary scripts as certain events occur.
+# leave this empty to turn off custom events.
+$customEventScriptPath = "C:\smletsExchangeConnector\smletsExchangeConnector_CustomEvents.ps1"
+
 #endregion
 
 #region #### Process User Configs and Prep SMLets ####
@@ -260,6 +266,12 @@ else {
     $defaultSRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultSRTemplateName @scsmMGMTParams
     $defaultPRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultPRTemplateName @scsmMGMTParams
     $defaultCRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultCRTemplateName @scsmMGMTParams
+}
+
+# If a valid path was provided for the custom events script, load it.  $ceScripts will be used to honor/ignore custom events later on.
+$ceScripts = $(Try { Test-Path $customEventScriptPath.trim() } Catch { $false })
+if ($ceScripts) {
+	. $customEventScriptPath
 }
 #endregion
 
@@ -439,6 +451,9 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
         $workItemType = $defaultNewWorkItem
     }
     
+	# Custom Event Handler
+	if ($ceScripts -eq $true) { Invoke-BeforeCreateAnyWorkItem }
+	
     #create the Work Item based on the globally defined Work Item type and Template
     switch ($workItemType) 
     {
@@ -530,6 +545,10 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         #both options are set to $false
                         #don't suggest anything to the Affected User based on their recently created Default Work Item
                     }
+					
+					# Custom Event Handler
+					if ($ceScripts -eq $true) { Invoke-AfterCreateIR }
+					
                 }
         "sr" {
                     if ($UseMailboxRedirection -eq $true) {
@@ -620,6 +639,9 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         #both options are set to $false
                         #don't suggest anything to the Affected User based on their recently created Default Work Item
                     }
+					
+					# Custom Event Handler
+					if ($ceScripts -eq $true) { Invoke-AfterCreateSR }					
                 }
         "pr" {
                     if ($UseMailboxRedirection -eq $true) {
@@ -645,6 +667,9 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                             New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $newWorkItem -Target $relatedUser -Bulk @scsmMGMTParams
                         }
                     }
+					
+					# Custom Event Handler
+					if ($ceScripts -eq $true) { Invoke-AfterCreatePR }
                 }
         "cr" {
                     if ($UseMailboxRedirection -eq $true) {
@@ -673,8 +698,14 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                             New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $newWorkItem -Target $relatedUser -Bulk @scsmMGMTParams
                         }
                     }
+					
+					# Custom Event Handler
+					if ($ceScripts -eq $true) { Invoke-AfterCreateCR }
                 }
     }
+	
+	# Custom Event Handler
+	if ($ceScripts -eq $true) { Invoke-AfterCreateAnyWorkItem }
 
     if ($returnWIBool -eq $true)
     {
@@ -713,7 +744,10 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
             }
         }
     }
-
+	
+	# Custom Event Handler
+	if ($ceScripts -eq $true) { Invoke-BeforeUpdateAnyWorkItem }
+	
     #determine who left the comment
     $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.From)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
     if ($userSMTPNotification) 
@@ -739,103 +773,112 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
     {
         #### primary work item types ####
         "ir" {
-                    $workItem = get-scsmobject -class $irClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
-                    
-                    try {$existingWiStatusName = $workItem.Status.Name} catch {}
-                    if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "IncidentStatusEnum.Closed") {
-                        $newWi = New-WorkItem -message $message -wiType $wiType -returnWIBool $true
-			
-                        #copy essential info over from old to new
-                        $NewDesc = "New ticket generated from reply to $($workItem.Name) (Closed). `n ---- `n $(newWi.Description) `n --- `n Original description: `n --- `n $(workItem.Description)"
-                        $NewWiPropertiesFromOld = @{"Description"=$NewDesc;"TierQueue"=$($workItem.TierQueue);"Classification"=$($workItem.Classfification);"Impact"=$($workItem.Impact);"Urgency"=$($workItem.Urgency);}
-                        Set-SCSMObject -SMObject $newWi -PropertyHashTable $newWiPropertiesFromOld @scsmMGMTParams
+			$workItem = get-scsmobject -class $irClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
 
-                        #relate old and new wi
-                        New-SCSMRelationshipObject -Relationship $wiRelatesToWiRelClass -Source $newWi -Target $workItem -Bulk @scsmMGMTParams
-                    }
-                    else {
-                        try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
-                        if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
-                        try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
-                        if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
-                        #write to the Action log
-                        switch ($message.From)
-                        {
-                            $affectedUserSMTP.TargetAddress {Add-IncidentComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -AnalystComment $false -isPrivate $false}
-                            $assignedToSMTP.TargetAddress {if($commentToAdd -match "#private"){$isPrivateBool = $true}else{$isPrivateBool = $false};Add-IncidentComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -AnalystComment $true -isPrivate $isPrivateBool}
-                            default {if($commentToAdd -match "#private"){$isPrivateBool = $true}else{$isPrivateBool = $null};Add-IncidentComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $true -isPrivate $isPrivateBool}
-                        }
-                        #take action on the Work Item if neccesary
-                        switch -Regex ($commentToAdd)
-                        {
-                            "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams}}
-                            "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Resolved$" @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk}
-                            "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Closed$" @scsmMGMTParams}
-                            "\[$takeKeyword]" {
-                                if ($takeRequiresGroupMembership -eq $false -or (Get-TierMembership $commentLeftBy.UserName, $workItem.TierQueue.Id) -eq $true) {
-                                    New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
-                                }
-                                else {
-                                    #TODO: Send an email to let them know it failed?
-                                }
-                            }
-                            "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Active$" @scsmMGMTParams}}
-                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "[I][R][0-9]+")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}}}
-                            {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}}
-                        }
-                        #relate the user to the work item
-                        New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams
-                        #add any new attachments
-                        if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $workItem.ID}
-                    }
-                } 
+			try {$existingWiStatusName = $workItem.Status.Name} catch {}
+			if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "IncidentStatusEnum.Closed") {
+				$newWi = New-WorkItem -message $message -wiType $wiType -returnWIBool $true
+
+				#copy essential info over from old to new
+				$NewDesc = "New ticket generated from reply to $($workItem.Name) (Closed). `n ---- `n $(newWi.Description) `n --- `n Original description: `n --- `n $(workItem.Description)"
+				$NewWiPropertiesFromOld = @{"Description"=$NewDesc;"TierQueue"=$($workItem.TierQueue);"Classification"=$($workItem.Classfification);"Impact"=$($workItem.Impact);"Urgency"=$($workItem.Urgency);}
+				Set-SCSMObject -SMObject $newWi -PropertyHashTable $newWiPropertiesFromOld @scsmMGMTParams
+
+				#relate old and new wi
+				New-SCSMRelationshipObject -Relationship $wiRelatesToWiRelClass -Source $newWi -Target $workItem -Bulk @scsmMGMTParams
+			}
+			else {
+				try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
+				if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+				try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
+				if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+				#write to the Action log
+				switch ($message.From)
+				{
+					$affectedUserSMTP.TargetAddress {Add-IncidentComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -AnalystComment $false -isPrivate $false}
+					$assignedToSMTP.TargetAddress {if($commentToAdd -match "#private"){$isPrivateBool = $true}else{$isPrivateBool = $false};Add-IncidentComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -AnalystComment $true -isPrivate $isPrivateBool}
+					default {if($commentToAdd -match "#private"){$isPrivateBool = $true}else{$isPrivateBool = $null};Add-IncidentComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $true -isPrivate $isPrivateBool}
+				}
+				#take action on the Work Item if neccesary
+				switch -Regex ($commentToAdd)
+				{
+					"\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams;if ($ceScripts -eq $true) { Invoke-AfterAcknowledge }}}
+					"\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Resolved$" @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;if ($ceScripts -eq $true) { Invoke-AfterResolved }}
+					"\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Closed$" @scsmMGMTParams;if ($ceScripts -eq $true) { Invoke-AfterClosed }}
+					"\[$takeKeyword]" {
+						if ($takeRequiresGroupMembership -eq $false -or (Get-TierMembership $commentLeftBy.UserName, $workItem.TierQueue.Id) -eq $true) {
+							New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+							# Custom Event Handler
+							if ($ceScripts -eq $true) { Invoke-AfterTake }
+						}
+						else {
+							#TODO: Send an email to let them know it failed?
+						}
+					}
+					"\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Active$" @scsmMGMTParams;if ($ceScripts -eq $true) { Invoke-AfterReactivate }}}
+					"\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "[I][R][0-9]+")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts -eq $true) { Invoke-AfterReactivate }}}
+					{($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}}
+				}
+				#relate the user to the work item
+				New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams
+				#add any new attachments
+				if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $workItem.ID}
+			}
+
+			# Custom Event Handler
+			if ($ceScripts -eq $true) { Invoke-AfterUpdateIR }
+		} 
         "sr" {
-                    $workItem = get-scsmobject -class $srClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
-                    
-                    try {$existingWiStatusName = $workItem.Status.Name} catch {}
-                    if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "ServiceRequestStatusEnum.Closed") {
-                        $newWi = New-WorkItem -message $message -wiType $wiType -returnWIBool $true
-			
-                        #copy essential info over from old to new
-                        $NewDesc = "New ticket generated from reply to $($workItem.Name) (Closed). `n ---- `n $(newWi.Description) `n --- `n Original description: `n --- `n $(workItem.Description)"
-                        $NewWiPropertiesFromOld = @{"Description"=$NewDesc;"SupportGroup"=$($workItem.SupportGroup);"ServiceRequestCategory"=$($workItem.ServiceRequestCategory);"Priority"=$($workItem.Priority);"Urgency"=$($workItem.Urgency)}
-                        Set-SCSMObject -SMObject $newWi -PropertyHashTable $newWiPropertiesFromOld @scsmMGMTParams
+			$workItem = get-scsmobject -class $srClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
 
-                        #relate old and new wi
-                        New-SCSMRelationshipObject -Relationship $wiRelatesToWiRelClass -Source $newWi -Target $workItem -Bulk @scsmMGMTParams
-                    }
-                    else {
-                        try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
-                        if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
-                        try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
-                        if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
-                        switch ($message.From)
-                        {
-                            $affectedUserSMTP.TargetAddress {Add-ServiceRequestComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -AnalystComment $false -isPrivate $false}
-                            $assignedToSMTP.TargetAddress {if($commentToAdd -match "#private"){$isPrivateBool = $true}else{$isPrivateBool = $false};Add-ServiceRequestComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -AnalystComment $true -isPrivate $isPrivateBool}
-                            default {if($commentToAdd -match "#private"){$isPrivateBool = $true}else{$isPrivateBool = $null};Add-ServiceRequestComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $true -isPrivate $isPrivateBool}
-                        }
-                        switch -Regex ($commentToAdd)
-                        {
-							"\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.OnHold$" @scsmMGMTParams}
-                            "\[$takeKeyword]" {
-                                if ($takeRequiresGroupMembership -eq $false -or (Get-TierMembership $commentLeftBy.UserName, $workItem.SupportGroup.Id) -eq $true) {
-                                    New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
-                                }
-                                else {
-                                    #TODO: Send an email to let them know it failed?
-                                }
-                            }
-                            "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Completed$" @scsmMGMTParams}
-                            "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Canceled$" @scsmMGMTParams}
-                            "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Closed$" @scsmMGMTParams}
-                        }
-                        #relate the user to the work item
-                        New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams
-                        #add any new attachments
-                        if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $workItem.ID}
-                    }
-                } 
+			try {$existingWiStatusName = $workItem.Status.Name} catch {}
+			if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "ServiceRequestStatusEnum.Closed") {
+				$newWi = New-WorkItem -message $message -wiType $wiType -returnWIBool $true
+
+				#copy essential info over from old to new
+				$NewDesc = "New ticket generated from reply to $($workItem.Name) (Closed). `n ---- `n $(newWi.Description) `n --- `n Original description: `n --- `n $(workItem.Description)"
+				$NewWiPropertiesFromOld = @{"Description"=$NewDesc;"SupportGroup"=$($workItem.SupportGroup);"ServiceRequestCategory"=$($workItem.ServiceRequestCategory);"Priority"=$($workItem.Priority);"Urgency"=$($workItem.Urgency)}
+				Set-SCSMObject -SMObject $newWi -PropertyHashTable $newWiPropertiesFromOld @scsmMGMTParams
+
+				#relate old and new wi
+				New-SCSMRelationshipObject -Relationship $wiRelatesToWiRelClass -Source $newWi -Target $workItem -Bulk @scsmMGMTParams
+			}
+			else {
+				try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
+				if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+				try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
+				if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+				switch ($message.From)
+				{
+					$affectedUserSMTP.TargetAddress {Add-ServiceRequestComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -AnalystComment $false -isPrivate $false}
+					$assignedToSMTP.TargetAddress {if($commentToAdd -match "#private"){$isPrivateBool = $true}else{$isPrivateBool = $false};Add-ServiceRequestComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -AnalystComment $true -isPrivate $isPrivateBool}
+					default {if($commentToAdd -match "#private"){$isPrivateBool = $true}else{$isPrivateBool = $null};Add-ServiceRequestComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $true -isPrivate $isPrivateBool}
+				}
+				switch -Regex ($commentToAdd)
+				{
+					"\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.OnHold$" @scsmMGMTParams;if ($ceScripts -eq $true) { Invoke-AfterHold }}
+					"\[$takeKeyword]" {
+						if ($takeRequiresGroupMembership -eq $false -or (Get-TierMembership $commentLeftBy.UserName, $workItem.SupportGroup.Id) -eq $true) {
+							New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+							# Custom Event Handler
+							if ($ceScripts -eq $true) { Invoke-AfterTake }
+						}
+						else {
+							#TODO: Send an email to let them know it failed?
+						}
+					}
+					"\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Completed$" @scsmMGMTParams;if ($ceScripts -eq $true) { Invoke-AfterCompleted }}
+					"\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Canceled$" @scsmMGMTParams;if ($ceScripts -eq $true) { Invoke-AfterCancelled }}
+					"\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Closed$" @scsmMGMTParams;if ($ceScripts -eq $true) { Invoke-AfterClosed }}
+				}
+				#relate the user to the work item
+				New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams
+				#add any new attachments
+				if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $workItem.ID}
+			}
+			# Custom Event Handler
+			if ($ceScripts -eq $true) { Invoke-AfterUpdateSR }
+		} 
         "pr" {
                     $workItem = get-scsmobject -class $prClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
                     try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
@@ -849,16 +892,19 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     #take action on the Work Item if neccesary
                     switch -Regex ($commentToAdd)
                     {
-                         "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Resolved$" @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk}
-                         "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Closed$" @scsmMGMTParams}
-                         "\[$takeKeyword]" {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk}
-                         "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "ProblemStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Active$" @scsmMGMTParams}}
+                         "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Resolved$" @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;if ($ceScripts -eq $true) { Invoke-AfterResolved }}
+                         "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Closed$" @scsmMGMTParams;if ($ceScripts -eq $true) { Invoke-AfterClosed }}
+                         "\[$takeKeyword]" {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;if ($ceScripts -eq $true) { Invoke-AfterTake }}
+                         "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "ProblemStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Active$" @scsmMGMTParams};if ($ceScripts -eq $true) { Invoke-AfterReactivate }}
                         {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}}
                     }
                     #relate the user to the work item
                     New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams
                     #add any new attachments
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $workItem.ID}
+					
+					# Custom Event Handler
+					if ($ceScripts -eq $true) { Invoke-AfterUpdatePR }
                 }
         "cr" {
                     $workItem = get-scsmobject -class $crClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
@@ -873,15 +919,18 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     #take action on the Work Item if neccesary
                     switch -Regex ($commentToAdd)
                     {
-                        "\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ChangeStatusEnum.OnHold$" @scsmMGMTParams}
-                        "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ChangeStatusEnum.Cancelled$" @scsmMGMTParams}
-                        "\[$takeKeyword]" {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk}
+                        "\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ChangeStatusEnum.OnHold$" @scsmMGMTParams;if ($ceScripts -eq $true) { Invoke-AfterHold }}
+                        "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ChangeStatusEnum.Cancelled$" @scsmMGMTParams;if ($ceScripts -eq $true) { Invoke-AfterCancelled }}
+                        "\[$takeKeyword]" {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk; if ($ceScripts -eq $true) { Invoke-AfterTake }}
                         {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}}
                     }
                     #relate the user to the work item
                     New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams
                     #add any new attachments
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $workItem.ID}
+					
+					# Custom Event Handler
+					if ($ceScripts -eq $true) { Invoke-AfterUpdateCR }
                 }
         
         #### activities ####
@@ -901,12 +950,16 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             {
                                     Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $commentToAdd} @scsmMGMTParams
                                     New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk @scsmMGMTParams
+									# Custom Event Handler
+									if ($ceScripts -eq $true) { Invoke-AfterApproved }
                             }
                             #rejected
                             elseif (($reviewingUserSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$rejectedKeyword]"))
                             {
                                     Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $commentToAdd} @scsmMGMTParams
                                     New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk @scsmMGMTParams
+									# Custom Event Handler
+									if ($ceScripts -eq $true) { Invoke-AfterRejected }
                             }
                             #no keyword, add a comment to parent work item
                             elseif (($reviewingUserSMTP.TargetAddress -eq $message.From) -and (($commentToAdd -notmatch "\[$approvedKeyword]") -or ($commentToAdd -notmatch "\[$rejectedKeyword]")))
@@ -931,12 +984,17 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             {
                                 Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $commentToAdd} @scsmMGMTParams
                                 New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $votedOnBehalfOfUser -Bulk @scsmMGMTParams
+								# Custom Event Handler
+								if ($ceScripts -eq $true) { Invoke-AfterApprovedOnBehalf }
+								
                             }
                             #rejected on behalf of
                             elseif (($reviewerGroupMembers.EmailAddress -contains $message.From) -and ($commentToAdd -match "\[$rejectedKeyword]"))
                             {
                                 Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $commentToAdd} @scsmMGMTParams
                                 New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $votedOnBehalfOfUser -Bulk @scsmMGMTParams
+								# Custom Event Handler
+								if ($ceScripts -eq $true) { Invoke-AfterRejectedOnBehalf }
                             }
                             #no keyword, add a comment to parent work item
                             elseif (($reviewerGroupMembers.EmailAddress -contains $message.From) -and (($commentToAdd -notmatch "\[$approvedKeyword]") -or ($commentToAdd -notmatch "\[$rejectedKeyword]")))
@@ -955,6 +1013,9 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             #not a user or a group
                         }
                     }
+					
+					# Custom Event Handler
+					if ($ceScripts -eq $true) { Invoke-AfterUpdateRA }
                 }
         "ma" {
                     $workItem = get-scsmobject -class $maClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
@@ -965,11 +1026,15 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     if (($activityImplementerSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$completedKeyword]"))
                     {
                         Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "ActivityStatusEnum.Completed$"; "ActualEndDate" = (get-date).ToUniversalTime(); "Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams
+						# Custom Event Handler
+						if ($ceScripts -eq $true) { Invoke-AfterCompleted }
                     }
                     #skipped
                     elseif (($activityImplementerSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$skipKeyword]"))
                     {
                         Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "ActivityStatusEnum.Skipped$"; "ActualEndDate" = (get-date).ToUniversalTime(); "Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams
+						# Custom Event Handler
+						if ($ceScripts -eq $true) { Invoke-AfterSkipped }
                     }
                     #not from the Activity Implementer, add to the MA Notes
                     elseif (($activityImplementerSMTP.TargetAddress -ne $message.From))
@@ -988,8 +1053,14 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                         }
                             
                     }
+					
+					# Custom Event Handler
+					if ($ceScripts -eq $true) { Invoke-AfterUpdateMA }
                 }
     } 
+	
+	# Custom Event Handler
+	if ($ceScripts -eq $true) { Invoke-AfterUpdateAnyWorkItem }
 }
 
 function Attach-EmailToWorkItem ($message, $workItemID)
@@ -1006,7 +1077,10 @@ function Attach-EmailToWorkItem ($message, $workItemID)
 	
     $messageMime = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
     $MemoryStream = New-Object System.IO.MemoryStream($messageMime.MimeContent.Content,0,$messageMime.MimeContent.Content.Length)
-
+	
+	# Custom Event Handler
+	if ($ceScripts -eq $true) { Invoke-BeforeAttachEmail }
+	
 	# if #checkAttachmentSettings -eq $true, test whether the email size (IN KB!) exceeds the limit and if the number of existing attachments is under the limit
     if ($checkAttachmentSettings -eq $false -or `
         (($MemoryStream.Length / 1024) -le $($attachLimits["MaxAttachmentSize"]) -and $existingAttachmentsCount -le $($attachLimits["MaxAttachments"])))
@@ -1033,6 +1107,9 @@ function Attach-EmailToWorkItem ($message, $workItemID)
     	    $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
         	New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
     	}
+		
+		# Custom Event Handler
+		if ($ceScripts -eq $true) { Invoke-AfterAttachEmail }
 	}
 }
 
@@ -1050,7 +1127,10 @@ function Attach-FileToWorkItem ($message, $workItemId)
         # Only use at before the loop
         try {$existingAttachmentsCount = $existingAttachments.Count } catch {}
     }
-
+	
+	# Custom Event Handler
+	if ($ceScripts -eq $true) { Invoke-BeforeAttachFiles }
+	
     if ($checkAttachmentSettings -eq $false -or $existingAttachmentsCount -lt $attachLimits["MaxAttachments"]) {
 	    foreach ($attachment in $message.Attachments)
     	{
@@ -1129,6 +1209,8 @@ function Attach-FileToWorkItem ($message, $workItemId)
             	}
         	}
     	}
+		# Custom Event Handler
+		if ($ceScripts -eq $true) { Invoke-AfterAttachFiles }
 	}
 }
 
@@ -1262,7 +1344,10 @@ function Create-UserInCMDB ($userEmail)
 
     #create the user's email notification channel
     New-SCSMObjectProjection -Type "$($userHasPrefProjection.Name)" -Projection $userNoticeProjection @scsmMGMTParams
-
+	
+	# Custom Event Handler
+	if ($ceScripts -eq $true) { Invoke-AfterUserCreatedInCMDB }
+	
     return $newUser
 }
 
@@ -1794,6 +1879,9 @@ function Get-SCSMAuthorizedAnnouncer ($sender)
 
 function Set-CoreSCSMAnnouncement ($message, $workItem)
 {
+	# Custom Event Handler
+	if ($ceScripts -eq $true) { Invoke-BeforeSetCoreScsmAnnouncement }
+	
     #if the message is an email, we need to add the end time property to the object
     #otherwise, it's a calendar appointment/meeting which already has these properties
     if ($message.ItemClass -eq "IPM.Note")
@@ -1849,10 +1937,16 @@ function Set-CoreSCSMAnnouncement ($message, $workItem)
         #create the announcement in SCSM
         New-SCSMObject -Class $announcementClass -PropertyHashtable $announcementPropertyHashtable @scsmMGMTParams
     }
+	
+	# Custom Event Handler
+	if ($ceScripts -eq $true) { Invoke-AfterSetCoreScsmAnnouncement }
 }
 
 function Set-CiresonPortalAnnouncement ($message, $workItem)
 {
+	# Custom Event Handler
+	if ($ceScripts -eq $true) { Invoke-BeforeSetPortalAnnouncement }
+	
     $updateAnnouncementURL = "api/v3/Announcement/UpdateAnnouncement"
 
     #if the message is an email, we need to add the start time and end time property to the object
@@ -2012,6 +2106,9 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
             }
         }
     }
+	
+	# Custom Event Handler
+	if ($ceScripts -eq $true) { Invoke-AfterSetPortalAnnouncement }
 }
 #endregion
 
@@ -2228,6 +2325,9 @@ if (($processDigitallySignedMessages -eq $true) -or ($processEncryptedMessages -
     }
 }
 
+# Custom Event Handler
+if ($ceScripts -eq $true) { Invoke-BeforeConnect }
+
 #define Exchange assembly and connect to EWS
 [void] [Reflection.Assembly]::LoadFile("$exchangeEWSAPIPath")
 $exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService
@@ -2290,6 +2390,9 @@ $inboxFilterString = [scriptblock]::Create("$inboxFilterString")
 #filter the inbox
 $inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
 
+# Custom Event Handler
+if ($ceScripts -eq $true) { Invoke-OnOpenInbox }
+
 #parse each message
 foreach ($message in $inbox)
 {
@@ -2312,7 +2415,10 @@ foreach ($message in $inbox)
         $email | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationID
         $email | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
         $email | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
-
+		
+		# Custom Event Handler
+		if ($ceScripts -eq $true) { Invoke-BeforeProcessEmail }
+		
         switch -Regex ($email.subject) 
         { 
             #### primary work item types ####
@@ -2336,6 +2442,9 @@ foreach ($message in $inbox)
             #### default action, create work item ####
             default {new-workitem $email $defaultNewWorkItem} 
         }
+		
+		# Custom Event Handler
+		if ($ceScripts -eq $true) { Invoke-AfterProcessEmail }
 
         #mark the message as read on Exchange, move to deleted items
         $message.IsRead = $true
@@ -2346,6 +2455,9 @@ foreach ($message in $inbox)
     #### Process a Digitally Signed message ####
     elseif ($message.ItemClass -eq "IPM.Note.SMIME.MultipartSigned")
     {
+		# Custom Event Handler
+		if ($ceScripts -eq $true) { Invoke-BeforeProcessSignedEmail }
+		
         $response = Read-MIMEMessage $message
 
         #check to see if there are attachments besides the smime.p7s signature
@@ -2365,6 +2477,9 @@ foreach ($message in $inbox)
         $email | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationId
         $email | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
         $email | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
+		
+		# Custom Event Handler
+		if ($ceScripts -eq $true) { Invoke-BeforeProcessEmail }
 
         switch -Regex ($email.subject) 
         { 
@@ -2389,16 +2504,25 @@ foreach ($message in $inbox)
             #### default action, create work item ####
             default {new-workitem $email $defaultNewWorkItem} 
         }
-
+		
+		# Custom Event Handler
+		if ($ceScripts -eq $true) { Invoke-AfterProcessEmail }
+				
         #mark the message as read on Exchange, move to deleted items
         $message.IsRead = $true
         $hideInVar01 = $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve)
         $hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)
+		
+		# Custom Event Handler
+		if ($ceScripts -eq $true) { Invoke-AfterProcessSignedEmail }
     }
 
     #### Process an Encrypted message ####
     elseif ($message.ItemClass -eq "IPM.Note.SMIME")
     {
+		# Custom Event Handler
+		if ($ceScripts -eq $true) { Invoke-BeforeProcessEncryptedEmail }
+		
         $response = Read-MIMEMessage $message
         $decryptedBody = $response.Body.Decrypt($certStore)
 
@@ -2421,7 +2545,10 @@ foreach ($message in $inbox)
             $email | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationId
             $email | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
             $email | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
-
+			
+			# Custom Event Handler
+			if ($ceScripts -eq $true) { Invoke-BeforeProcessEmail }
+			
             switch -Regex ($email.subject) 
             { 
                 #### primary work item types ####
@@ -2445,15 +2572,27 @@ foreach ($message in $inbox)
                 #### default action, create work item ####
                 default {new-workitem $email $defaultNewWorkItem} 
             }
+			
+			# Custom Event Handler
+			if ($ceScripts -eq $true) { Invoke-AfterProcessEmail }
 
             #mark the message as read on Exchange, move to deleted items
             $message.IsRead = $true
             $hideInVar01 = $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve)
             $hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)
+			
+			# Custom Event Handler
+			if ($ceScripts -eq $true) { Invoke-BeforeProcessEncryptedEmail }
         }
         #Message is encrypted and signed
         else
         {
+			# Custom Event Handler
+			if ($ceScripts -eq $true) { Invoke-BeforeProcessEncryptedEmail }
+			
+			# Custom Event Handler
+			if ($ceScripts -eq $true) { Invoke-BeforeProcessSignedEmail }
+			
             $email = New-Object System.Object 
             $email | Add-Member -type NoteProperty -name From -value $response.From.Address
             $email | Add-Member -type NoteProperty -name To -value $response.To.Address
@@ -2467,7 +2606,10 @@ foreach ($message in $inbox)
             $email | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationId
             $email | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
             $email | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
-
+			
+			# Custom Event Handler
+			if ($ceScripts -eq $true) { Invoke-BeforeProcessEmail }
+			
             switch -Regex ($email.subject) 
             { 
                 #### primary work item types ####
@@ -2491,11 +2633,20 @@ foreach ($message in $inbox)
                 #### default action, create work item ####
                 default {new-workitem $email $defaultNewWorkItem} 
             }
-
+			
+			# Custom Event Handler
+			if ($ceScripts -eq $true) { Invoke-AfterProcessEmail }
+			
             #mark the message as read on Exchange, move to deleted items
             $message.IsRead = $true
             $hideInVar01 = $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve)
             $hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)
+			
+			# Custom Event Handler
+			if ($ceScripts -eq $true) { Invoke-AfterProcessSignedEmail }
+			
+			# Custom Event Handler
+			if ($ceScripts -eq $true) { Invoke-AfterProcessEncryptedEmail }
         }
     }
 
@@ -2516,7 +2667,10 @@ foreach ($message in $inbox)
         $appointment | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationID
         $appointment | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
         $appointment | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
-
+		
+		# Custom Event Handler
+		if ($ceScripts -eq $true) { Invoke-BeforeProcessAppointment }
+		
         switch -Regex ($appointment.subject) 
         { 
             #### primary work item types ####
@@ -2537,6 +2691,9 @@ foreach ($message in $inbox)
             #### default action, create/schedule a new default work item ####
             default {$returnedNewWorkItemToSchedule = new-workitem $appointment $defaultNewWorkItem $true; schedule-workitem -calAppt $appointment -wiType $defaultNewWorkItem -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)} 
         }
+		
+		# Custom Event Handler
+		if ($ceScripts -eq $true) { Invoke-AfterProcessAppointment }
     }
 
     #Process a Calendar Meeting Cancellation
@@ -2556,6 +2713,9 @@ foreach ($message in $inbox)
         $appointment | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationID
         $appointment | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
         $appointment | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
+		
+		# Custom Event Handler
+		if ($ceScripts -eq $true) { Invoke-BeforeProcessCancelMeeting }
 
         switch -Regex ($appointment.subject) 
         { 
@@ -2577,7 +2737,10 @@ foreach ($message in $inbox)
             #### default action, create/schedule a new default work item ####
             default {$returnedNewWorkItemToSchedule = new-workitem $appointment $defaultNewWorkItem $true; schedule-workitem -calAppt $appointment -wiType $defaultNewWorkItem -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)} 
         }
-
+		
+		# Custom Event Handler
+		if ($ceScripts -eq $true) { Invoke-AfterProcessCancelMeeting }
+		
         #Move to deleted items
         $message.Delete([Microsoft.Exchange.WebServices.Data.DeleteMode]::MoveToDeletedItems)
     }
