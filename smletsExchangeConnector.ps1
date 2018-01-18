@@ -236,10 +236,11 @@ $mimeKitDLLPath = "C:\smletsExchangeConnector\mimekit.dll"
 #$loggingLevel = (Get-ItemProperty "HKLM:\Software\Microsoft\System Center Service Manager Exchange Connector" -ErrorAction SilentlyContinue).LoggingLevel
 #$loggingLevel = 1
 
-#define the path to the Custom Events script, which will optionally load custom/proprietary scripts as certain events occur.
-# leave this empty to turn off custom events.
-$customEventScriptPath = "C:\smletsExchangeConnector\smletsExchangeConnector_CustomEvents.ps1"
-
+#$customEventScriptPath = define the path to the Custom Events script, which will optionally load custom/proprietary scripts as certain events occur.
+    # leave the quotes empty ('') to turn off custom events.
+    # If running as a scheduled task use this format: 'C:\smletsExchangeConnector\smletsExchangeConnector_CustomEvents.ps1'
+    # If running in SMA, provide the path as .\ then name of the runbook with .ps1 at the end: '.\smletsExchangeConnector_CustomEvents.ps1'
+$customEventScriptPath = 'C:\smletsExchangeConnector\smletsExchangeConnector_CustomEvents.ps1'
 #endregion
 
 #region #### Process User Configs and Prep SMLets ####
@@ -270,9 +271,7 @@ else {
 
 # If a valid path was provided for the custom events script, load it.  $ceScripts will be used to honor/ignore custom events later on.
 $ceScripts = $(Try { Test-Path $customEventScriptPath.trim() } Catch { $false })
-if ($ceScripts) {
-	. $customEventScriptPath
-}
+if ($ceScripts) {if ($customEventScriptPath -like ".\*") {Invoke-Expression $customEventScriptPath} else {Invoke-Expression $('. '+$customEventScriptPath)}}
 #endregion
 
 #region #### SCSM Classes ####
