@@ -271,9 +271,6 @@ else {
     $defaultCRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultCRTemplateName @scsmMGMTParams
 }
 
-# If a valid path was provided for the custom events script, load it.  $ceScripts will be used to honor/ignore custom events later on.
-$ceScripts = $(Try { Test-Path $customEventScriptPath.trim() } Catch { $false })
-if ($ceScripts) {if ($customEventScriptPath -like ".\*") {Invoke-Expression $customEventScriptPath} else {Invoke-Expression $('. '+$customEventScriptPath)}}
 #endregion
 
 #region #### SCSM Classes ####
