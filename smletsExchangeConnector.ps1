@@ -443,7 +443,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     # specific mailbox that the current message was sent to.  Use default if there is no match.
     if ($UseMailboxRedirection -eq $true) {
         $TemplatesForThisMessage = Get-TemplatesByMailbox $message
-        $workItemType = $TemplatesForThisMessage["DefaultWiType"]
+        $workItemType = if ($TemplatesForThisMessage) {$TemplatesForThisMessage["DefaultWiType"]} else {$defaultNewWorkItem}
     }
     else {
         $workItemType = $defaultNewWorkItem
@@ -456,7 +456,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     switch ($workItemType) 
     {
         "ir" {
-                    if ($UseMailboxRedirection -eq $true) {
+                    if ($UseMailboxRedirection -eq $true -And $TemplatesForThisMessage) {
                         $IRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["IRTemplate"]) @scsmMGMTParams
                     }
                     else {
@@ -549,7 +549,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     
                 }
         "sr" {
-                    if ($UseMailboxRedirection -eq $true) {
+                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage) {
                         $SRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["SRTemplate"]) @scsmMGMTParams
                     }
                     else {
@@ -642,7 +642,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($ceScripts) { Invoke-AfterCreateSR }					
                 }
         "pr" {
-                    if ($UseMailboxRedirection -eq $true) {
+                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage) {
                         $PRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["PRTemplate"]) @scsmMGMTParams
                     }
                     else {
@@ -670,7 +670,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($ceScripts) { Invoke-AfterCreatePR }
                 }
         "cr" {
-                    if ($UseMailboxRedirection -eq $true) {
+                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage) {
                         $CRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["CRTemplate"]) @scsmMGMTParams
                     }
                     else {
