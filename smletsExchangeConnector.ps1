@@ -1350,11 +1350,11 @@ function Create-UserInCMDB ($userEmail)
 
     #create the user notification projection
     $userNoticeProjection = @{__CLASS = "$($domainUserClass.Name)";
-                                __SEED = $newUser;
-                                Notification = @{__CLASS = "$($notificationClass)";
-                                                    __OBJECT = @{"ID" = $newID; "TargetAddress" = "$userEmail"; "DisplayName" = "E-mail address"; "ChannelName" = "SMTP"}
-                                                }
-                                }
+                                __SEED = $newUser;
+                                Notification = @{__CLASS = "$($notificationClass)";
+                                                    __OBJECT = @{"ID" = $newID; "TargetAddress" = "$userEmail"; "DisplayName" = "E-mail address"; "ChannelName" = "SMTP"}
+                                                }
+                                }
 
     #create the user's email notification channel
     New-SCSMObjectProjection -Type "$($userHasPrefProjection.Name)" -Projection $userNoticeProjection @scsmMGMTParams
@@ -1367,189 +1367,189 @@ function Create-UserInCMDB ($userEmail)
 
 #inspired and modified from Travis Wright here - https://blogs.technet.microsoft.com/servicemanager/2013/01/16/creating-membership-and-hosting-objectsrelationships-using-new-scsmobjectprojection-in-smlets/
 function Add-IncidentComment {
-    param (
-        [parameter(Mandatory=$True,Position=0)]$WIObject,
-        [parameter(Mandatory=$True,Position=1)]$Comment,
-        [parameter(Mandatory=$True,Position=2)]$EnteredBy,
-        [parameter(Mandatory=$False,Position=3)]$AnalystComment,
-        [parameter(Mandatory=$False,Position=4)]$IsPrivate
-    )
- 
-    # Make sure that the WI Object it passed to the function
-    If ($WIObject.Id -ne $NULL) {
+    param (
+        [parameter(Mandatory=$True,Position=0)]$WIObject,
+        [parameter(Mandatory=$True,Position=1)]$Comment,
+        [parameter(Mandatory=$True,Position=2)]$EnteredBy,
+        [parameter(Mandatory=$False,Position=3)]$AnalystComment,
+        [parameter(Mandatory=$False,Position=4)]$IsPrivate
+    )
+ 
+    # Make sure that the WI Object it passed to the function
+    If ($WIObject.Id -ne $NULL) {
 
-        If ($AnalystComment -eq $true) {
-            $CommentClass = "System.WorkItem.TroubleTicket.AnalystCommentLog"
-            $CommentClassName = "AnalystComments"
-        } else {
-            $CommentClass = "System.WorkItem.TroubleTicket.UserCommentLog"
-            $CommentClassName = "UserComments"
-        }
- 
-        # Generate a new GUID for the comment
-        $NewGUID = ([guid]::NewGuid()).ToString()
- 
-        # Create the object projection with properties
-        $Projection = @{__CLASS = "$($WIObject.ClassName)";
-                        __SEED = $WIObject;
-                        $CommentClassName = @{__CLASS = $CommentClass;
-                                            __OBJECT = @{Id = $NewGUID;
-                                                        DisplayName = $NewGUID;
-                                                        Comment = $Comment;
-                                                        EnteredBy = $EnteredBy;
-                                                        EnteredDate = (Get-Date).ToUniversalTime();
-                                                        IsPrivate = $IsPrivate;
-                                            }
-                        }
-        }
- 
-        # Create the actual comment
+        If ($AnalystComment -eq $true) {
+            $CommentClass = "System.WorkItem.TroubleTicket.AnalystCommentLog"
+            $CommentClassName = "AnalystComments"
+        } else {
+            $CommentClass = "System.WorkItem.TroubleTicket.UserCommentLog"
+            $CommentClassName = "UserComments"
+        }
+ 
+        # Generate a new GUID for the comment
+        $NewGUID = ([guid]::NewGuid()).ToString()
+ 
+        # Create the object projection with properties
+        $Projection = @{__CLASS = "$($WIObject.ClassName)";
+                        __SEED = $WIObject;
+                        $CommentClassName = @{__CLASS = $CommentClass;
+                                            __OBJECT = @{Id = $NewGUID;
+                                                        DisplayName = $NewGUID;
+                                                        Comment = $Comment;
+                                                        EnteredBy = $EnteredBy;
+                                                        EnteredDate = (Get-Date).ToUniversalTime();
+                                                        IsPrivate = $IsPrivate;
+                                            }
+                        }
+        }
+ 
+        # Create the actual comment
         New-SCSMObjectProjection -Type "System.WorkItem.IncidentPortalProjection" -Projection $Projection @scsmMGMTParams
-    } else {
-        Throw "Invalid Incident Object!"
-    }
+    } else {
+        Throw "Invalid Incident Object!"
+    }
 }
 
 #inspired and modified from Anders Asp here - http://www.scsm.se/?p=1423
 function Add-ServiceRequestComment {
-    param (
-        [parameter(Mandatory=$True,Position=0)]$WIObject,
-        [parameter(Mandatory=$True,Position=1)]$Comment,
-        [parameter(Mandatory=$True,Position=2)]$EnteredBy,
-        [parameter(Mandatory=$False,Position=3)]$AnalystComment,
-        [parameter(Mandatory=$False,Position=4)]$IsPrivate
-    )
- 
-    # Make sure that the SR Object it passed to the function
-    If ($WIObject.Id -ne $NULL) {
-         
- 
-        If ($AnalystComment -eq $true) {
-            $CommentClass = "System.WorkItem.TroubleTicket.AnalystCommentLog"
-            $CommentClassName = "AnalystCommentLog"
-        } else {
-            $CommentClass = "System.WorkItem.TroubleTicket.UserCommentLog"
-            $CommentClassName = "EndUserCommentLog"
-        }
- 
-        # Generate a new GUID for the comment
-        $NewGUID = ([guid]::NewGuid()).ToString()
- 
-        # Create the object projection with properties
-        $Projection = @{__CLASS = "$($WIObject.Classname)";
-                        __SEED = $WIObject;
-                        $CommentClassName = @{__CLASS = $CommentClass;
-                                            __OBJECT = @{Id = $NewGUID;
-                                                        DisplayName = $NewGUID;
-                                                        Comment = $Comment;
-                                                        EnteredBy = $EnteredBy;
-                                                        EnteredDate = (Get-Date).ToUniversalTime();
-                                                        IsPrivate = $IsPrivate;
-                                            }
-                        }
-        }
- 
-        # Create the actual comment
+    param (
+        [parameter(Mandatory=$True,Position=0)]$WIObject,
+        [parameter(Mandatory=$True,Position=1)]$Comment,
+        [parameter(Mandatory=$True,Position=2)]$EnteredBy,
+        [parameter(Mandatory=$False,Position=3)]$AnalystComment,
+        [parameter(Mandatory=$False,Position=4)]$IsPrivate
+    )
+ 
+    # Make sure that the SR Object it passed to the function
+    If ($WIObject.Id -ne $NULL) {
+         
+ 
+        If ($AnalystComment -eq $true) {
+            $CommentClass = "System.WorkItem.TroubleTicket.AnalystCommentLog"
+            $CommentClassName = "AnalystCommentLog"
+        } else {
+            $CommentClass = "System.WorkItem.TroubleTicket.UserCommentLog"
+            $CommentClassName = "EndUserCommentLog"
+        }
+ 
+        # Generate a new GUID for the comment
+        $NewGUID = ([guid]::NewGuid()).ToString()
+ 
+        # Create the object projection with properties
+        $Projection = @{__CLASS = "$($WIObject.Classname)";
+                        __SEED = $WIObject;
+                        $CommentClassName = @{__CLASS = $CommentClass;
+                                            __OBJECT = @{Id = $NewGUID;
+                                                        DisplayName = $NewGUID;
+                                                        Comment = $Comment;
+                                                        EnteredBy = $EnteredBy;
+                                                        EnteredDate = (Get-Date).ToUniversalTime();
+                                                        IsPrivate = $IsPrivate;
+                                            }
+                        }
+        }
+ 
+        # Create the actual comment
         New-SCSMObjectProjection -Type "System.WorkItem.ServiceRequestProjection" -Projection $Projection @scsmMGMTParams
-    } else {
-        Throw "Invalid Service Request Object!"
-    }
+    } else {
+        Throw "Invalid Service Request Object!"
+    }
 }
 
 #inspired and modified from Anders Asp here - http://www.scsm.se/?p=1423
 function Add-ProblemComment {
-    param (
-        [parameter(Mandatory=$True,Position=0)]$WIObject,
-        [parameter(Mandatory=$True,Position=1)]$Comment,
-        [parameter(Mandatory=$True,Position=2)]$EnteredBy,
-        [parameter(Mandatory=$False,Position=3)]$AnalystComment,
-        [parameter(Mandatory=$False,Position=4)]$IsPrivate
-    )
- 
-    # Make sure that the SR Object it passed to the function
-    If ($WIObject.Id -ne $NULL) {
-         
- 
-        If ($AnalystComment -eq $true) {
-            $CommentClass = "System.WorkItem.TroubleTicket.AnalystCommentLog"
-            $CommentClassName = "Comment"
-        } else {
-            $CommentClass = "System.WorkItem.TroubleTicket.UserCommentLog"
-            $CommentClassName = "EndUserCommentLog"
-        }
- 
-        # Generate a new GUID for the comment
-        $NewGUID = ([guid]::NewGuid()).ToString()
- 
-        # Create the object projection with properties
-        $Projection = @{__CLASS = "$($WIObject.Classname)";
-                        __SEED = $WIObject;
-                        $CommentClassName = @{__CLASS = $CommentClass;
-                                            __OBJECT = @{Id = $NewGUID;
-                                                        DisplayName = $NewGUID;
-                                                        Comment = $Comment;
-                                                        EnteredBy = $EnteredBy;
-                                                        EnteredDate = (Get-Date).ToUniversalTime();
-                                                        IsPrivate = $IsPrivate;
-                                            }
-                        }
-        }
- 
-        # Create the actual comment
+    param (
+        [parameter(Mandatory=$True,Position=0)]$WIObject,
+        [parameter(Mandatory=$True,Position=1)]$Comment,
+        [parameter(Mandatory=$True,Position=2)]$EnteredBy,
+        [parameter(Mandatory=$False,Position=3)]$AnalystComment,
+        [parameter(Mandatory=$False,Position=4)]$IsPrivate
+    )
+ 
+    # Make sure that the SR Object it passed to the function
+    If ($WIObject.Id -ne $NULL) {
+         
+ 
+        If ($AnalystComment -eq $true) {
+            $CommentClass = "System.WorkItem.TroubleTicket.AnalystCommentLog"
+            $CommentClassName = "Comment"
+        } else {
+            $CommentClass = "System.WorkItem.TroubleTicket.UserCommentLog"
+            $CommentClassName = "EndUserCommentLog"
+        }
+ 
+        # Generate a new GUID for the comment
+        $NewGUID = ([guid]::NewGuid()).ToString()
+ 
+        # Create the object projection with properties
+        $Projection = @{__CLASS = "$($WIObject.Classname)";
+                        __SEED = $WIObject;
+                        $CommentClassName = @{__CLASS = $CommentClass;
+                                            __OBJECT = @{Id = $NewGUID;
+                                                        DisplayName = $NewGUID;
+                                                        Comment = $Comment;
+                                                        EnteredBy = $EnteredBy;
+                                                        EnteredDate = (Get-Date).ToUniversalTime();
+                                                        IsPrivate = $IsPrivate;
+                                            }
+                        }
+        }
+ 
+        # Create the actual comment
         New-SCSMObjectProjection -Type "System.WorkItem.Problem.ProjectionType" -Projection $Projection @scsmMGMTParams
-    } else {
-        Throw "Invalid Problem Object!"
-    }
+    } else {
+        Throw "Invalid Problem Object!"
+    }
 }
 
 #inspired and modified from Anders Asp here - http://www.scsm.se/?p=1423
 function Add-ChangeRequestComment {
-    param (
-        [parameter(Mandatory=$True,Position=0)]$WIObject,
-        [parameter(Mandatory=$True,Position=1)]$Comment,
-        [parameter(Mandatory=$True,Position=2)]$EnteredBy,
-        [parameter(Mandatory=$False,Position=3)]$AnalystComment,
-        [parameter(Mandatory=$False,Position=4)]$IsPrivate
-    )
- 
-    # Make sure that the SR Object it passed to the function
-    If ($WIObject.Id -ne $NULL) {
-         
- 
-        If ($AnalystComment -eq $true) {
-            $CommentClass = "System.WorkItem.TroubleTicket.AnalystCommentLog"
-            $CommentClassName = "AnalystComments"
-        } else {
-            $CommentClass = "System.WorkItem.TroubleTicket.UserCommentLog"
-            $CommentClassName = "UserComments"
-        }
- 
-        # Generate a new GUID for the comment
-        $NewGUID = ([guid]::NewGuid()).ToString()
- 
-        # Create the object projection with properties
-        $Projection = @{__CLASS = "$($WIObject.Classname)";
-                        __SEED = $WIObject;
-                        $CommentClassName = @{__CLASS = $CommentClass;
-                                            __OBJECT = @{Id = $NewGUID;
-                                                        DisplayName = $NewGUID;
-                                                        Comment = $Comment;
-                                                        EnteredBy = $EnteredBy;
-                                                        EnteredDate = (Get-Date).ToUniversalTime();
-                                                        IsPrivate = $IsPrivate;
-                                            }
-                        }
-        }
- 
-        # Create the actual comment
+    param (
+        [parameter(Mandatory=$True,Position=0)]$WIObject,
+        [parameter(Mandatory=$True,Position=1)]$Comment,
+        [parameter(Mandatory=$True,Position=2)]$EnteredBy,
+        [parameter(Mandatory=$False,Position=3)]$AnalystComment,
+        [parameter(Mandatory=$False,Position=4)]$IsPrivate
+    )
+ 
+    # Make sure that the SR Object it passed to the function
+    If ($WIObject.Id -ne $NULL) {
+         
+ 
+        If ($AnalystComment -eq $true) {
+            $CommentClass = "System.WorkItem.TroubleTicket.AnalystCommentLog"
+            $CommentClassName = "AnalystComments"
+        } else {
+            $CommentClass = "System.WorkItem.TroubleTicket.UserCommentLog"
+            $CommentClassName = "UserComments"
+        }
+ 
+        # Generate a new GUID for the comment
+        $NewGUID = ([guid]::NewGuid()).ToString()
+ 
+        # Create the object projection with properties
+        $Projection = @{__CLASS = "$($WIObject.Classname)";
+                        __SEED = $WIObject;
+                        $CommentClassName = @{__CLASS = $CommentClass;
+                                            __OBJECT = @{Id = $NewGUID;
+                                                        DisplayName = $NewGUID;
+                                                        Comment = $Comment;
+                                                        EnteredBy = $EnteredBy;
+                                                        EnteredDate = (Get-Date).ToUniversalTime();
+                                                        IsPrivate = $IsPrivate;
+                                            }
+                        }
+        }
+ 
+        # Create the actual comment
         #NOTE: This Projection is 100% based on Cireson's CR projection as this is the ONLY projection
         #that features AssignedTo, AffectedUser, CreatedBy, and EndUser/Analyst Action Log comments
         #If you aren't a customer of Cireson, you'll need to create your own type projection
         #to use here.
         New-SCSMObjectProjection -Type "Cireson.ChangeRequest.ViewModel" -Projection $Projection @scsmMGMTParams
-    } else {
-        Throw "Invalid Change Request Object!"
-    }
+    } else {
+        Throw "Invalid Change Request Object!"
+    }
 }
 
 #retrieve a user from SCSM through the Cireson Web Portal API
