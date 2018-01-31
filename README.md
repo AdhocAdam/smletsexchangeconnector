@@ -26,7 +26,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>Vote on Behalf of Active Directory Group (v1.4)</i></td>
   </tr>
   <tr>
-    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/voteOnBehalfOf.png" /></td>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/voteOnBehalfOf.png" /></td>
     <td width="auto">The connector can now optionally process Active Directory Groups featured on Review Activities. Now, when a member of the group either approves or rejects the vote, their vote will be counted on behalf of the group through the &quot;Voted By&quot; relationship and their comment appended to the vote. </td>
   </tr>
 </table>
@@ -40,7 +40,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>Announcement Integration with Core SCSM and Cireson Portal (v1.3)</i></td>
   </tr>
   <tr>
-    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/announcements.png" /></td>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/announcements.png" /></td>
     <td width="auto">Using the configuable [announcement] keyword you can post announcements to core SCSM and/or the Cireson portal when this keyword is featured in the body of your message. The priority can be controlled through the optional and configurable #low or #high tags. Absence of these optional #hashtags will default to a normal priority announcement. If you're creating announcements in the Cireson Portal, an announcement will be created for each group discovered on the message's To or CC lines. Thus allowing you to email several distro groups and simultaneously create targeted announcements for them. Announcements created through either means (SCSM/Cireson Portal) can be updated in the future by simply keeping the [Work Item] in the subject of your [announcement] based messages. Finally, announcements can only be created when the Sender's email is in an allowed style list or the Sender is part of a configurable Active Directory group.</td>
   </tr>
 </table>
@@ -53,7 +53,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>Send Outlook Meeting (v1.3)</i></td>
   </tr>
   <tr>
-    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/sendOutlookMeeting.png" /></td>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/sendOutlookMeeting.png" /></td>
     <td width="auto">Building upon the previous version's "Schedule Work Item", this feature introduces a Cireson SCSM Portal Task (via CustomSpace/custom.js) that kicks open your local Outlook client to send meeting requests on Work Items to the Affected User and your workflow account (or just your workflow if no Affected User is present). In doing so, further rounding out the Schedule Work Item feature by setting Scheduled Start/End Dates when the connector processes Calendar items.</td>
   </tr>
 </table>
@@ -63,7 +63,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>Digitally Signed and Encrypted Emails (v1.3)</i></td>
   </tr>
   <tr>
-    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/digitalCertificates.png" /></td>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/digitalCertificates.png" /></td>
     <td width="auto">Leveraging the open source <A href="https://github.com/jstedfast/MimeKit">MimeKit</A> project by Jeffrey Stedfast, the connector can now process digitally signed or encrypted emails just like regular mail. This requires an appropriate certificate in either the user's personal cert store or the local machine's personal cert store.</td>
   </tr>
 </table>
@@ -79,7 +79,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>Schedule Work Items (v1.2)</i></td>
   </tr>
   <tr>
-    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/outlookMeeting.png" /></td>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/outlookMeeting.png" /></td>
     <td width="auto">It's now possible to interact with SCSM via Outlook Calendar Meetings! When a Calendar Meeting is sent, the Scheduled Start Date and Scheduled End Date will be set on the Work Item based on the start/end times of the meeting. If the work item cannot be found/does not exist, a new default work item is created and it's scheduled start/end times set accordingly. Upon success, the meeting will be accepted onto the workflow account's calendar and the requester will receive confirmation of the booking. This introduces the possibility of leveraging the workflow's calendar as a central place to see all Scheduled Work Items. Using <a href="http://cireson.com/apps/outlook-console/">Cireson's Outlook Plugin</a>. When setting a Work Item reminder in Outlook, you can now CC your workflow account to update values on the Work Item.</td>
   </tr>
 </table>
@@ -92,7 +92,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>File Attachment &quot;Attached by&quot;</i></td>
   </tr>
   <tr>
-    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/attachedBy.png" /></td>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/attachedBy.png" /></td>
     <td width="auto">When an email is sent with attachments, the &quot;File Attachment Added By User&quot; relationship will be set based on the Sender if the user is found in the CMDB</td>
   </tr>
 </table>
@@ -102,7 +102,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>Incident, Service Request, Change Request, Problem</i></td>
   </tr>
   <tr>
-    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/take.png" /></td>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/take.png" /></td>
     <td width="auto">[Take] - When emailing your workflow account, it will assign the Incident, Service Request, Change Request, or Problem to you (from address) when this keyword is featured in the body of the email.</td>
   </tr>
 </table>
@@ -112,7 +112,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>Incident</i></td>
   </tr>
   <tr>
-    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/reactivate.png" /></td>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/reactivate.png" /></td>
     <td width="auto">[Reactivate] - When submitted to a Resolved Incident, it will be reactivated. When submitted to a Closed Incident, a New Incident will be created and the two related to one another.</td>
   </tr>
 </table>
@@ -122,11 +122,11 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>Change Request</i></td>
   </tr>
   <tr>
-    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/hold.png" /></td>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/hold.png" /></td>
     <td width="auto">[Hold] - Place the Change Request On-Hold when this keyword is featured in the body of the email</td>
   </tr>
   <tr>
-    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/cancel.png" /></td>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/cancel.png" /></td>
     <td width="auto">[Cancel] - Cancel the Change Request when this keyword is featured in the body of the email</td>
   </tr>
 </table>
@@ -144,7 +144,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>Incident and Service Request</i></td>
   </tr>
   <tr>
-    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/v1.4b/FeatureScreenshots/privateComment.png" /></td>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/privateComment.png" /></td>
     <td width="auto">#private - When the message is attached to the Action Log, it will be marked as private if #private is featured in the body of the message.</td>
   </tr>
 </table>
