@@ -17,7 +17,7 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     3rd party option: If you're a Cireson customer and make use of their paid SCSM Portal with HTML Knowledge Base this will work as is
         if you aren't, you'll need to create your own Type Projection for Change Requests for the Add-ChangeRequestComment
         function. Navigate to that function to read more. If you don't make use of their HTML KB, you'll want to keep $searchCiresonHTMLKB = $false
-    Signged/Encrypted option: .NET 4.5 is required to use MimeKit.dll
+    Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
 Version: 1.4b-TH =  Changed how credentials are (optionally) added to SMLets, if provided, using $scsmMGMTparams hashtable and splatting.
