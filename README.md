@@ -13,16 +13,14 @@ This is aimed at SCSM administrators looking to further push the automation limi
 - Whether you're dealing with external vendors or streamlining process, you can now configure the connector to create either Problems or Change Requests by default.
 
 *Process multiple mailboxes with unique templates and default ticket types (v1.4)*
-- Redirect multiple mailboxes to a single inbox and this connector can process each message based on the default work item type and templates for the original mailbox, as though it was directly connected to each.
-- This can be helpful for multiple teams that each have their own mailbox, for example, but does not require many instances of the connector running against all mailboxes as the MS Exchange Connector did.
+- Redirect multiple mailboxes to a single inbox and this connector can process each message based on the default work item type and templates for the original mailbox, as though it was directly connected to each. This can be helpful for multiple teams that each have their own mailbox, for example, but does not require many instances of the connector running against all mailboxes as the MS Exchange Connector did.
 
 *Generate a new, related work item when comments are emailed to closed tickets (v1.4)*
-- Optionally generate work items when a user comments on a closed ticket.
-- Was the affected user on vacation?  Did they try to add to an old incident ticket for a new instance of the same issue?  If enabled, a new work item will be generated that is related to the old work item and contains many of the same properties, but also contains the new details from their email message.
+- Was the affected user on vacation? Did they try to add to an old incident ticket for a new instance of the same issue? Now you can optionally generate Work Items when a user comments on a closed ticket. If enabled, a new work item will be generated that is related to the old work item and contains many of the same properties, but also contains the new details from their email message.
 
-*[take] Keyword will now optionally test for membership in the Support Group (v1.4)*
+*[take] Keyword can now optionally test for membership in the Support Group (v1.4)*
 - If this feature is enabled, the sender's membership in the current Support Group will be tested before they are assigned to a ticket.
-- Requires the Cireson Analyst Portal.  The Cireson Portal Group Mapping (to Active Directory groups) is utilized for this functionality.
+- Requires the Cireson Analyst Portal and in turn Cireson Portal Group Mapping in order to establish relationship between Support Groups/Analysts.
 
 <table border="0">
   <tr>
