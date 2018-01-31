@@ -20,6 +20,7 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.4.1 = Fixed issue raised on $irLowUrgency, was using the impact value instead of urgency.
 Version: 1.4 = Changed how credentials are (optionally) added to SMLets, if provided, using $scsmMGMTparams hashtable and splatting.
                 Created optional processing of mail from multiple mailboxes in addition to default mailbox. Messages must
                     be REDIRECTED (not forwarded) to the default mailbox using server or client rules, if this is enabled.
@@ -295,7 +296,7 @@ $domainUserClass = get-scsmclass -name "System.Domain.User$" @scsmMGMTParams
 $notificationClass = get-scsmclass -name "System.Notification.Endpoint$" @scsmMGMTParams
 
 $irLowImpact = Get-SCSMEnumeration -name "System.WorkItem.TroubleTicket.ImpactEnum.Low$" @scsmMGMTParams
-$irLowUrgency = Get-SCSMEnumeration -name "System.WorkItem.TroubleTicket.ImpactEnum.Low$" @scsmMGMTParams
+$irLowUrgency = Get-SCSMEnumeration -name "System.WorkItem.TroubleTicket.UrgencyEnum.Low$" @scsmMGMTParams
 $irActiveStatus = Get-SCSMEnumeration -name "IncidentStatusEnum.Active$" @scsmMGMTParams
 
 $affectedUserRelClass = get-scsmrelationshipclass -name "System.WorkItemAffectedUser$" @scsmMGMTParams
