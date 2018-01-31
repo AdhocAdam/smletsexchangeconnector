@@ -262,7 +262,7 @@ if ($scsmMGMTCreds) { $scsmMGMTParams.Credential = $scsmMGMTCreds }
 
 # Set default templates and mailbox settings
 if ($UseMailboxRedirection -eq $true) {
-    $Mailboxes.add("$($defaultScsmMailbox)", @{"DefaultWiType"=$defaultNewWorkItem;"IRTemplate"=$DefaultIRTemplateName;"SRTemplate"=$DefaultSRTemplateName;"PRTemplate"=$DefaultPRTemplateName;"CRTemplate"=$DefaultCRTemplateName})
+    $Mailboxes.add("$($workflowEmailAddress)", @{"DefaultWiType"=$defaultNewWorkItem;"IRTemplate"=$DefaultIRTemplateName;"SRTemplate"=$DefaultSRTemplateName;"PRTemplate"=$DefaultPRTemplateName;"CRTemplate"=$DefaultCRTemplateName})
 }
 else {
     $defaultIRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultIRTemplateName @scsmMGMTParams
@@ -274,6 +274,7 @@ else {
 #endregion
 
 #region #### SCSM Classes ####
+$wiClass = get-scsmclass -name "System.WorkItem$" @scsmMGMTParams
 $irClass = get-scsmclass -name "System.WorkItem.Incident$" @scsmMGMTParams
 $srClass = get-scsmclass -name "System.WorkItem.ServiceRequest$" @scsmMGMTParams
 $prClass = get-scsmclass -name "System.WorkItem.Problem$" @scsmMGMTParams
@@ -467,6 +468,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Set-SCSMObjectTemplate -Projection $irProjection -Template $IRTemplate @scsmMGMTParams
+                    Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     if ($affectedUser)
                     {
                         New-SCSMRelationshipObject -Relationship $createdByUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams
@@ -561,6 +563,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Apply-SCSMTemplate -Projection $srProjection -Template $SRTemplate
                     #Set-SCSMObjectTemplate -projection $srProjection -Template $SRTemplate @scsmMGMTParams
+                    Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     if ($affectedUser)
                     {
                         New-SCSMRelationshipObject -Relationship $createdByUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams
@@ -653,6 +656,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Set-SCSMObjectTemplate -Projection $prProjection -Template $defaultPRTemplate @scsmMGMTParams
+                    Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     #no Affected User to set on a Problem, set Created By using the Affected User object if it exists
                     if ($affectedUser)
                     {
@@ -679,7 +683,8 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     $newWorkItem = new-scsmobject -class $crClass -propertyhashtable @{"ID" = "CR{0}"; "Title" = $title; "Description" = $description; "Status" = "ChangeStatusEnum.New$"} -PassThru @scsmMGMTParams
                     $crProjection = Get-SCSMObjectProjection -ProjectionName $crTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     #Set-SCSMObjectTemplate -Projection $crProjection -Template $defaultCRTemplate @scsmMGMTParams
-                    Apply-SCSMTemplate -Projection $crProjection -Template $defaultCRTemplate
+                    Apply-SCSMTemplate -Projection $crProjection -Template $CRTemplate
+                    Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     #The Affected User relationship exists on Change Requests, but does not exist on the CR Form out of box.
                     #Cireson SCSM Portal customers may wish to set the Sender as the Affected User so that it follows Incident/Service Request style functionality in that the Sender/User
                     #in question can see the CR in the "My Requests" section of their SCSM portal. This can be acheived by uncommenting the New-SCSMRelationshipObject seen below
@@ -1074,7 +1079,7 @@ function Attach-EmailToWorkItem ($message, $workItemID)
 {
     # Get attachment limits and attachment count in ticket, if configured to
     if ($checkAttachmentSettings -eq $true) {
-        $workItem = Get-ScsmObject @scsmMGMTParams -Id $workItemID
+        $workItem = Get-ScsmObject @scsmMGMTParams -class $wiClass -filter "Name -eq $workItemID"
         $workItemPrefix = $workItem.Name.Substring(0,2)
         $attachLimits = Get-ScsmAttachmentSettings $workItemPrefix
 
@@ -1125,7 +1130,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
 {
     # Get attachment limits and attachment count in ticket, if configured to
     if ($checkAttachmentSettings -eq $true) {
-        $workItem = Get-ScsmObject @scsmMGMTParams -Id $workItemID
+        $workItem = Get-ScsmObject @scsmMGMTParams -class $wiClass -filter "Name -eq $workItemID"
         $workItemPrefix = $workItem.Name.Substring(0,2)
         $attachLimits = Get-ScsmAttachmentSettings $workItemPrefix
 
