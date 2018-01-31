@@ -20,20 +20,20 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
-Version: 1.4b-TH =  Changed how credentials are (optionally) added to SMLets, if provided, using $scsmMGMTparams hashtable and splatting.
-                    Created optional processing of mail from multiple mailboxes in addition to default mailbox. Messages must
-                        be REDIRECTED (not forwarded) to the default mailbox using server or client rules, if this is enabled.
-                    Created optional per-mailbox IR, SR, PR, and CR template assignment, in support of multiple mailbox processing.
-                    Created optional configs for non-autodiscover connections to Exchange, and to provide explicit credentials.
-                    Created optional creation of new related ticket when comment is received on Closed ticket.
-                    Changed [take] behavior so that it (optionally) only functions if the email sender belongs to the currently selected support group.
-                    Created option to check SCSM attachment limits to determine if attachment(s) should be added or not.
-                    Created event handlers that trigger customizable functions in an accompanying "custom events" file. This allows proprietary
+Version: 1.4b = Changed how credentials are (optionally) added to SMLets, if provided, using $scsmMGMTparams hashtable and splatting.
+                Created optional processing of mail from multiple mailboxes in addition to default mailbox. Messages must
+                    be REDIRECTED (not forwarded) to the default mailbox using server or client rules, if this is enabled.
+                Created optional per-mailbox IR, SR, PR, and CR template assignment, in support of multiple mailbox processing.
+                Created optional configs for non-autodiscover connections to Exchange, and to provide explicit credentials.
+                Created optional creation of new related ticket when comment is received on Closed ticket.
+                Changed [take] behavior so that it (optionally) only functions if the email sender belongs to the currently selected support group.
+                Created option to check SCSM attachment limits to determine if attachment(s) should be added or not.
+                Created event handlers that trigger customizable functions in an accompanying "custom events" file. This allows proprietary
                         or custom functionality to be added at critical points throughout the script without having to merge them with this script.
-Version: 1.4b = created $voteOnBehalfOfGroups configuration variable so as to introduce the ability for users to Vote on Behalf of a Group
-                created Get-SCSMUserByEmailAddress to simplify how often users are retrieved by email address
-                changed areas that request a user object by email with the new Get-SCSMUserByEmailAddress function
-                added ability to create Problems and Change Requests as the default new work item
+                Created $voteOnBehalfOfGroups configuration variable so as to introduce the ability for users to Vote on Behalf of a Group
+                Created Get-SCSMUserByEmailAddress to simplify how often users are retrieved by email address
+                Changed areas that request a user object by email with the new Get-SCSMUserByEmailAddress function
+                Added ability to create Problems and Change Requests as the default new work item
                 Fixed issue when creating a New SR with activities, used identical approach for New CR functionality
 Version: 1.3.3 = Fixed issue with [cancelled] keyword for Service Request 
                  Added [take] keyword to Service Request 
@@ -860,6 +860,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                 }
                 switch -Regex ($commentToAdd)
                 {
+                    "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams}}
                     "\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.OnHold$" @scsmMGMTParams;if ($ceScripts) { Invoke-AfterHold }}
                     "\[$takeKeyword]" {
                         $memberOfSelectedTier = Get-TierMembership $commentLeftBy.UserName, $workItem.SupportGroup.Id
