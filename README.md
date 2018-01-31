@@ -18,6 +18,9 @@ This is aimed at SCSM administrators looking to further push the automation limi
 *Generate a new, related work item when comments are emailed to closed tickets (v1.4)*
 - Was the affected user on vacation? Did they try to add to an old incident ticket for a new instance of the same issue? Now you can optionally generate Work Items when a user comments on a closed ticket. If enabled, a new work item will be generated that is related to the old work item and contains many of the same properties, but also contains the new details from their email message.
 
+*More Keyword functionality for Service Requests (v1.4)*
+- Service Requests can now use the [acknowledge] and [hold] keywords. (v1.4)
+
 *[take] Keyword can now optionally test for membership in the Support Group (v1.4)*
 - If this feature is enabled, the sender's membership in the current Support Group will be tested before they are assigned to a ticket. This requires the Cireson Analyst Portal and in turn Cireson Portal Group Mapping in order to establish relationship between Support Groups/Analysts.
 
@@ -30,8 +33,6 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td width="auto">The connector can now optionally process Active Directory Groups featured on Review Activities. Now, when a member of the group either approves or rejects the vote, their vote will be counted on behalf of the group through the &quot;Voted By&quot; relationship and their comment appended to the vote. </td>
   </tr>
 </table>
-
-*Service Requests can now use the [take] and [hold] keywords. (v1.4)*
 
 *Attachments can now follow the Service Manager settings for maximum size and attachment count (v1.4)*
 
