@@ -19,7 +19,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
 - Was the affected user on vacation? Did they try to add to an old incident ticket for a new instance of the same issue? Now you can optionally generate Work Items when a user comments on a closed ticket. If enabled, a new work item will be generated that is related to the old work item and contains many of the same properties, but also contains the new details from their email message.
 
 *More Keyword functionality for Service Requests (v1.4)*
-- Service Requests can now use the [acknowledge] and [hold] keywords. (v1.4)
+- Service Requests can now use the [acknowledge] and [hold] keywords.
 
 *[take] Keyword can now optionally test for membership in the Support Group (v1.4)*
 - If this feature is enabled, the sender's membership in the current Support Group will be tested before they are assigned to a ticket. This requires the Cireson Analyst Portal and in turn Cireson Portal Group Mapping in order to establish relationship between Support Groups/Analysts.
@@ -34,7 +34,8 @@ This is aimed at SCSM administrators looking to further push the automation limi
   </tr>
 </table>
 
-*Attachments can now follow the Service Manager settings for maximum size and attachment count (v1.4)*
+*File Attachment Limits (v1.4)*
+- Now you can optionally enforce settings for attachments per Work Item type as seen in the Administration -> Settings pane for maximum size and attachment count
 
 <table border="0">
   <tr>
