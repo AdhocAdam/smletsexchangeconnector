@@ -290,8 +290,7 @@ $scsmMGMTParams = @{ ComputerName = $scsmMGMTServer }
 if ($scsmMGMTCreds) { $scsmMGMTParams.Credential = $scsmMGMTCreds }
 
 # Set default templates and mailbox settings
-if ($UseMailboxRedirection -eq $true)
-{
+if ($UseMailboxRedirection -eq $true){
     $Mailboxes.add("$($workflowEmailAddress)", @{"DefaultWiType"=$defaultNewWorkItem;"IRTemplate"=$DefaultIRTemplateName;"SRTemplate"=$DefaultSRTemplateName;"PRTemplate"=$DefaultPRTemplateName;"CRTemplate"=$DefaultCRTemplateName})
 }
 else {
