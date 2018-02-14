@@ -20,6 +20,7 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.x.x = Created Azure Services Cognitives services integration
 Version: 1.4.1 = Fixed issue raised on $irLowUrgency, was using the impact value instead of urgency.
 Version: 1.4 = Changed how credentials are (optionally) added to SMLets, if provided, using $scsmMGMTparams hashtable and splatting.
                 Created optional processing of mail from multiple mailboxes in addition to default mailbox. Messages must
@@ -198,6 +199,33 @@ $lowAnnouncemnentExpirationInHours = 7
 $normalAnnouncemnentExpirationInHours = 3
 $criticalAnnouncemnentExpirationInHours = 1
 
+<#enable integration with Azure Cognitive Services.
+#PLEASE NOTE: HIGHLY EXPERIMENTAL!
+By enabling this feature, the entire body of the email on New Work Item creation will be sent to the Azure
+subscription provided and parsed by Cognitive Services. This information is collected and stored by Microsoft.
+#### SENTIMENT ANALYSIS ####
+The information returned to this script is a percentage estimate of the perceived sentiment of the email in a
+range from 0% to 100%. With 0% being negative and 100% being positive. Using this range, you can customize at
+which percentage threshold an Incident or Service Request should be created. For example anything 95% or greater
+creates an Service Request, while anything less than this creates an Incident. As such, this feature is
+invoked only on New Work Item creation.
+#### !!!! WARNING !!!! ####
+Use of this feature and in turn Azure Cognitive services has the possibility of incurring monthly Azure charges.
+Please ensure you understand pricing model as seen at the followng URL
+https://azure.microsoft.com/en-us/pricing/details/cognitive-services/text-analytics/
+Using this URL, you can better plan for possible monetary charges and ensure you understand the potential financial
+cost to your organization before enabling this feature.#>
+
+#### requires Azure subscription and Cognitive Services deployed ####
+#azureRegion = where Cognitive Services is deployed as seen in it's respective settings pane,
+    #i.e. ukwest, eastus2, westus, northcentralus
+#azureCogSvcAPIKey = API key for your cognitive services deployment. This is found in the settings pane for Cognitive Services in https://portal.azure.com
+#minPercentToCreateServiceRequest = The minimum sentiment rating required to create a Service Request, a number less than this will create an Incident
+$enableAzureCognitiveServices = $false
+$azureRegion = ""
+$azureCogSvcAPIKey = ""
+$minPercentToCreateServiceRequest = "95"
+
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
 #scomMGMTServer = set equal to the name of your scom management server
@@ -262,7 +290,8 @@ $scsmMGMTParams = @{ ComputerName = $scsmMGMTServer }
 if ($scsmMGMTCreds) { $scsmMGMTParams.Credential = $scsmMGMTCreds }
 
 # Set default templates and mailbox settings
-if ($UseMailboxRedirection -eq $true) {
+if ($UseMailboxRedirection -eq $true)
+{
     $Mailboxes.add("$($workflowEmailAddress)", @{"DefaultWiType"=$defaultNewWorkItem;"IRTemplate"=$DefaultIRTemplateName;"SRTemplate"=$DefaultSRTemplateName;"PRTemplate"=$DefaultPRTemplateName;"CRTemplate"=$DefaultCRTemplateName})
 }
 else {
@@ -442,10 +471,25 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     }
     
     # Use the global default work item type or, if mailbox redirection is used, use the default work item type for the
-    # specific mailbox that the current message was sent to.  Use default if there is no match.
+    # specific mailbox that the current message was sent to. If Azure Cognitive Services is enabled
+    # run the message through it to determine the Default Work Item type. Otherwise, use default if there is no match.
     if ($UseMailboxRedirection -eq $true) {
         $TemplatesForThisMessage = Get-TemplatesByMailbox $message
         $workItemType = if ($TemplatesForThisMessage) {$TemplatesForThisMessage["DefaultWiType"]} else {$defaultNewWorkItem}
+    }
+    elseif ($enableAzureCognitiveServices -eq $true)
+    {
+        $sentimentScore = Get-AzureEmailSentiment -messageToEvaluate $message.body
+        
+        #if the sentiment is greater than or equal to what is defined, create a Service Request
+        if ($sentimentScore -ge [int]$minPercentToCreateServiceRequest)
+        {
+            $workItemType = "sr"
+        }
+        else #sentiment is lower than defined value, create an Incident
+        {
+            $workItemType = "ir"
+        }
     }
     else {
         $workItemType = $defaultNewWorkItem
@@ -2124,6 +2168,26 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
     
     # Custom Event Handler
     if ($ceScripts) { Invoke-AfterSetPortalAnnouncement }
+}
+
+#modified from Ritesh Modi - https://blogs.msdn.microsoft.com/riteshmodi/2017/03/24/text-analytics-key-phrase-cognitive-services-powershell/
+function Get-AzureEmailSentiment ($messageToEvaluate)
+{
+    #define cognitive services URLs
+    $sentimentURI = "https://$azureRegion.api.cognitive.microsoft.com/text/analytics/v2.0/sentiment"
+
+    #create the JSON request
+    $documents = @()
+    $requestHashtable = @{"language" = "en"; "id" = "1"; "text" = "$messageToEvaluate" };
+    $documents += $requestHashtable
+    $final = @{documents = $documents}
+    $messagePayload = ConvertTo-Json $final
+
+    #invoke the Cognitive Services Sentiment API
+    $sentimentResult = Invoke-RestMethod -Method Post -Uri $sentimentURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcAPIKey } -Body $messagePayload -ContentType "application/json"
+    
+    #return the percent score
+    return ($sentimentResult.documents.score * 100)
 }
 #endregion
 
