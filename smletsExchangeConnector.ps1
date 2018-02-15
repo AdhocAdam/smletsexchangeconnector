@@ -209,6 +209,9 @@ range from 0% to 100%. With 0% being negative and 100% being positive. Using thi
 which percentage threshold an Incident or Service Request should be created. For example anything 95% or greater
 creates an Service Request, while anything less than this creates an Incident. As such, this feature is
 invoked only on New Work Item creation.
+#### KEYWORD ANALYSIS ####
+#It also returns what Azure Cognitive Services perceives to be keywords from the message. This is used to speed up searches
+#against the Cireson Knowledge Base and/or Service Catalog for recommendations back to the Affected User.
 #### !!!! WARNING !!!! ####
 Use of this feature and in turn Azure Cognitive services has the possibility of incurring monthly Azure charges.
 Please ensure you understand pricing model as seen at the followng URL
