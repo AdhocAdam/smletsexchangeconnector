@@ -9,8 +9,8 @@ The stock Exchange Connector is a seperate download for SCSM 2012+ that enables 
 This is aimed at SCSM administrators looking to further push the automation limits of what their SCSM deployment can do with inbound email processing. As such, you should be comfortable with PowerShell and navigating SCSM via SMlets.
 
 ## What new things can it do?
-*Artificial Intelligence Analyst through Azure Cognitive Services*
-- ...
+*Microsoft Azure Cognitive Services integration*
+- Ever wish you could create an Incident or Service Request based on the nature of the email? How about using the suggested Knowledge Article/Request Offering feature of this connector, but achieve even faster processing times? Leveraging the power of Azure Cognitive Services emails can now be optionally run through Keyword Analysis for more concise search results and Sentiment Analysis for dynamic creation of an Incident or Service Request based on the Affected User's perceived attitude. [Microsoft pricing information can be found here.](https://azure.microsoft.com/en-us/pricing/details/cognitive-services/text-analytics/)
 
 *Create Problems or Change Requests by Default (v1.4)*
 - Whether you're dealing with external vendors or streamlining process, you can now configure the connector to create either Problems or Change Requests by default.
