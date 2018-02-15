@@ -533,9 +533,17 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
 
                         #get matching Knowledge Base Articles and matching Request Offering URLs
-                        $kbURLs = Search-CiresonKnowledgeBase -workItem $newWorkItem -ciresonPortalUser $portalUser
-                        $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -workItem $newWorkItem
-
+                        if ($enableAzureCognitiveServices -eq $true)
+                        {
+                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
+                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery $discoveredKeywords -ciresonPortalUser $portalUser
+                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery $discoveredKeywords 
+                        }
+                        else
+                        {
+                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)" -ciresonPortalUser $portalUser
+                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)"
+                        }
                         #combine KB results and Offering results into a single email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
                         $emailBodyResponse = "We found some knowledge articles and requests that may be of assistance to you <br/><br/>
@@ -554,8 +562,15 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
 
                         #get matching Knowledge Base Articles URLs
-                        $kbURLs = Search-CiresonKnowledgeBase -workItem $newWorkItem -ciresonPortalUser $portalUser
-
+                        if ($enableAzureCognitiveServices -eq $true)
+                        {
+                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
+                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery $discoveredKeywords -ciresonPortalUser $portalUser
+                        }
+                        else
+                        {
+                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)" -ciresonPortalUser $portalUser
+                        }
                         #prepare KB result email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
                         $emailBodyResponse = "We found some knowledge articles that may be of assistance to you <br/><br/>
@@ -572,8 +587,15 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
 
                         #get matching Request Offering URLs
-                        $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -workItem $newWorkItem
-
+                        if ($enableAzureCognitiveServices -eq $true)
+                        {
+                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
+                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery $discoveredKeywords 
+                        }
+                        else
+                        {
+                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)"
+                        }
                         #prepare Request Offering results email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
                         $emailBodyResponse = "We found some requests on the portal that help you get what you need faster <br/><br/>
@@ -628,9 +650,17 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
 
                         #get matching Knowledge Base Articles and matching Request Offering URLs
-                        $kbURLs = Search-CiresonKnowledgeBase -workItem $newWorkItem -ciresonPortalUser $portalUser
-                        $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -workItem $newWorkItem
-
+                        if ($enableAzureCognitiveServices -eq $true)
+                        {
+                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
+                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery $discoveredKeywords -ciresonPortalUser $portalUser
+                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery $discoveredKeywords 
+                        }
+                        else
+                        {
+                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)" -ciresonPortalUser $portalUser
+                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)"
+                        }
                         #combine KB results and Offering results into a single email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
                         $emailBodyResponse = "We found some knowledge articles and requests that may be of assistance to you <br/><br/>
@@ -649,8 +679,15 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
 
                         #get matching Knowledge Base Articles URLs
-                        $kbURLs = Search-CiresonKnowledgeBase -workItem $newWorkItem -ciresonPortalUser $portalUser
-
+                        if ($enableAzureCognitiveServices -eq $true)
+                        {
+                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
+                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery $discoveredKeywords -ciresonPortalUser $portalUser
+                        }
+                        else
+                        {
+                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)" -ciresonPortalUser $portalUser
+                        }
                         #prepare KB result email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
                         $emailBodyResponse = "We found some knowledge articles that may be of assistance to you <br/><br/>
@@ -667,8 +704,15 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
 
                         #get matching Request Offering URLs
-                        $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -workItem $newWorkItem
-
+                        if ($enableAzureCognitiveServices -eq $true)
+                        {
+                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
+                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery $discoveredKeywords 
+                        }
+                        else
+                        {
+                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)"
+                        }
                         #prepare Request Offering results email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
                         $emailBodyResponse = "We found some requests on the portal that help you get what you need faster <br/><br/>
@@ -1671,9 +1715,9 @@ function Get-CiresonPortalAnnouncements ($languageCode)
 }
 
 #search for available Request Offerings based on content from a New Work Item and notify the Affected user via the Cireson Portal API
-function Search-AvailableCiresonPortalOfferings ($workItem, $ciresonPortalUser)
+function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUser)
 {
-    $searchQuery = $workItem.Title.Trim() + " " + $workItem.Description.Trim()
+    #$searchQuery = $workItem.Title.Trim() + " " + $workItem.Description.Trim()
 
     if ($ciresonPortalWindowsAuth -eq $true)
     {
@@ -1714,9 +1758,9 @@ function Search-AvailableCiresonPortalOfferings ($workItem, $ciresonPortalUser)
 }
 
 #search the Cireson KB based on content from a New Work Item and notify the Affected User
-function Search-CiresonKnowledgeBase ($workItem, $ciresonPortalUser)
+function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
 {
-    $searchQuery = $workItem.Title.Trim() + " " + $workItem.Description.Trim()
+    #$searchQuery = $workItem.Title.Trim() + " " + $workItem.Description.Trim()
 
     if ($ciresonPortalWindowsAuth -eq $true)
     {
@@ -2187,6 +2231,25 @@ function Get-AzureEmailSentiment ($messageToEvaluate)
     
     #return the percent score
     return ($sentimentResult.documents.score * 100)
+}
+
+function Get-AzureEmailKeywords ($messageToEvaluate)
+{
+    #define cognitive services URLs
+    $keyPhraseURI = "https://$azureRegion.api.cognitive.microsoft.com/text/analytics/v2.0/keyPhrases"
+
+    #create the JSON request
+    $documents = @()
+    $requestHashtable = @{"language" = "en"; "id" = "1"; "text" = "$messageToEvaluate" };
+    $documents += $requestHashtable
+    $final = @{documents = $documents}
+    $messagePayload = ConvertTo-Json $final
+
+    #invoke the Text Analytics Keyword API
+    $keywordResult = Invoke-RestMethod -Method Post -Uri $keyPhraseURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcAPIKey } -Body $messagePayload -ContentType "application/json" 
+
+    #return the keywords
+    return $keywordResult.documents.keyPhrases
 }
 #endregion
 
