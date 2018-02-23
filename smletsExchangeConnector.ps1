@@ -1048,12 +1048,13 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     foreach ($reviewer in $reviewers)
                     {
                         $reviewingUser = get-scsmobject -class $userClass -filter "id -eq '$((Get-SCSMRelatedObject -SMObject $reviewer -Relationship $raReviewerIsUserRelClass @scsmMGMTParams).id)'" @scsmMGMTParams
+                        $reviewingUserName = $reviewingUser.UserName #it is necessary to store this in its own variable for the AD filters to work correctly
                         $reviewingUserSMTP = Get-SCSMRelatedObject -SMObject $reviewingUser @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress
 
                         if ($commentToAdd.length -gt 256) { $decisionComment = $commentToAdd.substring(0,253)+"..." } else { $decisionComment = $commentToAdd }
                         
                         #Reviewer is a User
-                        if ([bool] (Get-ADUser @adParams -filter {SamAccountName -eq $($reviewingUser.UserName)}))
+                        if ([bool] (Get-ADUser @adParams -filter {SamAccountName -eq $reviewingUserName}))
                         {
                             #approved
                             if (($reviewingUserSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$approvedKeyword]"))
