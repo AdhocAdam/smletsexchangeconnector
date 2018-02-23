@@ -1741,9 +1741,9 @@ function Get-CiresonPortalAnnouncements ($languageCode)
 }
 
 #search for available Request Offerings based on content from a New Work Item and notify the Affected user via the Cireson Portal API
-function Search-AvailableCiresonPortalOfferings ($workItem, $ciresonPortalUser)
+function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUser)
 {
-    $searchQuery = $workItem.Title.Trim() + " " + $workItem.Description.Trim()
+    #$searchQuery = $workItem.Title.Trim() + " " + $workItem.Description.Trim()
 
     if ($ciresonPortalWindowsAuth -eq $true)
     {
