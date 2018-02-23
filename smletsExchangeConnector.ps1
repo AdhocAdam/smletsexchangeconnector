@@ -486,11 +486,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     # Use the global default work item type or, if mailbox redirection is used, use the default work item type for the
     # specific mailbox that the current message was sent to. If Azure Cognitive Services is enabled
     # run the message through it to determine the Default Work Item type. Otherwise, use default if there is no match.
-    if ($UseMailboxRedirection -eq $true) {
-        $TemplatesForThisMessage = Get-TemplatesByMailbox $message
-        $workItemType = if ($TemplatesForThisMessage) {$TemplatesForThisMessage["DefaultWiType"]} else {$defaultNewWorkItem}
-    }
-    elseif ($enableAzureCognitiveServices -eq $true)
+    if ($enableAzureCognitiveServices -eq $true)
     {
         $sentimentScore = Get-AzureEmailSentiment -messageToEvaluate $message.body
         
@@ -503,6 +499,10 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
         {
             $workItemType = "ir"
         }
+    }
+    elseif ($UseMailboxRedirection -eq $true) {
+        $TemplatesForThisMessage = Get-TemplatesByMailbox $message
+        $workItemType = if ($TemplatesForThisMessage) {$TemplatesForThisMessage["DefaultWiType"]} else {$defaultNewWorkItem}
     }
     else {
         $workItemType = $defaultNewWorkItem
