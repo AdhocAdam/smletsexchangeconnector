@@ -20,6 +20,9 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.4.2 = Fixed issue with attachment size comparison, when using SCSM size limits.
+                 Fixed issue with [Take] function, if support group membership is checked.
+                 Fixed issue with [approved] and [rejected] if groups or users belong to a different domain.
 Version: 1.4.1 = Fixed issue raised on $irLowUrgency, was using the impact value instead of urgency.
 Version: 1.4 = Changed how credentials are (optionally) added to SMLets, if provided, using $scsmMGMTparams hashtable and splatting.
                 Created optional processing of mail from multiple mailboxes in addition to default mailbox. Messages must
@@ -260,6 +263,14 @@ if (-Not (Get-Module SMLets)) {
 # Configure SMLets with -ComputerName and -Credential switches, if applicable.
 $scsmMGMTParams = @{ ComputerName = $scsmMGMTServer }
 if ($scsmMGMTCreds) { $scsmMGMTParams.Credential = $scsmMGMTCreds }
+
+# Configure AD Cmdlets with -Credential switch, if applicable.  Note that the -Server switch will be determined based on objects' domain.
+if ($scsmMGMTCreds) {
+    $adParams = @{Credential = $scsmMGMTCreds}
+}
+else {
+    $adParams = @{}
+}
 
 # Set default templates and mailbox settings
 if ($UseMailboxRedirection -eq $true) {
@@ -810,7 +821,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Resolved$" @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;if ($ceScripts) { Invoke-AfterResolved }}
                     "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Closed$" @scsmMGMTParams;if ($ceScripts) { Invoke-AfterClosed }}
                     "\[$takeKeyword]" { 
-                        $memberOfSelectedTier = Get-TierMembership $commentLeftBy.UserName, $workItem.TierQueue.Id
+                        $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.TierQueue.Id
                         if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
                             New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
                             # Custom Event Handler
@@ -850,7 +861,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
             }
             else {
                 try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
-                if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+                if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                 try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
                 if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                 switch ($message.From)
@@ -864,7 +875,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams}}
                     "\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.OnHold$" @scsmMGMTParams;if ($ceScripts) { Invoke-AfterHold }}
                     "\[$takeKeyword]" {
-                        $memberOfSelectedTier = Get-TierMembership $commentLeftBy.UserName, $workItem.SupportGroup.Id
+                        $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.SupportGroup.Id
                         if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
                             New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
                             # Custom Event Handler
@@ -946,16 +957,19 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     $reviewers = Get-SCSMRelatedObject -SMObject $workItem -Relationship $raHasReviewerRelClass @scsmMGMTParams
                     foreach ($reviewer in $reviewers)
                     {
-                        $reviewingUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $reviewer -Relationship $raReviewerIsUserRelClass @scsmMGMTParams).id @scsmMGMTParams
+                        $reviewingUser = get-scsmobject -class $userClass -filter "id -eq '$((Get-SCSMRelatedObject -SMObject $reviewer -Relationship $raReviewerIsUserRelClass @scsmMGMTParams).id)'" @scsmMGMTParams
+                        $reviewingUserName = $reviewingUser.UserName #it is necessary to store this in its own variable for the AD filters to work correctly
                         $reviewingUserSMTP = Get-SCSMRelatedObject -SMObject $reviewingUser @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress
+
+                        if ($commentToAdd.length -gt 256) { $decisionComment = $commentToAdd.substring(0,253)+"..." } else { $decisionComment = $commentToAdd }
                         
                         #Reviewer is a User
-                        if ([bool] (Get-ADUser -filter {samaccountname -eq $reviewingUser.UserName}))
+                        if ([bool] (Get-ADUser @adParams -filter {SamAccountName -eq $reviewingUserName}))
                         {
                             #approved
                             if (($reviewingUserSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$approvedKeyword]"))
                             {
-                                    Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $commentToAdd} @scsmMGMTParams
+                                    Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
                                     New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk @scsmMGMTParams
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterApproved }
@@ -963,7 +977,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             #rejected
                             elseif (($reviewingUserSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$rejectedKeyword]"))
                             {
-                                    Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $commentToAdd} @scsmMGMTParams
+                                    Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
                                     New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk @scsmMGMTParams
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterRejected }
@@ -971,7 +985,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             #no keyword, add a comment to parent work item
                             elseif (($reviewingUserSMTP.TargetAddress -eq $message.From) -and (($commentToAdd -notmatch "\[$approvedKeyword]") -or ($commentToAdd -notmatch "\[$rejectedKeyword]")))
                             {
-                                $parentWorkItem = Get-SCSMWorkItemParent $workItem.Get_Id().Guid
+                                $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Get_Id().Guid
                                 switch ($parentWorkItem.Classname)
                                 {
                                     "System.WorkItem.ChangeRequest" {Add-ChangeRequestComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $false -IsPrivate $false}
@@ -987,12 +1001,15 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             #Reviewer is in a Group and "Voting on Behalf of Groups" is enabled
                             if ($voteOnBehalfOfGroups -eq $true -and $votedOnBehalfOfUser.UserName)
                             {
-                                $isReviewerGroupMember = Get-ADGroupMember $reviewingUser.UserName -recursive | ? { $_.objectClass -eq "user" -and $_.name -eq $votedOnBehalfOfUser.UserName }
+                                #determine which domain to query, in case of multiple domains and trusts
+                                $AdRoot = (Get-AdDomain @adParams -Identity $reviewingUser.Domain).DNSRoot
+
+                                $isReviewerGroupMember = Get-ADGroupMember -Server $AdRoot -Identity $reviewingUser.UserName -recursive @adParams | ? { $_.objectClass -eq "user" -and $_.name -eq $votedOnBehalfOfUser.UserName }
 
                                 #approved on behalf of
                                 if (($isReviewerGroupMember) -and ($commentToAdd -match "\[$approvedKeyword]"))
                                 {
-                                    Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $commentToAdd} @scsmMGMTParams
+                                    Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
                                     New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $votedOnBehalfOfUser -Bulk @scsmMGMTParams
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterApprovedOnBehalf }
@@ -1001,7 +1018,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                 #rejected on behalf of
                                 elseif (($isReviewerGroupMember) -and ($commentToAdd -match "\[$rejectedKeyword]"))
                                 {
-                                    Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $commentToAdd} @scsmMGMTParams
+                                    Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
                                     New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $votedOnBehalfOfUser -Bulk @scsmMGMTParams
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterRejectedOnBehalf }
@@ -1009,7 +1026,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                 #no keyword, add a comment to parent work item
                                 elseif (($isReviewerGroupMember) -and (($commentToAdd -notmatch "\[$approvedKeyword]") -or ($commentToAdd -notmatch "\[$rejectedKeyword]")))
                                 {
-                                    $parentWorkItem = Get-SCSMWorkItemParent $workItem.Get_Id().Guid
+                                    $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Get_Id().Guid
                                     switch ($parentWorkItem.Classname)
                                     {
                                         "System.WorkItem.ChangeRequest" {Add-ChangeRequestComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -AnalystComment $false -IsPrivate $false}
@@ -1135,6 +1152,8 @@ function Attach-FileToWorkItem ($message, $workItemId)
         $workItem = Get-ScsmObject @scsmMGMTParams -class $wiClass -filter "Name -eq $workItemID"
         $workItemPrefix = $workItem.Name.Substring(0,2)
         $attachLimits = Get-ScsmAttachmentSettings $workItemPrefix
+        $attachMaxSize = $attachLimits["MaxAttachmentSize"]
+        $attachMaxCount = $attachLimits["MaxAttachments"]
 
         # Get count of attachents already in ticket
         $existingAttachments = Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $fileAttachmentRelClass
@@ -1157,8 +1176,8 @@ function Attach-FileToWorkItem ($message, $workItemId)
             #Create a new MemoryStream object out of the attachment data
             $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
     
-            if (([int]$MemoryStream.Length) -gt ($minFileSizeInKB+"kb") -and ($checkAttachmentSettings -eq $false `
-                -or (($existingAttachments.Count -lt $attachLimits["MaxAttachments"]) -And ([int]$MemoryStream.Length -le $attachLimits["MaxAttachmentSize"]+"kb"))))
+            if ($MemoryStream.Length -gt $minFileSizeInKB+"kb" -and ($checkAttachmentSettings -eq $false `
+                -or ($existingAttachments.Count -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
             {
                 #Create the attachment object itself and set its properties for SCSM
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
@@ -1181,6 +1200,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 { 
                     $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
                     New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
+                    $existingAttachments.Count += 1
                 }
             }
         }
@@ -1195,8 +1215,8 @@ function Attach-FileToWorkItem ($message, $workItemId)
             #Create a new MemoryStream object out of the attachment data
             $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
     
-            if (([int]$MemoryStream.Length) -gt ($minFileSizeInKB+"kb") -and ($checkAttachmentSettings -eq $false `
-                -or (($existingAttachments.Count -lt $attachLimits["MaxAttachments"]) -And ([int]$MemoryStream.Length -le $attachLimits["MaxAttachmentSize"]+"kb"))))
+            if ($MemoryStream.Length -gt $minFileSizeInKB+"kb" -and ($checkAttachmentSettings -eq $false `
+                -or ($existingAttachments.Count -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
             {
                 #Create the attachment object itself and set its properties for SCSM
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
@@ -1219,6 +1239,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 { 
                     $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
                     New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
+                    $existingAttachments.Count += 1
                 }
             }
         }
@@ -1262,16 +1283,19 @@ function Get-TierMembership ($UserSamAccountName, $TierId) {
     $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping"
 
     #pull the group based on support tier mapping
-    $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId -eq $TierId }
+    $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierId.Guid }
     $groupId = $mapping.AdGroupId
 
     #get the AD group object name
     $grpInScsm = (Get-ScsmObject @scsmMGMTParams -Id $groupId)
     $grpSamAccountName = $grpInScsm.UserName
     
+    #determine which domain to query, in case of multiple domains and trusts
+    $AdRoot = (Get-AdDomain @adParams -Identity $grpInScsm.Domain).DNSRoot
+
     if ($grpSamAccountName) {
         # Get the group membership
-        [array]$members = Get-ADGroupMember -Identity $grpSamAccountName -Recursive
+        [array]$members = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive
 
         # loop through the members of the AD group that underpins this support group, and look for the user
         $members | % {
@@ -1581,7 +1605,7 @@ function Get-CiresonPortalUser ($username, $domain)
 #retrieve a group from SCSM through the Cireson Web Portal API
 function Get-CiresonPortalGroup ($groupEmail)
 {
-    $groupName = Get-ADGroup -Filter "Mail -eq $groupEmail"
+    $groupName = Get-ADGroup @adParams -Filter "Mail -eq $groupEmail"
 
     if($ciresonPortalWindowsAuth)
     {
@@ -1875,11 +1899,11 @@ function Get-SCSMAuthorizedAnnouncer ($sender)
                         return $false
                     }        
                 }
-        "group" {$group = Get-ADGroup $approvedADGroupForSCSMAnnouncements
-                    $adUser = Get-ADUser -Filter "EmailAddress -eq '$sender'"
+        "group" {$group = Get-ADGroup @adParams -Identity $approvedADGroupForSCSMAnnouncements
+                    $adUser = Get-ADUser @adParams -Filter "EmailAddress -eq '$sender'"
                     if ($adUser)
                     {
-                        if ((Get-ADUser $adUser -Properties memberof).memberof -eq $group.distinguishedname)
+                        if ((Get-ADUser @adParams -Identity $adUser -Properties memberof).memberof -eq $group.distinguishedname)
                         {
                             return $true
                         }
@@ -2223,11 +2247,11 @@ function Get-SCOMAuthorizedRequester ($sender)
                         return $false
                     }        
                 }
-        "group" {$group = Get-ADGroup $approvedADGroupForSCOM
-                    $adUser = Get-ADUser -Filter "EmailAddress -eq '$sender'"
+        "group" {$group = Get-ADGroup @adParams -Identity $approvedADGroupForSCOM
+                    $adUser = Get-ADUser @adParams -Filter "EmailAddress -eq '$sender'"
                     if ($adUser)
                     {
-                        if ((Get-ADUser $adUser -Properties memberof).memberof -eq $group.distinguishedname)
+                        if ((Get-ADUser @adParams -Identity $adUser -Properties memberof).memberof -eq $group.distinguishedname)
                         {
                             return $true
                         }
