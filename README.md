@@ -11,7 +11,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
-    <td colspan="3"><i>Microsoft Azure Cognitive Services integration</i></td>
+    <td colspan="3"><i>Microsoft Azure Cognitive Services integration (v1.4)</i></td>
   </tr>
   <tr>
     <td width="200"><img src ="https://msdnshared.blob.core.windows.net/media/2017/03/Azure-Cognitive-Services-e1489079006258.png" /></td>
