@@ -20,6 +20,8 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.4.4 = Created the ability to optionally set First Response Date on IR/SR when the connector makes Knowledge Article or Request Offering
+                suggestions to the Affected User
 Version: 1.4.3 = Introduction of Azure Cognitive Services integration
 Version: 1.4.2 = Fixed issue with attachment size comparison, when using SCSM size limits.
                  Fixed issue with [Take] function, if support group membership is checked.
@@ -167,6 +169,8 @@ $mergeReplies = $false
     #suggested to the Affected User about them
 #searchAvailableCiresonPortalOfferings = search available Request Offerings within the Affected User's permission scope based words matched in
     #their email/new work item
+#enableSetFirstResponseDateOnSuggestions = When Knowledge Article or Request Offering suggestions are made to the Affected User, you can optionally
+    #set the First Response Date value on a New Work Item
 #$ciresonPortalServer = URL that will be used to search for KB articles via invoke-webrequest. Make sure to leave the "/" after your tld!
 #$ciresonPortalWindowsAuth = how invoke-webrequest should attempt to authenticate to your portal server.
     #Leave true if your portal uses Windows Auth, change to False for Forms authentication.
@@ -174,6 +178,7 @@ $mergeReplies = $false
 $searchCiresonHTMLKB = $false
 $numberOfWordsToMatchFromEmailToRO = 1
 $searchAvailableCiresonPortalOfferings = $false
+$enableSetFirstResponseDateOnSuggestions = $false
 $ciresonPortalServer = "https://portalserver.domain.tld/"
 $ciresonPortalWindowsAuth = $true
 $ciresonPortalUsername = ""
@@ -567,6 +572,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         $requestURLs<br /><br />
                         If any of the above helped you out, you can $resolveMailTo your original request."
                         
+                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
+                        if ($enableSetFirstResponseDateOnSuggestions)
+                        {
+                            $suggestionsAcknowledgeDate = get-date
+                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                        }
+
                         #send the message
                         Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
@@ -592,6 +604,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         $kbURLs<br /><br />
                         If any of the above helped you out, you can $resolveMailTo your original request."
                         
+                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
+                        if ($enableSetFirstResponseDateOnSuggestions)
+                        {
+                            $suggestionsAcknowledgeDate = get-date
+                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                        }
+
                         #send the message
                         Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
@@ -617,6 +636,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         $requestURLs<br /><br />
                         If any of the above helped you out, you can $resolveMailTo your original request."
                         
+                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
+                        if ($enableSetFirstResponseDateOnSuggestions)
+                        {
+                            $suggestionsAcknowledgeDate = get-date
+                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                        }
+
                         #send the message
                         Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
@@ -684,6 +710,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         $requestURLs<br /><br />
                         If any of the above helped you out, you can $resolveMailTo your original request."
                         
+                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
+                        if ($enableSetFirstResponseDateOnSuggestions)
+                        {
+                            $suggestionsAcknowledgeDate = get-date
+                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                        }
+                        
                         #send the message
                         Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
@@ -709,6 +742,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         $kbURLs<br /><br />
                         If any of the above helped you out, you can $resolveMailTo your original request."
                         
+                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
+                        if ($enableSetFirstResponseDateOnSuggestions)
+                        {
+                            $suggestionsAcknowledgeDate = get-date
+                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                        }
+
                         #send the message
                         Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
@@ -734,6 +774,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         $requestURLs<br /><br />
                         If any of the above helped you out, you can $resolveMailTo your original request."
                         
+                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
+                        if ($enableSetFirstResponseDateOnSuggestions)
+                        {
+                            $suggestionsAcknowledgeDate = get-date
+                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                        }
+
                         #send the message
                         Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
