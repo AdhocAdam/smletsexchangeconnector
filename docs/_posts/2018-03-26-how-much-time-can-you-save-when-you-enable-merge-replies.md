@@ -4,7 +4,7 @@ title: "How much time can you save when you enable Merge Replies?"
 ---
 Here's something you may have been wondering - if you enable the connector's Merge Replies feature, that is, when emails come in that are a Reply to another email that *do not* have a Work Item in the subject how much time are you really saving your analysts? Because once you turn it on, you'll never know it is happening. Emails are simply appended to the correct Work Item from that point forward and everyone benefits as there are no more duplicates to micro-manage. But maybe you're the curious type and/or looking to impress your boss with some time savings statistics on the SMLets Exchange connector you recently implemented. Look no further than the following PowerShell.
 
-```
+```powershell
 <#
 .SYNOPSIS
     Show how many Work Items were not created by virtue of enabling the SMLets Exchange Connector's Merge Reply feature
