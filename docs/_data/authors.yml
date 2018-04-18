@@ -1,0 +1,9 @@
+# Authors
+
+Adam:
+  name: Adam
+  picture: /images/bioPhoto01.png
+  links:
+    - title: GitHub
+      url: https://github.com/AdhocAdam/
+      icon: fab fa-github-square
