@@ -1,6 +1,7 @@
 ---
 layout: post
 title: "The SMlets Exchange Connector at its core"
+author: Adam
 ---
   
 If you're entering PowerShell, SMLets, or no less this connector for the first time a question you may have is simply "Where's the part that processes the mail?" In short - it's at the bottom of the script. But even still it's filled with a lot of conditional processing to handle the different Work Item types as well as different email types. The following are all of the same variables and logic from the original SMLets Exchange Connector just condensed down into this version again for readability and examining the whole premise of said connector. So let's dive in and see how this works *without* talking about Service Manager.
