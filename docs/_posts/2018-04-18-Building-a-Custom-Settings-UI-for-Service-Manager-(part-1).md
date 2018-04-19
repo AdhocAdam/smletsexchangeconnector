@@ -6,6 +6,8 @@ author: Adam
 
 While dedicated developers of SCSM already know what's what when it comes to developing for Service Manager - many an onlooker have no doubt stumbled across Travis Wright's blogpost ["Creating a Custom Administration Setting"](https://blogs.technet.microsoft.com/servicemanager/2010/01/04/creating-a-custom-administration-setting/) on TechNet. In it, a primer on creating your very own truly custom management pack not only with some properties you could define, but a walkthrough of building a new Settings pane within the console, and then surfacing those properties in a way that can be edited through the SCSM Console with a custom UI. Truly the icing on any management pack cake for SCSM.
 
+```
+```
 As Travis says "Start with the End in Mind" and shortly after this intro of his you immediately begin to get a taste of what this tutorial will offer in just two screenshots.
 
 ![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/01.png)
