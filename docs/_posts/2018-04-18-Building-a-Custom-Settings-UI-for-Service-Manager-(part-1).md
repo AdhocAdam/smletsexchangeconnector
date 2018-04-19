@@ -6,14 +6,11 @@ author: Adam
 
 While dedicated developers of SCSM already know what's what when it comes to developing for Service Manager - many an onlooker have no doubt stumbled across Travis Wright's blogpost ["Creating a Custom Administration Setting"](https://blogs.technet.microsoft.com/servicemanager/2010/01/04/creating-a-custom-administration-setting/) on TechNet. In it, a primer on creating your very own truly custom management pack not only with some properties you could define, but a walkthrough of building a new Settings pane within the console, and then surfacing those properties in a way that can be edited through the SCSM Console with a custom UI. Truly the icing on any management pack cake for SCSM.
 
-## 
-
 As Travis says "Start with the End in Mind" and shortly after this intro of his you immediately begin to get a taste of what this tutorial will offer in just two screenshots.
 
 ![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/01.png)
 
 ![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/02.png)
-
 
 Regardless of the fact we see SCSM 2010 screenshots, conceptually what we're doing shouldn't really be all that different and truth be told it isn't. But it's when we hit the Implementation section of the post, we're immediately thrown into code and if you don't know what you're looking at you already may be lost. Not to mention, the article hasn't really maintained a great sense of formatting over the years so it's hard to see all of the code in a single glance. Next, you can't just copy and paste the entire page as is into something and even if you could. Where would it go? Finally, the link Travis provides to downloading a copy of the solution has since gone missing.
 
@@ -41,13 +38,9 @@ Let's create a New Project of the Management Pack variety for Service Manager 20
 
 ![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/04.png)
 
-
-
 Once created, we'll be dropped into a fairly blank looking canvas of sorts. Let's expand this project of ours out and see what things look like.
 
 ![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/05.png)
-
-
 
 What we have here is the Visual Studio project/solution for what our Management Pack will ultimately be built from (i.e. the source code). We don't have much to start out of the gate, so to get this project moving we'll need to add a new Management Pack Fragment. This can be done by right clicking on the name of the project (SMLets.Exchange.Connector) in this case, navigating to Add and then New Item.
 
