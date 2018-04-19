@@ -32,7 +32,7 @@ google_fonts:
     weights: "400,400i,700,700i"
   - name: "Lora"
     weights: "400,400i,700,700i"
-
+google_analytics: "UA-117867725-1"
 # Liquid
 liquid:
   error_mode: strict
