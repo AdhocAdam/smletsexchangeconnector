@@ -8,9 +8,9 @@ While dedicated developers of SCSM already know what's what when it comes to dev
 
 As Travis says "Start with the End in Mind" and shortly after this intro of his you immediately begin to get a taste of what this tutorial will offer in just two screenshots.
 
-![](/images/CreateACustomMPSettingsPane/01.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/01.png)
 
-![](/images/CreateACustomMPSettingsPane/02.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/02.png)
 
 
 Regardless of the fact we see SCSM 2010 screenshots, conceptually what we're doing shouldn't really be all that different and truth be told it isn't. But it's when we hit the Implementation section of the post, we're immediately thrown into code and if you don't know what you're looking at you already may be lost. Not to mention, the article hasn't really maintained a great sense of formatting over the years so it's hard to see all of the code in a single glance. Next, you can't just copy and paste the entire page as is into something and even if you could. Where would it go? Finally, the link Travis provides to downloading a copy of the solution has since gone missing.
