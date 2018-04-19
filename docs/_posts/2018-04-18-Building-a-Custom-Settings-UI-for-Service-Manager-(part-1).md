@@ -20,7 +20,7 @@ What I'll be covering in a series of upcoming posts is using Travis' original ar
 Finally, with this blog post being hosted on GitHub it gives you the reader the opportunity to provide feedback directly into this post by creating Forks and Pull Requests from your own GitHub account. So if you see something you'd like written cleaner, tips that you think would be helpful to others, or just want to give a Star on the repo for thanks then please: sign up for GitHub!
 
 **Here's a crude diagram of what we're about to build**
-![](/docs/images/CreateACustomMPSettingsPane/03.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/03.png)
 
 We're going to use Visual Studio to ultimately assemble a Management Pack Bundle (MPB) file. It's going to contain everything we need to have a custom Settings pane.
 
@@ -37,19 +37,19 @@ Get both of these items installed and fire up Visual Studio. No looking back. Le
 **Getting Started**  
 Let's create a New Project of the Management Pack variety for Service Manager 2012 R2 and make sure we target the .NET Framework 3.5 (if you're using SCSM 2016 you'll need to target .NET 4.5.1). I've decided to name my Visual Studio project the same name I'm going to end up with for my management pack so I'll be using **SMLets.Exchange.Connector**
 
-![](/docs/images/CreateACustomMPSettingsPane/04.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/04.png)
 
 
 
 Once created, we'll be dropped into a fairly blank looking canvas of sorts. Let's expand this project of ours out and see what things look like.
 
-![](/docs/images/CreateACustomMPSettingsPane/05.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/05.png)
 
 
 
 What we have here is the Visual Studio project/solution for what our Management Pack will ultimately be built from (i.e. the source code). We don't have much to start out of the gate, so to get this project moving we'll need to add a new Management Pack Fragment. This can be done by right clicking on the name of the project (SMLets.Exchange.Connector) in this case, navigating to Add and then New Item.
 
-![](/docs/images/CreateACustomMPSettingsPane/06.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/06.png)
 
 We're then presented with the following window. I'm going to create a New Empty Management Pack Fragment and call it Settings.mpx
 
@@ -63,7 +63,7 @@ We're then presented with the following window. I'm going to create a New Empty 
 	
 With my new Settings.mpx file I'm now presented with an editor for said new file (Settings.mpx)
 
-![](/docs/images/CreateACustomMPSettingsPane/07.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/07.png)
 
 
 Once again - it’s a starting point but entirely useless because if you're like most people you don't just happen to have the entire MP XML Schema committed to memory. This however is exactly where Travis' first section of code comes into play. I've taken the liberty of copying what Travis originally wrote and reformatting it to make it more copy and paste friendly. BUT don't get copy happy just yet!
@@ -148,11 +148,11 @@ But wait! There is a gotcha here. Because while you can copy and paste what abou
 	Microsoft.EnterpriseManagement.ServiceManager.UI.Console
 	System.AdminItem.Library
 
-![](/docs/images/CreateACustomMPSettingsPane/08.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/08.png)
 
 These are both found in the installation directory for Service Manager. Just right click on references and browser over to them. Once we add them both to the References folder of our project, let's select System.AdminItem.Library. Then in the lower right hand corner of your Visual Studio screen let's make sure we have **SAL** set as the Alias for this Microsoft MP.
 
-![](/docs/images/CreateACustomMPSettingsPane/09.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/09.png)
 
 This is the same SAL we reference above in our management pack for
 	Base="SAL!System.SolutionSettings"
@@ -183,7 +183,7 @@ This is where we start laying the foundation within the MP Fragment XML to make 
 
 Your Management Pack Fragment should now look like the following. We have the previously set Type Definitions area that includes the two new properties we're creating (you'll notice I've simply collapsed the Properties just to make this screenshot look a little cleaner) and then beneath that a new section that contains the Console Task to perform a click event/action. While we're here, let's go over what's happening in the Presentation section that we just copied from above.
 
-![](/docs/images/CreateACustomMPSettingsPane/10.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/10.png)
 
 We have a **single** presentation section.  
 It contains **one or many** Console Tasks.
@@ -211,17 +211,17 @@ And this whole presentation section may have you wondering...
 
 But where exactly does this new section go? Right beneath the **ConsoleTasks** but right before we close off the **Presentation** section. See below:
 
-![](/docs/images/CreateACustomMPSettingsPane/11.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/11.png)
 
 Now let's right click on the name of our project. Add. New Folder. Then to keep things simple, let's just call the folder "Images".
 
-![](/docs/images/CreateACustomMPSettingsPane/12.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/12.png)
 
 Now that we have a folder for pictures we can use same right-click technique but this time on the folder and add an Existing Item. Then you can use File Explorer to browse for the photo you want. Here's however why I would suggest you don't browse to somewhere else on your hard drive. Instead, open up where you saved the original Visual Studio project to. Then locate the recently created Images folder you just created. Copy photos into this directory. That way you can keep not just the management pack, but all of the photos, and other things that make up this project together. We'll still use the File Explorer to browse, but instead of going somewhere else on your drive you can browse to the local folder than contains all of the work you've been doing so far so you can always find your related resources. Again - the name of the game here is grouping all of your items together in a single packagable group of folders.
 
 But we're still not done with images here. Because even once you add them by default they won't get wrapped up into our management pack (*.mpb) at the end. So in order to ensure this happens we'll need to change a single setting on each individual photo and that's the Build Action to ensure the photo is marked as an Embedded Resource. In doing so we're instructing Visual Studio that these photos need to be embedded into the associated DLL.
 
-![](/docs/images/CreateACustomMPSettingsPane/13.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/13.png)
 
 Next, Travis says we need to add some Categories. I'm going to use the Categories that I need for this MP of mine but modeled off of his example. Just keeping his verbiage exact because it's just as applicable and relevant to share here.
 
@@ -253,13 +253,13 @@ I'll be going with the x64 version and making sure sure I "Run as Administrator"
 
 	sn -k c:\temp\myKeyPair.snk
 	
-![](/docs/images/CreateACustomMPSettingsPane/14.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/14.png)
 
 This is fairly straightforward. Just like PowerShell, we're simply feeding this command prompt and the associated SN program that is part of the Visual Studio installer the needed parameters to execute. A public/private keypair is generated and then saved out to the folder path specified. But I said public/private keypair. PAIR. **PAIR**. I'm emphasizing this intentionally. The SNK is a single file representing both of those keys. Don't forget that our management pack XML needs the public side of this pair. More specifically it needs the public token. So how do we extract the public token from the public/private keypair file we just generated? Just a two more commands here so I hope you didn't close VS Command Prompt just yet.
 
 	sn -p c:\temp\myKeyPair.snk c:\temp\myNewPublickey.pubkey
 
-![](/docs/images/CreateACustomMPSettingsPane/15.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/15.png)
 
 
 What we've done here is extract the binary public key from the binary public/private keypair and save it to a file. Now this said, the file extension DOES NOT matter. Simply just trying to keep things obvious here. Just one more command and we'll be done.
@@ -267,7 +267,7 @@ What we've done here is extract the binary public key from the binary public/pri
 
 	sn -tp c:\temp\myNewPublicKeyfile.pubkey
 	
-![](/docs/images/CreateACustomMPSettingsPane/16.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/16.png)
 	
 	
 The **"Public key token is"** is the line that provides the value we're looking for. FINALLY! This is what we can drop into
@@ -287,7 +287,7 @@ Now it may go without saying, but I punched up this documentation after the fact
 
 With our new keypair file, we can also tell Visual Studio to use said keypair in the signing of the MP during build. By heading into the Project and Settings pane. We can even configure the management group if we'd like our MP to auto-deploy on successful build through the Management Group tab. In lieu of this, the MP will just get built to the output path.
 
-![](/docs/images/CreateACustomMPSettingsPane/19.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/19.png)
 
 Keypair stuff is out of the way. Forward! Travis then goes onto say:
 >then we need the usual language pack stuff
@@ -318,7 +318,7 @@ Once again - if you've never seen it, it's probably not all that usual to you. B
 
 But what does this above secion do to our management pack and what does it look like now?
 
-![](/docs/images/CreateACustomMPSettingsPane/17.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/17.png)
 
 
 Alright, last but not least let's reference the images/icons we want to use in our MP with the new **Resources** section so the MP knows where to find them.
@@ -331,7 +331,7 @@ Alright, last but not least let's reference the images/icons we want to use in o
 
 Once again, where does this new **Resources** section go? Almost right at the very end of the management pack.
 
-![](/docs/images/CreateACustomMPSettingsPane/18.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/18.png)
 
 
 Now if we did absolutely nothing more at this point, we'd have management pack fragments that Visual Studio would combine together, to create a single raw XML file. Then using the keypair we created, it would be converted into the binary MP file we could take into SCSM with us and have a class with two properties we could set values for. We could then use the following SMLets PowerShell to query for the class and retrieve said properties.
