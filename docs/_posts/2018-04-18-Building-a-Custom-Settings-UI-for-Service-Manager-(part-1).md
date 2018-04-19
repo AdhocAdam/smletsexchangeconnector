@@ -8,7 +8,7 @@ While dedicated developers of SCSM already know what's what when it comes to dev
 
 As Travis says "Start with the End in Mind" and shortly after this intro of his you immediately begin to get a taste of what this tutorial will offer in just two screenshots.
 
-![](/docs/images/CreateACustomMPSettingsPane/01.png)
+![](/smletsexchangeconnector/docs/images/CreateACustomMPSettingsPane/01.png)
 
 ![](/docs/images/CreateACustomMPSettingsPane/02.png)
 
