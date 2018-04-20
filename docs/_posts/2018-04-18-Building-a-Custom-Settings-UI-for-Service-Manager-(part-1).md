@@ -1,6 +1,9 @@
 ---
-layout: post
 title: "Building a Custom Settings UI for Service Manager (part 1)"
+image:
+  path: /images/CreateACustomMPSettingsPane/headerGraphic.png
+  thumbnail: /images/CreateACustomMPSettingsPane/headerGraphicThumbnail.png
+layout: post
 author: Adam
 ---
 
