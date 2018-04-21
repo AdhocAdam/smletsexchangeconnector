@@ -342,8 +342,8 @@ $props | select-object *
 We could go one step further and even set those properties with SMLets
 
 ```powershell
-Set-SCSMObject -SMObject $props -Property Propert1 -Value "this the value of property 1"
-Set-SCSMObject -SMObject $props -Property Propert1 -Value "this the value of property 2"
+Set-SCSMObject -SMObject $props -Property Property1 -Value "this the value of property 1"
+Set-SCSMObject -SMObject $props -Property Property2 -Value "this the value of property 2"
 ```
 
 We now have a custom place to store settings that persist back to the SCSM database through a custom developed management pack. Not to mention, you can set them through PowerShell with SMlets.
