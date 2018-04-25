@@ -1,5 +1,6 @@
 ---
 title: "Building a Custom Settings UI for Service Manager (part 2)"
+excerpt_separator: "<!--more-->"
 image:
   path: /images/CreateACustomMPSettingsPane/headerGraphic.png
   thumbnail: /images/CreateACustomMPSettingsPane/headerGraphicThumbnail.png
@@ -8,6 +9,8 @@ author: Adam
 ---
 
 I hope you've had time to digest Part 1 because it's time for Part 2 which will wrap this management pack of ours up by including a custom UI that can surface our MP's respective properties. At the time of this exact original publish date, I still HAVE NOT published the Visual Studio solution onto a new Settings branch within the SMLets Exchange Connector repo. Links on this post will be updated to the repo accordingly once this has been done.
+
+<!--more-->
 
 When we last left Travis:
 
