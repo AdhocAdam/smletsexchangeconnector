@@ -352,6 +352,6 @@ Set-SCSMObject -SMObject $props -Property Property2 -Value "this the value of pr
 We now have a custom place to store settings that persist back to the SCSM database through a custom developed management pack. Not to mention, you can set them through PowerShell with SMlets.
 	
 	
-This marks the half way point of this management pack build process in that we have the core of this thing defined and can set some properties on it through PowerShell. In the next post, I'll continue to breakdown the what, where, and how Travis gets us there through WPF, XAML, and C#. Once published I will update this article so you can get to it from here in addition to the main page.
+This marks the half way point of this management pack build process in that we have the core of this thing defined and can set some properties on it through PowerShell. Part 2 covering the what, where, and how Travis gets us there through WPF, XAML, and C# can be viewed [here.](https://adhocadam.github.io/smletsexchangeconnector/Building-a-Custom-Settings-UI-for-Service-Manager-(part-2)/)
 
 If this has been helpful to you so far, Follow the repo for updates or give a Star.
