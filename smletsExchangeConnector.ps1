@@ -24,6 +24,8 @@ Version: 1.4.4 = #48 - Created the ability to optionally set First Response Date
                     suggestions to the Affected User
                 #51 - Fixed issue with updating Work Items from Meeting Requests when the [Work Item] doesn't appear in the subject using an updated
                     version of the Verify-WorkItem function to perform the lookup
+                #58 - Fixed issue with the connector leaving two comments when the Affected User is also the Assigned To user. Matching functionality
+                    with the OOB Exchange Connector the comment is now marked as a Public End User Comment
 Version: 1.4.3 = Introduction of Azure Cognitive Services integration
 Version: 1.4.2 = Fixed issue with attachment size comparison, when using SCSM size limits.
                  Fixed issue with [Take] function, if support group membership is checked.
@@ -946,6 +948,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                 if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                 try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
                 if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+                if ($assignedToSMTP.TargetAddress -eq $affectedUserSMTP.TargetAddress){$assignedToSMTP = $null}
                 #write to the Action log
                 switch ($message.From)
                 {
@@ -1003,6 +1006,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                 if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                 try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
                 if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+                if ($assignedToSMTP.TargetAddress -eq $affectedUserSMTP.TargetAddress){$assignedToSMTP = $null}
                 switch ($message.From)
                 {
                     $affectedUserSMTP.TargetAddress {Add-ServiceRequestComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -AnalystComment $false -isPrivate $false}
