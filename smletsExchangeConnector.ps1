@@ -26,6 +26,7 @@ Version: 1.4.4 = #48 - Created the ability to optionally set First Response Date
                     version of the Verify-WorkItem function to perform the lookup
                 #58 - Fixed issue with the connector leaving two comments when the Affected User is also the Assigned To user. Matching functionality
                     with the OOB Exchange Connector the comment is now marked as a Public End User Comment
+                #56 - Introduce [take] keyword on Manual Activities
 Version: 1.4.3 = Introduction of Azure Cognitive Services integration
 Version: 1.4.2 = Fixed issue with attachment size comparison, when using SCSM size limits.
                  Fixed issue with [Take] function, if support group membership is checked.
