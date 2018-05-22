@@ -1196,6 +1196,13 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     try {$activityImplementer = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
                     if ($activityImplementer){$activityImplementerSMTP = Get-SCSMRelatedObject -SMObject $activityImplementer @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                     
+                    #take
+                    if (($commentToAdd -match "\[$takeKeyword]"))
+                    {
+                        New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                        # Custom Event Handler
+                        if ($ceScripts) { Invoke-AfterTake }
+                    }
                     #completed
                     if (($activityImplementerSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$completedKeyword]"))
                     {
