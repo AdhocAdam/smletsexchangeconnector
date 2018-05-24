@@ -34,8 +34,10 @@ We're going to use Visual Studio to ultimately assemble a Management Pack Bundle
  The free community edition will do so long as the version you have is one of the following 2017/2015/2013/2012  
 * **Visual Studio Authoring Extensions (VSAE)**  
  [https://www.microsoft.com/en-ca/download/details.aspx?id=30169]( https://www.microsoft.com/en-ca/download/details.aspx?id=30169)
+ * **Service Manager Authoring Tool**  
+ [https://www.microsoft.com/en-us/download/details.aspx?id=54059]( https://www.microsoft.com/en-us/download/details.aspx?id=54059)
 
-While the Authoring Tool provided by Microsoft gives most of us the ability to make simple modification such as Class Extensions or Form Customizations. VSAE gives us is the ability to build management packs inside of Visual Studio using all of the power of Visual Studio for what is generally reserved as a truly dedicated developer tool. Make no mistake SCSM Administrators, you're about to cross the development bridge here not only with the use of Visual Studio but a wholly new way to truly construct management packs from scratch.
+While the Authoring Tool provided by Microsoft gives most of us the ability to make simple modification such as Class Extensions or Form Customizations. VSAE gives us is the ability to build management packs inside of Visual Studio using all of the power of Visual Studio for what is generally reserved as a truly dedicated developer tool. However we'll need the Authoring Tool as it makes some MPs and MPBs available that we'll need for VSAE. Make no mistake SCSM Administrators, you're about to cross the development bridge here not only with the use of Visual Studio but a wholly new way to truly construct management packs from scratch.
 
 Get both of these items installed and fire up Visual Studio. No looking back. Let’s do this!
   
