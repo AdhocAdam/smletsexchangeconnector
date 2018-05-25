@@ -27,6 +27,7 @@ Version: 1.4.4 = #48 - Created the ability to optionally set First Response Date
                 #58 - Fixed issue with the connector leaving two comments when the Affected User is also the Assigned To user. Matching functionality
                     with the OOB Exchange Connector the comment is now marked as a Public End User Comment
                 #56 - Introduce [take] keyword on Manual Activities
+                #59 - Introduce Class Extension support for MA/CR Support Groups
 Version: 1.4.3 = Introduction of Azure Cognitive Services integration
 Version: 1.4.2 = Fixed issue with attachment size comparison, when using SCSM size limits.
                  Fixed issue with [Take] function, if support group membership is checked.
@@ -132,6 +133,14 @@ $ExchangeEndpoint = ""
 #CreateNewWorkItemWhenClosed = When set to $true, replies to a closed work item will create a new work item.
 #takeRequiresGroupMembership = When set to $true, the [take] keyword only functions when the sender belongs to the ticket's support group.
     #This functionality requires the Cireson Analyst Portal for Service Manager.  Set $false if you do not use the Cireson Analyst Portal.
+#crSupportGroupEnumGUID = Enter the GUID of the Enum for your custom CR Support Group to be leveraged with items such as takeRequiresGroupMembership. The best way to verify this is to
+    #perform a: (Get-SCSMEnumeration -name "CR Support Group List name" | select-object id, name, displayname) to verify the ID of the Support Group property name for your Change Requests.
+    #This is value needs to be set to the ID/GUID of your result.
+    #This functionality requires the Cireson Analyst Portal for Service Manager.
+#maSupportGroupEnumGUID = Enter the Name of the Enum for your custom MA Support Group to be leveraged with items such as takeRequiresGroupMembership. The best way to verify this is to
+    #perform a: (Get-SCSMEnumeration -name "MA Support Group List name" | select-object id, name, displayname) to verify the ID of the Support Group property name for your Manual Activities. This is value needs to be
+    #This is value needs to be set to the ID/GUID of your result.
+    #This functionality requires the Cireson Analyst Portal for Service Manager.
 $defaultNewWorkItem = "ir"
 $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
@@ -150,6 +159,8 @@ $Mailboxes = @{
 }
 $CreateNewWorkItemWhenClosed = $false
 $takeRequiresGroupMembership = $false
+$crSupportGroupEnumGUID = ""
+$maSupportGroupEnumGUID = ""
 
 #processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
     #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
@@ -324,6 +335,15 @@ else {
     $defaultCRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultCRTemplateName @scsmMGMTParams
 }
 
+# Retrieve Support Group Class Extensions on CR/MA if defined
+if ($maSupportGroupEnumGUID)
+{
+    $maSupportGroupPropertyName = (Get-SCSMClassProperty -classname "system.workitem.activity.manualactivity$" @scsmMGMTParams | ?{$_.EnumType -like "*$maSupportGroupEnumGUID*"}).Name
+}
+if ($crSupportGroupEnumGUID)
+{
+    $crSupportGroupPropertyName = (Get-SCSMClassProperty -classname "system.workitem.changerequest$" @scsmMGMTParams | ?{$_.EnumType -like "*$crSupportGroupEnumGUID*"}).Name
+}
 #endregion
 
 #region #### SCSM Classes ####
@@ -1083,7 +1103,17 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     {
                         "\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ChangeStatusEnum.OnHold$" @scsmMGMTParams;if ($ceScripts) { Invoke-AfterHold }}
                         "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ChangeStatusEnum.Cancelled$" @scsmMGMTParams;if ($ceScripts) { Invoke-AfterCancelled }}
-                        "\[$takeKeyword]" {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk; if ($ceScripts) { Invoke-AfterTake }}
+                        "\[$takeKeyword]" { 
+                            $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.$crSupportGroupPropertyName.Id
+                            if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
+                                New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                                # Custom Event Handler
+                                if ($ceScripts) { Invoke-AfterTake }
+                            }
+                            else {
+                                #TODO: Send an email to let them know it failed?
+                            }
+                        }
                         {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}}
                     }
                     #relate the user to the work item
@@ -1198,11 +1228,19 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     if ($activityImplementer){$activityImplementerSMTP = Get-SCSMRelatedObject -SMObject $activityImplementer @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                     
                     #take
-                    if (($commentToAdd -match "\[$takeKeyword]"))
+                    switch -Regex ($commentToAdd)
                     {
-                        New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
-                        # Custom Event Handler
-                        if ($ceScripts) { Invoke-AfterTake }
+                        "\[$takeKeyword]" { 
+                            $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.$maSupportGroupPropertyName.Id
+                            if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
+                                New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                                # Custom Event Handler
+                                if ($ceScripts) { Invoke-AfterTake }
+                            }
+                            else {
+                                #TODO: Send an email to let them know it failed?
+                            }
+                        }
                     }
                     #completed
                     if (($activityImplementerSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$completedKeyword]"))
