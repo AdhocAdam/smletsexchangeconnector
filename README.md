@@ -157,7 +157,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
   </tr>
   <tr>
     <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/privateComment.png" /></td>
-    <td width="auto">#private - When the message is attached to the Action Log, it will be marked as private if #private is featured in the body of the message.</td>
+    <td width="auto">#private - When the message is attached to the Action Log, it will be marked as private if #private is featured in the body of the message. This keyword is configurable.</td>
   </tr>
 </table>
 
