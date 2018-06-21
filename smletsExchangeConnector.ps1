@@ -34,6 +34,7 @@ Version: 1.4.4 = #48 - Created the ability to optionally set First Response Date
                     a default Resolution Category to be set. This was extended to include Service Requests, Problems, and their respective
                     Resolution Descriptions/Implementation Notes as well
                 #61 - [reactivated] keyword should trigger a Record Reopened Action Log entry instead of an Analyst Comment
+                #65 - Add minimum words to match to Knowledge Base suggestions
 Version: 1.4.3 = Introduction of Azure Cognitive Services integration
 Version: 1.4.2 = Fixed issue with attachment size comparison, when using SCSM size limits.
                  Fixed issue with [Take] function, if support group membership is checked.
@@ -197,6 +198,8 @@ $mergeReplies = $false
 #this uses the now depricated Cireson KB API Search by Text, it works as of v7.x but should be noted it could be entirely removed in future portals
 #$numberOfWordsToMatchFromEmailToRO = defines the minimum number of words that must be matched from an email/new work item before Request Offerings will be
     #suggested to the Affected User about them
+#$numberOfWordsToMatchFromEmailToKA = defines the minimum number of words that must be matched from an email/new work item before Knowledge Articles will be
+    #suggested to the Affected User about them
 #searchAvailableCiresonPortalOfferings = search available Request Offerings within the Affected User's permission scope based words matched in
     #their email/new work item
 #enableSetFirstResponseDateOnSuggestions = When Knowledge Article or Request Offering suggestions are made to the Affected User, you can optionally
@@ -207,6 +210,7 @@ $mergeReplies = $false
     #If using forms, you'll need to set the ciresonPortalUsername and Password variables. For ease, you could set this equal to the username/password defined above
 $searchCiresonHTMLKB = $false
 $numberOfWordsToMatchFromEmailToRO = 1
+$numberOfWordsToMatchFromEmailToKA = 1
 $searchAvailableCiresonPortalOfferings = $false
 $enableSetFirstResponseDateOnSuggestions = $false
 $ciresonPortalServer = "https://portalserver.domain.tld/"
@@ -1958,9 +1962,12 @@ function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
         $matchingKBURLs = @()
         foreach ($kbResult in $kbResults)
         {
-            $matchingKBURLs += "<a href=$ciresonPortalServer" + "KnowledgeBase/View/$($kbResult.articleid)#/>$($kbResult.title)</a><br />"
+            $wordsMatched = ($searchQuery.Split() | ?{($kbResult.title -match "\b$_\b")}).count
+            if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToKA)
+            {
+                $matchingKBURLs += "<a href=$ciresonPortalServer" + "KnowledgeBase/View/$($kbResult.articleid)#/>$($kbResult.title)</a><br />"
+            }
         }
-
         return $matchingKBURLs
     }
 }
