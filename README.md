@@ -1,3 +1,7 @@
+<p align="center">
+  <img width="512" height="512" src="psExchIconReadme.png">
+</p>
+
 # SCSM Exchange Connector via SMlets
 This PowerShell script leverages the [SMlets module](https://www.powershellgallery.com/packages/smlets/0.5.0.1) to build an open and flexible Exchange Connector for controlling Microsoft System Center Service Manager 2012+
 
