@@ -27,7 +27,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
 - You can now use the [take] keyword against Manual Activites.
 
 *Set First Response Date on Request Offering/Knowledge Article Suggestion (v1.4)*
-- If you've enabled Suggested Request Offerings from your Service Catalog or Knowledge Articles from your Knowledge Base, this feature can now optionally set the First Response Date giving you more data points to report against.
+- If you've enabled Suggested Request Offerings from your Service Catalog or Knowledge Articles from your Knowledge Base, this feature can now optionally set the First Response Date when the connector sends suggestions back to the Affected User giving you more data points to report against.
 
 <table border="0">
   <tr>
