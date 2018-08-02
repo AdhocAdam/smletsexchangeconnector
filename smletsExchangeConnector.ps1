@@ -1947,7 +1947,6 @@ function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUse
     }
 }
 
-
 #search the Cireson KB based on content from a New Work Item and notify the Affected User
 function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
 {
