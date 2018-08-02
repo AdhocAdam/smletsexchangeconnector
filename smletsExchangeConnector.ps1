@@ -1932,17 +1932,21 @@ function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUse
         $matchingRequestURLs = @()
         foreach ($serviceCatalogResult in $serviceCatalogResults)
         {
-            $wordsMatched = ($searchQuery.Split() | ?{($serviceCatalogResult.RequestOfferingTitle -match "\b$_\b") -or ($serviceCatalogResult.RequestOfferingDescription -match "\b$_\b")}).count
+            $wordsMatched = ($searchQuery.Split() | ?{($serviceCatalogResult.title -match "\b$_\b") -or ($serviceCatalogResult.description -match "\b$_\b")}).count
             if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToRO)
             {
                 $ciresonPortalRequestURL = "`"" + $ciresonPortalServer + "SC/ServiceCatalog/RequestOffering/" + $serviceCatalogResult.RequestOfferingId + "," + $serviceCatalogResult.ServiceOfferingId + "`""
-                $matchingRequestURLs += "<a href=$ciresonPortalRequestURL/>$($serviceCatalogResult.RequestOfferingTitle)</a><br />"
+                $requestOfferingSuggestion = New-Object System.Object
+                $requestOfferingSuggestion | Add-Member -type NoteProperty -name RequestOfferingURL -value "<a href=$ciresonPortalRequestURL/>$($serviceCatalogResult.RequestOfferingTitle)</a><br />"
+                $requestOfferingSuggestion | Add-Member -type NoteProperty -name WordsMatched -value $wordsMatched
+                $matchingRequestURLs += $requestOfferingSuggestion
             }
         }
-
+        $matchingRequestURLs = ($matchingRequestURLs | sort-object WordsMatched -Descending).RequestOfferingURL
         return $matchingRequestURLs
     }
 }
+
 
 #search the Cireson KB based on content from a New Work Item and notify the Affected User
 function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
@@ -1975,9 +1979,13 @@ function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
             $wordsMatched = ($searchQuery.Split() | ?{($kbResult.title -match "\b$_\b")}).count
             if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToKA)
             {
-                $matchingKBURLs += "<a href=$ciresonPortalServer" + "KnowledgeBase/View/$($kbResult.articleid)#/>$($kbResult.title)</a><br />"
+                $knowledgeSuggestion = New-Object System.Object
+                $knowledgeSuggestion | Add-Member -type NoteProperty -name KnowledgeArticleURL -value "<a href=$ciresonPortalServer" + "KnowledgeBase/View/$($kbResult.articleid)#/>$($kbResult.title)</a><br />"
+                $knowledgeSuggestion | Add-Member -type NoteProperty -name WordsMatched -value $wordsMatched
+                $matchingKBURLs += $knowledgeSuggestion
             }
         }
+        $matchingKBURLs = ($matchingKBURLs | sort-object WordsMatched -Descending).KnowledgeArticleURL
         return $matchingKBURLs
     }
 }
