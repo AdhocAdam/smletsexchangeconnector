@@ -180,7 +180,7 @@ $CreateNewWorkItemWhenClosed = $false
 $takeRequiresGroupMembership = $false
 $crSupportGroupEnumGUID = ""
 $maSupportGroupEnumGUID = ""
-$redactPiiFromMessage = $true
+$redactPiiFromMessage = $false
 
 #processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
     #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
