@@ -155,6 +155,8 @@ $ExchangeEndpoint = ""
     #perform a: (Get-SCSMEnumeration -name "MA Support Group List name" | select-object id, name, displayname) to verify the ID of the Support Group property name for your Manual Activities. This is value needs to be
     #This is value needs to be set to the ID/GUID of your result.
     #This functionality requires the Cireson Analyst Portal for Service Manager.
+#redactPiiFromMessage = if $true, instructs the script to remove personally identifiable information from message description in work-items.
+    #The PII being redacted is listed as regex's in a text file located in the same directory as the script. The file is called "pii_regex.txt", has 1 regex per line, written without quotes.
 $defaultNewWorkItem = "ir"
 $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
@@ -178,6 +180,7 @@ $CreateNewWorkItemWhenClosed = $false
 $takeRequiresGroupMembership = $false
 $crSupportGroupEnumGUID = ""
 $maSupportGroupEnumGUID = ""
+$redactPiiFromMessage = $false
 
 #processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
     #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
@@ -431,6 +434,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     $title = $message.subject
     $description = $message.body
 
+    #removes PII if RedactPiiFromMessage is enabled
+    if ($redactPiiFromMessage -eq $true)
+    {
+        $description = remove-PII $description
+        Write-host $description
+    }
+    
     #if the message is longer than 4000 characters take only the first 4000.
     if ($description.length -ge "4000")
     {
@@ -921,6 +931,12 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
 
 function Update-WorkItem ($message, $wiType, $workItemID) 
 {
+    #removes PII if RedactPiiFromMessage is enable
+      if ($redactPiiFromMessage -eq $true)
+      {
+          $message.body = remove-PII $message.body
+      }
+      
     #determine the comment to add and ensure it's less than 4000 characters
     if ($includeWholeEmail -eq $true)
     {
@@ -2522,6 +2538,26 @@ function Apply-SCSMTemplate
     }
     #Apply update template
     Set-SCSMObjectTemplate -Projection $Projection -Template $Template -ErrorAction Stop @scsmMGMTParams
+}
+
+function remove-PII ($body)
+{
+    <#Regexes
+    Visa = 4[0-9]{15}
+    Mastercard = (?:5[1-5][0-9]{2}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}
+    Discover = 6(?:011|5[0-9]{2})[0-9]{12}
+    American Express = 3[47][0-9]{13}
+    SSN/ITIN = \d{3}-?\d{2}-?\d{4}
+    #>
+    $piiRegexes = Get-Content "C:\smletsExchangeConnector\pii_regex.txt"
+    ForEach ($regex in $piiRegexes)
+    {
+        switch -Regex ($body)
+        {
+            "$regex" {$body = $body -replace "$regex", "[redacted]"}
+        }
+    }
+    return $body
 }
 
 #endregion 
