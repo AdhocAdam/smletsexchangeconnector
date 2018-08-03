@@ -1936,8 +1936,9 @@ function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUse
             if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToRO)
             {
                 $ciresonPortalRequestURL = "`"" + $ciresonPortalServer + "SC/ServiceCatalog/RequestOffering/" + $serviceCatalogResult.RequestOfferingId + "," + $serviceCatalogResult.ServiceOfferingId + "`""
+                $RequestOfferingURL = "<a href=$ciresonPortalRequestURL/>$($serviceCatalogResult.RequestOfferingTitle)</a><br />"
                 $requestOfferingSuggestion = New-Object System.Object
-                $requestOfferingSuggestion | Add-Member -type NoteProperty -name RequestOfferingURL -value "<a href=$ciresonPortalRequestURL/>$($serviceCatalogResult.RequestOfferingTitle)</a><br />"
+                $requestOfferingSuggestion | Add-Member -type NoteProperty -name RequestOfferingURL -value $RequestOfferingURL
                 $requestOfferingSuggestion | Add-Member -type NoteProperty -name WordsMatched -value $wordsMatched
                 $matchingRequestURLs += $requestOfferingSuggestion
             }
@@ -1979,7 +1980,8 @@ function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
             if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToKA)
             {
                 $knowledgeSuggestion = New-Object System.Object
-                $knowledgeSuggestion | Add-Member -type NoteProperty -name KnowledgeArticleURL -value "<a href=$ciresonPortalServer" + "KnowledgeBase/View/$($kbResult.articleid)#/>$($kbResult.title)</a><br />"
+                $KnowledgeArticleURL = "<a href=$ciresonPortalServer" + "KnowledgeBase/View/$($kbResult.articleid)#/>$($kbResult.title)</a><br />"
+                $knowledgeSuggestion | Add-Member -type NoteProperty -name KnowledgeArticleURL -value $KnowledgeArticleURL
                 $knowledgeSuggestion | Add-Member -type NoteProperty -name WordsMatched -value $wordsMatched
                 $matchingKBURLs += $knowledgeSuggestion
             }
