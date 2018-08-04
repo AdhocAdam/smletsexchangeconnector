@@ -629,22 +629,21 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                         #combine KB results and Offering results into a single email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
-                        $emailBodyResponse = "We found some knowledge articles and requests that may be of assistance to you <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $kbURLs<br /><br />
-                        Requests: <br /><br />
-                        $requestURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
-                        if ($enableSetFirstResponseDateOnSuggestions)
+                        #verify results, load the template, send the message
+                        $emailTemplate = get-content "c:\smletsexchangeconnector\htmlEmailTemplates\suggestKARO.html" -raw
+                        if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
+                        if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
+                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
+                        if (($kbURLs) -or ($requestURLs))
                         {
-                            $suggestionsAcknowledgeDate = get-date
-                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
+                            #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
+                            if ($enableSetFirstResponseDateOnSuggestions)
+                            {
+                                $suggestionsAcknowledgeDate = get-date
+                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            }
                         }
-
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
                     elseif (($searchCiresonHTMLKB -eq $true) -and ($searchAvailableCiresonPortalOfferings -eq $false))
                     {
@@ -663,20 +662,20 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                         #prepare KB result email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
-                        $emailBodyResponse = "We found some knowledge articles that may be of assistance to you <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $kbURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
-                        if ($enableSetFirstResponseDateOnSuggestions)
+                        #verify results, load the template, send the message
+                        $emailTemplate = get-content "c:\smletsexchangeconnector\htmlEmailTemplates\suggestKA.html" -raw
+                        if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
+                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
+                        if (($kbURLs))
                         {
-                            $suggestionsAcknowledgeDate = get-date
-                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
+                            #if enabled, as part of the Suggested KA process set the First Response Date on the Work Item
+                            if ($enableSetFirstResponseDateOnSuggestions)
+                            {
+                                $suggestionsAcknowledgeDate = get-date
+                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            }
                         }
-
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
                     elseif (($searchCiresonHTMLKB -eq $false) -and ($searchAvailableCiresonPortalOfferings -eq $true))
                     {
@@ -695,20 +694,19 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                         #prepare Request Offering results email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
-                        $emailBodyResponse = "We found some requests on the portal that help you get what you need faster <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $requestURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
-                        if ($enableSetFirstResponseDateOnSuggestions)
+                        $emailTemplate = get-content "c:\smletsexchangeconnector\htmlEmailTemplates\suggestRO.html" -raw
+                        if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
+                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
+                        if (($requestURLs))
                         {
-                            $suggestionsAcknowledgeDate = get-date
-                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
+                            #if enabled, as part of the Suggested RO process set the First Response Date on the Work Item
+                            if ($enableSetFirstResponseDateOnSuggestions)
+                            {
+                                $suggestionsAcknowledgeDate = get-date
+                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            }
                         }
-
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
                     else
                     {
@@ -767,22 +765,21 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                         #combine KB results and Offering results into a single email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
-                        $emailBodyResponse = "We found some knowledge articles and requests that may be of assistance to you <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $kbURLs<br /><br />
-                        Requests: <br /><br />
-                        $requestURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
-                        if ($enableSetFirstResponseDateOnSuggestions)
+                        #verify results, load the template, send the message
+                        $emailTemplate = get-content "c:\smletsexchangeconnector\htmlEmailTemplates\suggestKARO.html" -raw
+                        if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
+                        if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
+                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
+                        if (($kbURLs) -or ($requestURLs))
                         {
-                            $suggestionsAcknowledgeDate = get-date
-                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
+                            #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
+                            if ($enableSetFirstResponseDateOnSuggestions)
+                            {
+                                $suggestionsAcknowledgeDate = get-date
+                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            }
                         }
-                        
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
                     elseif (($searchCiresonHTMLKB -eq $true) -and ($searchAvailableCiresonPortalOfferings -eq $false))
                     {
@@ -801,20 +798,20 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                         #prepare KB result email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
-                        $emailBodyResponse = "We found some knowledge articles that may be of assistance to you <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $kbURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
-                        if ($enableSetFirstResponseDateOnSuggestions)
+                        #verify results, load the template, send the message
+                        $emailTemplate = get-content "c:\smletsexchangeconnector\htmlEmailTemplates\suggestKA.html" -raw
+                        if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
+                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
+                        if (($kbURLs))
                         {
-                            $suggestionsAcknowledgeDate = get-date
-                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
+                            #if enabled, as part of the Suggested KA process set the First Response Date on the Work Item
+                            if ($enableSetFirstResponseDateOnSuggestions)
+                            {
+                                $suggestionsAcknowledgeDate = get-date
+                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            }
                         }
-
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
                     elseif (($searchCiresonHTMLKB -eq $false) -and ($searchAvailableCiresonPortalOfferings -eq $true))
                     {
@@ -833,20 +830,19 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                         #prepare Request Offering results email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
-                        $emailBodyResponse = "We found some requests on the portal that help you get what you need faster <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $requestURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
-                        if ($enableSetFirstResponseDateOnSuggestions)
+                        $emailTemplate = get-content "c:\smletsexchangeconnector\htmlEmailTemplates\suggestRO.html" -raw
+                        if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
+                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
+                        if (($requestURLs))
                         {
-                            $suggestionsAcknowledgeDate = get-date
-                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
+                            #if enabled, as part of the Suggested RO process set the First Response Date on the Work Item
+                            if ($enableSetFirstResponseDateOnSuggestions)
+                            {
+                                $suggestionsAcknowledgeDate = get-date
+                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            }
                         }
-
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
                     else
                     {
