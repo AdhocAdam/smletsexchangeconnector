@@ -15,6 +15,26 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>Custom Theming for Suggested Knowledge Article or Request Offering emails (v1.4)</i></td>
+  </tr>
+  <tr>
+    <td width="200">update thumbnail</td>
+    <td width="auto">Now when emails go out suggesting Knowledge Articles or Request Offerings based on the email's subject and body, you can theme them to match your organization's respective style. Customizations made to these HTML templates will be preserved throughout updates of the connector.</td>
+  </tr>
+</table>
+
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Redact Sensitive Information (v1.4)</i></td>
+  </tr>
+  <tr>
+    <td width="200">update thumbnail</td>
+    <td width="auto">Using the regex file located in c:\smletsexchangeconnector\pii_regex.txt you can optionally have the connector replace words of your regex choice with [redacted] in Work Item/comment descriptions. Customizations made to this regex list will be preserved throughout updates of the connector.</td>
+  </tr>
+</table>
+
+<table border="0">
+  <tr>
     <td colspan="3"><i>Enhanced Action Logging (v1.4)</i></td>
   </tr>
   <tr>
