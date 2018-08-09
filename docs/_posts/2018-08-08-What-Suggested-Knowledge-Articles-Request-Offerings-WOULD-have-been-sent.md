@@ -1,5 +1,5 @@
 ---
-title: "What Suggested Knowledge Articles/Request Offerings WOULD have been sent?"
+title: "What WOULD HAVE Suggested Knowledge Articles/Request Offerings suggested?"
 excerpt_separator: "<!--more-->"
 layout: post
 author: Adam
