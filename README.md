@@ -18,7 +18,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>Custom Theming for Suggested Knowledge Article or Request Offering emails (v1.4)</i></td>
   </tr>
   <tr>
-    <td width="200">update thumbnail</td>
+    <td width="200"><img src ="/FeatureScreenshots/HTMLSuggestionTemplate.png" /></td>
     <td width="auto">Now when emails go out suggesting Knowledge Articles or Request Offerings based on the email's subject and body, you can theme them to match your organization's respective style. Customizations made to these HTML templates will be preserved throughout updates of the connector.</td>
   </tr>
 </table>
