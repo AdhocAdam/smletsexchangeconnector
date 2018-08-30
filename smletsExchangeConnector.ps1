@@ -20,6 +20,9 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.4.5 = #68 - Feature, Redact sensitive information
+                #69 - Optimization, Custom HTML Email Templates for Suggestions feature
+                #71 - Optimization, Sort Suggestions back to Affected User sorts by words matched
 Version: 1.4.4 = #48 - Created the ability to optionally set First Response Date on IR/SR when the connector makes Knowledge Article or Request Offering
                     suggestions to the Affected User
                 #51 - Fixed issue with updating Work Items from Meeting Requests when the [Work Item] doesn't appear in the subject using an updated
@@ -1137,7 +1140,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "ServiceRequestStatusEnum.Completed$"; "Notes" = "$commentToAdd"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false; if ($defaultServiceRequestImplementationCategory) {Set-SCSMObject -SMObject $workItem -Property ImplementationResults -Value $defaultServiceRequestImplementationCategory}; if ($ceScripts) { Invoke-AfterCompleted }}
                             "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Canceled$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterCancelled }}
                             "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Closed$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}
-                            default {if($commentToAdd -match "#$privateCommentKeyword"){$isPrivateBool = $true}else{$isPrivateBool = $null};Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $isPrivateBool}
+                            default {if($commentToAdd -match "#$privateCommentKeyword"){$isPrivateBool = $true}else{$isPrivateBool = $false};Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $isPrivateBool} 
                         }
                     }
                     $assignedToSMTP.TargetAddress {
@@ -1185,7 +1188,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Canceled$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterCancelled }}
                             "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Closed$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}           
                             "#$privateCommentKeyword" {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $true}
-                            default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $null}
+                            default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $null}
                         }
                     }
                 }
@@ -1766,7 +1769,7 @@ function Add-ActionLogEntry {
         [parameter(Mandatory=$true, Position=3)]
         [string] $EnteredBy,
         [parameter(Mandatory=$false, Position=4)]
-        [bool] $IsPrivate = $false
+        [Nullable[boolean]] $IsPrivate = $false
     )
 
     #Choose the Action Log Entry to be created. Depending on the Action Log being used, the $propDescriptionComment Property could be either Comment or Description.
