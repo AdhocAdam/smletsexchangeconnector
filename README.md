@@ -29,7 +29,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
   </tr>
   <tr>
     <td width="200">update thumbnail</td>
-    <td width="auto">Using the regex file located in c:\smletsexchangeconnector\pii_regex.txt you can optionally have the connector replace words of your regex choice with [redacted] in Work Item/comment descriptions. Customizations made to this regex list will be preserved throughout updates of the connector.</td>
+    <td width="auto">Using a custom defined regex file you can optionally have the connector replace words of your regex choice with [redacted] in Work Item/comment descriptions. Customizations made to this regex list will be preserved throughout updates of the connector.</td>
   </tr>
 </table>
 
