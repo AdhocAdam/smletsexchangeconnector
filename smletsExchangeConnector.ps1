@@ -320,8 +320,12 @@ $rejectedKeyword = "rejected"
 $privateCommentKeyword = "private"
 
 #define the path to the Exchange Web Services API and MimeKit
+#the PII regex file and HTML Suggestion Template paths will only be leveraged if these features are enabled above.
+#$htmlSuggestionTemplatePath must end with a "\"
 $exchangeEWSAPIPath = "C:\Program Files\Microsoft\Exchange\Web Services\1.2\Microsoft.Exchange.WebServices.dll"
 $mimeKitDLLPath = "C:\smletsExchangeConnector\mimekit.dll"
+$piiRegexPath = "C:\smletsExchangeConnector\pii_regex.txt"
+$htmlSuggestionTemplatePath = "c:\smletsexchangeconnector\htmlEmailTemplates\"
 
 #enable logging per standard Exchange Connector registry keys
 #valid options on that registry key are 1 to 7 where 7 is the most verbose
@@ -441,7 +445,6 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     if ($redactPiiFromMessage -eq $true)
     {
         $description = remove-PII $description
-        Write-host $description
     }
     
     #if the message is longer than 4000 characters take only the first 4000.
@@ -633,7 +636,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         #combine KB results and Offering results into a single email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
                         #verify results, load the template, send the message
-                        $emailTemplate = get-content "c:\smletsexchangeconnector\htmlEmailTemplates\suggestKARO.html" -raw
+                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKARO.html") -raw
                         if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
                         if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
                         $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
@@ -666,7 +669,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         #prepare KB result email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
                         #verify results, load the template, send the message
-                        $emailTemplate = get-content "c:\smletsexchangeconnector\htmlEmailTemplates\suggestKA.html" -raw
+                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKA.html") -raw
                         if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
                         $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
                         if (($kbURLs))
@@ -697,7 +700,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                         #prepare Request Offering results email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
-                        $emailTemplate = get-content "c:\smletsexchangeconnector\htmlEmailTemplates\suggestRO.html" -raw
+                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestRO.html") -raw
                         if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
                         $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
                         if (($requestURLs))
@@ -769,7 +772,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         #combine KB results and Offering results into a single email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
                         #verify results, load the template, send the message
-                        $emailTemplate = get-content "c:\smletsexchangeconnector\htmlEmailTemplates\suggestKARO.html" -raw
+                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKARO.html") -raw
                         if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
                         if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
                         $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
@@ -802,7 +805,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         #prepare KB result email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
                         #verify results, load the template, send the message
-                        $emailTemplate = get-content "c:\smletsexchangeconnector\htmlEmailTemplates\suggestKA.html" -raw
+                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKA.html") -raw
                         if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
                         $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
                         if (($kbURLs))
@@ -833,7 +836,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                         #prepare Request Offering results email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
-                        $emailTemplate = get-content "c:\smletsexchangeconnector\htmlEmailTemplates\suggestRO.html" -raw
+                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestRO.html") -raw
                         if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
                         $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
                         if (($requestURLs))
@@ -931,10 +934,10 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
 function Update-WorkItem ($message, $wiType, $workItemID) 
 {
     #removes PII if RedactPiiFromMessage is enable
-      if ($redactPiiFromMessage -eq $true)
-      {
-          $message.body = remove-PII $message.body
-      }
+    if ($redactPiiFromMessage -eq $true)
+    {
+        $message.body = remove-PII $message.body
+    }
       
     #determine the comment to add and ensure it's less than 4000 characters
     if ($includeWholeEmail -eq $true)
@@ -2548,7 +2551,7 @@ function Apply-SCSMTemplate
     Set-SCSMObjectTemplate -Projection $Projection -Template $Template -ErrorAction Stop @scsmMGMTParams
 }
 
-function remove-PII ($body)
+function Remove-PII ($body)
 {
     <#Regexes
     Visa = 4[0-9]{15}
@@ -2557,7 +2560,7 @@ function remove-PII ($body)
     American Express = 3[47][0-9]{13}
     SSN/ITIN = \d{3}-?\d{2}-?\d{4}
     #>
-    $piiRegexes = Get-Content "C:\smletsExchangeConnector\pii_regex.txt"
+    $piiRegexes = Get-Content $piiRegexPath
     ForEach ($regex in $piiRegexes)
     {
         switch -Regex ($body)
