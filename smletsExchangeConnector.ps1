@@ -276,6 +276,9 @@ cost to your organization before enabling this feature.#>
     #search your Cireson Service Catalog based on permissions scope of the Sender
 #enableAzureCognitiveServicesForNewWI = If enabled, Azure Cognitive Services Text Analytics API will perform Sentiment Analysis
     #to either create an Incident or Service Request
+#enableAzureCognitiveServicesPriorityScoring = If enabled with enableAzureCognitiveServicesForNewWI, the Sentiment Score will be used
+    #to set the Impact & Urgency and/or Urgency $ Priority on Incidents or Service Requests. Bounds can be edited within
+    #the Get-ACSWorkItemPriority function. 
 #azureRegion = where Cognitive Services is deployed as seen in it's respective settings pane,
     #i.e. ukwest, eastus2, westus, northcentralus
 #azureCogSvcTextAnalyticsAPIKey = API key for your cognitive services text analytics deployment. This is found in the settings pane for Cognitive Services in https://portal.azure.com
@@ -284,6 +287,7 @@ $enableAzureCognitiveServicesForNewWI = $false
 $minPercentToCreateServiceRequest = "95"
 $enableAzureCognitiveServicesForKA = $false
 $enableAzureCognitiveServicesForRO = $false
+$enableAzureCognitiveServicesPriorityScoring = $false
 $azureRegion = ""
 $azureCogSvcTextAnalyticsAPIKey = ""
 
@@ -565,14 +569,22 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     {
         $sentimentScore = Get-AzureEmailSentiment -messageToEvaluate $message.body
         
-        #if the sentiment is greater than or equal to what is defined, create a Service Request
+        #if the sentiment is greater than or equal to what is defined, create a Service Request. Optionally define Urgency/Priority in that order.
         if ($sentimentScore -ge [int]$minPercentToCreateServiceRequest)
         {
             $workItemType = "sr"
+            if ($enableAzureCognitiveServicesPriorityScoring -eq $true)
+            {
+                $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.ServiceRequest"
+            }
         }
-        else #sentiment is lower than defined value, create an Incident
+        else #sentiment is lower than defined value, create an Incident. Optionally define Impact/Urgency in that order.
         {
             $workItemType = "ir"
+            if ($enableAzureCognitiveServicesPriorityScoring -eq $true)
+            {
+                $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.Incident"
+            }
         }
     }
     elseif ($UseMailboxRedirection -eq $true) {
@@ -601,6 +613,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Set-SCSMObjectTemplate -Projection $irProjection -Template $IRTemplate @scsmMGMTParams
+                    if (($enableAzureCognitiveServicesPriorityScoring -eq $true) -and ($enableAzureCognitiveServicesForNewWI -eq $true)) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams}
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     if ($affectedUser)
                     {
@@ -737,6 +750,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Apply-SCSMTemplate -Projection $srProjection -Template $SRTemplate
                     #Set-SCSMObjectTemplate -projection $srProjection -Template $SRTemplate @scsmMGMTParams
+                    if (($enableAzureCognitiveServicesPriorityScoring -eq $true) -and ($enableAzureCognitiveServicesForNewWI -eq $true)) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams}
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     if ($affectedUser)
                     {
@@ -2450,7 +2464,49 @@ function Get-AzureEmailSentiment ($messageToEvaluate)
     #return the percent score
     return ($sentimentResult.documents.score * 100)
 }
+function Get-ACSWorkItemPriority ($score, $wiClass)
+{  
+    #change boundaries as neccesary
+    switch ($wiClass)
+    {
+        #impact/urgency
+        "System.WorkItem.Incident" {
+            switch ($score)
+            {
+                {$_ -ge 0 -and $_ -le 20} {$priorityCombo = "hi/hi"}
+                {$_ -ge 20 -and $_ -le 60} {$priorityCombo = "med/med"}
+                {$_ -ge 60 -and $_ -le 80} {$priorityCombo = "med/low"}
+                {$_ -ge 80 -and $_ -le 90} {$priorityCombo = "low/med"}
+                {$_ -ge 90 -and $_ -le 100} {$priorityCombo = "low/low"}
+            }
+        }
+        #urgency/priority
+        "System.WorkItem.ServiceRequest" {
+            switch ($score)
+            {
+                {$_ -ge 0 -and $_ -le 20} {$priorityCombo = "imm/imm"}
+                {$_ -ge 20 -and $_ -le 60} {$priorityCombo = "hi/med"}
+                {$_ -ge 60 -and $_ -le 80} {$priorityCombo = "med/low"}
+                {$_ -ge 80 -and $_ -le 90} {$priorityCombo = "med/med"}
+                {$_ -ge 90 -and $_ -le 100} {$priorityCombo = "low/low"}
+            }
+        }
+    }
 
+    $priorityCalc = @()
+    switch ($wiClass)
+    {
+        "System.WorkItem.Incident" {
+            $priorityCalc + $priorityCombo.Split("/")[0].Replace("hi", "System.WorkItem.TroubleTicket.ImpactEnum.High$").Replace("med", "System.WorkItem.TroubleTicket.ImpactEnum.Medium$").Replace("low", "System.WorkItem.TroubleTicket.ImpactEnum.Low$");
+            $priorityCalc + $priorityCombo.Split("/")[1].Replace("hi", "System.WorkItem.TroubleTicket.UrgencyEnum.High$").Replace("med", "System.WorkItem.TroubleTicket.UrgencyEnum.Medium$").Replace("low", "System.WorkItem.TroubleTicket.UrgencyEnum.Low$");
+        }
+        "System.WorkItem.ServiceRequest" {
+            $priorityCalc + $priorityCombo.Split("/")[0].Replace("imm", "ServiceRequestUrgencyEnum.Immediate$").Replace("hi", "ServiceRequestUrgencyEnum.High$").Replace("med", "ServiceRequestUrgencyEnum.Medium$").Replace("low", "ServiceRequestUrgencyEnum.Low$");
+            $priorityCalc + $priorityCombo.Split("/")[1].Replace("imm", "ServiceRequestPriorityEnum.Immediate$").Replace("hi", "ServiceRequestPriorityEnum.High$").Replace("med", "ServiceRequestPriorityEnum.Medium$").Replace("low", "ServiceRequestPriorityEnum.Low$");
+        }
+    }
+    return $priorityCalc
+}
 function Get-AzureEmailKeywords ($messageToEvaluate)
 {
     #define cognitive services URLs
