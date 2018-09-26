@@ -613,7 +613,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Set-SCSMObjectTemplate -Projection $irProjection -Template $IRTemplate @scsmMGMTParams
-                    if ($enableAzureCognitiveServicesPriorityScoring -eq $true) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams}
+                    if (($enableAzureCognitiveServicesPriorityScoring -eq $true) -and ($enableAzureCognitiveServicesForNewWI -eq $true)) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams}
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     if ($affectedUser)
                     {
@@ -750,7 +750,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Apply-SCSMTemplate -Projection $srProjection -Template $SRTemplate
                     #Set-SCSMObjectTemplate -projection $srProjection -Template $SRTemplate @scsmMGMTParams
-                    if ($enableAzureCognitiveServicesPriorityScoring -eq $true) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams}
+                    if (($enableAzureCognitiveServicesPriorityScoring -eq $true) -and ($enableAzureCognitiveServicesForNewWI -eq $true)) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams}
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     if ($affectedUser)
                     {
