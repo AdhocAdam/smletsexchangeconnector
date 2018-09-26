@@ -19,7 +19,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
   </tr>
   <tr>
     <td width="200"><img src ="/FeatureScreenshots/ACSPriorityScoring.png" /></td>
-    <td width="auto">If you're making use of Sentiment Analysis from Azure Cognitive Services, the returned score can now optionally drive the dynamic Impact, Urgency, and Priority on new Incidents or Service Requests. Sentiment boundaries can be edited via the Get-ACSWorkItemPriority function.</td>
+    <td width="auto">If you're making use of Sentiment Analysis from Azure Cognitive Services, the returned score can now optionally dynamically drive the Impact, Urgency, and Priority on new Incidents or Service Requests. Sentiment boundaries can be edited via the Get-ACSWorkItemPriority function.</td>
   </tr>
 </table>
 
