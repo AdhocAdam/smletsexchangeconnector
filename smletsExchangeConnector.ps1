@@ -1018,7 +1018,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                 $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | foreach-object {Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $_ @scsmMGMTParams).sourceobject.id @scsmMGMTParams} | where-object {$_.Status -ne "IncidentStatusEnum.Closed"}
                 if (($relatedWorkItemFromAttachmentSearch | get-unique).count -eq 1)
                 {
-                    Update-WorkItem -message $message -wiType $($relevantWorkItem.Name.substring(0,2)) -workItemID $relevantWorkItem.Name
+                    Update-WorkItem -message $message -wiType $($relatedWorkItemFromAttachmentSearch.Name.substring(0,2)) -workItemID $relatedWorkItemFromAttachmentSearch.Name
                 }
                 else
                 {
@@ -1130,7 +1130,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                 $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | foreach-object {Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $_ @scsmMGMTParams).sourceobject.id @scsmMGMTParams} | where-object {$_.Status -ne "ServiceRequestStatusEnum.Closed"}
                 if (($relatedWorkItemFromAttachmentSearch | get-unique).count -eq 1)
                 {
-                    Update-WorkItem -message $message -wiType $($relevantWorkItem.Name.substring(0,2)) -workItemID $relevantWorkItem.Name
+                    Update-WorkItem -message $message -wiType $($relatedWorkItemFromAttachmentSearch.Name.substring(0,2)) -workItemID $relatedWorkItemFromAttachmentSearch.Name
                 }
                 else
                 {
