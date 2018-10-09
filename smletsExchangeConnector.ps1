@@ -20,7 +20,8 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
-Version: 1.4.5 = #68 - Feature, Redact sensitive information
+Version: 1.4.5 = #75 - Use Azure Cognitive Services Text Analytics API to set Urgency/Priority
+                #68 - Feature, Redact sensitive information
                 #69 - Optimization, Custom HTML Email Templates for Suggestions feature
                 #71 - Optimization, Sort Suggestions back to Affected User sorts by words matched
 Version: 1.4.4 = #48 - Created the ability to optionally set First Response Date on IR/SR when the connector makes Knowledge Article or Request Offering
