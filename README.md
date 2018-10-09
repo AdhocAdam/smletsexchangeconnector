@@ -7,12 +7,42 @@ This PowerShell script leverages the [SMlets module](https://www.powershellgalle
 
 
 ## So what is this for?
-The stock Exchange Connector is a seperate download for SCSM 2012+ that enables SCSM deployments to leverage an Exchange mailbox to process updates to work items. While incredibly useful, some feel limited by its inability to be customized given its nature as a sealed management pack. This PowerShell script replicates all functionality of [Exchange Connector 3.1](https://www.microsoft.com/en-ca/download/details.aspx?id=45291) introduces several new features, and most importantly enables SCSM Administrators to customize the solution to their needs.
+The stock Exchange Connector is a seperate download for SCSM 2012+ that enables SCSM deployments to leverage an Exchange mailbox to process updates to work items. While incredibly useful, some feel limited by its inability to be customized given its nature as a sealed management pack. This PowerShell script replicates all functionality of [Exchange Connector 3.1](https://www.microsoft.com/en-ca/download/details.aspx?id=45291), introduces several new features, and most importantly enables SCSM Administrators to customize the solution to their needs.
 
 ## Who is this for?
 This is aimed at SCSM administrators looking to further push the automation limits of what their SCSM deployment can do with inbound email processing. As such, you should be comfortable with PowerShell and navigating SCSM via SMlets.
 
 ## What new things can it do?
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Dynamic Priority based on Azure Sentiment Analysis (v1.4)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/ACSPriorityScoring.png" /></td>
+    <td width="auto">If you're making use of Sentiment Analysis from Azure Cognitive Services, the returned score can now optionally dynamically drive the Impact, Urgency, and Priority on new Incidents or Service Requests. Sentiment boundaries can be edited via the Get-ACSWorkItemPriority function.</td>
+  </tr>
+</table>
+
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Custom Theming for Suggested Knowledge Article or Request Offering emails (v1.4)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/HTMLSuggestionTemplate.png" /></td>
+    <td width="auto">Now when emails go out suggesting Knowledge Articles or Request Offerings based on the email's subject and body, you can theme them to match your organization's respective style. Customizations made to these HTML templates will be preserved throughout updates of the connector.</td>
+  </tr>
+</table>
+
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Redact Sensitive Information (v1.4)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/redacted.png" /></td>
+    <td width="auto">Using a custom defined regex file you can optionally have the connector replace words of your regex choice with [redacted] in New Work Item Descriptions or Comments. Customizations made to this regex list will be preserved throughout updates of the connector.</td>
+  </tr>
+</table>
+
 <table border="0">
   <tr>
     <td colspan="3"><i>Enhanced Action Logging (v1.4)</i></td>

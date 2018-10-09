@@ -20,6 +20,10 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.4.5 = #75 - Feature, Use Azure Cognitive Services Text Analytics API to set Urgency/Priority
+                #68 - Feature, Redact sensitive information
+                #69 - Optimization, Custom HTML Email Templates for Suggestions feature
+                #71 - Optimization, Sort Suggestions back to Affected User sorts by words matched
 Version: 1.4.4 = #48 - Created the ability to optionally set First Response Date on IR/SR when the connector makes Knowledge Article or Request Offering
                     suggestions to the Affected User
                 #51 - Fixed issue with updating Work Items from Meeting Requests when the [Work Item] doesn't appear in the subject using an updated
@@ -155,6 +159,8 @@ $ExchangeEndpoint = ""
     #perform a: (Get-SCSMEnumeration -name "MA Support Group List name" | select-object id, name, displayname) to verify the ID of the Support Group property name for your Manual Activities. This is value needs to be
     #This is value needs to be set to the ID/GUID of your result.
     #This functionality requires the Cireson Analyst Portal for Service Manager.
+#redactPiiFromMessage = if $true, instructs the script to remove personally identifiable information from message description in work-items.
+    #The PII being redacted is listed as regex's in a text file located in the same directory as the script. The file is called "pii_regex.txt", has 1 regex per line, written without quotes.
 $defaultNewWorkItem = "ir"
 $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
@@ -178,6 +184,7 @@ $CreateNewWorkItemWhenClosed = $false
 $takeRequiresGroupMembership = $false
 $crSupportGroupEnumGUID = ""
 $maSupportGroupEnumGUID = ""
+$redactPiiFromMessage = $false
 
 #processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
     #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
@@ -270,6 +277,9 @@ cost to your organization before enabling this feature.#>
     #search your Cireson Service Catalog based on permissions scope of the Sender
 #enableAzureCognitiveServicesForNewWI = If enabled, Azure Cognitive Services Text Analytics API will perform Sentiment Analysis
     #to either create an Incident or Service Request
+#enableAzureCognitiveServicesPriorityScoring = If enabled with enableAzureCognitiveServicesForNewWI, the Sentiment Score will be used
+    #to set the Impact & Urgency and/or Urgency $ Priority on Incidents or Service Requests. Bounds can be edited within
+    #the Get-ACSWorkItemPriority function. 
 #azureRegion = where Cognitive Services is deployed as seen in it's respective settings pane,
     #i.e. ukwest, eastus2, westus, northcentralus
 #azureCogSvcTextAnalyticsAPIKey = API key for your cognitive services text analytics deployment. This is found in the settings pane for Cognitive Services in https://portal.azure.com
@@ -278,6 +288,7 @@ $enableAzureCognitiveServicesForNewWI = $false
 $minPercentToCreateServiceRequest = "95"
 $enableAzureCognitiveServicesForKA = $false
 $enableAzureCognitiveServicesForRO = $false
+$enableAzureCognitiveServicesPriorityScoring = $false
 $azureRegion = ""
 $azureCogSvcTextAnalyticsAPIKey = ""
 
@@ -314,8 +325,12 @@ $rejectedKeyword = "rejected"
 $privateCommentKeyword = "private"
 
 #define the path to the Exchange Web Services API and MimeKit
+#the PII regex file and HTML Suggestion Template paths will only be leveraged if these features are enabled above.
+#$htmlSuggestionTemplatePath must end with a "\"
 $exchangeEWSAPIPath = "C:\Program Files\Microsoft\Exchange\Web Services\1.2\Microsoft.Exchange.WebServices.dll"
 $mimeKitDLLPath = "C:\smletsExchangeConnector\mimekit.dll"
+$piiRegexPath = "C:\smletsExchangeConnector\pii_regex.txt"
+$htmlSuggestionTemplatePath = "c:\smletsexchangeconnector\htmlEmailTemplates\"
 
 #enable logging per standard Exchange Connector registry keys
 #valid options on that registry key are 1 to 7 where 7 is the most verbose
@@ -431,6 +446,12 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     $title = $message.subject
     $description = $message.body
 
+    #removes PII if RedactPiiFromMessage is enabled
+    if ($redactPiiFromMessage -eq $true)
+    {
+        $description = remove-PII $description
+    }
+    
     #if the message is longer than 4000 characters take only the first 4000.
     if ($description.length -ge "4000")
     {
@@ -549,14 +570,22 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     {
         $sentimentScore = Get-AzureEmailSentiment -messageToEvaluate $message.body
         
-        #if the sentiment is greater than or equal to what is defined, create a Service Request
+        #if the sentiment is greater than or equal to what is defined, create a Service Request. Optionally define Urgency/Priority in that order.
         if ($sentimentScore -ge [int]$minPercentToCreateServiceRequest)
         {
             $workItemType = "sr"
+            if ($enableAzureCognitiveServicesPriorityScoring -eq $true)
+            {
+                $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.ServiceRequest"
+            }
         }
-        else #sentiment is lower than defined value, create an Incident
+        else #sentiment is lower than defined value, create an Incident. Optionally define Impact/Urgency in that order.
         {
             $workItemType = "ir"
+            if ($enableAzureCognitiveServicesPriorityScoring -eq $true)
+            {
+                $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.Incident"
+            }
         }
     }
     elseif ($UseMailboxRedirection -eq $true) {
@@ -585,6 +614,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Set-SCSMObjectTemplate -Projection $irProjection -Template $IRTemplate @scsmMGMTParams
+                    if (($enableAzureCognitiveServicesPriorityScoring -eq $true) -and ($enableAzureCognitiveServicesForNewWI -eq $true)) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams}
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     if ($affectedUser)
                     {
@@ -619,22 +649,21 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                         #combine KB results and Offering results into a single email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
-                        $emailBodyResponse = "We found some knowledge articles and requests that may be of assistance to you <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $kbURLs<br /><br />
-                        Requests: <br /><br />
-                        $requestURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
-                        if ($enableSetFirstResponseDateOnSuggestions)
+                        #verify results, load the template, send the message
+                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKARO.html") -raw
+                        if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
+                        if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
+                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
+                        if (($kbURLs) -or ($requestURLs))
                         {
-                            $suggestionsAcknowledgeDate = get-date
-                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
+                            #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
+                            if ($enableSetFirstResponseDateOnSuggestions)
+                            {
+                                $suggestionsAcknowledgeDate = get-date
+                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            }
                         }
-
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
                     elseif (($searchCiresonHTMLKB -eq $true) -and ($searchAvailableCiresonPortalOfferings -eq $false))
                     {
@@ -653,20 +682,20 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                         #prepare KB result email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
-                        $emailBodyResponse = "We found some knowledge articles that may be of assistance to you <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $kbURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
-                        if ($enableSetFirstResponseDateOnSuggestions)
+                        #verify results, load the template, send the message
+                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKA.html") -raw
+                        if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
+                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
+                        if (($kbURLs))
                         {
-                            $suggestionsAcknowledgeDate = get-date
-                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
+                            #if enabled, as part of the Suggested KA process set the First Response Date on the Work Item
+                            if ($enableSetFirstResponseDateOnSuggestions)
+                            {
+                                $suggestionsAcknowledgeDate = get-date
+                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            }
                         }
-
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
                     elseif (($searchCiresonHTMLKB -eq $false) -and ($searchAvailableCiresonPortalOfferings -eq $true))
                     {
@@ -685,20 +714,19 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                         #prepare Request Offering results email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
-                        $emailBodyResponse = "We found some requests on the portal that help you get what you need faster <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $requestURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
-                        if ($enableSetFirstResponseDateOnSuggestions)
+                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestRO.html") -raw
+                        if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
+                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
+                        if (($requestURLs))
                         {
-                            $suggestionsAcknowledgeDate = get-date
-                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
+                            #if enabled, as part of the Suggested RO process set the First Response Date on the Work Item
+                            if ($enableSetFirstResponseDateOnSuggestions)
+                            {
+                                $suggestionsAcknowledgeDate = get-date
+                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            }
                         }
-
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
                     else
                     {
@@ -723,6 +751,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Apply-SCSMTemplate -Projection $srProjection -Template $SRTemplate
                     #Set-SCSMObjectTemplate -projection $srProjection -Template $SRTemplate @scsmMGMTParams
+                    if (($enableAzureCognitiveServicesPriorityScoring -eq $true) -and ($enableAzureCognitiveServicesForNewWI -eq $true)) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams}
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     if ($affectedUser)
                     {
@@ -757,22 +786,21 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                         #combine KB results and Offering results into a single email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
-                        $emailBodyResponse = "We found some knowledge articles and requests that may be of assistance to you <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $kbURLs<br /><br />
-                        Requests: <br /><br />
-                        $requestURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
-                        if ($enableSetFirstResponseDateOnSuggestions)
+                        #verify results, load the template, send the message
+                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKARO.html") -raw
+                        if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
+                        if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
+                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
+                        if (($kbURLs) -or ($requestURLs))
                         {
-                            $suggestionsAcknowledgeDate = get-date
-                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
+                            #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
+                            if ($enableSetFirstResponseDateOnSuggestions)
+                            {
+                                $suggestionsAcknowledgeDate = get-date
+                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            }
                         }
-                        
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
                     elseif (($searchCiresonHTMLKB -eq $true) -and ($searchAvailableCiresonPortalOfferings -eq $false))
                     {
@@ -791,20 +819,20 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                         #prepare KB result email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
-                        $emailBodyResponse = "We found some knowledge articles that may be of assistance to you <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $kbURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
-                        if ($enableSetFirstResponseDateOnSuggestions)
+                        #verify results, load the template, send the message
+                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKA.html") -raw
+                        if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
+                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
+                        if (($kbURLs))
                         {
-                            $suggestionsAcknowledgeDate = get-date
-                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
+                            #if enabled, as part of the Suggested KA process set the First Response Date on the Work Item
+                            if ($enableSetFirstResponseDateOnSuggestions)
+                            {
+                                $suggestionsAcknowledgeDate = get-date
+                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            }
                         }
-
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
                     elseif (($searchCiresonHTMLKB -eq $false) -and ($searchAvailableCiresonPortalOfferings -eq $true))
                     {
@@ -823,20 +851,19 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                         #prepare Request Offering results email back to the Affected User
                         $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
-                        $emailBodyResponse = "We found some requests on the portal that help you get what you need faster <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $requestURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
-                        if ($enableSetFirstResponseDateOnSuggestions)
+                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestRO.html") -raw
+                        if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
+                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
+                        if (($requestURLs))
                         {
-                            $suggestionsAcknowledgeDate = get-date
-                            Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
+                            #if enabled, as part of the Suggested RO process set the First Response Date on the Work Item
+                            if ($enableSetFirstResponseDateOnSuggestions)
+                            {
+                                $suggestionsAcknowledgeDate = get-date
+                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
+                            }
                         }
-
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
                     }
                     else
                     {
@@ -921,6 +948,12 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
 
 function Update-WorkItem ($message, $wiType, $workItemID) 
 {
+    #removes PII if RedactPiiFromMessage is enable
+    if ($redactPiiFromMessage -eq $true)
+    {
+        $message.body = remove-PII $message.body
+    }
+      
     #determine the comment to add and ensure it's less than 4000 characters
     if ($includeWholeEmail -eq $true)
     {
@@ -983,15 +1016,23 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
 
             try {$existingWiStatusName = $workItem.Status.Name} catch {}
             if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "IncidentStatusEnum.Closed") {
-                $newWi = New-WorkItem -message $message -wiType $($workItem.Name.substring(0,2)) -returnWIBool $true
-
-                #copy essential info over from old to new
-                $NewDesc = "New ticket generated from reply to $($workItem.Name) (Closed). `n ---- `n $($newWi.Description) `n --- `n Original description: `n --- `n $($workItem.Description)"
-                $NewWiPropertiesFromOld = @{"Description"=$NewDesc;"TierQueue"=$($workItem.TierQueue);"Classification"=$($workItem.Classfification);"Impact"=$($workItem.Impact);"Urgency"=$($workItem.Urgency);}
-                Set-SCSMObject -SMObject $newWi -PropertyHashTable $newWiPropertiesFromOld @scsmMGMTParams
-
-                #relate old and new wi
-                New-SCSMRelationshipObject -Relationship $wiRelatesToWiRelClass -Source $newWi -Target $workItem -Bulk @scsmMGMTParams
+                $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | foreach-object {Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $_ @scsmMGMTParams).sourceobject.id @scsmMGMTParams} | where-object {$_.Status -ne "IncidentStatusEnum.Closed"}
+                if (($relatedWorkItemFromAttachmentSearch | get-unique).count -eq 1)
+                {
+                    Update-WorkItem -message $message -wiType $($relatedWorkItemFromAttachmentSearch.Name.substring(0,2)) -workItemID $relatedWorkItemFromAttachmentSearch.Name
+                }
+                else
+                {
+                    $newWi = New-WorkItem -message $message -wiType $($workItem.Name.substring(0,2)) -returnWIBool $true
+            
+                    #copy essential info over from old to new
+                    $NewDesc = "New ticket generated from reply to $($workItem.Name) (Closed). `n ---- `n $($newWi.Description) `n --- `n Original description: `n --- `n $($workItem.Description)"
+                    $NewWiPropertiesFromOld = @{"Description"=$NewDesc;"TierQueue"=$($workItem.TierQueue);"Classification"=$($workItem.Classfification);"Impact"=$($workItem.Impact);"Urgency"=$($workItem.Urgency);}
+                    Set-SCSMObject -SMObject $newWi -PropertyHashTable $newWiPropertiesFromOld @scsmMGMTParams
+                
+                    #relate old and new wi
+                    New-SCSMRelationshipObject -Relationship $wiRelatesToWiRelClass -Source $newWi -Target $workItem -Bulk @scsmMGMTParams
+                }
             }
             else {
                 try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
@@ -1087,15 +1128,23 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
 
             try {$existingWiStatusName = $workItem.Status.Name} catch {}
             if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "ServiceRequestStatusEnum.Closed") {
-                $newWi = New-WorkItem -message $message -wiType $($workItem.Name.substring(0,2)) -returnWIBool $true
-
-                #copy essential info over from old to new
-                $NewDesc = "New ticket generated from reply to $($workItem.Name) (Closed). `n ---- `n $($newWi.Description) `n --- `n Original description: `n --- `n $($workItem.Description)"
-                $NewWiPropertiesFromOld = @{"Description"=$NewDesc;"SupportGroup"=$($workItem.SupportGroup);"ServiceRequestCategory"=$($workItem.ServiceRequestCategory);"Priority"=$($workItem.Priority);"Urgency"=$($workItem.Urgency)}
-                Set-SCSMObject -SMObject $newWi -PropertyHashTable $newWiPropertiesFromOld @scsmMGMTParams
-
-                #relate old and new wi
-                New-SCSMRelationshipObject -Relationship $wiRelatesToWiRelClass -Source $newWi -Target $workItem -Bulk @scsmMGMTParams
+                $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | foreach-object {Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $_ @scsmMGMTParams).sourceobject.id @scsmMGMTParams} | where-object {$_.Status -ne "ServiceRequestStatusEnum.Closed"}
+                if (($relatedWorkItemFromAttachmentSearch | get-unique).count -eq 1)
+                {
+                    Update-WorkItem -message $message -wiType $($relatedWorkItemFromAttachmentSearch.Name.substring(0,2)) -workItemID $relatedWorkItemFromAttachmentSearch.Name
+                }
+                else
+                {
+                    $newWi = New-WorkItem -message $message -wiType $($workItem.Name.substring(0,2)) -returnWIBool $true
+            
+                    #copy essential info over from old to new
+                    $NewDesc = "New ticket generated from reply to $($workItem.Name) (Closed). `n ---- `n $($newWi.Description) `n --- `n Original description: `n --- `n $($workItem.Description)"
+                    $NewWiPropertiesFromOld = @{"Description"=$NewDesc;"SupportGroup"=$($workItem.SupportGroup);"ServiceRequestCategory"=$($workItem.ServiceRequestCategory);"Priority"=$($workItem.Priority);"Urgency"=$($workItem.Urgency)}
+                    Set-SCSMObject -SMObject $newWi -PropertyHashTable $newWiPropertiesFromOld @scsmMGMTParams
+                
+                    #relate old and new wi
+                    New-SCSMRelationshipObject -Relationship $wiRelatesToWiRelClass -Source $newWi -Target $workItem -Bulk @scsmMGMTParams
+                }
             }
             else {
                 try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
@@ -1936,10 +1985,14 @@ function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUse
             if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToRO)
             {
                 $ciresonPortalRequestURL = "`"" + $ciresonPortalServer + "SC/ServiceCatalog/RequestOffering/" + $serviceCatalogResult.RequestOfferingId + "," + $serviceCatalogResult.ServiceOfferingId + "`""
-                $matchingRequestURLs += "<a href=$ciresonPortalRequestURL/>$($serviceCatalogResult.RequestOfferingTitle)</a><br />"
+                $RequestOfferingURL = "<a href=$ciresonPortalRequestURL/>$($serviceCatalogResult.RequestOfferingTitle)</a><br />"
+                $requestOfferingSuggestion = New-Object System.Object
+                $requestOfferingSuggestion | Add-Member -type NoteProperty -name RequestOfferingURL -value $RequestOfferingURL
+                $requestOfferingSuggestion | Add-Member -type NoteProperty -name WordsMatched -value $wordsMatched
+                $matchingRequestURLs += $requestOfferingSuggestion
             }
         }
-
+        $matchingRequestURLs = ($matchingRequestURLs | sort-object WordsMatched -Descending).RequestOfferingURL
         return $matchingRequestURLs
     }
 }
@@ -1975,9 +2028,14 @@ function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
             $wordsMatched = ($searchQuery.Split() | ?{($kbResult.title -match "\b$_\b")}).count
             if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToKA)
             {
-                $matchingKBURLs += "<a href=$ciresonPortalServer" + "KnowledgeBase/View/$($kbResult.articleid)#/>$($kbResult.title)</a><br />"
+                $knowledgeSuggestion = New-Object System.Object
+                $KnowledgeArticleURL = "<a href=$ciresonPortalServer" + "KnowledgeBase/View/$($kbResult.articleid)#/>$($kbResult.title)</a><br />"
+                $knowledgeSuggestion | Add-Member -type NoteProperty -name KnowledgeArticleURL -value $KnowledgeArticleURL
+                $knowledgeSuggestion | Add-Member -type NoteProperty -name WordsMatched -value $wordsMatched
+                $matchingKBURLs += $knowledgeSuggestion
             }
         }
+        $matchingKBURLs = ($matchingKBURLs | sort-object WordsMatched -Descending).KnowledgeArticleURL
         return $matchingKBURLs
     }
 }
@@ -2423,7 +2481,49 @@ function Get-AzureEmailSentiment ($messageToEvaluate)
     #return the percent score
     return ($sentimentResult.documents.score * 100)
 }
+function Get-ACSWorkItemPriority ($score, $wiClass)
+{  
+    #change boundaries as neccesary
+    switch ($wiClass)
+    {
+        #impact/urgency
+        "System.WorkItem.Incident" {
+            switch ($score)
+            {
+                {$_ -ge 0 -and $_ -le 20} {$priorityCombo = "hi/hi"}
+                {$_ -ge 20 -and $_ -le 60} {$priorityCombo = "med/med"}
+                {$_ -ge 60 -and $_ -le 80} {$priorityCombo = "med/low"}
+                {$_ -ge 80 -and $_ -le 90} {$priorityCombo = "low/med"}
+                {$_ -ge 90 -and $_ -le 100} {$priorityCombo = "low/low"}
+            }
+        }
+        #urgency/priority
+        "System.WorkItem.ServiceRequest" {
+            switch ($score)
+            {
+                {$_ -ge 0 -and $_ -le 20} {$priorityCombo = "imm/imm"}
+                {$_ -ge 20 -and $_ -le 60} {$priorityCombo = "hi/med"}
+                {$_ -ge 60 -and $_ -le 80} {$priorityCombo = "med/low"}
+                {$_ -ge 80 -and $_ -le 90} {$priorityCombo = "med/med"}
+                {$_ -ge 90 -and $_ -le 100} {$priorityCombo = "low/low"}
+            }
+        }
+    }
 
+    $priorityCalc = @()
+    switch ($wiClass)
+    {
+        "System.WorkItem.Incident" {
+            $priorityCalc + $priorityCombo.Split("/")[0].Replace("hi", "System.WorkItem.TroubleTicket.ImpactEnum.High$").Replace("med", "System.WorkItem.TroubleTicket.ImpactEnum.Medium$").Replace("low", "System.WorkItem.TroubleTicket.ImpactEnum.Low$");
+            $priorityCalc + $priorityCombo.Split("/")[1].Replace("hi", "System.WorkItem.TroubleTicket.UrgencyEnum.High$").Replace("med", "System.WorkItem.TroubleTicket.UrgencyEnum.Medium$").Replace("low", "System.WorkItem.TroubleTicket.UrgencyEnum.Low$");
+        }
+        "System.WorkItem.ServiceRequest" {
+            $priorityCalc + $priorityCombo.Split("/")[0].Replace("imm", "ServiceRequestUrgencyEnum.Immediate$").Replace("hi", "ServiceRequestUrgencyEnum.High$").Replace("med", "ServiceRequestUrgencyEnum.Medium$").Replace("low", "ServiceRequestUrgencyEnum.Low$");
+            $priorityCalc + $priorityCombo.Split("/")[1].Replace("imm", "ServiceRequestPriorityEnum.Immediate$").Replace("hi", "ServiceRequestPriorityEnum.High$").Replace("med", "ServiceRequestPriorityEnum.Medium$").Replace("low", "ServiceRequestPriorityEnum.Low$");
+        }
+    }
+    return $priorityCalc
+}
 function Get-AzureEmailKeywords ($messageToEvaluate)
 {
     #define cognitive services URLs
@@ -2522,6 +2622,26 @@ function Apply-SCSMTemplate
     }
     #Apply update template
     Set-SCSMObjectTemplate -Projection $Projection -Template $Template -ErrorAction Stop @scsmMGMTParams
+}
+
+function Remove-PII ($body)
+{
+    <#Regexes
+    Visa = 4[0-9]{15}
+    Mastercard = (?:5[1-5][0-9]{2}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}
+    Discover = 6(?:011|5[0-9]{2})[0-9]{12}
+    American Express = 3[47][0-9]{13}
+    SSN/ITIN = \d{3}-?\d{2}-?\d{4}
+    #>
+    $piiRegexes = Get-Content $piiRegexPath
+    ForEach ($regex in $piiRegexes)
+    {
+        switch -Regex ($body)
+        {
+            "$regex" {$body = $body -replace "$regex", "[redacted]"}
+        }
+    }
+    return $body
 }
 
 #endregion 
