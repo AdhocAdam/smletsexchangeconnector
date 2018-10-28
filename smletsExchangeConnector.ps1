@@ -213,8 +213,8 @@ $mergeReplies = $false
     #their email/new work item
 #enableSetFirstResponseDateOnSuggestions = When Knowledge Article or Request Offering suggestions are made to the Affected User, you can optionally
     #set the First Response Date value on a New Work Item
-#$ciresonPortalServer = URL that will be used to search for KB articles via invoke-webrequest. Make sure to leave the "/" after your tld!
-#$ciresonPortalWindowsAuth = how invoke-webrequest should attempt to authenticate to your portal server.
+#$ciresonPortalServer = URL that will be used to search for KB articles via invoke-restmethod. Make sure to leave the "/" after your tld!
+#$ciresonPortalWindowsAuth = how invoke-restmethod should attempt to authenticate to your portal server.
     #Leave true if your portal uses Windows Auth, change to False for Forms authentication.
     #If using forms, you'll need to set the ciresonPortalUsername and Password variables. For ease, you could set this equal to the username/password defined above
 $searchCiresonHTMLKB = $false
@@ -1882,49 +1882,43 @@ function Get-CiresonPortalUser ($username, $domain)
     if ($ciresonPortalWindowsAuth -eq $true)
     {
         $isAuthUserAPIurl = "api/V3/User/IsUserAuthorized?userName=$username&domain=$domain"
-        $returnedUser = Invoke-WebRequest -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -UseDefaultCredentials -SessionVariable userWebRequestSessionVar
-        $ciresonPortalUserObject = $returnedUser.Content | ConvertFrom-Json
+        $ciresonPortalUserObject = Invoke-RestMethod -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -UseDefaultCredentials
     }
     else
     {
-        $portalLoginRequest = Invoke-WebRequest -Uri $ciresonPortalServer -Method get -SessionVariable userWebRequestSessionVar
-        $loginForm = $portalLoginRequest.Forms[0]
-        $loginForm.Fields["UserName"] = $ciresonPortalUsername
-        $loginForm.Fields["Password"] = $ciresonPortalPassword
-    
-        $portalLoginPost = Invoke-WebRequest -Uri ($ciresonPortalServer + "Login/Login?ReturnUrl=%2f") -Method post -Body $loginForm.Fields -WebSession $userWebRequestSessionVar 
+        $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
+        $ciresonTokenURL = $ciresonPortalServer+"/api/V3/Authorization/GetToken"
+        $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials
+        $ciresonAPIToken = "Token" + " " + $ciresonAPIToken
+        
         $isAuthUserAPIurl = "api/V3/User/IsUserAuthorized?userName=$username&domain=$domain"
-        $returnedUser = Invoke-WebRequest -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -WebSession $userWebRequestSessionVar
-        $ciresonPortalUserObject = $returnedUser.Content | ConvertFrom-Json
+        $ciresonPortalUserObject = Invoke-RestMethod -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -Headers @{"Authorization"=$ciresonAPIToken}
     }
-
     return $ciresonPortalUserObject
 }
 
 #retrieve a group from SCSM through the Cireson Web Portal API
 function Get-CiresonPortalGroup ($groupEmail)
 {
-    $groupName = Get-ADGroup @adParams -Filter "Mail -eq $groupEmail"
+    $adGroup = Get-ADGroup @adParams -Filter "Mail -eq $groupEmail"
 
     if($ciresonPortalWindowsAuth)
     {
         #wanted to use a get groups style request, but "api/V3/User/GetConsoleGroups" feels costly instead of a search
-        $cwpGroupResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($groupName.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -UseDefaultCredentials
-        $ciresonPortalGroup = ($cwpGroupResponse.content | ConvertFrom-Json) | select-object @{Name='AccessGroupId'; Expression={$_.Id}}, name | ?{$_.name -eq $($groupName.Name)} 
-        return $ciresonPortalGroup
+        $cwpGroupResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($adGroup.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -UseDefaultCredentials
+        $ciresonPortalGroup = $cwpGroupResponse | select-object @{Name='AccessGroupId'; Expression={$_.Id}}, name | ?{$_.name -eq $($adGroup.Name)} 
     }
     else
     {
-        $portalLoginRequest = Invoke-WebRequest -Uri $ciresonPortalServer -Method get -SessionVariable groupWebRequestSessionVar
-        $loginForm = $portalLoginRequest.Forms[0]
-        $loginForm.Fields["UserName"] = $ciresonPortalUsername
-        $loginForm.Fields["Password"] = $ciresonPortalPassword
-    
-        $portalLoginPost = Invoke-WebRequest -Uri ($ciresonPortalServer + "Login/Login?ReturnUrl=%2f") -Method post -Body $loginForm.Fields -WebSession $groupWebRequestSessionVar 
-        $cwpGroupResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($groupName.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -WebSession $groupWebRequestSessionVar
-        $ciresonPortalGroup = ($cwpGroupResponse.content | ConvertFrom-Json) | select-object @{Name='AccessGroupId'; Expression={$_.Id}}, name | ?{$_.name -eq $($groupName.Name)} 
-        return $ciresonPortalGroup
+        $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
+        $ciresonTokenURL = $ciresonPortalServer+"/api/V3/Authorization/GetToken"
+        $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials
+        $ciresonAPIToken = "Token" + " " + $ciresonAPIToken
+
+        $cwpGroupResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($adGroup.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -Headers @{"Authorization"=$ciresonAPIToken}
+        $ciresonPortalGroup = $cwpGroupResponse | select-object @{Name='AccessGroupId'; Expression={$_.Id}}, name | ?{$_.name -eq $($adGroup.Name)}
     }
+    return $ciresonPortalGroup
 }
 
 #retrieve all the announcements on the portal
@@ -1933,45 +1927,38 @@ function Get-CiresonPortalAnnouncements ($languageCode)
     if($ciresonPortalWindowsAuth)
     {
         $allAnnouncementsURL = "api/V3/Announcement/GetAllAnnouncements?languageCode=$($languageCode)"
-        $allCiresonPortalAnnouncements = Invoke-WebRequest -uri ($ciresonPortalServer+$allAnnouncementsURL) -UseDefaultCredentials | ConvertFrom-Json
-        return $allCiresonPortalAnnouncements
+        $allCiresonPortalAnnouncements = Invoke-RestMethod -uri ($ciresonPortalServer+$allAnnouncementsURL) -UseDefaultCredentials
     }
     else
     {
-        $portalLoginRequest = Invoke-WebRequest -Uri $ciresonPortalServer -Method get -SessionVariable announcementWebRequestSessionVar
-        $loginForm = $portalLoginRequest.Forms[0]
-        $loginForm.Fields["UserName"] = $ciresonPortalUsername
-        $loginForm.Fields["Password"] = $ciresonPortalPassword
-    
-        $portalLoginPost = Invoke-WebRequest -Uri ($ciresonPortalServer + "Login/Login?ReturnUrl=%2f") -Method post -Body $loginForm.Fields -WebSession $announcementWebRequestSessionVar
+        $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
+        $ciresonTokenURL = $ciresonPortalServer+"/api/V3/Authorization/GetToken"
+        $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials
+        $ciresonAPIToken = "Token" + " " + $ciresonAPIToken
+
         $allAnnouncementsURL = "api/V3/Announcement/GetAllAnnouncements?languageCode=$($languageCode)"
-        $allCiresonPortalAnnouncements = Invoke-WebRequest -uri ($ciresonPortalServer+$allAnnouncementsURL) -WebSession $announcementWebRequestSessionVar | ConvertFrom-Json
-        return $allCiresonPortalAnnouncements
+        $allCiresonPortalAnnouncements = Invoke-RestMethod -uri ($ciresonPortalServer+$allAnnouncementsURL) -Headers @{"Authorization"=$ciresonAPIToken}
     }
+    return $allCiresonPortalAnnouncements
 }
 
 #search for available Request Offerings based on content from a New Work Item and notify the Affected user via the Cireson Portal API
 function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUser)
 {
-    #$searchQuery = $workItem.Title.Trim() + " " + $workItem.Description.Trim()
-
     if ($ciresonPortalWindowsAuth -eq $true)
     {
         $serviceCatalogAPIurl = "api/V3/ServiceCatalog/GetServiceCatalog?userId=$($ciresonPortalUser.id)&isScoped=$($ciresonPortalUser.Security.IsServiceCatalogScoped)"
-        $serviceCatalogResults = Invoke-WebRequest -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -UseDefaultCredentials -SessionVariable ecWebSession
-        $serviceCatalogResults = $serviceCatalogResults.Content | ConvertFrom-Json
+        $serviceCatalogResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -UseDefaultCredentials
     }
     else
     {
-        $portalLoginRequest = Invoke-WebRequest -Uri $ciresonPortalServer -Method get -SessionVariable ecWebSession
-        $loginForm = $portalLoginRequest.Forms[0]
-        $loginForm.Fields["UserName"] = $ciresonPortalUsername
-        $loginForm.Fields["Password"] = $ciresonPortalPassword
-    
-        $portalLoginPost = Invoke-WebRequest -Uri ($ciresonPortalServer + "Login/Login?ReturnUrl=%2f") -Method post -Body $loginForm.Fields -WebSession $ecWebSession 
+        $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
+        $ciresonTokenURL = $ciresonPortalServer+"/api/V3/Authorization/GetToken"
+        $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials
+        $ciresonAPIToken = "Token" + " " + $ciresonAPIToken
+
         $serviceCatalogAPIurl = "api/V3/ServiceCatalog/GetServiceCatalog?userId=$($ciresonPortalUser.id)&isScoped=$($ciresonPortalUser.Security.IsServiceCatalogScoped)"
-        $serviceCatalogResults = Invoke-WebRequest -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -WebSession $ecWebSession
-        $serviceCatalogResults = $serviceCatalogResults.Content | ConvertFrom-Json | Select-Object RequestOfferingTitle, RequestOfferingDescription, Service, RequestOfferingId, ServiceOfferingId
+        $serviceCatalogResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -Headers @{"Authorization"=$ciresonAPIToken}
     }
 
     #### If the user has access to some Request Offerings, find which RO Titles/Description contain words from their original message ####
@@ -2000,24 +1987,19 @@ function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUse
 #search the Cireson KB based on content from a New Work Item and notify the Affected User
 function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
 {
-    #$searchQuery = $workItem.Title.Trim() + " " + $workItem.Description.Trim()
-
     if ($ciresonPortalWindowsAuth -eq $true)
     {
-        $kbResults = Invoke-WebRequest -Uri ($ciresonPortalServer + "api/V3/KnowledgeBase/GetHTMLArticlesFullTextSearch?userId=$($ciresonPortalUser.Id)&searchValue=$searchQuery&isManager=$([bool]$ciresonPortalUser.KnowledgeManager)&userLanguageCode=$($ciresonPortalUser.LanguageCode)") -UseDefaultCredentials
+        $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer + "api/V3/KnowledgeBase/GetHTMLArticlesFullTextSearch?userId=$($ciresonPortalUser.Id)&searchValue=$searchQuery&isManager=$([bool]$ciresonPortalUser.KnowledgeManager)&userLanguageCode=$($ciresonPortalUser.LanguageCode)") -UseDefaultCredentials
     }
     else
     {
-        $portalLoginRequest = Invoke-WebRequest -Uri $ciresonPortalServer -Method get -SessionVariable ecPortalSession
-        $loginForm = $portalLoginRequest.Forms[0]
-        $loginForm.Fields["UserName"] = $ciresonPortalUsername
-        $loginForm.Fields["Password"] = $ciresonPortalPassword
-    
-        $portalLoginPost = Invoke-WebRequest -Uri ($ciresonPortalServer + "Login/Login?ReturnUrl=%2f") -WebSession $ecPortalSession -Method post -Body $loginForm.Fields
-        $kbResults = Invoke-WebRequest -Uri ($ciresonPortalServer + "api/V3/KnowledgeBase/GetHTMLArticlesFullTextSearch?userId=$($ciresonPortalUser.Id)&searchValue=$searchQuery&isManager=$([bool]$ciresonPortalUser.KnowledgeManager)&userLanguageCode=$($ciresonPortalUser.LanguageCode)") -WebSession $ecPortalSession
+        $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
+        $ciresonTokenURL = $ciresonPortalServer+"/api/V3/Authorization/GetToken"
+        $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials
+        $ciresonAPIToken = "Token" + " " + $ciresonAPIToken
+        $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer + "api/V3/KnowledgeBase/GetHTMLArticlesFullTextSearch?userId=$($ciresonPortalUser.Id)&searchValue=$searchQuery&isManager=$([bool]$ciresonPortalUser.KnowledgeManager)&userLanguageCode=$($ciresonPortalUser.LanguageCode)") -Headers @{"Authorization"=$ciresonAPIToken}
     }
 
-    $kbResults = $kbResults.Content | ConvertFrom-Json
     $kbResults =  $kbResults | ?{$_.endusercontent -ne ""} | select-object articleid, title
     
     if ($kbResults)
@@ -2360,11 +2342,10 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
     #determine authentication to use (windows/forms)
     if ($ciresonPortalWindowsAuth -eq $false)
     {
-        $portalLoginRequest = Invoke-WebRequest -Uri $ciresonPortalServer -Method get -SessionVariable newAnnouncementWebRequestSessionVar
-        $loginForm = $portalLoginRequest.Forms[0]
-        $loginForm.Fields["UserName"] = $ciresonPortalUsername
-        $loginForm.Fields["Password"] = $ciresonPortalPassword
-        $portalLoginPost = Invoke-WebRequest -Uri ($ciresonPortalServer + "Login/Login?ReturnUrl=%2f") -Method post -Body $loginForm.Fields -WebSession $newAnnouncementWebRequestSessionVar
+        $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
+        $ciresonTokenURL = $ciresonPortalServer+"/api/V3/Authorization/GetToken"
+        $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials
+        $ciresonAPIToken = "Token" + " " + $ciresonAPIToken  
     }
 
     if ($allPortalAnnouncements)
@@ -2393,13 +2374,13 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
             $announcement = $announcement | ConvertTo-Json
 
             #post the announcement
-            if ($ciresonPortalWindowsAuth)
+            if ($ciresonPortalWindowsAuth -eq $true)
             {
-                $announcementResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -UseDefaultCredentials
+                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -UseDefaultCredentials
             }
             else
             {
-                $announcementResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -WebSession $newAnnouncementWebRequestSessionVar
+                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -Headers @{"Authorization"=$ciresonAPIToken}
             }
         }
 
@@ -2418,13 +2399,13 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
             $announcement = $announcement | ConvertTo-Json
 
             #post the announcement
-            if ($ciresonPortalWindowsAuth)
+            if ($ciresonPortalWindowsAuth -eq $true)
             {
-                $announcementResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -UseDefaultCredentials
+                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -UseDefaultCredentials
             }
             else
             {
-                $announcementResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -WebSession $newAnnouncementWebRequestSessionVar
+                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -Headers @{"Authorization"=$ciresonAPIToken}
             }
         }
     }
@@ -2449,11 +2430,11 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
             #post the announcement
             if ($ciresonPortalWindowsAuth)
             {
-                $announcementResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -UseDefaultCredentials
+                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -UseDefaultCredentials
             }
             else
             {
-                $announcementResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -WebSession $newAnnouncementWebRequestSessionVar
+                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -Headers @{"Authorization"=$ciresonAPIToken}
             }
         }
     }
