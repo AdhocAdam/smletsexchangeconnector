@@ -1876,6 +1876,16 @@ function Add-ActionLogEntry {
     }
 }
 
+#if using windows authentication, retrieve a Cireson Web API token
+function Get-CiresonPortalAPIToken
+{
+    $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
+    $ciresonTokenURL = $ciresonPortalServer+"api/V3/Authorization/GetToken"
+    $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials
+    $ciresonAPIToken = "Token" + " " + $ciresonAPIToken
+    return $ciresonAPIToken
+}
+
 #retrieve a user from SCSM through the Cireson Web Portal API
 function Get-CiresonPortalUser ($username, $domain)
 {
@@ -1886,13 +1896,8 @@ function Get-CiresonPortalUser ($username, $domain)
     }
     else
     {
-        $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
-        $ciresonTokenURL = $ciresonPortalServer+"/api/V3/Authorization/GetToken"
-        $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials
-        $ciresonAPIToken = "Token" + " " + $ciresonAPIToken
-        
         $isAuthUserAPIurl = "api/V3/User/IsUserAuthorized?userName=$username&domain=$domain"
-        $ciresonPortalUserObject = Invoke-RestMethod -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -Headers @{"Authorization"=$ciresonAPIToken}
+        $ciresonPortalUserObject = Invoke-RestMethod -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
     }
     return $ciresonPortalUserObject
 }
@@ -1910,12 +1915,7 @@ function Get-CiresonPortalGroup ($groupEmail)
     }
     else
     {
-        $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
-        $ciresonTokenURL = $ciresonPortalServer+"/api/V3/Authorization/GetToken"
-        $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials
-        $ciresonAPIToken = "Token" + " " + $ciresonAPIToken
-
-        $cwpGroupResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($adGroup.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -Headers @{"Authorization"=$ciresonAPIToken}
+        $cwpGroupResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($adGroup.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
         $ciresonPortalGroup = $cwpGroupResponse | select-object @{Name='AccessGroupId'; Expression={$_.Id}}, name | ?{$_.name -eq $($adGroup.Name)}
     }
     return $ciresonPortalGroup
@@ -1931,13 +1931,8 @@ function Get-CiresonPortalAnnouncements ($languageCode)
     }
     else
     {
-        $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
-        $ciresonTokenURL = $ciresonPortalServer+"/api/V3/Authorization/GetToken"
-        $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials
-        $ciresonAPIToken = "Token" + " " + $ciresonAPIToken
-
         $allAnnouncementsURL = "api/V3/Announcement/GetAllAnnouncements?languageCode=$($languageCode)"
-        $allCiresonPortalAnnouncements = Invoke-RestMethod -uri ($ciresonPortalServer+$allAnnouncementsURL) -Headers @{"Authorization"=$ciresonAPIToken}
+        $allCiresonPortalAnnouncements = Invoke-RestMethod -uri ($ciresonPortalServer+$allAnnouncementsURL) -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
     }
     return $allCiresonPortalAnnouncements
 }
@@ -1952,13 +1947,8 @@ function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUse
     }
     else
     {
-        $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
-        $ciresonTokenURL = $ciresonPortalServer+"/api/V3/Authorization/GetToken"
-        $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials
-        $ciresonAPIToken = "Token" + " " + $ciresonAPIToken
-
         $serviceCatalogAPIurl = "api/V3/ServiceCatalog/GetServiceCatalog?userId=$($ciresonPortalUser.id)&isScoped=$($ciresonPortalUser.Security.IsServiceCatalogScoped)"
-        $serviceCatalogResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -Headers @{"Authorization"=$ciresonAPIToken}
+        $serviceCatalogResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
     }
 
     #### If the user has access to some Request Offerings, find which RO Titles/Description contain words from their original message ####
@@ -1993,11 +1983,7 @@ function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
     }
     else
     {
-        $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
-        $ciresonTokenURL = $ciresonPortalServer+"/api/V3/Authorization/GetToken"
-        $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials
-        $ciresonAPIToken = "Token" + " " + $ciresonAPIToken
-        $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer + "api/V3/KnowledgeBase/GetHTMLArticlesFullTextSearch?userId=$($ciresonPortalUser.Id)&searchValue=$searchQuery&isManager=$([bool]$ciresonPortalUser.KnowledgeManager)&userLanguageCode=$($ciresonPortalUser.LanguageCode)") -Headers @{"Authorization"=$ciresonAPIToken}
+        $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer + "api/V3/KnowledgeBase/GetHTMLArticlesFullTextSearch?userId=$($ciresonPortalUser.Id)&searchValue=$searchQuery&isManager=$([bool]$ciresonPortalUser.KnowledgeManager)&userLanguageCode=$($ciresonPortalUser.LanguageCode)") -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
     }
 
     $kbResults =  $kbResults | ?{$_.endusercontent -ne ""} | select-object articleid, title
@@ -2340,14 +2326,6 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
     $allPortalAnnouncements = $allPortalAnnouncements | ?{$_.title -match "\[" + $workitem.name + "\]"}
 
     #determine authentication to use (windows/forms)
-    if ($ciresonPortalWindowsAuth -eq $false)
-    {
-        $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
-        $ciresonTokenURL = $ciresonPortalServer+"/api/V3/Authorization/GetToken"
-        $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials
-        $ciresonAPIToken = "Token" + " " + $ciresonAPIToken  
-    }
-
     if ($allPortalAnnouncements)
     {
         #### there are announcements to create/update ####
@@ -2380,7 +2358,7 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
             }
             else
             {
-                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -Headers @{"Authorization"=$ciresonAPIToken}
+                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
             }
         }
 
@@ -2405,7 +2383,7 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
             }
             else
             {
-                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -Headers @{"Authorization"=$ciresonAPIToken}
+                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
             }
         }
     }
@@ -2434,7 +2412,7 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
             }
             else
             {
-                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -Headers @{"Authorization"=$ciresonAPIToken}
+                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
             }
         }
     }
