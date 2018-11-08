@@ -1889,14 +1889,13 @@ function Get-CiresonPortalAPIToken
 #retrieve a user from SCSM through the Cireson Web Portal API
 function Get-CiresonPortalUser ($username, $domain)
 {
+    $isAuthUserAPIurl = "api/V3/User/IsUserAuthorized?userName=$username&domain=$domain"
     if ($ciresonPortalWindowsAuth -eq $true)
     {
-        $isAuthUserAPIurl = "api/V3/User/IsUserAuthorized?userName=$username&domain=$domain"
         $ciresonPortalUserObject = Invoke-RestMethod -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -UseDefaultCredentials
     }
     else
     {
-        $isAuthUserAPIurl = "api/V3/User/IsUserAuthorized?userName=$username&domain=$domain"
         $ciresonPortalUserObject = Invoke-RestMethod -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
     }
     return $ciresonPortalUserObject
@@ -1911,27 +1910,25 @@ function Get-CiresonPortalGroup ($groupEmail)
     {
         #wanted to use a get groups style request, but "api/V3/User/GetConsoleGroups" feels costly instead of a search
         $cwpGroupResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($adGroup.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -UseDefaultCredentials
-        $ciresonPortalGroup = $cwpGroupResponse | select-object @{Name='AccessGroupId'; Expression={$_.Id}}, name | ?{$_.name -eq $($adGroup.Name)} 
     }
     else
     {
         $cwpGroupResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($adGroup.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
-        $ciresonPortalGroup = $cwpGroupResponse | select-object @{Name='AccessGroupId'; Expression={$_.Id}}, name | ?{$_.name -eq $($adGroup.Name)}
     }
+    $ciresonPortalGroup = $cwpGroupResponse | select-object @{Name='AccessGroupId'; Expression={$_.Id}}, name | ?{$_.name -eq $($adGroup.Name)}
     return $ciresonPortalGroup
 }
 
 #retrieve all the announcements on the portal
 function Get-CiresonPortalAnnouncements ($languageCode)
 {
+    $allAnnouncementsURL = "api/V3/Announcement/GetAllAnnouncements?languageCode=$($languageCode)"
     if($ciresonPortalWindowsAuth)
     {
-        $allAnnouncementsURL = "api/V3/Announcement/GetAllAnnouncements?languageCode=$($languageCode)"
         $allCiresonPortalAnnouncements = Invoke-RestMethod -uri ($ciresonPortalServer+$allAnnouncementsURL) -UseDefaultCredentials
     }
     else
     {
-        $allAnnouncementsURL = "api/V3/Announcement/GetAllAnnouncements?languageCode=$($languageCode)"
         $allCiresonPortalAnnouncements = Invoke-RestMethod -uri ($ciresonPortalServer+$allAnnouncementsURL) -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
     }
     return $allCiresonPortalAnnouncements
@@ -1940,14 +1937,13 @@ function Get-CiresonPortalAnnouncements ($languageCode)
 #search for available Request Offerings based on content from a New Work Item and notify the Affected user via the Cireson Portal API
 function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUser)
 {
+    $serviceCatalogAPIurl = "api/V3/ServiceCatalog/GetServiceCatalog?userId=$($ciresonPortalUser.id)&isScoped=$($ciresonPortalUser.Security.IsServiceCatalogScoped)"
     if ($ciresonPortalWindowsAuth -eq $true)
     {
-        $serviceCatalogAPIurl = "api/V3/ServiceCatalog/GetServiceCatalog?userId=$($ciresonPortalUser.id)&isScoped=$($ciresonPortalUser.Security.IsServiceCatalogScoped)"
         $serviceCatalogResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -UseDefaultCredentials
     }
     else
     {
-        $serviceCatalogAPIurl = "api/V3/ServiceCatalog/GetServiceCatalog?userId=$($ciresonPortalUser.id)&isScoped=$($ciresonPortalUser.Security.IsServiceCatalogScoped)"
         $serviceCatalogResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
     }
 
