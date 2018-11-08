@@ -1973,13 +1973,14 @@ function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUse
 #search the Cireson KB based on content from a New Work Item and notify the Affected User
 function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
 {
+    $kbAPIurl = "api/V3/KnowledgeBase/GetHTMLArticlesFullTextSearch?userId=$($ciresonPortalUser.Id)&searchValue=$searchQuery&isManager=$([bool]$ciresonPortalUser.KnowledgeManager)&userLanguageCode=$($ciresonPortalUser.LanguageCode)"
     if ($ciresonPortalWindowsAuth -eq $true)
     {
-        $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer + "api/V3/KnowledgeBase/GetHTMLArticlesFullTextSearch?userId=$($ciresonPortalUser.Id)&searchValue=$searchQuery&isManager=$([bool]$ciresonPortalUser.KnowledgeManager)&userLanguageCode=$($ciresonPortalUser.LanguageCode)") -UseDefaultCredentials
+        $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$kbAPIurl) -UseDefaultCredentials
     }
     else
     {
-        $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer + "api/V3/KnowledgeBase/GetHTMLArticlesFullTextSearch?userId=$($ciresonPortalUser.Id)&searchValue=$searchQuery&isManager=$([bool]$ciresonPortalUser.KnowledgeManager)&userLanguageCode=$($ciresonPortalUser.LanguageCode)") -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
+        $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$kbAPIurl) -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
     }
 
     $kbResults =  $kbResults | ?{$_.endusercontent -ne ""} | select-object articleid, title
