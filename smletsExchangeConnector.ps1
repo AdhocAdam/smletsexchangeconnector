@@ -978,18 +978,8 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
     if ($ceScripts) { Invoke-BeforeUpdateAnyWorkItem }
     
     #determine who left the comment
-    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.From)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-    if ($userSMTPNotification) 
-    { 
-        $commentLeftBy = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
-    }
-    else
-    {
-        if ($createUsersNotInCMDB -eq $true)
-        {
-            $commentLeftBy = create-userincmdb $message.From
-        }
-    }
+    $commentLeftBy = Get-SCSMUserByEmailAddress -EmailAddress "$($message.From)"
+    if ((!$commentLeftBy) -and ($createUsersNotInCMDB -eq $true) ){$commentLeftBy = create-userincmdb $message.From}
 
     #add any attachments
     if ($message.Attachments)
