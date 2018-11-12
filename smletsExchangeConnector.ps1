@@ -460,18 +460,8 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
 
     #find Affected User from the From Address
     $relatedUsers = @()
-    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$from'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-    if ($userSMTPNotification) 
-    { 
-        $affectedUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
-    }
-    else
-    {
-        if ($createUsersNotInCMDB -eq $true)
-        {
-            $affectedUser = create-userincmdb $from
-        }
-    }
+    $affectedUser = Get-SCSMUserByEmailAddress -EmailAddress "$from"
+    if ((!$affectedUser) -and ($createUsersNotInCMDB -eq $true)) {$affectedUser = create-userincmdb "$from"}
 
     #find Related Users (To)       
     if ($to.count -gt 0)
