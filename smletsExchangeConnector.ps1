@@ -163,11 +163,11 @@ $ExchangeEndpoint = ""
     #The PII being redacted is listed as regex's in a text file located in the same directory as the script. The file is called "pii_regex.txt", has 1 regex per line, written without quotes.
 #changeIncidentStatusOnReply = if $true, updates to Incidents will change their status based on who replied
 #changeIncidentStatusOnReplyAffectedUser = If changeIncidentStatusOnReply is $true, the Status enum an Incident should change to when the Affected User updates the Incident via email
-    #perform a: Get-SCSMEnumeration -name "MA Support Group List name" to verify your Incident Status enum value if not using the out of box enums
+    #perform a: Get-SCSMEnumeration -name "Incident Status enum name" to verify your Incident Status enum value if not using the out of box enums
 #changeIncidentStatusOnReplyAssignedTo = If changeIncidentStatusOnReply is $true, The Status enum an Incident should change to when the Assigned To updates the Incident via email
-    #perform a: Get-SCSMEnumeration -name "MA Support Group List name" to verify your Incident Status enum value if not using the out of box enums
+    #perform a: Get-SCSMEnumeration -name "Incident Status enum name" to verify your Incident Status enum value if not using the out of box enums
 #changeIncidentStatusOnReplyRelatedUser = If changeIncidentStatusOnReply is $true, The Status enum an Incident should change to when a Related User updates the Incident via email
-    #perform a: Get-SCSMEnumeration -name "MA Support Group List name" to verify your Incident Status enum value if not using the out of box enums
+    #perform a: Get-SCSMEnumeration -name "Incident Status enum name" to verify your Incident Status enum value if not using the out of box enums
 $defaultNewWorkItem = "ir"
 $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
