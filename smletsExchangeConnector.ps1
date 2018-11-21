@@ -161,6 +161,13 @@ $ExchangeEndpoint = ""
     #This functionality requires the Cireson Analyst Portal for Service Manager.
 #redactPiiFromMessage = if $true, instructs the script to remove personally identifiable information from message description in work-items.
     #The PII being redacted is listed as regex's in a text file located in the same directory as the script. The file is called "pii_regex.txt", has 1 regex per line, written without quotes.
+#changeIncidentStatusOnReply = if $true, updates to Incidents will change their status based on who replied
+#changeIncidentStatusOnReplyAffectedUser = If changeIncidentStatusOnReply is $true, the Status enum an Incident should change to when the Affected User updates the Incident via email
+    #perform a: Get-SCSMEnumeration -name "MA Support Group List name" to verify your Incident Status enum value if not using the out of box enums
+#changeIncidentStatusOnReplyAssignedTo = If changeIncidentStatusOnReply is $true, The Status enum an Incident should change to when the Assigned To updates the Incident via email
+    #perform a: Get-SCSMEnumeration -name "MA Support Group List name" to verify your Incident Status enum value if not using the out of box enums
+#changeIncidentStatusOnReplyRelatedUser = If changeIncidentStatusOnReply is $true, The Status enum an Incident should change to when a Related User updates the Incident via email
+    #perform a: Get-SCSMEnumeration -name "MA Support Group List name" to verify your Incident Status enum value if not using the out of box enums
 $defaultNewWorkItem = "ir"
 $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
@@ -185,6 +192,10 @@ $takeRequiresGroupMembership = $false
 $crSupportGroupEnumGUID = ""
 $maSupportGroupEnumGUID = ""
 $redactPiiFromMessage = $false
+$changeIncidentStatusOnReply = $false
+$changeIncidentStatusOnReplyAffectedUser = "IncidentStatusEnum.Active$"
+$changeIncidentStatusOnReplyAssignedTo = "IncidentStatusEnum.Active.Pending$"
+$changeIncidentStatusOnReplyRelatedUser = "IncidentStatusEnum.Active$"
 
 #processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
     #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
@@ -1044,6 +1055,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                 switch ($message.From)
                 {
                     $affectedUserSMTP.TargetAddress {
+                        if ($changeIncidentStatusOnReply) {Set-SCSMObject -SMObject $workItem -Property Status -Value "$changeIncidentStatusOnReplyAffectedUser"}
                         switch -Regex ($commentToAdd) {
                             "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterAcknowledge }}}
                             "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "IncidentStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Resolved" -IsPrivate $false; if ($defaultIncidentResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property ResolutionCategory -Value $defaultIncidentResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}                            "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Closed$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Closed" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}
@@ -1066,6 +1078,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                         }
                     }
                     $assignedToSMTP.TargetAddress {
+                        if ($changeIncidentStatusOnReply) {Set-SCSMObject -SMObject $workItem -Property Status -Value "$changeIncidentStatusOnReplyAssignedTo"}
                         switch -Regex ($commentToAdd) {
                             "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterAcknowledge }}}
                             "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "IncidentStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Resolved" -IsPrivate $false; if ($defaultIncidentResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property ResolutionCategory -Value $defaultIncidentResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}
@@ -1090,6 +1103,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                         }
                     }
                     default {
+                        if ($changeIncidentStatusOnReply) {Set-SCSMObject -SMObject $workItem -Property Status -Value "$changeIncidentStatusOnReplyRelatedUser"}
                         switch -Regex ($commentToAdd) {
                             "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterAcknowledge }}}
                             "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "IncidentStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Resolved" -IsPrivate $false; if ($defaultIncidentResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property ResolutionCategory -Value $defaultIncidentResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}
