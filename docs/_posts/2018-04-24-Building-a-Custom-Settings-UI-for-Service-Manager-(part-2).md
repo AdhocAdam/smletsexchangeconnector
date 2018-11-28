@@ -26,11 +26,11 @@ Think on what we're doing here for a bit - we have a single Visual Studio Soluti
 
 We'll create a project of the Windows Desktop and Class Library variety that targets .NET 3.5 for SCSM 2012 R2.
 
-![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/21.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/21.PNG)
 
 Now before we can even start constructing this thing, we're going to need to leverage some already existing Microsoft assemblies (`*`.dll). This is similar to the MP references we made in part 1, but now we're going to be referencing other DLL files instead of other MP files. We'll need to make sure our new project has references for the following items. You'll notice that not all of these exist on your default expansion of the References section. Namely things like Microsoft.EnterpriseManagement.* Where are they? You can find all of them in the Service Manager installation directory AND the Service Manager Authoring tool installation directory. And let me assure you, they are all there. Really really. They are incredibly easy to overlook given their similar naming but I assure you they are all definitely there!
 
-![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/22.png)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/22.PNG)
 
 Alright, we have what we need now to actually move forward on Travis' post. Let's right click on the C#/DLL project we've created and Add a New Item of the User Control (WPF) type.
 
