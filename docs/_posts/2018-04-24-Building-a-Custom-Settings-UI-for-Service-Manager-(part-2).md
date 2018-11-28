@@ -24,7 +24,7 @@ Think on what we're doing here for a bit - we have a single Visual Studio Soluti
 
 ![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/03.png)
 
-We'll create a project of the Windows Desktop and WPF Application variety that targets .NET 3.5 for SCSM 2012 R2.
+We'll create a project of the Windows Desktop and Class Library variety that targets .NET 3.5 for SCSM 2012 R2.
 
 ![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/21.png)
 
