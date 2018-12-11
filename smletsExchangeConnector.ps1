@@ -2589,7 +2589,7 @@ function Update-SCSMPropertyCollection
     if (($Object.Path -match $pattern) -and (($Matches[0].StartsWith("System.WorkItem.Activity")) -or ($Matches[0].StartsWith("Microsoft.SystemCenter.Orchestrator")) -or ($Matches[0].StartsWith("Cireson.Powershell.Activity"))))
     {
         #Set prefix from activity class
-        $prefix = (Get-SCSMWorkItemSettings -WorkItemClass $Matches[0])["prefix"]
+        $prefix = (Get-SCSMWorkItemSettings -WorkItemClass $Matches[0])["Prefix"]
        
         #Create template property object
         $propClass = [Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateProperty]
