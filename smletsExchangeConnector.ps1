@@ -1496,8 +1496,7 @@ function Attach-EmailToWorkItem ($message, $workItemID)
     # Get attachment limits and attachment count in ticket, if configured to
     if ($checkAttachmentSettings -eq $true) {
         $workItem = Get-ScsmObject @scsmMGMTParams -class $wiClass -filter "Name -eq $workItemID"
-        $workItemSettings = Get-SCSMWorkItemSettings $workItem.ClassName
-        $workItemPrefix = $workItem.Name.Substring(0,2)
+        $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $workItem.ClassName
 
         # Get count of attachents already in ticket
         try {$existingAttachmentsCount = (Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $fileAttachmentRelClass).Count} catch {}
@@ -1547,8 +1546,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
     # Get attachment limits and attachment count in ticket, if configured to
     if ($checkAttachmentSettings -eq $true) {
         $workItem = Get-ScsmObject @scsmMGMTParams -class $wiClass -filter "Name -eq $workItemID"
-        $workItemSettings = Get-SCSMWorkItemSettings $workItem.ClassName
-        $workItemPrefix = $workItem.Name.Substring(0,2)
+        $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $workItem.ClassName
         $attachMaxSize = $workItemSettings["MaxAttachmentSize"]
         $attachMaxCount = $workItemSettings["MaxAttachments"]
 
