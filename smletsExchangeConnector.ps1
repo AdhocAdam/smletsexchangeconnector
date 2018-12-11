@@ -1489,8 +1489,7 @@ function Attach-EmailToWorkItem ($message, $workItemID)
     # Get attachment limits and attachment count in ticket, if configured to
     if ($checkAttachmentSettings -eq $true) {
         $workItem = Get-ScsmObject @scsmMGMTParams -class $wiClass -filter "Name -eq $workItemID"
-        $workItemPrefix = $workItem.Name.Substring(0,2)
-        $attachLimits = Get-ScsmAttachmentSettings $workItemPrefix
+        $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $workItem.ClassName
 
         # Get count of attachents already in ticket
         try {$existingAttachmentsCount = (Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $fileAttachmentRelClass).Count} catch {}
@@ -1504,7 +1503,7 @@ function Attach-EmailToWorkItem ($message, $workItemID)
     
     # if #checkAttachmentSettings -eq $true, test whether the email size (IN KB!) exceeds the limit and if the number of existing attachments is under the limit
     if ($checkAttachmentSettings -eq $false -or `
-        (($MemoryStream.Length / 1024) -le $($attachLimits["MaxAttachmentSize"]) -and $existingAttachmentsCount -le $($attachLimits["MaxAttachments"])))
+        (($MemoryStream.Length / 1024) -le $($workItemSettings["MaxAttachmentSize"]) -and $existingAttachmentsCount -le $($workItemSettings["MaxAttachments"])))
     {
         #Create the attachment object itself and set its properties for SCSM
         $emailAttachment = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
@@ -1539,10 +1538,9 @@ function Attach-FileToWorkItem ($message, $workItemId)
     # Get attachment limits and attachment count in ticket, if configured to
     if ($checkAttachmentSettings -eq $true) {
         $workItem = Get-ScsmObject @scsmMGMTParams -class $wiClass -filter "Name -eq $workItemID"
-        $workItemPrefix = $workItem.Name.Substring(0,2)
-        $attachLimits = Get-ScsmAttachmentSettings $workItemPrefix
-        $attachMaxSize = $attachLimits["MaxAttachmentSize"]
-        $attachMaxCount = $attachLimits["MaxAttachments"]
+        $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $workItem.ClassName
+        $attachMaxSize = $workItemSettings["MaxAttachmentSize"]
+        $attachMaxCount = $workItemSettings["MaxAttachments"]
 
         # Get count of attachents already in ticket
         $existingAttachments = Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $fileAttachmentRelClass
@@ -2115,41 +2113,78 @@ function Get-TemplatesByMailbox ($message)
     }
 }
 
-function Get-ScsmAttachmentSettings ($workItemType) {
-    switch ($workItemType) {
-        "ir" {
+function Get-SCSMWorkItemSettings ($WorkItemClass) {   
+    switch ($WorkItemClass) {
+        "System.WorkItem.Incident" {
             $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.WorkItem.Incident.GeneralSetting"
             $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
             $maxAttach = $settings.MaxAttachments
             $maxSize = $settings.MaxAttachmentSize
+            $prefix = $settings.PrefixForId
         }
-        "sr" {
+        "System.WorkItem.ServiceRequest" {
             $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ServiceRequestSettings"
             $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
             $maxAttach = $settings.MaxFileAttachmentsCount
             $maxSize = $settings.MaxFileAttachmentSizeinKB
+            $prefix = $settings.ServiceRequestPrefix
         }
-        "cr" {
+        "System.WorkItem.ChangeRequest" {
             $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ChangeSettings"
             $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
             $maxAttach = $settings.MaxFileAttachmentsCount
             $maxSize = $settings.MaxFileAttachmentSizeinKB
+            $prefix = $settings.SystemWorkItemChangeRequestIdPrefix
         }
-        "pr" {
+        "System.WorkItem.Problem" {
             $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ProblemSettings"
             $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
             $maxAttach = $settings.MaxFileAttachmentsCount
             $maxSize = $settings.MaxFileAttachmentSizeinKB
+            $prefix = $settings.ProblemIdPrefix
         }
-        "rr" {
+        "System.WorkItem.Release" {
             $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ReleaseSettings"
             $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
             $maxAttach = $settings.MaxFileAttachmentsCount
             $maxSize = $settings.MaxFileAttachmentSizeinKB
+            $prefix = $settings.SystemWorkItemReleaseRecordIdPrefix
+        }
+        "System.WorkItem.Activity.ReviewActivity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.SystemWorkItemActivityReviewActivityIdPrefix
+        }
+        "System.WorkItem.Activity.ManualActivity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.SystemWorkItemActivityManualActivityIdPrefix
+        }
+        "System.WorkItem.Activity.ParallelActivity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.SystemWorkItemActivityParallelActivityIdPrefix
+        }
+        "System.WorkItem.Activity.SequentialActivity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.SystemWorkItemActivitySequentialActivityIdPrefix
+        }
+        "System.WorkItem.Activity.DependentActivity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.SystemWorkItemActivityDependentActivityIdPrefix
+        }
+        "Microsoft.SystemCenter.Orchestrator.RunbookAutomationActivity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.MicrosoftSystemCenterOrchestratorRunbookAutomationActivityBaseIdPrefix
+        }
+        "System.WorkItem.Activity.SMARunbookActivity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.MicrosoftSystemCenterOrchestratorRunbookAutomationActivityBaseIdPrefix
+        }
+        "Cireson.Powershell.Activity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.SystemWorkItemActivityIdPrefix
         }
     }
 
-    return @{"MaxAttachments"=$maxAttach;"MaxAttachmentSize"=$maxSize}
+    return @{"MaxAttachments"=$maxAttach;"MaxAttachmentSize"=$maxSize;"Prefix"=$prefix}
 }
 
 #retrieve sender's ability to post announcement based on previously defined email addresses or an AD group
@@ -2490,34 +2525,6 @@ function Get-AzureEmailKeywords ($messageToEvaluate)
 #endregion
 
 #region #### Modified version of Set-SCSMTemplateWithActivities from Morton Meisler seen here http://blog.ctglobalservices.com/service-manager-scsm/mme/set-scsmtemplatewithactivities-powershell-script/
-function Get-SCSMObjectPrefix
-{
-    Param ([string]$ClassName =$(throw "Please provide a classname"))
-    
-    switch ($ClassName)
-    {
-        default 
-        {
-            #Get prefix from Activity Settings
-            if ($ClassName.StartsWith("System.WorkItem.Activity") -or ($ClassName.Equals("Microsoft.SystemCenter.Orchestrator.RunbookAutomationActivity")) -or ($ClassName.Equals("Cireson.Powershell.Activity")))
-            {
-                $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Id "5e04a50d-01d1-6fce-7946-15580aa8681d" @scsmMGMTParams) @scsmMGMTParams
-                
-                if ($ClassName.Equals("System.WorkItem.Activity.ReviewActivity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivityReviewActivityIdPrefix}
-                if ($ClassName.Equals("System.WorkItem.Activity.ManualActivity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivityManualActivityIdPrefix}
-                if ($ClassName.Equals("System.WorkItem.Activity.ParallelActivity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivityParallelActivityIdPrefix}
-                if ($ClassName.Equals("System.WorkItem.Activity.SequentialActivity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivitySequentialActivityIdPrefix}
-                if ($ClassName.Equals("System.WorkItem.Activity.DependentActivity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivityDependentActivityIdPrefix}
-                if ($ClassName.Equals("Microsoft.SystemCenter.Orchestrator.RunbookAutomationActivity")) {$prefix = $ActivitySettingsObj.MicrosoftSystemCenterOrchestratorRunbookAutomationActivityBaseIdPrefix}
-                if ($ClassName.Equals("System.WorkItem.Activity.SMARunbookActivity")) {$prefix = $ActivitySettingsObj.MicrosoftSystemCenterOrchestratorRunbookAutomationActivityBaseIdPrefix}
-                if ($ClassName.Equals("Cireson.Powershell.Activity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivityIdPrefix}
-            } 
-            else {throw "Class Name $ClassName is not supported"}
-        }
-    }
-    return $prefix
-}
-
 function Update-SCSMPropertyCollection
 {
     Param ([Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateObject]$Object =$(throw "Please provide a valid template object")) 
@@ -2527,7 +2534,7 @@ function Update-SCSMPropertyCollection
     if (($Object.Path -match $pattern) -and (($Matches[0].StartsWith("System.WorkItem.Activity")) -or ($Matches[0].StartsWith("Microsoft.SystemCenter.Orchestrator")) -or ($Matches[0].StartsWith("Cireson.Powershell.Activity"))))
     {
         #Set prefix from activity class
-        $prefix = Get-SCSMObjectPrefix -ClassName $Matches[0]
+        $prefix = (Get-SCSMWorkItemSettings -WorkItemClass $Matches[0])["Prefix"]
        
         #Create template property object
         $propClass = [Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateProperty]
