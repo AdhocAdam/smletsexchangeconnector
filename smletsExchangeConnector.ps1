@@ -628,112 +628,27 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                             New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $newWorkItem -Target $relatedUser -Bulk @scsmMGMTParams
                         }
                     }
-                
+                    
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
-                    if (($searchCiresonHTMLKB -eq $true) -and ($searchAvailableCiresonPortalOfferings -eq $true))
+                    $ciresonSuggestionURLs = Get-CiresonSuggestionURL -SuggestKA:$searchCiresonHTMLKB -AzureKA:$enableAzureCognitiveServicesForKA -SuggestRO:$searchAvailableCiresonPortalOfferings -AzureRO:$enableAzureCognitiveServicesForRO -WorkItem $newWorkItem -AffectedUser $affectedUser
+                    if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
                     {
-                        #get the user object from the Cireson Portal
-                        $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
-
-                        #get matching Knowledge Base Articles and matching Request Offering URLs
-                        if (($enableAzureCognitiveServicesForKA -eq $true) -and ($enableAzureCognitiveServicesForRO -eq $true))
-                        {
-                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery $discoveredKeywords -ciresonPortalUser $portalUser
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery $discoveredKeywords 
-                        }
-                        else
-                        {
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)" -ciresonPortalUser $portalUser
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)"
-                        }
-                        #combine KB results and Offering results into a single email back to the Affected User
-                        $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
-                        #verify results, load the template, send the message
-                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKARO.html") -raw
-                        if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
-                        if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
-                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
-                        if (($kbURLs) -or ($requestURLs))
-                        {
-                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
-                            #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
-                            if ($enableSetFirstResponseDateOnSuggestions)
-                            {
-                                $suggestionsAcknowledgeDate = get-date
-                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
-                            }
-                        }
+                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                     }
-                    elseif (($searchCiresonHTMLKB -eq $true) -and ($searchAvailableCiresonPortalOfferings -eq $false))
+                    elseif ($ciresonSuggestionURLs[0])
                     {
-                        #get the user object from the Cireson Portal
-                        $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
-
-                        #get matching Knowledge Base Articles URLs
-                        if (($enableAzureCognitiveServicesForKA -eq $true) -and ($enableAzureCognitiveServicesForRO -eq $false))
-                        {
-                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery $discoveredKeywords -ciresonPortalUser $portalUser
-                        }
-                        else
-                        {
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)" -ciresonPortalUser $portalUser
-                        }
-                        #prepare KB result email back to the Affected User
-                        $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
-                        #verify results, load the template, send the message
-                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKA.html") -raw
-                        if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
-                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
-                        if (($kbURLs))
-                        {
-                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
-                            #if enabled, as part of the Suggested KA process set the First Response Date on the Work Item
-                            if ($enableSetFirstResponseDateOnSuggestions)
-                            {
-                                $suggestionsAcknowledgeDate = get-date
-                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
-                            }
-                        }
+                        Send-CiresonSuggestionEmail -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                     }
-                    elseif (($searchCiresonHTMLKB -eq $false) -and ($searchAvailableCiresonPortalOfferings -eq $true))
+                    elseif ($ciresonSuggestionURLs[1])
                     {
-                        #get the user object from the Cireson Portal
-                        $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
-
-                        #get matching Request Offering URLs
-                        if (($enableAzureCognitiveServicesForKA -eq $false) -and ($enableAzureCognitiveServicesForRO -eq $true))
-                        {
-                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery $discoveredKeywords 
-                        }
-                        else
-                        {
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)"
-                        }
-                        #prepare Request Offering results email back to the Affected User
-                        $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
-                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestRO.html") -raw
-                        if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
-                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
-                        if (($requestURLs))
-                        {
-                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
-                            #if enabled, as part of the Suggested RO process set the First Response Date on the Work Item
-                            if ($enableSetFirstResponseDateOnSuggestions)
-                            {
-                                $suggestionsAcknowledgeDate = get-date
-                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
-                            }
-                        }
+                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                     }
                     else
                     {
                         #both options are set to $false
                         #don't suggest anything to the Affected User based on their recently created Default Work Item
                     }
-                    
+
                     # Custom Event Handler
                     if ($ceScripts) { Invoke-AfterCreateIR }
                     
@@ -767,103 +682,18 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     }
                     
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
-                    if (($searchCiresonHTMLKB -eq $true) -and ($searchAvailableCiresonPortalOfferings -eq $true))
+                    $ciresonSuggestionURLs = Get-CiresonSuggestionURL -SuggestKA:$searchCiresonHTMLKB -AzureKA:$enableAzureCognitiveServicesForKA -SuggestRO:$searchAvailableCiresonPortalOfferings -AzureRO:$enableAzureCognitiveServicesForRO -WorkItem $newWorkItem -AffectedUser $affectedUser
+                    if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
                     {
-                        #get the user object from the Cireson Portal
-                        $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
-
-                        #get matching Knowledge Base Articles and matching Request Offering URLs
-                        if (($enableAzureCognitiveServicesForKA -eq $true) -and ($enableAzureCognitiveServicesForRO -eq $true))
-                        {
-                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery $discoveredKeywords -ciresonPortalUser $portalUser
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery $discoveredKeywords 
-                        }
-                        else
-                        {
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)" -ciresonPortalUser $portalUser
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)"
-                        }
-                        #combine KB results and Offering results into a single email back to the Affected User
-                        $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
-                        #verify results, load the template, send the message
-                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKARO.html") -raw
-                        if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
-                        if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
-                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
-                        if (($kbURLs) -or ($requestURLs))
-                        {
-                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
-                            #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
-                            if ($enableSetFirstResponseDateOnSuggestions)
-                            {
-                                $suggestionsAcknowledgeDate = get-date
-                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
-                            }
-                        }
+                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                     }
-                    elseif (($searchCiresonHTMLKB -eq $true) -and ($searchAvailableCiresonPortalOfferings -eq $false))
+                    elseif ($ciresonSuggestionURLs[0])
                     {
-                        #get the user object from the Cireson Portal
-                        $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
-
-                        #get matching Knowledge Base Articles URLs
-                        if (($enableAzureCognitiveServicesForKA -eq $true) -and ($enableAzureCognitiveServicesForRO -eq $false))
-                        {
-                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery $discoveredKeywords -ciresonPortalUser $portalUser
-                        }
-                        else
-                        {
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)" -ciresonPortalUser $portalUser
-                        }
-                        #prepare KB result email back to the Affected User
-                        $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
-                        #verify results, load the template, send the message
-                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKA.html") -raw
-                        if ($kbURLs) {$emailTemplate = $emailTemplate.Replace("{0}", $kbURLs)}
-                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
-                        if (($kbURLs))
-                        {
-                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
-                            #if enabled, as part of the Suggested KA process set the First Response Date on the Work Item
-                            if ($enableSetFirstResponseDateOnSuggestions)
-                            {
-                                $suggestionsAcknowledgeDate = get-date
-                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
-                            }
-                        }
+                        Send-CiresonSuggestionEmail -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                     }
-                    elseif (($searchCiresonHTMLKB -eq $false) -and ($searchAvailableCiresonPortalOfferings -eq $true))
+                    elseif ($ciresonSuggestionURLs[1])
                     {
-                        #get the user object from the Cireson Portal
-                        $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
-
-                        #get matching Request Offering URLs
-                        if (($enableAzureCognitiveServicesForKA -eq $false) -and ($enableAzureCognitiveServicesForRO -eq $true))
-                        {
-                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery $discoveredKeywords 
-                        }
-                        else
-                        {
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)"
-                        }
-                        #prepare Request Offering results email back to the Affected User
-                        $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
-                        $emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestRO.html") -raw
-                        if ($requestURLs) {$emailTemplate.Replace("{1}", $requestURLs)}
-                        $emailTemplate = $emailTemplate.Replace("{2}", $resolveMailTo)
-                        if (($requestURLs))
-                        {
-                            Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $from
-                            #if enabled, as part of the Suggested RO process set the First Response Date on the Work Item
-                            if ($enableSetFirstResponseDateOnSuggestions)
-                            {
-                                $suggestionsAcknowledgeDate = get-date
-                                Set-SCSMObject -SMObject $newWorkItem -Property FirstResponseDate -Value $suggestionsAcknowledgeDate.ToUniversalTime() @scsmMGMTParams
-                            }
-                        }
+                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                     }
                     else
                     {
@@ -2006,6 +1836,103 @@ function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
         $matchingKBURLs = ($matchingKBURLs | sort-object WordsMatched -Descending).KnowledgeArticleURL
         return $matchingKBURLs
     }
+}
+
+#retrieve Cireson Knowledge Base articles and/or Request Offerings, optionally leverage Azure Cognitive Services if enabled. Return results as an HTML formatted array of URLs
+function Get-CiresonSuggestionURL
+{
+    [cmdletbinding()]
+    Param
+    (
+        [Parameter()]
+        [switch]$SuggestKA,
+        [Parameter()]
+        [switch]$SuggestRO,
+        [Parameter()]
+        [switch]$AzureKA,
+        [Parameter()]
+        [switch]$AzureRO,
+        [Parameter()]
+        [object]$WorkItem,
+        [Parameter()]
+        [object]$AffectedUser
+    )
+    
+    #retrieve the cireson portal user
+    $portalUser = Get-CiresonPortalUser -username $AffectedUser.UserName -domain $AffectedUser.Domain
+
+    #Define the initial keyword hashtable to use against the Cireson Web API
+    $searchQueriesHash = @{"AzureRO" = "$($WorkItem.title.trim()) $($WorkItem.description)"; "AzureKA" = "$($WorkItem.title.trim()) $($WorkItem.description)"}
+
+    #if at least 1 ACS feature is being used, retrieve the keywords from ACS
+    if ($AzureKA -or $AzureRO)
+    {
+        $acsKeywordsToSet = (Get-AzureEmailKeywords -messageToEvaluate "$($WorkItem.title.trim()) $($WorkItem.description)") -join " "
+    }
+
+    #update the hashtable to set the ACS Keywords on the relevant feature(s)
+    foreach ($paramName in 'AzureKA', 'AzureRO')
+    {
+        if ($PSBoundParameters[$paramName])
+        {
+            $change = $searchQueriesHash.GetEnumerator() | where-object {$_.Name -eq $paramName}
+            $change | foreach-object {$searchQueriesHash[$_.Key]="$acsKeywordsToSet"}
+        }
+    }
+
+    #determine which Suggestion features will be used
+    $isSuggestionFeatureUsed = 
+        foreach ($paramName in 'SuggestKA', 'SuggestRO')
+        {
+            if ($PSBoundParameters[$paramName]) {$paramName}
+        }
+    
+    #call the Suggestion functions passing the search query (work item description/keywords) per the enabled features
+    switch ($isSuggestionFeatureUsed)
+    {
+        "SuggestKA" {$kbURLs = Search-CiresonKnowledgeBase -searchQuery $($searchQueriesHash["AzureKA"]) -ciresonPortalUser $portalUser}
+        "SuggestRO" {$requestURLs = Search-AvailableCiresonPortalOfferings -searchQuery $($searchQueriesHash["AzureRO"]) -ciresonPortalUser $portalUser}
+    }
+    return $kbURLs, $requestURLs
+}
+
+#take suggestion URL arrays returned from Get-CiresonSuggestionURL, load custom HTML templates, and send results back out to the Affected User about their Work Item
+function Send-CiresonSuggestionEmail
+{
+    [cmdletbinding()]
+    Param
+    (
+        [Parameter()]
+        [array]$KnowledgeBaseURLs,
+        [Parameter()]
+        [array]$RequestOfferingURLs,
+        [Parameter()]
+        [object]$WorkItem,
+        [Parameter()]
+        [string]$AffectedUserEmailAddress
+    )
+
+    switch ($WorkItem.ClassName)
+    {
+        "System.WorkItem.Incident" {$resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $WorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolved</a>"}
+        "System.WorkItem.ServiceRequest" {$resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $WorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"}
+    }
+
+    #determine which template to use
+    if ($KnowledgeBaseURLs -and $RequestOfferingURLs) {$emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKARO.html") -raw}
+    if ($KnowledgeBaseURLs -and !$RequestOfferingURLs) {$emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKA.html") -raw}
+    if (!$KnowledgeBaseURLs -and $RequestOfferingURLs) {$emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestRO.html") -raw}
+
+    #replace tokens in the template with URLs
+    $emailTemplate = try {$emailTemplate.Replace("{0}", $KnowledgeBaseURLs)} catch {}
+    $emailTemplate = try {$emailTemplate.Replace("{1}", $RequestOfferingURLs)} catch {}
+    $emailTemplate = try {$emailTemplate.Replace("{2}", $resolveMailTo)} catch {}
+
+    #send the email to the affected user
+    Send-EmailFromWorkflowAccount -subject "[$($WorkItem.id)] - $($WorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $AffectedUserEmailAddress
+    
+    #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
+    if ($enableSetFirstResponseDateOnSuggestions) {Set-SCSMObject -SMObject $WorkItem -Property FirstResponseDate -Value (get-date).ToUniversalTime() @scsmMGMTParams}
 }
 
 #send an email from the SCSM Workflow Account
