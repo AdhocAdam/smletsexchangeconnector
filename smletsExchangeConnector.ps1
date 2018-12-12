@@ -171,6 +171,10 @@ $ExchangeEndpoint = ""
 #changeIncidentStatusOnReplyRelatedUser = If changeIncidentStatusOnReply is $true, The Status enum an Incident should change to when a Related User updates the Incident via email
     #perform a: Get-SCSMChildEnumeration -Enumeration (Get-SCSMEnumeration -name "IncidentStatusEnum$") | Where-Object {$_.displayname -eq "myCustomStatusHere"}
     #to verify your Incident Status enum value Name if not using the out of box enums
+#useWorkItemOverrideKeywords = Indicates whether or not to use a list of keywords, which if found will force a different work item type to be used.
+#workItemTypeOverrideKeywords = A regular expression containing keywords that will cause the new work item to be created as the $workItemOverrideType if found.
+    #Use the pipe ("|") character to separate key words (it is the regex "OR")
+#workItemOverrideType = The type of work item to create if key words are found in the message.
 $defaultNewWorkItem = "ir"
 $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
@@ -199,6 +203,9 @@ $changeIncidentStatusOnReply = $false
 $changeIncidentStatusOnReplyAffectedUser = "IncidentStatusEnum.Active$"
 $changeIncidentStatusOnReplyAssignedTo = "IncidentStatusEnum.Active.Pending$"
 $changeIncidentStatusOnReplyRelatedUser = "IncidentStatusEnum.Active$"
+$useWorkItemOverrideKeywords = $false
+$workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjammed\b|\bjamming\b|broke|froze|issue|unable"
+$workItemOverrideType = "ir"
 
 #processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
     #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
@@ -563,6 +570,8 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
         }
     }
     
+    $TemplatesForThisMessage = Get-TemplatesByMailbox $message
+    
     # Use the global default work item type or, if mailbox redirection is used, use the default work item type for the
     # specific mailbox that the current message was sent to. If Azure Cognitive Services is enabled
     # run the message through it to determine the Default Work Item type. Otherwise, use default if there is no match.
@@ -588,8 +597,11 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
             }
         }
     }
+    elseif ($useWorkItemOverrideKeywords -eq $true -and $(Test-KeywordsFoundInMessage $message) -eq $true) {
+        #Keyword override is true and keyword(s) found in message
+        $workItemType = $workItemOverrideType
+    }
     elseif ($UseMailboxRedirection -eq $true) {
-        $TemplatesForThisMessage = Get-TemplatesByMailbox $message
         $workItemType = if ($TemplatesForThisMessage) {$TemplatesForThisMessage["DefaultWiType"]} else {$defaultNewWorkItem}
     }
     else {
@@ -603,7 +615,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     switch ($workItemType) 
     {
         "ir" {
-                    if ($UseMailboxRedirection -eq $true -And $TemplatesForThisMessage) {
+                    if ($UseMailboxRedirection -eq $true -And $TemplatesForThisMessage.Count -gt 0) {
                         $IRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["IRTemplate"]) @scsmMGMTParams
                     }
                     else {
@@ -654,7 +666,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     
                 }
         "sr" {
-                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage) {
+                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage.Count -gt 0) {
                         $SRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["SRTemplate"]) @scsmMGMTParams
                     }
                     else {
@@ -705,7 +717,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($ceScripts) { Invoke-AfterCreateSR }					
                 }
         "pr" {
-                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage) {
+                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage.Count -gt 0) {
                         $PRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["PRTemplate"]) @scsmMGMTParams
                     }
                     else {
@@ -734,7 +746,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($ceScripts) { Invoke-AfterCreatePR }
                 }
         "cr" {
-                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage) {
+                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage.Count -gt 0) {
                         $CRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["CRTemplate"]) @scsmMGMTParams
                     }
                     else {
@@ -2127,6 +2139,18 @@ function Get-SCSMWorkItemSettings ($WorkItemClass) {
     }
 
     return @{"MaxAttachments"=$maxAttach;"MaxAttachmentSize"=$maxSize;"Prefix"=$prefix}
+}
+
+# Test a message for the presence of certain key words
+function Test-KeywordsFoundInMessage ($message) {
+    $found = $false
+    #check the subject first
+    $found = ($message.subject -match $workItemTypeOverrideKeywords)
+    #if necessary, check the body
+    if (-Not $found) {
+        $found = ($message.body -match $workItemTypeOverrideKeywords)
+    }
+    return $found
 }
 
 #retrieve sender's ability to post announcement based on previously defined email addresses or an AD group
