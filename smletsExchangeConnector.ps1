@@ -392,16 +392,6 @@ else {
     $defaultPRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultPRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultPRTemplateName"}
     $defaultCRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultCRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultCRTemplateName"}
 }
-
-# Retrieve Support Group Class Extensions on CR/MA if defined
-if ($maSupportGroupEnumGUID)
-{
-    $maSupportGroupPropertyName = (Get-SCSMClassProperty -classname "system.workitem.activity.manualactivity$" @scsmMGMTParams | ?{$_.EnumType -like "*$maSupportGroupEnumGUID*"}).Name
-}
-if ($crSupportGroupEnumGUID)
-{
-    $crSupportGroupPropertyName = (Get-SCSMClassProperty -classname "system.workitem.changerequest$" @scsmMGMTParams | ?{$_.EnumType -like "*$crSupportGroupEnumGUID*"}).Name
-}
 #endregion
 
 #region #### SCSM Classes ####
@@ -449,6 +439,16 @@ $prTypeProjection = Get-SCSMTypeProjection -name "system.workitem.problem.projec
 $crTypeProjection = Get-SCSMTypeProjection -Name "system.workitem.changerequestprojection$" @scsmMGMTParams
 
 $userHasPrefProjection = Get-SCSMTypeProjection -name "System.User.Preferences.Projection$" @scsmMGMTParams
+
+# Retrieve Support Group Class Extensions on CR/MA if defined
+if ($maSupportGroupEnumGUID)
+{
+    $maSupportGroupPropertyName = (Get-SCSMClassProperty -class "system.workitem.activity.manualactivity$" @scsmMGMTParams | ?{$_.EnumType -like "*$maSupportGroupEnumGUID*"}).Name
+}
+if ($crSupportGroupEnumGUID)
+{
+    $crSupportGroupPropertyName = (Get-SCSMClassProperty -class "system.workitem.changerequest$" @scsmMGMTParams | ?{$_.EnumType -like "*$crSupportGroupEnumGUID*"}).Name
+}
 #endregion
 
 #region #### Exchange Connector Functions ####
