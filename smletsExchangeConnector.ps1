@@ -2138,6 +2138,21 @@ function Get-SCSMWorkItemSettings ($WorkItemClass) {
     return @{"MaxAttachments"=$maxAttach;"MaxAttachmentSize"=$maxSize;"Prefix"=$prefix}
 }
 
+# Test a message for the presence of certain key words
+function Test-KeywordsFoundInMessage ($message) {
+    $found = $false
+
+    #check the subject first
+    $found = ($message.subject -match $workItemTypeOverrideKeywords)
+
+    #if necessary, check the body
+    if (-Not $found) {
+        $found = ($message.body -match $workItemTypeOverrideKeywords)
+    }
+
+    return $found
+}
+
 #retrieve sender's ability to post announcement based on previously defined email addresses or an AD group
 function Get-SCSMAuthorizedAnnouncer ($sender)
 {
