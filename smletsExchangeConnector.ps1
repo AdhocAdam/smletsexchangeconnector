@@ -1,13 +1,11 @@
 ﻿<#
 .SYNOPSIS
 Provides SCSM Exchange Connector functionality through PowerShell
-
 .DESCRIPTION
 This PowerShell script/runbook aims to address shortcomings and wants in the
 out of box SCSM Exchange Connector as well as help enable new functionality around
 Work Item scenarios, runbook automation, 3rd party customizations, and
 enabling other organizational level processes via email
-
 .NOTES
 Author: Adam Dzyacky
 Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks
@@ -171,6 +169,9 @@ $ExchangeEndpoint = ""
 #changeIncidentStatusOnReplyRelatedUser = If changeIncidentStatusOnReply is $true, The Status enum an Incident should change to when a Related User updates the Incident via email
     #perform a: Get-SCSMChildEnumeration -Enumeration (Get-SCSMEnumeration -name "IncidentStatusEnum$") | Where-Object {$_.displayname -eq "myCustomStatusHere"}
     #to verify your Incident Status enum value Name if not using the out of box enums
+#useWorkItemOverrideKeywords = Indicates whether or not to use a list of keywords, which if found will force a different work item type to be used.
+#workItemTypeOverrideKeywords = A regular expression containing keywords that will cause the new work item to be created as the $workItemOverrideType if found. Use the pipe ("|") character to separate key words (it is the regex "OR")
+#workItemOverrideType = The type of work item to create if key words are found in the message.
 $defaultNewWorkItem = "ir"
 $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
@@ -199,6 +200,9 @@ $changeIncidentStatusOnReply = $false
 $changeIncidentStatusOnReplyAffectedUser = "IncidentStatusEnum.Active$"
 $changeIncidentStatusOnReplyAssignedTo = "IncidentStatusEnum.Active.Pending$"
 $changeIncidentStatusOnReplyRelatedUser = "IncidentStatusEnum.Active$"
+$useWorkItemOverrideKeywords = $false
+$workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjammed\b|\bjamming\b|broke|froze|issue|unable"
+$workItemOverrideType = "ir"
 
 #processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
     #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
@@ -227,8 +231,8 @@ $mergeReplies = $false
     #their email/new work item
 #enableSetFirstResponseDateOnSuggestions = When Knowledge Article or Request Offering suggestions are made to the Affected User, you can optionally
     #set the First Response Date value on a New Work Item
-#$ciresonPortalServer = URL that will be used to search for KB articles via invoke-restmethod. Make sure to leave the "/" after your tld!
-#$ciresonPortalWindowsAuth = how invoke-restmethod should attempt to authenticate to your portal server.
+#$ciresonPortalServer = URL that will be used to search for KB articles via invoke-webrequest. Make sure to leave the "/" after your tld!
+#$ciresonPortalWindowsAuth = how invoke-webrequest should attempt to authenticate to your portal server.
     #Leave true if your portal uses Windows Auth, change to False for Forms authentication.
     #If using forms, you'll need to set the ciresonPortalUsername and Password variables. For ease, you could set this equal to the username/password defined above
 $searchCiresonHTMLKB = $false
@@ -387,20 +391,10 @@ if ($UseMailboxRedirection -eq $true) {
     $Mailboxes.add("$($workflowEmailAddress)", @{"DefaultWiType"=$defaultNewWorkItem;"IRTemplate"=$DefaultIRTemplateName;"SRTemplate"=$DefaultSRTemplateName;"PRTemplate"=$DefaultPRTemplateName;"CRTemplate"=$DefaultCRTemplateName})
 }
 else {
-    $defaultIRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultIRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultIRTemplateName"}
-    $defaultSRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultSRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultSRTemplateName"}
-    $defaultPRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultPRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultPRTemplateName"}
-    $defaultCRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultCRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultCRTemplateName"}
-}
-
-# Retrieve Support Group Class Extensions on CR/MA if defined
-if ($maSupportGroupEnumGUID)
-{
-    $maSupportGroupPropertyName = (Get-SCSMClassProperty -classname "system.workitem.activity.manualactivity$" @scsmMGMTParams | ?{$_.EnumType -like "*$maSupportGroupEnumGUID*"}).Name
-}
-if ($crSupportGroupEnumGUID)
-{
-    $crSupportGroupPropertyName = (Get-SCSMClassProperty -classname "system.workitem.changerequest$" @scsmMGMTParams | ?{$_.EnumType -like "*$crSupportGroupEnumGUID*"}).Name
+    $defaultIRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultIRTemplateName @scsmMGMTParams
+    $defaultSRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultSRTemplateName @scsmMGMTParams
+    $defaultPRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultPRTemplateName @scsmMGMTParams
+    $defaultCRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultCRTemplateName @scsmMGMTParams
 }
 #endregion
 
@@ -430,8 +424,8 @@ $irLowUrgency = Get-SCSMEnumeration -name "System.WorkItem.TroubleTicket.Urgency
 $irActiveStatus = Get-SCSMEnumeration -name "IncidentStatusEnum.Active$" @scsmMGMTParams
 
 $affectedUserRelClass = get-scsmrelationshipclass -name "System.WorkItemAffectedUser$" @scsmMGMTParams
-$assignedToUserRelClass  = Get-SCSMRelationshipClass -name "System.WorkItemAssignedToUser$" @scsmMGMTParams
-$createdByUserRelClass = Get-SCSMRelationshipClass -name "System.WorkItemCreatedByUser$" @scsmMGMTParams
+$assignedToUserRelClass  = Get-SCSMRelationshipClass -name "System.WorkItemAssignedToUser$" @scsmMGMTParams
+$createdByUserRelClass = Get-SCSMRelationshipClass -name "System.WorkItemCreatedByUser$" @scsmMGMTParams
 $workResolvedByUserRelClass = Get-SCSMRelationshipClass -name "System.WorkItem.TroubleTicketResolvedByUser$" @scsmMGMTParams
 $wiRelatesToCIRelClass = Get-SCSMRelationshipClass -name "System.WorkItemRelatesToConfigItem$" @scsmMGMTParams
 $wiRelatesToWIRelClass = Get-SCSMRelationshipClass -name "System.WorkItemRelatesToWorkItem$" @scsmMGMTParams
@@ -449,10 +443,20 @@ $prTypeProjection = Get-SCSMTypeProjection -name "system.workitem.problem.projec
 $crTypeProjection = Get-SCSMTypeProjection -Name "system.workitem.changerequestprojection$" @scsmMGMTParams
 
 $userHasPrefProjection = Get-SCSMTypeProjection -name "System.User.Preferences.Projection$" @scsmMGMTParams
+
+# Retrieve Support Group Class Extensions on CR/MA if defined
+if ($maSupportGroupEnumGUID)
+{
+    $maSupportGroupPropertyName = (Get-SCSMClassProperty -Class $maClass @scsmMGMTParams | ?{$_.EnumType -like "*$maSupportGroupEnumGUID*"}).Name
+}
+if ($crSupportGroupEnumGUID)
+{
+    $crSupportGroupPropertyName = (Get-SCSMClassProperty -Class $crClass @scsmMGMTParams | ?{$_.EnumType -like "*$crSupportGroupEnumGUID*"}).Name
+}
 #endregion
 
 #region #### Exchange Connector Functions ####
-function New-WorkItem ($message, $wiType, $returnWIBool) 
+function New-WorkItem ($message, $wiType, $returnWIBool) 
 {
     $from = $message.From
     $to = $message.To
@@ -483,8 +487,8 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
         if ($to.count -eq 1)
         {
             $relatedUser = Get-SCSMUserByEmailAddress -EmailAddress "$($to.address)"
-            if ($relatedUser) 
-            { 
+            if ($relatedUser) 
+            { 
                 $relatedUsers += $relatedUser
             }
             else
@@ -503,8 +507,8 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
             {
                 $ToSMTP = $to[$x]
                 $relatedUser = Get-SCSMUserByEmailAddress -EmailAddress "$($ToSMTP.address)"
-                if ($relatedUser) 
-                { 
+                if ($relatedUser) 
+                { 
                     $relatedUsers += $relatedUser
                 }
                 else
@@ -526,8 +530,8 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
         if ($cced.count -eq 1)
         {
             $relatedUser = Get-SCSMUserByEmailAddress -EmailAddress "$($cced.address)"
-            if ($relatedUser) 
-            { 
+            if ($relatedUser) 
+            { 
                 $relatedUsers += $relatedUser
             }
             else
@@ -546,8 +550,8 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
             {
                 $ccSMTP = $cced[$x]
                 $relatedUser = Get-SCSMUserByEmailAddress -EmailAddress "$($ccSMTP.address)"
-                if ($relatedUser) 
-                { 
+                if ($relatedUser) 
+                { 
                     $relatedUsers += $relatedUser
                 }
                 else
@@ -563,6 +567,8 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
         }
     }
     
+    $TemplatesForThisMessage = Get-TemplatesByMailbox $message
+
     # Use the global default work item type or, if mailbox redirection is used, use the default work item type for the
     # specific mailbox that the current message was sent to. If Azure Cognitive Services is enabled
     # run the message through it to determine the Default Work Item type. Otherwise, use default if there is no match.
@@ -588,8 +594,11 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
             }
         }
     }
+    elseif ($useWorkItemOverrideKeywords -eq $true -and $(Test-KeywordsFoundInMessage $message) -eq $true) {
+        #Keyword override is true and keyword(s) found in message
+        $workItemType = $workItemOverrideType
+    }
     elseif ($UseMailboxRedirection -eq $true) {
-        $TemplatesForThisMessage = Get-TemplatesByMailbox $message
         $workItemType = if ($TemplatesForThisMessage) {$TemplatesForThisMessage["DefaultWiType"]} else {$defaultNewWorkItem}
     }
     else {
@@ -600,10 +609,10 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     if ($ceScripts) { Invoke-BeforeCreateAnyWorkItem }
     
     #create the Work Item based on the globally defined Work Item type and Template
-    switch ($workItemType) 
+    switch ($workItemType) 
     {
         "ir" {
-                    if ($UseMailboxRedirection -eq $true -And $TemplatesForThisMessage) {
+                    if ($UseMailboxRedirection -eq $true -And $TemplatesForThisMessage.Count -gt 0) {
                         $IRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["IRTemplate"]) @scsmMGMTParams
                     }
                     else {
@@ -654,13 +663,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     
                 }
         "sr" {
-                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage) {
+                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage.Count -gt 0) {
                         $SRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["SRTemplate"]) @scsmMGMTParams
                     }
                     else {
                         $SRTemplate = $defaultSRTemplate
                     }
-                    $newWorkItem = new-scsmobject -class $srClass -propertyhashtable @{"ID" = "SR{0}"; "Title" = $title; "Description" = $description; "Status" = "ServiceRequestStatusEnum.New$"} -PassThru @scsmMGMTParams
+                    $newWorkItem = new-scsmobject -class $srClass -propertyhashtable @{"ID" = "SR{0}"; "Title" = $title; "Description" = $description; "Status" = "ServiceRequestStatusEnum.New$"} -PassThru @scsmMGMTParams
                     $srProjection = Get-SCSMObjectProjection -ProjectionName $srTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
@@ -705,13 +714,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($ceScripts) { Invoke-AfterCreateSR }					
                 }
         "pr" {
-                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage) {
+                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage.Count -gt 0) {
                         $PRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["PRTemplate"]) @scsmMGMTParams
                     }
                     else {
                         $PRTemplate = $defaultPRTemplate
                     }
-                    $newWorkItem = new-scsmobject -class $prClass -propertyhashtable @{"ID" = "PR{0}"; "Title" = $title; "Description" = $description; "Status" = "ProblemStatusEnum.Active$"} -PassThru @scsmMGMTParams
+                    $newWorkItem = new-scsmobject -class $prClass -propertyhashtable @{"ID" = "PR{0}"; "Title" = $title; "Description" = $description; "Status" = "ProblemStatusEnum.Active$"} -PassThru @scsmMGMTParams
                     $prProjection = Get-SCSMObjectProjection -ProjectionName $prTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
@@ -734,13 +743,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($ceScripts) { Invoke-AfterCreatePR }
                 }
         "cr" {
-                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage) {
+                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage.Count -gt 0) {
                         $CRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["CRTemplate"]) @scsmMGMTParams
                     }
                     else {
                         $CRTemplate = $defaultCRTemplate
                     }
-                    $newWorkItem = new-scsmobject -class $crClass -propertyhashtable @{"ID" = "CR{0}"; "Title" = $title; "Description" = $description; "Status" = "ChangeStatusEnum.New$"} -PassThru @scsmMGMTParams
+                    $newWorkItem = new-scsmobject -class $crClass -propertyhashtable @{"ID" = "CR{0}"; "Title" = $title; "Description" = $description; "Status" = "ChangeStatusEnum.New$"} -PassThru @scsmMGMTParams
                     $crProjection = Get-SCSMObjectProjection -ProjectionName $crTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     #Set-SCSMObjectTemplate -Projection $crProjection -Template $defaultCRTemplate @scsmMGMTParams
                     Apply-SCSMTemplate -Projection $crProjection -Template $CRTemplate
@@ -776,7 +785,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     }
 }
 
-function Update-WorkItem ($message, $wiType, $workItemID) 
+function Update-WorkItem ($message, $wiType, $workItemID) 
 {
     #removes PII if RedactPiiFromMessage is enable
     if ($redactPiiFromMessage -eq $true)
@@ -819,7 +828,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
     
     #determine who left the comment
     $commentLeftBy = Get-SCSMUserByEmailAddress -EmailAddress "$($message.From)"
-    if ((!$commentLeftBy) -and ($createUsersNotInCMDB -eq $true) ){$commentLeftBy = create-userincmdb $message.From}
+    if ((!$commentLeftBy) -and ($createUsersNotInCMDB -eq $true) ){$commentLeftBy = create-userincmdb $message.From}
 
     #add any attachments
     if ($message.Attachments)
@@ -828,9 +837,9 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
     }
 
     #update the work item with the comment and/or action
-    switch ($wiType) 
+    switch ($wiType) 
     {
-        #### primary work item types ####
+        #### primary work item types ####
         "ir" {
             $workItem = get-scsmobject -class $irClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
 
@@ -949,7 +958,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
 
             # Custom Event Handler
             if ($ceScripts) { Invoke-AfterUpdateIR }
-        } 
+        } 
         "sr" {
             $workItem = get-scsmobject -class $srClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
 
@@ -1063,7 +1072,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
             }
             # Custom Event Handler
             if ($ceScripts) { Invoke-AfterUpdateSR }
-        } 
+        } 
         "pr" {
                     $workItem = get-scsmobject -class $prClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
                     try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
@@ -1171,7 +1180,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     if ($ceScripts) { Invoke-AfterUpdateCR }
                 }
         
-        #### activities ####
+        #### activities ####
         "ra" {
                     $workItem = get-scsmobject -class $raClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
                     $reviewers = Get-SCSMRelatedObject -SMObject $workItem -Relationship $raHasReviewerRelClass @scsmMGMTParams
@@ -1323,7 +1332,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     # Custom Event Handler
                     if ($ceScripts) { Invoke-AfterUpdateMA }
                 }
-    } 
+    } 
     
     # Custom Event Handler
     if ($ceScripts) { Invoke-AfterUpdateAnyWorkItem }
@@ -1355,10 +1364,10 @@ function Attach-EmailToWorkItem ($message, $workItemID)
         $emailAttachment.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
         $emailAttachment.Item($fileAttachmentClass, "DisplayName").Value = "message.eml"
         $emailAttachment.Item($fileAttachmentClass, "Description").Value = "ExchangeConversationID:$($message.ConversationID);"
-        $emailAttachment.Item($fileAttachmentClass, "Extension").Value =   "eml"
-        $emailAttachment.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
-        $emailAttachment.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
-        $emailAttachment.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
+        $emailAttachment.Item($fileAttachmentClass, "Extension").Value =   "eml"
+        $emailAttachment.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
+        $emailAttachment.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
+        $emailAttachment.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
         
         #Add the attachment to the work item and commit the changes
         $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemID'" @scsmMGMTParams
@@ -1367,8 +1376,8 @@ function Attach-EmailToWorkItem ($message, $workItemID)
                 
         #create the Attached By relationship if possible
         $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
-        if ($attachedByUser) 
-        { 
+        if ($attachedByUser) 
+        { 
             New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
         }
         
@@ -1416,10 +1425,10 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.FileName
                 #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
-                #$NewFile.Item($fileAttachmentClass, "Extension").Value =   $attachment.Extension
-                $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
-                $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
-                $NewFile.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
+                #$NewFile.Item($fileAttachmentClass, "Extension").Value =   $attachment.Extension
+                $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
+                $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
+                $NewFile.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
         
                 #Add the attachment to the work item and commit the changes
                 $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemId'" @scsmMGMTParams
@@ -1428,8 +1437,8 @@ function Attach-FileToWorkItem ($message, $workItemId)
     
                 #create the Attached By relationship if possible
                 $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
-                if ($attachedByUser) 
-                { 
+                if ($attachedByUser) 
+                { 
                     New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
                     $existingAttachments.Count += 1
                 }
@@ -1454,10 +1463,10 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name
                 #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
-                #$NewFile.Item($fileAttachmentClass, "Extension").Value =   $attachment.Extension
-                $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
-                $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
-                $NewFile.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
+                #$NewFile.Item($fileAttachmentClass, "Extension").Value =   $attachment.Extension
+                $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
+                $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
+                $NewFile.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
         
                 #Add the attachment to the work item and commit the changes
                 $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemId'" @scsmMGMTParams
@@ -1466,8 +1475,8 @@ function Attach-FileToWorkItem ($message, $workItemId)
     
                 #create the Attached By relationship if possible
                 $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
-                if ($attachedByUser) 
-                { 
+                if ($attachedByUser) 
+                { 
                     New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
                     $existingAttachments.Count += 1
                 }
@@ -1494,8 +1503,8 @@ function Get-WorkItem ($workItemID, $workItemClass)
 function Get-SCSMUserByEmailAddress ($EmailAddress)
 {
     $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$EmailAddress'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-    if ($userSMTPNotification) 
-    { 
+    if ($userSMTPNotification) 
+    { 
         $user = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
         return $user
     }
@@ -2493,9 +2502,9 @@ function Update-SCSMPropertyCollection
         if ($Object.ObjectCollection.Count -ne 0)
         {
             foreach ($obj in $Object.ObjectCollection)
-            {  
+            {  
                 Update-SCSMPropertyCollection -Object $obj
-            }        
+            }        
         }
     } 
 }
@@ -2748,7 +2757,7 @@ foreach ($message in $inbox)
     #Process an Email
     if ($message.ItemClass -eq "IPM.Note")
     {
-        $email = New-Object System.Object 
+        $email = New-Object System.Object 
         $email | Add-Member -type NoteProperty -name From -value $message.From.Address
         $email | Add-Member -type NoteProperty -name To -value $message.ToRecipients
         $email | Add-Member -type NoteProperty -name CC -value $message.CcRecipients
@@ -2765,15 +2774,15 @@ foreach ($message in $inbox)
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessEmail }
         
-        switch -Regex ($email.subject) 
-        { 
-            #### primary work item types ####
+        switch -Regex ($email.subject) 
+        { 
+            #### primary work item types ####
             "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
  
-            #### activities ####
+            #### activities ####
             "\[[R][A][0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
             "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
 
@@ -2786,7 +2795,7 @@ foreach ($message in $inbox)
             "([R][E][:])(?!.*\[(([I|S|P|C][R])|([M|R][A]))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
 
             #### default action, create work item ####
-            default {new-workitem $email $defaultNewWorkItem} 
+            default {new-workitem $email $defaultNewWorkItem} 
         }
         
         # Custom Event Handler
@@ -2810,7 +2819,7 @@ foreach ($message in $inbox)
         $signedAttachments = $response.Attachments
         $signedAttachments = $signedAttachments | ?{$_.filename -ne "smime.p7s"}
    
-        $email = New-Object System.Object 
+        $email = New-Object System.Object 
         $email | Add-Member -type NoteProperty -name From -value $response.From.address
         $email | Add-Member -type NoteProperty -name To -value $response.To.Address
         $email | Add-Member -type NoteProperty -name CC -value $response.Cc.Address
@@ -2827,15 +2836,15 @@ foreach ($message in $inbox)
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessEmail }
 
-        switch -Regex ($email.subject) 
-        { 
-            #### primary work item types ####
+        switch -Regex ($email.subject) 
+        { 
+            #### primary work item types ####
             "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
  
-            #### activities ####
+            #### activities ####
             "\[[R][A][0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
             "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
 
@@ -2848,7 +2857,7 @@ foreach ($message in $inbox)
             "([R][E][:])(?!.*\[(([I|S|P|C][R])|([M|R][A]))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
 
             #### default action, create work item ####
-            default {new-workitem $email $defaultNewWorkItem} 
+            default {new-workitem $email $defaultNewWorkItem} 
         }
         
         # Custom Event Handler
@@ -2878,7 +2887,7 @@ foreach ($message in $inbox)
             #check to see if there are attachments
             $decryptedAttachments = $decryptedBody | ?{$_.isattachment -eq $true}
 
-            $email = New-Object System.Object 
+            $email = New-Object System.Object 
             $email | Add-Member -type NoteProperty -name From -value $response.From.Address
             $email | Add-Member -type NoteProperty -name To -value $response.To.Address
             $email | Add-Member -type NoteProperty -name CC -value $response.Cc.Address
@@ -2895,15 +2904,15 @@ foreach ($message in $inbox)
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEmail }
             
-            switch -Regex ($email.subject) 
-            { 
-                #### primary work item types ####
+            switch -Regex ($email.subject) 
+            { 
+                #### primary work item types ####
                 "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
  
-                #### activities ####
+                #### activities ####
                 "\[[R][A][0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
                 "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
 
@@ -2916,7 +2925,7 @@ foreach ($message in $inbox)
                 "([R][E][:])(?!.*\[(([I|S|P|C][R])|([M|R][A]))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
 
                 #### default action, create work item ####
-                default {new-workitem $email $defaultNewWorkItem} 
+                default {new-workitem $email $defaultNewWorkItem} 
             }
             
             # Custom Event Handler
@@ -2939,7 +2948,7 @@ foreach ($message in $inbox)
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessSignedEmail }
             
-            $email = New-Object System.Object 
+            $email = New-Object System.Object 
             $email | Add-Member -type NoteProperty -name From -value $response.From.Address
             $email | Add-Member -type NoteProperty -name To -value $response.To.Address
             $email | Add-Member -type NoteProperty -name CC -value $response.Cc.Address
@@ -2956,15 +2965,15 @@ foreach ($message in $inbox)
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEmail }
             
-            switch -Regex ($email.subject) 
-            { 
-                #### primary work item types ####
+            switch -Regex ($email.subject) 
+            { 
+                #### primary work item types ####
                 "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
  
-                #### activities ####
+                #### activities ####
                 "\[[R][A][0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
                 "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
 
@@ -2977,7 +2986,7 @@ foreach ($message in $inbox)
                 "([R][E][:])(?!.*\[(([I|S|P|C][R])|([M|R][A]))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
 
                 #### default action, create work item ####
-                default {new-workitem $email $defaultNewWorkItem} 
+                default {new-workitem $email $defaultNewWorkItem} 
             }
             
             # Custom Event Handler
@@ -2999,7 +3008,7 @@ foreach ($message in $inbox)
     #Process a Calendar Meeting
     elseif ($message.ItemClass -eq "IPM.Schedule.Meeting.Request")
     {
-        $appointment = New-Object System.Object 
+        $appointment = New-Object System.Object 
         $appointment | Add-Member -type NoteProperty -name StartTime -value $message.Start
         $appointment | Add-Member -type NoteProperty -name EndTime -value $message.End
         $appointment | Add-Member -type NoteProperty -name To -value $message.ToRecipients
@@ -3017,16 +3026,16 @@ foreach ($message in $inbox)
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessAppointment }
         
-        switch -Regex ($appointment.subject) 
-        { 
-            #### primary work item types ####
+        switch -Regex ($appointment.subject) 
+        { 
+            #### primary work item types ####
             "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){schedule-workitem $appointment "ir" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "ir" -workItemID $result.name}}
             "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){schedule-workitem $appointment "sr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "sr" -workItemID $result.name}}
             "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){schedule-workitem $appointment "pr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "pr" -workItemID $result.name}}
             "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){schedule-workitem $appointment "cr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "cr" -workItemID $result.name}}
             "\[[R][R][0-9]+\]" {$result = get-workitem $matches[0] $rrClass; if ($result){schedule-workitem $appointment "rr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "rr" -workItemID $result.name}}
 
-            #### activities ####
+            #### activities ####
             "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){schedule-workitem $appointment "ma" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "ma" -workItemID $result.name}}
             "\[[P][A][0-9]+\]" {$result = get-workitem $matches[0] $paClass; if ($result){schedule-workitem $appointment "pa" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "pa" -workItemID $result.name}}
             "\[[S][A][0-9]+\]" {$result = get-workitem $matches[0] $saClass; if ($result){schedule-workitem $appointment "sa" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "sa" -workItemID $result.name}}
@@ -3035,7 +3044,7 @@ foreach ($message in $inbox)
             #### 3rd party classes, work items, etc. add here ####
 
             #### default action, create/schedule a new default work item ####
-            default {$returnedNewWorkItemToSchedule = new-workitem $appointment $defaultNewWorkItem $true; schedule-workitem -calAppt $appointment -wiType $defaultNewWorkItem -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)} 
+            default {$returnedNewWorkItemToSchedule = new-workitem $appointment $defaultNewWorkItem $true; schedule-workitem -calAppt $appointment -wiType $defaultNewWorkItem -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)} 
         }
         
         # Custom Event Handler
@@ -3045,7 +3054,7 @@ foreach ($message in $inbox)
     #Process a Calendar Meeting Cancellation
     elseif ($message.ItemClass -eq "IPM.Schedule.Meeting.Canceled")
     {
-        $appointment = New-Object System.Object 
+        $appointment = New-Object System.Object 
         $appointment | Add-Member -type NoteProperty -name StartTime -value $message.Start
         $appointment | Add-Member -type NoteProperty -name EndTime -value $message.End
         $appointment | Add-Member -type NoteProperty -name To -value $message.ToRecipients
@@ -3063,16 +3072,16 @@ foreach ($message in $inbox)
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessCancelMeeting }
 
-        switch -Regex ($appointment.subject) 
-        { 
-            #### primary work item types ####
+        switch -Regex ($appointment.subject) 
+        { 
+            #### primary work item types ####
             "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){schedule-workitem $appointment "ir" $result; Update-WorkItem -message $appointment -wiType "ir" -workItemID $result.name}}
             "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){schedule-workitem $appointment "sr" $result; Update-WorkItem -message $appointment -wiType "sr" -workItemID $result.name}}
             "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){schedule-workitem $appointment "pr" $result; Update-WorkItem -message $appointment -wiType "pr" -workItemID $result.name}}
             "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){schedule-workitem $appointment "cr" $result; Update-WorkItem -message $appointment -wiType "cr" -workItemID $result.name}}
             "\[[R][R][0-9]+\]" {$result = get-workitem $matches[0] $rrClass; if ($result){schedule-workitem $appointment "rr" $result; Update-WorkItem -message $appointment -wiType "rr" -workItemID $result.name}}
 
-            #### activities ####
+            #### activities ####
             "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){schedule-workitem $appointment "ma" $result; Update-WorkItem -message $appointment -wiType "ma" -workItemID $result.name}}
             "\[[P][A][0-9]+\]" {$result = get-workitem $matches[0] $paClass; if ($result){schedule-workitem $appointment "pa" $result; Update-WorkItem -message $appointment -wiType "pa" -workItemID $result.name}}
             "\[[S][A][0-9]+\]" {$result = get-workitem $matches[0] $saClass; if ($result){schedule-workitem $appointment "sa" $result; Update-WorkItem -message $appointment -wiType "sa" -workItemID $result.name}}
@@ -3082,7 +3091,7 @@ foreach ($message in $inbox)
             "([C][a][n][c][e][l][e][d][:])(?!.*\[(([I|S|P|C][R])|([M|R][A]))[0-9]+\])(.+)" {if($mergeReplies -eq $true){$result = Verify-WorkItem $appointment -returnWorkItem $true; schedule-workitem $appointment $defaultNewWorkItem $result} else{new-workitem $appointment $defaultNewWorkItem}}
 
             #### default action, create/schedule a new default work item ####
-            default {$returnedNewWorkItemToSchedule = new-workitem $appointment $defaultNewWorkItem $true; schedule-workitem -calAppt $appointment -wiType $defaultNewWorkItem -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)} 
+            default {$returnedNewWorkItemToSchedule = new-workitem $appointment $defaultNewWorkItem $true; schedule-workitem -calAppt $appointment -wiType $defaultNewWorkItem -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)} 
         }
         
         # Custom Event Handler
