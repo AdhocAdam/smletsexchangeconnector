@@ -2050,8 +2050,41 @@ function Get-TemplatesByMailbox ($message)
         return $Mailboxes[$MailboxToUse]
     }
     else {
-        Write-Debug "No redirection from known mailbox.  Using Default templates"
-        return $Mailboxes[$ScsmEmail]
+        # check CC
+        foreach ($recipient in $message.CC) {
+            if ($recipient.Address) { $recipientAddress = $recipient.Address } else { $recipientAddress = $recipient }
+            Write-Debug $recipientAddress
+        
+            # Break on the first match
+            if ($Mailboxes[$recipientAddress]) {
+                $MailboxToUse = $recipientAddress
+                break
+            }
+        }
+        
+        if ($MailboxToUse) {
+            Write-Debug "Redirection from known mailbox: $mailboxToUse.  Found in CC field.  Using custom templates."
+            return $Mailboxes[$MailboxToUse]
+        }
+        else {
+            # If not found in the To OR CC field, look in headers (BCC won't be readable)
+            # Resent-From is the ideal field, but usually removed before the object is accessed.  Return-Path is a good second choice
+            $HeaderSchema = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.EmailMessageSchema]::InternetMessageHeaders)
+            $msgWithHeaders = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.Id,$HeaderSchema)
+            $ReturnPath = $msgWithHeaders.InternetMessageHeaders.Find("Return-Path").Value
+            if ($Mailboxes[$ReturnPath]) {
+                $MailboxToUse = $ReturnPath
+            }
+
+            if ($MailboxToUse) {
+                Write-Debug "Redirection from known mailbox: $mailboxToUse.  Found in Return-Path field.  Using custom templates."
+                return $Mailboxes[$MailboxToUse]
+            }
+            else {
+                Write-Debug "No redirection from known mailbox.  Using Default templates"
+                return $Mailboxes[$ScsmEmail]
+            }
+        }
     }
 }
 
