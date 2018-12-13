@@ -443,11 +443,11 @@ $userHasPrefProjection = Get-SCSMTypeProjection -name "System.User.Preferences.P
 # Retrieve Support Group Class Extensions on CR/MA if defined
 if ($maSupportGroupEnumGUID)
 {
-    $maSupportGroupPropertyName = (Get-SCSMClassProperty -class "system.workitem.activity.manualactivity$" @scsmMGMTParams | ?{$_.EnumType -like "*$maSupportGroupEnumGUID*"}).Name
+    $maSupportGroupPropertyName = ($maClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.EnumType -like "*$maSupportGroupEnumGUID*")}).Name
 }
 if ($crSupportGroupEnumGUID)
 {
-    $crSupportGroupPropertyName = (Get-SCSMClassProperty -class "system.workitem.changerequest$" @scsmMGMTParams | ?{$_.EnumType -like "*$crSupportGroupEnumGUID*"}).Name
+    $crSupportGroupPropertyName = ($crClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.EnumType -like "*$crSupportGroupEnumGUID*")}).Name
 }
 #endregion
 
