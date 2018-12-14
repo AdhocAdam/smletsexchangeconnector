@@ -171,10 +171,6 @@ $ExchangeEndpoint = ""
 #changeIncidentStatusOnReplyRelatedUser = If changeIncidentStatusOnReply is $true, The Status enum an Incident should change to when a Related User updates the Incident via email
     #perform a: Get-SCSMChildEnumeration -Enumeration (Get-SCSMEnumeration -name "IncidentStatusEnum$") | Where-Object {$_.displayname -eq "myCustomStatusHere"}
     #to verify your Incident Status enum value Name if not using the out of box enums
-#useWorkItemOverrideKeywords = Indicates whether or not to use a list of keywords, which if found will force a different work item type to be used.
-#workItemTypeOverrideKeywords = A regular expression containing keywords that will cause the new work item to be created as the $workItemOverrideType if found.
-    #Use the pipe ("|") character to separate key words (it is the regex "OR")
-#workItemOverrideType = The type of work item to create if key words are found in the message.
 $defaultNewWorkItem = "ir"
 $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
@@ -203,9 +199,6 @@ $changeIncidentStatusOnReply = $false
 $changeIncidentStatusOnReplyAffectedUser = "IncidentStatusEnum.Active$"
 $changeIncidentStatusOnReplyAssignedTo = "IncidentStatusEnum.Active.Pending$"
 $changeIncidentStatusOnReplyRelatedUser = "IncidentStatusEnum.Active$"
-$useWorkItemOverrideKeywords = $false
-$workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjammed\b|\bjamming\b|broke|froze|issue|unable"
-$workItemOverrideType = "ir"
 
 #processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
     #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
@@ -271,10 +264,11 @@ $lowAnnouncemnentExpirationInHours = 7
 $normalAnnouncemnentExpirationInHours = 3
 $criticalAnnouncemnentExpirationInHours = 1
 
-<#enable integration with Azure Cognitive Services.
+<#ARTIFICIAL INTELLIGENCE OPTION 1, enable AI through Azure Cognitive Services
 #PLEASE NOTE: HIGHLY EXPERIMENTAL!
 By enabling this feature, the entire body of the email on New Work Item creation will be sent to the Azure
 subscription provided and parsed by Cognitive Services. This information is collected and stored by Microsoft.
+Use of this feature will vary between work items and isn't something that can be refined/configured.
 #### SENTIMENT ANALYSIS ####
 The information returned to this script is a percentage estimate of the perceived sentiment of the email in a
 range from 0% to 100%. With 0% being negative and 100% being positive. Using this range, you can customize at
@@ -291,7 +285,7 @@ https://azure.microsoft.com/en-us/pricing/details/cognitive-services/text-analyt
 Using this URL, you can better plan for possible monetary charges and ensure you understand the potential financial
 cost to your organization before enabling this feature.#>
 
-#### requires Azure subscription and Cognitive Services deployed ####
+#### requires Azure subscription and Cognitive Services Text Analytics API deployed ####
 #enableAzureCognitiveServicesForKA = If enabled, Azure Cognitive Services Text Analytics API will extract keywords from the email to
     #search your Cireson Knowledge Base
 #enableAzureCognitiveServicesForRO = If enabled, Azure Cognitive Services Text Analytics API will extract keywords from the email to
@@ -312,6 +306,22 @@ $enableAzureCognitiveServicesForRO = $false
 $enableAzureCognitiveServicesPriorityScoring = $false
 $azureRegion = ""
 $azureCogSvcTextAnalyticsAPIKey = ""
+
+#ARTIFICIAL INTELLIGENCE OPTION 2, enable AI through pre-defined keywords
+#If Azure Cognitive Services isn't an option for you can alternatively enable this more controlled mechanism
+#that you configure with specific keywords in order to create either an Incident or Service Request when those keywords are present.
+#For example, you could set the default Work Item type near the top of the configuration to be a Service Request but
+#if any of these words are found, then an Incident would be created.
+#useWorkItemOverrideKeywords = Indicates whether or not to use a list of keywords, which if found will force a different work item type to be used.
+#workItemTypeOverrideKeywords = A regular expression containing keywords that will cause the new work item to be created as the $workItemOverrideType if found.
+    #Use the pipe ("|") character to separate key words (it is the regex "OR")
+    #you can test it out directly in PowerShell with the following 2 lines of PowerShell
+    #     $workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjammed\b|\bjamming\b|broke|froze|issue|unable"
+    #     "i have a problem with my computer" -match $workItemTypeOverrideKeywords
+#workItemOverrideType = The type of work item to create if key words are found in the message.
+$useWorkItemOverrideKeywords = $false
+$workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjammed\b|\bjamming\b|broke|froze|issue|unable"
+$workItemOverrideType = "ir"
 
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
