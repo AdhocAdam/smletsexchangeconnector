@@ -312,14 +312,15 @@ $azureCogSvcTextAnalyticsAPIKey = ""
 #that you configure with specific keywords in order to create either an Incident or Service Request when those keywords are present.
 #For example, you could set the default Work Item type near the top of the configuration to be a Service Request but
 #if any of these words are found, then an Incident would be created.
-#useWorkItemOverrideKeywords = Indicates whether or not to use a list of keywords, which if found will force a different work item type to be used.
+#enableKeywordMatchForNewWI = Indicates whether or not to use a list of keywords, which if found will force a different work item type to be used.
+    #     NOTE: This will only function if Azure Cognitive Services is not also enabled.  ACS supersedes this functionality if enabled.
 #workItemTypeOverrideKeywords = A regular expression containing keywords that will cause the new work item to be created as the $workItemOverrideType if found.
     #Use the pipe ("|") character to separate key words (it is the regex "OR")
     #you can test it out directly in PowerShell with the following 2 lines of PowerShell
     #     $workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjammed\b|\bjamming\b|broke|froze|issue|unable"
     #     "i have a problem with my computer" -match $workItemTypeOverrideKeywords
 #workItemOverrideType = The type of work item to create if key words are found in the message.
-$useWorkItemOverrideKeywords = $false
+$enableKeywordMatchForNewWI = $false
 $workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjammed\b|\bjamming\b|broke|froze|issue|unable"
 $workItemOverrideType = "ir"
 
@@ -607,7 +608,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
             }
         }
     }
-    elseif ($useWorkItemOverrideKeywords -eq $true -and $(Test-KeywordsFoundInMessage $message) -eq $true) {
+    elseif ($enableKeywordMatchForNewWI -eq $true -and $(Test-KeywordsFoundInMessage $message) -eq $true) {
         #Keyword override is true and keyword(s) found in message
         $workItemType = $workItemOverrideType
     }
