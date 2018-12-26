@@ -20,6 +20,16 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.4.6 = #93 - Optimization, Configured Template Name may return multiple values
+                #91 - Feature, Reply can change Incident Status
+                #18 - Optimization, Convert "Invoke-WebRequest" to "Invoke-RestMethod" for Cireson Portal actions
+                #97 - Optimization, Combine Get-SCSMAttachmentSettings and Get-SCSMObjectPrefix
+                #104 - Bug, Dates that should be set by keywords are not
+                #95 - Optimization, Convert Suggestion logic matrix to a Function
+                #84 - Feature, Leverage keywords as an alternative to ACS Sentiment in order to drive New IR/SR creation
+                #85 - Bug, Get-ScsmClassProperty error when using CR / MA support group enums
+                #83 - Optimization, Process CC and BCC fields for multiple mailbox routing
+                Milestone notes available at https://github.com/AdhocAdam/smletsexchangeconnector/milestone/3?closed=1
 Version: 1.4.5 = #75 - Feature, Use Azure Cognitive Services Text Analytics API to set Urgency/Priority
                 #68 - Feature, Redact sensitive information
                 #69 - Optimization, Custom HTML Email Templates for Suggestions feature
@@ -375,7 +385,7 @@ $htmlSuggestionTemplatePath = "c:\smletsexchangeconnector\htmlEmailTemplates\"
     # If running in SMA OR as a scheduled task with the custom events script in the same folder, use this format: . .\smletsExchangeConnector_CustomEvents.ps1
     # If running as a scheduled task and you have stored the events script in another folder, use this format: . C:\otherFolder\smletsExchangeConnector_CustomEvents.ps1'
 $ceScripts = . .\smletsExchangeConnector_CustomEvents.ps1
-#endregion
+#endregion #### Configuration ####
 
 #region #### Process User Configs and Prep SMLets ####
 # Ensure SMLets is loaded in the current session.
