@@ -211,7 +211,7 @@ namespace SMLetsExchangeConnectorSettingsUI
               against the ServiceManager DB to figure out the following strSingletonBaseManagedObjectID
              */
 
-            String strSingletonBaseManagedObjectID = "bd376031-c759-491d-9b1f-3ce1734c1e7a";
+            String strSingletonBaseManagedObjectID = "6FFB0179-D405-DCCB-FC28-59845DC4A4BA";
 
             //Get the server name to connect to and connect to the server 
             String strServerName = Registry.GetValue("HKEY_CURRENT_USER\\Software\\Microsoft\\System Center\\2010\\Service Manager\\Console\\User Settings", "SDKServiceMachine", "localhost").ToString();
@@ -270,7 +270,7 @@ where the GUID you want is returned in the BaseManagedEntityID column in the res
     where FullName like 'SMLets%'
     against the ServiceManager DB to figure out the following strSingletonBaseManagedObjectID
     */
-String strSingletonBaseManagedObjectID = "bd376031-c759-491d-9b1f-3ce1734c1e7a";
+String strSingletonBaseManagedObjectID = "6FFB0179-D405-DCCB-FC28-59845DC4A4BA";
 ```
 
 This is another incredibly fundamental step much like the Public Key Token in part 1. Which means you'll have to have imported the signed MP so you can even run the SQL query against your ServiceManager DB to return a value. That returned value (i.e. a GUID) is what you'll want to set this strSingletonBaseManagedObjectID value to.
@@ -359,7 +359,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             EnterpriseManagementGroup emg = new EnterpriseManagementGroup(strServerName);
 
             //Get the AdminSettings MP so you can then get the Admin Setting class
-            ManagementPackClass smletsExchangeConnectorSettingsClass = emg.EntityTypes.GetClass(new Guid("bd376031-c759-491d-9b1f-3ce1734c1e7a"));
+            ManagementPackClass smletsExchangeConnectorSettingsClass = emg.EntityTypes.GetClass(new Guid("6FFB0179-D405-DCCB-FC28-59845DC4A4BA"));
             this.Property1 = emoAdminSetting[smletsExchangeConnectorSettingsClass, "Property1"].ToString();
             this.Property2 = emoAdminSetting[smletsExchangeConnectorSettingsClass, "Property2"].ToString();
             this.EnterpriseManagementObjectID = emoAdminSetting.Id;
@@ -371,7 +371,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             //Get the server name to connect to and connect 
             String strServerName = Registry.GetValue("HKEY_CURRENT_USER\\Software\\Microsoft\\System Center\\2010\\Service Manager\\Console\\User Settings", "SDKServiceMachine", "localhost").ToString();
             EnterpriseManagementGroup emg = new EnterpriseManagementGroup(strServerName);
-            ManagementPackClass smletsExchangeConnectorSettingsClass = emg.EntityTypes.GetClass(new Guid("bd376031-c759-491d-9b1f-3ce1734c1e7a"));
+            ManagementPackClass smletsExchangeConnectorSettingsClass = emg.EntityTypes.GetClass(new Guid("6FFB0179-D405-DCCB-FC28-59845DC4A4BA"));
 
             //Get the Connector object using the object ID 
             EnterpriseManagementObject emoAdminSetting = emg.EntityObjects.GetObject<EnterpriseManagementObject>(this.EnterpriseManagementObjectID, ObjectQueryOptions.Default);

@@ -234,7 +234,7 @@ Next, Travis says we need to add some Categories. I'm going to use the Categorie
   <Category ID="Category.SMLets.Exchange.Connector" Value="Console!Microsoft.EnterpriseManagement.ServiceManager.ManagementPack">
     <ManagementPackName>SMLets.Exchange.Connector</ManagementPackName>
     <ManagementPackVersion>1.0.0.34</ManagementPackVersion>
-    <ManagementPackPublicKeyToken>60928c42f024b3d5</ManagementPackPublicKeyToken>
+    <ManagementPackPublicKeyToken>446c13d5880992f3</ManagementPackPublicKeyToken>
   </Category>
 </Categories>
 ```
@@ -281,7 +281,7 @@ The **"Public key token is"** is the line that provides the value we're looking 
   <Category ID="Category.SMLets.Exchange.Connector" Value="Console!Microsoft.EnterpriseManagement.ServiceManager.ManagementPack">
     <ManagementPackName>SMLets.Exchange.Connector</ManagementPackName>
     <ManagementPackVersion>1.0.0.34</ManagementPackVersion>
-    <ManagementPackPublicKeyToken>60928c42f024b3d5</ManagementPackPublicKeyToken>
+    <ManagementPackPublicKeyToken>446c13d5880992f3</ManagementPackPublicKeyToken>
   </Category>
 </Categories>
 ```
