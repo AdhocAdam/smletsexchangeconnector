@@ -1,0 +1,41 @@
+﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.AzureCognitiveServices" 
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
+            xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
+            xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="550" Height="409">
+
+    <Grid Name="ConfigurationGrid" Margin="15,25,15,10">
+        <ScrollViewer Name="scrollViewer" CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Width="317" Margin="0,111,0,0" Height="241" VerticalAlignment="Top">
+            <StackPanel Name="stackPanel" Orientation="Vertical" Height="241" Width="307">
+                <CheckBox Name="chkAzureCognitiveServicesEnabled" FlowDirection="LeftToRight" IsChecked="{Binding Path=isAzureCognitiveServicesEnabled, Mode=TwoWay}" >
+                    <TextBlock FlowDirection="LeftToRight" Text="Enable Azure Services Text Analytics" />
+                </CheckBox>
+                <Label />
+                <Label Height="25" Padding="0" Margin="0,0,0,0" Name="lblACSRegion" Content="Text Analytics Region"/>
+                <TextBox Height="25" Margin="0,-8,0,10" Name="txtAzureCogSvcAnalyticsRegion" IsEnabled="{Binding ElementName=chkAzureCognitiveServicesEnabled, Path=IsChecked}">
+                    <TextBox.Text>
+                        <Binding Path="azureRegion" Mode="TwoWay" FallbackValue=""/>
+                    </TextBox.Text>
+                </TextBox>
+
+                <Label Height="25" Padding="0" Margin="0,0,0,0" Name="lblACSAPIKey" Content="Cognitive Services Text Analytics API Key"/>
+                <TextBox Height="25" Margin="0,-8,0,10" Name="txtAzureCogSvcAnalyticsAPIKey" Custom:Validation.ValueRequired="True" IsEnabled="{Binding ElementName=chkAzureCognitiveServicesEnabled, Path=IsChecked}" >
+                    <TextBox.Text>
+                        <Binding Path="azureCognitiveServicesAPIKey" Mode="TwoWay" FallbackValue="" />
+                    </TextBox.Text>
+                </TextBox>
+                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblMinSRPercent" Content="Minimum Percent at which to Create Service Requests"/>
+                <TextBox Height="25" Margin="0,-8,0,10" Name="txtAzureCogSvcAnalyticsMinPercent" IsEnabled="{Binding ElementName=chkAzureCognitiveServicesEnabled, Path=IsChecked}">
+                    <TextBox.Text>
+                        <Binding Path="minimumPercentToCreateServiceRequest" Mode="TwoWay" FallbackValue=""/>
+                    </TextBox.Text>
+                </TextBox>
+            </StackPanel>
+        </ScrollViewer>
+        <Label Content="Azure Cognitive Services" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
+        <TextBlock Text="Dynamically create Incidents or Service Requests based on perceived attitude of the Affected User's email, perform OCR against attachments,enhance Cireson KB/RO suggestions and translate Voicemails to Work Item descriptions." Margin="0,51,10,0" VerticalAlignment="Top" Height="55" FontWeight="Light" FontSize="14" TextWrapping="Wrap"/>
+        <Image Margin="360,111,0,0" Height="150" VerticalAlignment="Top" Source="/SMLetsExchangeConnectorSettingsUI;component/AssemblyImages/azureCognitiveServicesIcon150x150.png" HorizontalAlignment="Left" Width="150" />
+    </Grid>
+</wpfwiz:WizardRegularPageBase>

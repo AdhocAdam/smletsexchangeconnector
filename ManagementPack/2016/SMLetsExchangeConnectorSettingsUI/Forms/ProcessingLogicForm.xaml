@@ -1,0 +1,43 @@
+﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.ProcessingLogicForm" 
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:sys="clr-namespace:System;assembly=mscorlib"
+            xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
+            xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
+            xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="551" Height="409">
+
+    <Grid Name="ConfigurationGrid" Margin="15,25,15,10">
+        <ScrollViewer Name="scrollViewer" CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Width="333" Margin="0,80,0,0" Height="284" VerticalAlignment="Top">
+            <StackPanel Name="stackPanel" Orientation="Vertical" Height="280">
+                <TextBlock x:Name="txtBlkGeneralProcessing" Text="General" FontWeight="Bold"/>
+                <CheckBox x:Name="chkProcessMeetings" Margin="0,0,0,0" Content="Process Meeting Requests" IsChecked="{Binding Path=processCalendarAppointments, Mode=TwoWay}" />
+                <CheckBox x:Name="chkMergeReplies" Margin="0,8,0,0" Content="Merge Replies (requires Email Attached to Work Item)" IsChecked="{Binding Path=processMergeReplies, Mode=TwoWay}"/>
+                <TextBlock x:Name="txtBlkWorkItemManagement" Text="Work Item Management" FontWeight="Bold" Margin="0,8,0,0" />
+                <CheckBox x:Name="chkVoteOnBehalfOfADGroup" Margin="0,0,0,0" Content="Vote on Behalf of AD Groups" IsChecked="{Binding Path=processMergeReplies, Mode=TwoWay}"/>
+
+                <CheckBox x:Name="chkCreateWIWHenWIClosed" Margin="0,8,0,0" IsChecked="{Binding Path=processClosedWorkItemsToNewWorkItems, Mode=TwoWay}" >
+                    <TextBlock Text="If Work Item to Update is Closed - Create, Relate, and Copy into a New Work Item." TextWrapping="Wrap" />
+                </CheckBox>
+
+                <CheckBox x:Name="chkTakeRequiresCiresonGroupMembership" Margin="0,8,0,0"  IsChecked="{Binding Path=processClosedWorkItemsToNewWorkItems, Mode=TwoWay}">
+                    <TextBlock Text="[Take] requires Support Group membership (Cireson Support Group Mapping Required)" TextWrapping="Wrap"/>
+                </CheckBox>
+
+                <TextBlock x:Name="CryptoProcessing" Text="Digital Signatures/Encryption" FontWeight="Bold" Margin="0,8,0,0"/>
+                <CheckBox x:Name="chkProcessEncryptedMessages" Margin="0,0,0,0"  Content="Process Encrypted Emails (requires MimeKit)" IsChecked="{Binding Path=processEncryptedEmails, Mode=TwoWay}"/>
+                <CheckBox x:Name="chkProcessDigitallySignedMessages" Margin="0,8,0,0"  Content="Process Digitally Signed Emails (requires MimeKit)" IsChecked="{Binding Path=processDigitallySignedEmails, Mode=TwoWay}"/>
+
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Decrypting certificate store:" Margin="0,8,0,0"/>
+                    <ComboBox HorizontalAlignment="Left" Width="175" Margin="0,8,0,0" IsSynchronizedWithCurrentItem="True" IsEnabled="{Binding ElementName=chkSCOMIntegrationEnabled, Path=IsChecked}" SelectedItem="{Binding authorizedSCOMApproverType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                        <sys:String>user</sys:String>
+                        <sys:String>machine</sys:String>
+                    </ComboBox>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+        <Label Content="Processing Logic" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
+        <TextBlock Margin="0,51,10,0" VerticalAlignment="Top" Height="23.667" FontWeight="Light" FontSize="14" TextWrapping="Wrap" Text="Optionally enable the connector to perform additional types of processing" />
+    </Grid>
+</wpfwiz:WizardRegularPageBase> 

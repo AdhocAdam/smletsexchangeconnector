@@ -1,0 +1,34 @@
+﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.CiresonIntegrationForm" 
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
+            xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
+            xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="550" Height="409">
+
+    <Grid Name="ConfigurationGrid" Margin="15,25,15,10">
+        <ScrollViewer Name="scrollViewer" CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Width="317" Margin="0,111,0,0" Height="241" VerticalAlignment="Top">
+            <StackPanel Name="stackPanel" Orientation="Vertical" Height="241" Width="307">
+                <CheckBox Name="chkCiresonIntegration" FlowDirection="LeftToRight" IsChecked="{Binding Path=isCiresonIntegrationEnabled, Mode=TwoWay}" >
+                    <TextBlock FlowDirection="LeftToRight" Text="Enable Cireson Integration" />
+                </CheckBox>
+                <CheckBox Name="CiresonPortalKnowledgeSuggestionEnabled" FlowDirection="LeftToRight" IsChecked="{Binding Path=isCiresonKBSearchEnabled, Mode=TwoWay}" IsEnabled="{Binding ElementName=chkCiresonIntegration, Path=IsChecked}">
+                    <TextBlock FlowDirection="LeftToRight" Text="Enable Knowledge Base Suggestions" />
+                </CheckBox>
+                <CheckBox Name="CiresonPortalRequestOfferingSuggestionEnabled" FlowDirection="LeftToRight" IsChecked="{Binding Path=isCiresonROSearchEnabled, Mode=TwoWay}" IsEnabled="{Binding ElementName=chkCiresonIntegration, Path=IsChecked}" >
+                    <TextBlock FlowDirection="LeftToRight" Text="Enable Request Offering Suggestions" />
+                </CheckBox>
+                <Label />
+                <Label Height="25" Padding="0" Margin="0,0,0,0" Name="lblWordsToMatchForRO" Content="Minimum number words to match to suggest an RO"/>
+                <TextBox Height="25" Margin="0,-8,0,10" Name="txtMinWordsToMatchForRO" Text="{Binding minWordCountToSuggestRO, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkCiresonIntegration, Path=IsChecked}" />
+
+                <Label Height="25" Padding="0" Margin="0,0,0,0" Name="lblCiresonPortalURL" Content="Cireson SCSM Portal URL (https://server.domain.tld/)"/>
+                <TextBox Height="25" Margin="0,-8,0,10" Name="txtCiresonPortalURL" Text="{Binding ciresonPortalURL, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkCiresonIntegration, Path=IsChecked}"/>
+
+            </StackPanel>
+        </ScrollViewer>
+        <Label Content="Cireson Functionality" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
+        <TextBlock Margin="0,51,10,0" VerticalAlignment="Top" Height="55" FontWeight="Light" FontSize="14" TextWrapping="Wrap" Text="The connector can optionally leverage Cireson products by suggesting Knowledge Articles or Request Offerings to the Affected User based on their email/New Work Item" />
+        <Image Margin="360,111,0,0" Height="150" VerticalAlignment="Top" Source="../AssemblyImages/ciresonLogo.png" HorizontalAlignment="Left" Width="150"/>
+    </Grid>
+</wpfwiz:WizardRegularPageBase> 

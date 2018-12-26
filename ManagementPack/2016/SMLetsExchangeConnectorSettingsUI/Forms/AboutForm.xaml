@@ -1,0 +1,13 @@
+﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.AboutForm" 
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
+            xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
+            xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="550" Height="409">
+
+    <Grid Name="ConfigurationGrid" Margin="15,25,15,10">
+        <Label Content="About" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
+        <TextBlock HorizontalAlignment="Left" Margin="36.194,63,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="473.806" Height="301"><Run Text="Author: Adam Dzyacky"/><Run/><LineBreak/><Run Text="Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2"/><Run/><LineBreak/><Run Text="Reviewers: Tom Hendricks, Brian Weist"/><Run/><LineBreak/><Run/><LineBreak/><Run Text="This MP serves the purpose of having a central location for defining the settings for the SMLets Exchange Connector. A script based PowerShell alternative to the stock connector available for System Center Service Manager 2012+. The script, management pack, and related projects source code are all available on GitHub."/><LineBreak/><Run/><LineBreak/><Run Text="DISCLAIMER: This MP and associated script leverage the community driven SMLets PowerShell module, Exchange Web Services dll, Microsoft PowerShell cmd-lets, the open source MimeKit project for message encryption/digital signatures, and Cireson Web APIs for integration with their SCSM Portal. This solution is not supported in any capacity by these parties."/><LineBreak/><Run/><LineBreak/><Run Text="LICENSE: This open source project is licensed under the GNU General Public License v2.0 which grants you the ability for Commercial use, Modification, Distribution, Private use so long as you provide License and copyright notice, State changes, Disclose source and provide the Same license. This software comes without Liability or Warranty."/></TextBlock>
+    </Grid>
+</wpfwiz:WizardRegularPageBase>

@@ -1,0 +1,59 @@
+﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.AnnouncementsForm" 
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:sys="clr-namespace:System;assembly=mscorlib"
+            xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
+            xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
+            xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="550" Height="451">
+
+    <Grid Name="ConfigurationGrid" Margin="15,25,15,10">
+        <ScrollViewer Name="scrollViewer" CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Width="355" Margin="0,111,0,0" Height="295" VerticalAlignment="Top">
+            <StackPanel Name="stackPanel" Orientation="Vertical" Height="285" Width="345" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <CheckBox Name="chkAnnouncementIntegration" FlowDirection="LeftToRight" IsChecked="{Binding Path=isAnnouncementIntegrationEnabled, Mode=TwoWay}" >
+                    <TextBlock FlowDirection="LeftToRight" Text="Enable Announcements through Email" Width="265.667" />
+                </CheckBox>
+
+                <CheckBox Name="chkPostAnnouncementToSCSM" FlowDirection="LeftToRight" IsChecked="{Binding Path=isSCSMAnnouncementsEnabled, Mode=TwoWay}" IsEnabled="{Binding ElementName=chkAnnouncementIntegration, Path=IsChecked}" >
+                    <TextBlock FlowDirection="LeftToRight" Text="Post to Service Manager" />
+                </CheckBox>
+                <CheckBox Name="chkPostAnnouncementToCiresonPortal" FlowDirection="LeftToRight" IsChecked="{Binding Path=isSCSMAnnouncementsEnabled, Mode=TwoWay}" IsEnabled="{Binding ElementName=chkAnnouncementIntegration, Path=IsChecked}" >
+                    <TextBlock FlowDirection="LeftToRight" Text="Post to Cireson Portal" />
+                </CheckBox>
+
+                <Label Height="24.667" Padding="0" Margin="0,0,0,0" Name="lblAnnouncementKeyword" Content="Announcement Parsing Keyword"/>
+                <TextBox Height="25" Margin="0,-8,0,10" ToolTip="announcement" x:Name="txtBlkAnnouncementKeyword" Text="{Binding announcementKeyword, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkAnnouncementIntegration, Path=IsChecked}" />
+
+                <StackPanel Orientation="Vertical" Height="180" Margin="0,-5,0,0">
+                    <!-- Priority Keywords -->
+                    <Label Height="25" Padding="0" Margin="0,0,194,0" Name="lblLowPriorityKeyword" Content="Low Priority Keyword:"/>
+                    <TextBox Height="25" Margin="156,-25,10,0" x:Name="txtBlkPriorityLow" Text="{Binding lowPriorityAnnouncementKeyword, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkAnnouncementIntegration, Path=IsChecked}" />
+
+                    <Label Height="25" Padding="0" Margin="0,0,194,0" Name="lblMedPriorityKeyword" Content="Medium Priority Keyword:"/>
+                    <TextBox Height="25" Margin="156,-25,10,0" x:Name="txtBlkPriorityMed" Text="{Binding mediumPriorityAnnouncementKeyword, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkAnnouncementIntegration, Path=IsChecked}" />
+
+                    <Label Height="25" Padding="0" Margin="0,0,194,0" Name="lblHiPriorityKeyword" Content="High Priority Keyword:"/>
+                    <TextBox Height="25" Margin="156,-25,10,0" x:Name="txtBlkPriorityHi" Text="{Binding highPriorityAnnouncementKeyword, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkAnnouncementIntegration, Path=IsChecked}" />
+
+                    <!-- Expiration in Hours -->
+                    <Label Height="25" Padding="0" Margin="0,0,160,0" Name="lblLowPriorityHours" Content="Low Priorty Expires in (# hours):"/>
+                    <TextBox Height="25" Margin="190,-25,10,0" x:Name="txtBlkLowPriorirtyExpiration" Text="{Binding lowPriorityExpiresInHours, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkAnnouncementIntegration, Path=IsChecked}" />
+
+                    <Label Height="25" Padding="0" Margin="0,0,160,0" Name="lblMedPriorityHours" Content="Medium Priorty Expires in (# hours):"/>
+                    <TextBox Height="25" Margin="190,-25,10,0" x:Name="txtBlkMedPriorirtyExpiration" Text="{Binding mediumPriorityExpiresInHours, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkAnnouncementIntegration, Path=IsChecked}" />
+
+                    <Label Height="25" Padding="0" Margin="0,0,160,0" Name="lblHiPriorityHours" Content="High Priorty Expires in (# hours):"/>
+                    <TextBox Height="25" Margin="190,-25,10,0" x:Name="txtBlkHiPriorirtyExpiration" Text="{Binding highPriorityExpiresInHours, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkAnnouncementIntegration, Path=IsChecked}" />
+                    <Label Height="25" Padding="0" Margin="0,0,160,0" Name="lblApprovedMemberType" Content="Approved Member Type"/>
+                    <ComboBox Margin="190,-25,10,0" IsSynchronizedWithCurrentItem="True" IsEnabled="{Binding ElementName=chkAnnouncementIntegration, Path=IsChecked}" SelectedItem="{Binding authorizedAnnouncementApproverType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" >
+                        <sys:String>users</sys:String>
+                        <sys:String>group</sys:String>
+                    </ComboBox>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+        <Label Content="Announcement Integration" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
+        <TextBlock Margin="0,51,10,0" VerticalAlignment="Top" Height="60" FontWeight="Light" FontSize="14" TextWrapping="Wrap" Text="Optionally create Announcements in SCSM, the Cireson Portal, or both. To enable Cireson Portal announcements you must first enable Cireson Integration above. Finally you must declare the keyword to trigger the creation/update of Announcements" />
+        <Image Margin="360,111,0,0" Height="150" VerticalAlignment="Top" Source="/SMLetsExchangeConnectorSettingsUI;component/AssemblyImages/announcement.png" HorizontalAlignment="Left" Width="150"/>
+    </Grid>
+</wpfwiz:WizardRegularPageBase>

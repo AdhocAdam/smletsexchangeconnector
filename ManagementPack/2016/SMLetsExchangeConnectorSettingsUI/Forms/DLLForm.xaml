@@ -1,0 +1,23 @@
+﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.DLLForm" 
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:sys="clr-namespace:System;assembly=mscorlib"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
+            xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
+            xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="551" Height="409">
+
+    <Grid Name="ConfigurationGrid" Margin="15,25,15,10">
+        <ScrollViewer Name="scrollViewer" CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Width="333" Margin="0,93.05,0,0" Height="270.95" VerticalAlignment="Top">
+            <StackPanel Name="stackPanel" Orientation="Vertical" Height="280">
+                <Label Content="Exchange Web Services DLL Path"/>
+                <TextBox x:Name="txtEWSFilePath" Height="23" TextWrapping="Wrap" Width="333" HorizontalAlignment="Left" Text="{Binding ewsFilePath, FallbackValue='', Mode=TwoWay}" />
+                <Label Content="Mimekit DLL Path"/>
+                <TextBox x:Name="txtMimeKitFilePath" Height="23" TextWrapping="Wrap" Width="333" HorizontalAlignment="Left" Text="{Binding mimekitFilePath, FallbackValue='', Mode=TwoWay}" />
+            </StackPanel>
+        </ScrollViewer>
+        <Image Margin="344,93.05,0,0" Height="146" VerticalAlignment="Top" Source="/SMLetsExchangeConnectorSettingsUI;component/AssemblyImages/dll.PNG" HorizontalAlignment="Left" Width="167"/>
+        <Label Content="DLL Configuration" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
+        <TextBlock Margin="0,51,10,0" VerticalAlignment="Top" Height="40.667" FontWeight="Light" FontSize="14" TextWrapping="Wrap" Text="Provide the path to where the Exchange Web Services and Mimekit DLL's are located" />
+    </Grid>
+</wpfwiz:WizardRegularPageBase> 

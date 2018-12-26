@@ -1,0 +1,14 @@
+{
+  "ProjectFilePath": "c:\\Users\\Adam\\Desktop\\toupload\\ManagementPack\\2016\\SMLetsExchangeConnectorSettingsUI\\SMLetsExchangeConnectorSettingsUI.csproj",
+  "TargetFramework": "v4.5.1",
+  "TagHelpers": [],
+  "Configuration": {
+    "ConfigurationName": "UnsupportedRazor",
+    "LanguageVersion": "1.0",
+    "Extensions": [
+      {
+        "ExtensionName": "UnsupportedRazorExtension"
+      }
+    ]
+  }
+}

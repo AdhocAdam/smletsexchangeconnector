@@ -1,0 +1,30 @@
+﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.GeneralSettingsForm" 
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
+            xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
+            xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="551" Height="409">
+
+    <Grid Name="ConfigurationGrid" Margin="15,25,15,10">
+        <ScrollViewer Name="scrollViewer" CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Width="333" Margin="0,93.05,0,0" Height="270.95" VerticalAlignment="Top">
+            <StackPanel Name="stackPanel" Orientation="Vertical" Height="280">
+                <TextBlock Padding="0" Margin="0,0,0,0" x:Name="lblMGMTServer" TextWrapping="Wrap" Text="MGMT Server (set to 'localhost' if running script on a MGMT server)" Height="46.667" />
+                <TextBox Height="25" Margin="0,-8,0,10" x:Name="txtSCSMmgmtServer" Text="{Binding scsmMGMTServer, FallbackValue='', Mode=TwoWay}"/>
+                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblWFEmailAddress" Content="Workflow Email Address"/>
+                <TextBox Height="25" Margin="0,-8,0,10" x:Name="txtWFEmailAddress" Text="{Binding workflowEmailAddress, FallbackValue='', Mode=TwoWay}"/>
+                <CheckBox Name="chkUseAutoDiscover" FlowDirection="LeftToRight" IsChecked="{Binding Path=isAutodiscoverEnabled, Mode=TwoWay}" >
+                    <TextBlock FlowDirection="LeftToRight" Text="Use Autodiscover" />
+                </CheckBox>
+                <Label Height="25" Padding="0" Margin="0,10,0,0" x:Name="lblAutodiscoverURL" Content="Autodiscover URL"/>
+                <TextBox Height="25" Margin="0,-8,0,10" x:Name="txtAutodiscoverURL" IsEnabled="{Binding ElementName=chkUseAutoDiscover, Path=IsChecked, FallbackValue='', Mode=TwoWay}" />
+                <CheckBox x:Name="chkCreateUsersInCMDB" Content="Create Users not Found in CMDB" IsChecked="{Binding Path=createUsersNotInCMDB, Mode=TwoWay}"/>
+                <CheckBox x:Name="chkIncludeWholeEmail" Content="Include Whole Email on Action Log" IsChecked="{Binding Path=includeWholeEmail, Mode=TwoWay}"/>
+                <CheckBox x:Name="chkAttachEmailToWorkItem" Content="Attach Email to Work Item" IsChecked="{Binding Path=attachEmailToWorkItem, Mode=TwoWay}"/>
+            </StackPanel>
+        </ScrollViewer>
+        <Image Margin="344,93.05,0,0" Height="146" VerticalAlignment="Top" Source="/SMLetsExchangeConnectorSettingsUI;component/AssemblyImages/psExchangeIcon164x146.png" HorizontalAlignment="Left" Width="167"/>
+        <Label Content="SMLets Exchange Connector Settings" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
+        <TextBlock Margin="0,51,10,0" VerticalAlignment="Top" Height="23.667" FontWeight="Light" FontSize="14" TextWrapping="Wrap" Text="Configure basic settings for the script/runbook to query against" />
+    </Grid>
+</wpfwiz:WizardRegularPageBase> 
