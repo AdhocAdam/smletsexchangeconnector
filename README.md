@@ -15,6 +15,16 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>Change Incident Status based on Who Replied (v1.4)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/changeIncidentSstatusOnReply.png" /></td>
+    <td width="auto">You can now optionally enable this feature that changes the Status of Incidents when the Affected User, Assigned To, or Related User replies. This helps better reflect time within a specific status as Analysts flip to Pending and potential Pending subcategories. As an example, this means you can configure the connector so that the Assigned To updates it to Pending and the Affected User updates it to Active.</td>
+  </tr>
+</table>
+
+<table border="0">
+  <tr>
     <td colspan="3"><i>Dynamic Priority based on Azure Sentiment Analysis (v1.4)</i></td>
   </tr>
   <tr>
@@ -65,7 +75,8 @@ This is aimed at SCSM administrators looking to further push the automation limi
   </tr>
   <tr>
     <td width="200"><img src ="https://msdnshared.blob.core.windows.net/media/2017/03/Azure-Cognitive-Services-e1489079006258.png" /></td>
-    <td width="auto">Ever wish you could create an Incident or Service Request based on the nature of the email? How about using the suggested Knowledge Article/Request Offering feature of this connector, but achieve even faster processing times? Leveraging the power of Azure Cognitive Services emails can now be optionally run through Keyword Analysis for more concise search results and/or Sentiment Analysis for dynamic creation of an Incident or Service Request based on the Affected User's perceived attitude. <a href="https://azure.microsoft.com/en-us/pricing/details/cognitive-services/text-analytics/">Microsoft pricing information can be found here.</a></td>
+    <td width="auto">Ever wish you could create an Incident or Service Request based on the nature of the email? How about using the suggested Knowledge Article/Request Offering feature of this connector, but achieve even faster processing times? Leveraging the power of Azure Cognitive Services emails can now be optionally run through Keyword Analysis for more concise search results and/or Sentiment Analysis for dynamic creation of an Incident or Service Request based on the Affected User's perceived attitude. <a href="https://azure.microsoft.com/en-us/pricing/details/cognitive-services/text-analytics/">Microsoft pricing information can be found here.</a> Not ready for Azure? You can alternatively define a list of keywords that will control whether or not an Incident or Service Request is created.
+    </td>
   </tr>
 </table>
 
@@ -73,7 +84,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
 - Whether you're dealing with external vendors or streamlining process, you can now configure the connector to create either Problems or Change Requests by default.
 
 *Process multiple mailboxes with unique templates and default ticket types (v1.4)*
-- Redirect multiple mailboxes to a single inbox and this connector can process each message based on the default work item type and templates for the original mailbox, as though it was directly connected to each. This can be helpful for multiple teams that each have their own mailbox, for example, but does not require many instances of the connector running against all mailboxes as the MS Exchange Connector did.
+- Redirect multiple mailboxes to a single inbox and this connector can process each message based on the default work item type and templates for the original mailbox, as though it was directly connected to each. This can be helpful for multiple teams that each have their own mailbox, for example, but does not require many instances of the connector running against all mailboxes as the MS Exchange Connector did. In addition, it can also process those mailboxes should be they be featured on the CC or BCC lines.
 
 *Generate a new, related work item when comments are emailed to closed tickets (v1.4)*
 - Was the affected user on vacation? Did they try to add to an old incident ticket for a new instance of the same issue? Now you can optionally generate Work Items when a user comments on a closed ticket. If enabled, a new work item will be generated that is related to the old work item and contains many of the same properties, but also contains the new details from their email message.
