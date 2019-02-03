@@ -1617,7 +1617,8 @@ function Get-AssignedToWorkItemVolume ($SCSMUser)
 {
     #initialize the counter, get the user's assigned Work Items that aren't in some form of "Done"
     $assignedCount = 0
-    $assignedWorkItemRelationships = Get-SCSMRelationshipObject -TargetRelationship $assignedToUserRelClass -TargetObject $SCSMUser @scsmMGMTParams | select-object sourceobject -ExpandProperty sourceobject | select-object -ExpandProperty values | ?{($_.type.name -eq "Status") -and (($_.value -notlike "*Resolve*") -and ($_.value -notlike "*Close*") -and ($_.value -notlike "*Complete*") -and ($_.value -notlike "*Skip*") -and ($_.value -notlike "*Cancel*"))}
+    $assignedWorkItemRelationships = Get-SCSMRelationshipObject -TargetRelationship $assignedToUserRelClass -TargetObject $SCSMUser @scsmMGMTParams
+    $assignedWorkItemRelationships = $assignedWorkItemRelationships | select-object SourceObject -ExpandProperty SourceObject | select-object -ExpandProperty values | ?{($_.type.name -eq "Status") -and (($_.value -notlike "*Resolve*") -and ($_.value -notlike "*Close*") -and ($_.value -notlike "*Complete*") -and ($_.value -notlike "*Skip*") -and ($_.value -notlike "*Cancel*"))}
     $assignedWorkItemRelationships | foreach-object {$assignedCount++}
     
     #build Assigned To Volume object
