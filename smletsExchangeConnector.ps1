@@ -1643,6 +1643,9 @@ function Set-AssignedToPerTemplateSupportGroup ($Template, $WorkItem)
         "OOOrandom" {$supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | Get-Random | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
         default {<#the config variable has a value that wasn't part of the set#>}
     }
+
+    #Set the First Assigned Date
+    Set-SCSMObject -SMObject $WorkItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams
 }
 
 #courtesy of Leigh Kilday. Modified.
