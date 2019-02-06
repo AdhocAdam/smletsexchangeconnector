@@ -15,6 +15,16 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>Dynamic Work Item Analyst Assignment on New Work Item (v1.4)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/Assign.png" /></td>
+    <td width="auto">When New Work Items are created, you can optionally enable the connector to assign them out to Analysts contained within the Default Template's Support Group. This can be done through several means - completely random, least assigned open Work Items, or in conjunction with the <a href="https://github.com/AdhocAdam/scsmoutofoffice">SCSM Out of Office Management pack</a> to prevent assignment when Analysts are out of the office. <i>(Requires at least the free Cireson SCSM Portal to establish the relationship between Support Groups and Analysts)</i></td>
+  </tr>
+</table>
+
+<table border="0">
+  <tr>
     <td colspan="3"><i>Change Incident Status based on Who Replied (v1.4)</i></td>
   </tr>
   <tr>
