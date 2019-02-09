@@ -341,6 +341,26 @@ $enableKeywordMatchForNewWI = $false
 $workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjammed\b|\bjamming\b|broke|froze|issue|unable"
 $workItemOverrideType = "ir"
 
+#ARTIFICIAL INTELLIGENCE OPTION 3, enable AI through Azure Machine Learning
+#While using Azure Cognitive Services introduces some intelligence to the connector, using Azure Machine Learning introduces
+#a feedback loop that can ensure the connector applies increasing levels of intelligence based on your own unique SCSM environment.
+#This is done by taking a subset of data from your SCSM DW, uploading to Azure Machine Learning, and then training ML on said dataset.
+#Once trained, you can publish an AML web service the connector can consume in order to intelligently decide the
+#Work Item Type (Incident/Service Request), Work Item Support Group, and Work Item classification. Finally, you can set the minimum percent
+#threshold before these values are applied. In doing so, you can ensure a higher standards for incoming email classification
+#enableAzureMachineLearning = If enabled, your AML Web Service will be used to decide Work Item Type, Classification, and Support Group
+#amlAPIKey = This is the API key for your AML web service
+#amlURL = This is the URL for your AML web service
+#amlWorkItemTypeMinPercentConfidence = The minimum percentage AML must return in order to decide should an Incident or Service Request be created
+#amlWorkItemClassificationMinPercentConfidence = The minimum percentage AML must return in order to set the Classification on the New Work Item
+#amlWorkItemSupportGroupMinPercentConfidence = The minimum percentage AML must return in order set the Support Group on the New Work Item
+$enableAzureMachineLearning = $false
+$amlAPIKey = ""
+$amlURL = ""
+$amlWorkItemTypeMinPercentConfidence = "95"
+$amlWorkItemClassificationMinPercentConfidence = "95"
+$amlWorkItemSupportGroupMinPercentConfidence = "95"
+
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
 #scomMGMTServer = set equal to the name of your scom management server
@@ -2623,6 +2643,44 @@ function Get-AzureEmailKeywords ($messageToEvaluate)
 #endregion
 
 #region #### Modified version of Set-SCSMTemplateWithActivities from Morton Meisler seen here http://blog.ctglobalservices.com/service-manager-scsm/mme/set-scsmtemplatewithactivities-powershell-script/
+
+function Get-AMLWorkItemProbability ($EmailSubject, $EmailBody)
+{
+    #create the header
+    $headerTable = @{"Authorization" = "Bearer $amlAPIKey"; "Content-Type" = "application/json"}
+
+    #create the JSON request
+    $messagePayload = @"
+    {
+        "Inputs": {
+            "Input1" : {
+                "ColumnNames": ["Email_Subject", "Email_Description"],
+                "Values": [
+                    ["$EmailSubject", "$EmailBody"]
+                ]
+            }
+        },
+        "GlobalParameters": {}
+    }
+"@
+
+    #invoke the Azure Machine Learning web service for predicting Work Item Type, Classification, and Support Group
+    $probabilityResponse = Invoke-RestMethod -Uri $amlURL -Method Post -Header $headerTable -Body $messagePayload -ContentType "application/json"
+
+    #return custom probability object
+    $probabilityResults = $probabilityResponse.Results.output1.value.Values[0]
+    $probabilityMatrix = New-Object -TypeName psobject
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemType -Value $probabilityResults[0]
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemTypeConfidence -Value $probabilityResults[1]
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassification -Value $probabilityResults[2]
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassificationConfidence -Value $probabilityResults[3]
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroup -Value $probabilityResults[4]
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroupConfidence -Value $probabilityResults[5]
+
+    #return the percent score
+    return ($probabilityMatrix)
+}
+
 function Update-SCSMPropertyCollection
 {
     Param ([Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateObject]$Object =$(throw "Please provide a valid template object")) 
