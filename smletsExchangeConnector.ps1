@@ -181,6 +181,12 @@ $ExchangeEndpoint = ""
 #changeIncidentStatusOnReplyRelatedUser = If changeIncidentStatusOnReply is $true, The Status enum an Incident should change to when a Related User updates the Incident via email
     #perform a: Get-SCSMChildEnumeration -Enumeration (Get-SCSMEnumeration -name "IncidentStatusEnum$") | Where-Object {$_.displayname -eq "myCustomStatusHere"}
     #to verify your Incident Status enum value Name if not using the out of box enums
+#DynamicWorkItemAssignment = This functionality requires the Cireson Analyst Portal for Service Manager.
+    #When variable is set to one of the following values, on New Work Item creation the Assigned To will be set based on:
+    #"random" - Get all of the Analysts within a Support Group and randomly assign one of them to the New Work Item
+    #"volume" - Get all of the Analysts within a Support Group, get the Analyst with the least amount of Assigned Work Items and assign them the New Work Item
+    #"OOOrandom" - Same as above but doesn't assign when Out of Office using the SCSM Out of Office Management pack. https://github.com/AdhocAdam/scsmoutofoffice
+    #"OOOvolume" - Same as above but doesn't assign when Out of Office using the SCSM Out of Office Management pack. https://github.com/AdhocAdam/scsmoutofoffice
 $defaultNewWorkItem = "ir"
 $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
@@ -209,6 +215,7 @@ $changeIncidentStatusOnReply = $false
 $changeIncidentStatusOnReplyAffectedUser = "IncidentStatusEnum.Active$"
 $changeIncidentStatusOnReplyAssignedTo = "IncidentStatusEnum.Active.Pending$"
 $changeIncidentStatusOnReplyRelatedUser = "IncidentStatusEnum.Active$"
+$DynamicWorkItemAssignment = ""
 
 #processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
     #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
@@ -661,6 +668,12 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                             New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $newWorkItem -Target $relatedUser -Bulk @scsmMGMTParams
                         }
                     }
+
+                    #Assign to an Analyst based on the Support Group that was set in the Template
+                    if ($DynamicWorkItemAssignment)
+                    {
+                        Set-AssignedToPerTemplateSupportGroup -Template $IRTemplate -WorkItem $newWorkItem
+                    }
                     
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
                     $ciresonSuggestionURLs = Get-CiresonSuggestionURL -SuggestKA:$searchCiresonHTMLKB -AzureKA:$enableAzureCognitiveServicesForKA -SuggestRO:$searchAvailableCiresonPortalOfferings -AzureRO:$enableAzureCognitiveServicesForRO -WorkItem $newWorkItem -AffectedUser $affectedUser
@@ -712,6 +725,12 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         {
                             New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $newWorkItem -Target $relatedUser -Bulk @scsmMGMTParams
                         }
+                    }
+
+                    #Assign to an Analyst based on the Support Group that was set in the Template
+                    if ($DynamicWorkItemAssignment)
+                    {
+                        Set-AssignedToPerTemplateSupportGroup -Template $SRTemplate -WorkItem $newWorkItem
                     }
                     
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
@@ -1568,6 +1587,65 @@ function Get-TierMembership ($UserSamAccountName, $TierId) {
         }
     }
     return $isMember
+}
+
+function Get-TierMembers ($TierEnumId)
+{
+    #define classes
+    $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping"
+
+    #pull the group based on support tier mapping
+    $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierEnumId.Guid }
+    $groupId = $mapping.AdGroupId
+
+    #get the AD group object name
+    $grpInScsm = (Get-ScsmObject @scsmMGMTParams -Id $groupId)
+    $grpSamAccountName = $grpInScsm.UserName
+    
+    #determine which domain to query, in case of multiple domains and trusts
+    $AdRoot = (Get-AdDomain @adParams -Identity $grpInScsm.Domain).DNSRoot
+
+    if ($grpSamAccountName)
+    {
+        # Get the group membership
+        [array]$supportTierMembers = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive | foreach-object {Get-SCSMObject -Class $domainUserClass -filter "Username -eq '$($_.samaccountname)'"}
+    }
+    return $supportTierMembers
+}
+
+function Get-AssignedToWorkItemVolume ($SCSMUser)
+{
+    #initialize the counter, get the user's assigned Work Items that aren't in some form of "Done"
+    $assignedCount = 0
+    $assignedWorkItemRelationships = Get-SCSMRelationshipObject -TargetRelationship $assignedToUserRelClass -TargetObject $SCSMUser @scsmMGMTParams
+    $assignedWorkItemRelationships = $assignedWorkItemRelationships | select-object SourceObject -ExpandProperty SourceObject | select-object -ExpandProperty values | ?{($_.type.name -eq "Status") -and (($_.value -notlike "*Resolve*") -and ($_.value -notlike "*Close*") -and ($_.value -notlike "*Complete*") -and ($_.value -notlike "*Skip*") -and ($_.value -notlike "*Cancel*"))}
+    $assignedWorkItemRelationships | foreach-object {$assignedCount++}
+    
+    #build Assigned To Volume object
+    $assignedToVolume = New-Object System.Object
+    $assignedToVolume | Add-Member -type NoteProperty -name SCSMUser -value $SCSMUser
+    $assignedToVolume | Add-Member -type NoteProperty -name AssignedCount -value $assignedCount
+    return $assignedToVolume
+}
+
+function Set-AssignedToPerTemplateSupportGroup ($Template, $WorkItem)
+{
+    #get the template's support group property to in turn get its GUID
+    $templateSupportGroupID = $Template | select-object -expandproperty propertycollection | where-object{($_.path -like "*TierQueue*") -or ($_.path -like "*SupportGroup*") -or ($_.path -like "*SupportTier*")} | select-object -ExpandProperty mixedvalue
+    $supportGroupMembers = Get-TierMembers -TierEnumID $templateSupportGroupID
+
+    #based on how Dynamic Work Item assignment was configured, set the Assigned To User
+    switch ($DynamicWorkItemAssignment)
+    {
+        "volume" {$supportGroupMembers | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object -first 1 | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
+        "OOOvolume" {$supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object -first 1 | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
+        "random" {$supportGroupMembers | Get-Random | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
+        "OOOrandom" {$supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | Get-Random | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
+        default {<#the config variable has a value that wasn't part of the set#>}
+    }
+
+    #Set the First Assigned Date
+    Set-SCSMObject -SMObject $WorkItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams
 }
 
 #courtesy of Leigh Kilday. Modified.
