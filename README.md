@@ -15,11 +15,11 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
-    <td colspan="3"><i>Dynamic Classification with Azure Machine Learning (v1.4)</i></td>
+    <td colspan="3"><i>Dynamic Routing and Classification with Azure Machine Learning (v1.4)</i></td>
   </tr>
   <tr>
     <td width="200"><img src ="/FeatureScreenshots/machineLearningClassification.png" /></td>
-    <td width="auto">desc goes here</td>
+    <td width="auto">Further compliment "Dynamic Work Item Analyst Assignment" and "Azure Cognitive Services" features with integration for Azure Machine Learning. Using AML, you can now train Azure's artificial intelligence on your SCSM environment using your very own SCSM Data Warehouse to autonomously choose Work Item Type (Incident or Service Request), Work Item Classification, and Work Item Support Group on brand new Work Items that the connector creates. Azure pricing can be found here and how to configure it for your environment/connector can be found here.</td>
   </tr>
 </table>
 
