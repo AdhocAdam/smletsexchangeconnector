@@ -15,7 +15,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
-    <td colspan="3"><i>Dynamic Routing and Classification with Azure Machine Learning (v1.4)</i></td>
+    <td colspan="3"><i>Intelligent Routing and Classification with Azure Machine Learning (v1.4)</i></td>
   </tr>
   <tr>
     <td width="200"><img src ="/FeatureScreenshots/machineLearningClassification.png" /></td>
