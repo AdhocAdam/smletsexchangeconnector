@@ -309,9 +309,9 @@ cost to your organization before enabling this feature.#>
     #search your Cireson Service Catalog based on permissions scope of the Sender
 #enableAzureCognitiveServicesForNewWI = If enabled, Azure Cognitive Services Text Analytics API will perform Sentiment Analysis
     #to either create an Incident or Service Request
-#enableAzureCognitiveServicesPriorityScoring = If enabled with enableAzureCognitiveServicesForNewWI, the Sentiment Score will be used
+#enableAzureCognitiveServicesPriorityScoring = If enabled, the Sentiment Score will be used
     #to set the Impact & Urgency and/or Urgency $ Priority on Incidents or Service Requests. Bounds can be edited within
-    #the Get-ACSWorkItemPriority function. 
+    #the Get-ACSWorkItemPriority function. This feature can also be used even when using AI Option #3 described below.
 #azureRegion = where Cognitive Services is deployed as seen in it's respective settings pane,
     #i.e. ukwest, eastus2, westus, northcentralus
 #azureCogSvcTextAnalyticsAPIKey = API key for your cognitive services text analytics deployment. This is found in the settings pane for Cognitive Services in https://portal.azure.com
@@ -342,13 +342,19 @@ $workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjamm
 $workItemOverrideType = "ir"
 
 #ARTIFICIAL INTELLIGENCE OPTION 3, enable AI through Azure Machine Learning
-#While using Azure Cognitive Services introduces some intelligence to the connector, using Azure Machine Learning introduces
+#PLEASE NOTE: HIGHLY EXPERIMENTAL!
+#While using Azure Cognitive Services introduces some intelligence to the connector, Azure Machine Learning introduces
 #a feedback loop that can ensure the connector applies increasing levels of intelligence based on your own unique SCSM environment.
 #This is done by taking a subset of data from your SCSM DW, uploading to Azure Machine Learning, and then training ML on said dataset.
-#Once trained, you can publish an AML web service the connector can consume in order to intelligently decide the
-#Work Item Type (Incident/Service Request), Work Item Support Group, and Work Item classification. Finally, you can set the minimum percent
-#threshold before these values are applied. In doing so, you can ensure a higher standards for incoming email classification
-#enableAzureMachineLearning = If enabled, your AML Web Service will be used to decide Work Item Type, Classification, and Support Group
+#Details on setup/configuration can be found on the SMLets Exchange Connector Wiki.
+#Once trained, you can publish an AML web service the connector can consume in order to intelligently predict the
+#Work Item Type (Incident/Service Request), Work Item Support Group, and Work Item classification. Once enabled, you to set a minimum
+#percent threshold before these values are applied. In doing so, you can ensure high standards for incoming email classification so
+#AML only engages when met otherwise it will fallback to your Default Work Item template. Finally, AML can co-exist with the ACS
+#feature that defines Priority/Urgency/Impact based on Sentiment Analysis.
+
+#### requires Azure subscription and Azure Machine Learning web service deployed ####
+#enableAzureMachineLearning = If enabled, your AML Web Service will attempt to define Work Item Type, Classification, and Support Group
 #amlAPIKey = This is the API key for your AML web service
 #amlURL = This is the URL for your AML web service
 #amlWorkItemTypeMinPercentConfidence = The minimum percentage AML must return in order to decide should an Incident or Service Request be created
@@ -627,22 +633,14 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     {
         $sentimentScore = Get-AzureEmailSentiment -messageToEvaluate $message.body
         
-        #if the sentiment is greater than or equal to what is defined, create a Service Request. Optionally define Urgency/Priority in that order.
+        #if the sentiment is greater than or equal to what is defined, create a Service Request.
         if ($sentimentScore -ge [int]$minPercentToCreateServiceRequest)
         {
             $workItemType = "sr"
-            if ($enableAzureCognitiveServicesPriorityScoring -eq $true)
-            {
-                $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.ServiceRequest"
-            }
         }
-        else #sentiment is lower than defined value, create an Incident. Optionally define Impact/Urgency in that order.
+        else #sentiment is lower than defined value, create an Incident.
         {
             $workItemType = "ir"
-            if ($enableAzureCognitiveServicesPriorityScoring -eq $true)
-            {
-                $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.Incident"
-            }
         }
     }
     elseif ($enableKeywordMatchForNewWI -eq $true -and $(Test-KeywordsFoundInMessage $message) -eq $true) {
@@ -678,7 +676,6 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Set-SCSMObjectTemplate -Projection $irProjection -Template $IRTemplate @scsmMGMTParams
-                    if (($enableAzureCognitiveServicesPriorityScoring -eq $true) -and ($enableAzureCognitiveServicesForNewWI -eq $true)) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams}
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     if ($affectedUser)
                     {
@@ -691,6 +688,19 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         {
                             New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $newWorkItem -Target $relatedUser -Bulk @scsmMGMTParams
                         }
+                    }
+
+                    #Set Urgency/Impact from ACS Sentiment Analysis. If it was previously defined use it, otherwise make the ACS call
+                    if (($enableAzureCognitiveServicesForNewWI -eq $true) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
+                    {
+                        $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.Incident"
+                        Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams
+                    }
+                    elseif (($enableAzureCognitiveServicesForNewWI -eq $false) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
+                    {
+                        $sentimentScore = Get-AzureEmailSentiment -messageToEvaluate $newWorkItem.description
+                        $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.Incident"
+                        Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams
                     }
 
                     #Assign to an Analyst based on the Support Group that was set in the Template
@@ -736,7 +746,6 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Apply-SCSMTemplate -Projection $srProjection -Template $SRTemplate
                     #Set-SCSMObjectTemplate -projection $srProjection -Template $SRTemplate @scsmMGMTParams
-                    if (($enableAzureCognitiveServicesPriorityScoring -eq $true) -and ($enableAzureCognitiveServicesForNewWI -eq $true)) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams}
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     if ($affectedUser)
                     {
@@ -749,6 +758,19 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         {
                             New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $newWorkItem -Target $relatedUser -Bulk @scsmMGMTParams
                         }
+                    }
+
+                    #Set Urgency/Priority from ACS Sentiment Analysis. If it was previously defined use it, otherwise make the ACS call
+                    if (($enableAzureCognitiveServicesForNewWI -eq $true) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
+                    {
+                        $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.ServiceRequest"
+                        Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams
+                    }
+                    elseif (($enableAzureCognitiveServicesForNewWI -eq $false) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
+                    {
+                        $sentimentScore = Get-AzureEmailSentiment -messageToEvaluate $newWorkItem.description
+                        $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.ServiceRequest"
+                        Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams
                     }
 
                     #Assign to an Analyst based on the Support Group that was set in the Template
