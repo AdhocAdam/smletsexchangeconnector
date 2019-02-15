@@ -703,10 +703,28 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams
                     }
 
-                    #Assign to an Analyst based on the Support Group that was set in the Template
-                    if ($DynamicWorkItemAssignment)
+                    #update the Support Group and Classification if Azure Machine Learning is being used
+                    if ($enableAzureMachineLearning -eq $true)
                     {
-                        Set-AssignedToPerTemplateSupportGroup -Template $IRTemplate -WorkItem $newWorkItem
+                        if ($amlProbability.WorkItemSupportGroupConfidence -ge $amlWorkItemSupportGroupMinPercentConfidence)
+                        {
+                            Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"TierQueue" = $amlProbability.WorkItemSupportGroup} @scsmMGMTParams
+                        }
+                        if ($amlProbability.WorkItemClassificationConfidence -ge $amlWorkItemClassificationMinPercentConfidence)
+                        {
+                            Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Classification" = $amlProbability.WorkItemClassification} @scsmMGMTParams
+                        }
+                    }
+
+                    #Assign to an Analyst based on the Support Group that was set via Azure Machine Learning or just from the Template
+                    if (($DynamicWorkItemAssignment) -and ($enableAzureMachineLearning -eq $true))
+                    {
+                        Set-AssignedToPerSupportGroup -SupportGroupID $amlProbability.WorkItemSupportGroup -WorkItem $newWorkItem
+                    }
+                    elseif ($DynamicWorkItemAssignment)
+                    {
+                        $templateSupportGroupID = $IRTemplate | select-object -expandproperty propertycollection | where-object{($_.path -like "*TierQueue*")} | select-object -ExpandProperty mixedvalue
+                        Set-AssignedToPerSupportGroup -SupportGroupID $templateSupportGroupID -WorkItem $newWorkItem
                     }
                     
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
@@ -773,10 +791,28 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams
                     }
 
-                    #Assign to an Analyst based on the Support Group that was set in the Template
-                    if ($DynamicWorkItemAssignment)
+                    #update the Support Group and Classification if Azure Machine Learning is being used
+                    if ($enableAzureMachineLearning -eq $true)
                     {
-                        Set-AssignedToPerTemplateSupportGroup -Template $SRTemplate -WorkItem $newWorkItem
+                        if ($amlProbability.WorkItemSupportGroupConfidence -ge $amlWorkItemSupportGroupMinPercentConfidence)
+                        {
+                            Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"SupportGroup" = $amlProbability.WorkItemSupportGroup} @scsmMGMTParams
+                        }
+                        if ($amlProbability.WorkItemClassificationConfidence -ge $amlWorkItemClassificationMinPercentConfidence)
+                        {
+                            Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Classification" = $amlProbability.WorkItemClassification} @scsmMGMTParams
+                        }
+                    }
+
+                    #Assign to an Analyst based on the Support Group that was set via Azure Machine Learning or just from the Template
+                    if (($DynamicWorkItemAssignment) -and ($enableAzureMachineLearning -eq $true))
+                    {
+                        Set-AssignedToPerSupportGroup -SupportGroupID $amlProbability.WorkItemSupportGroup -WorkItem $newWorkItem
+                    }
+                    elseif ($DynamicWorkItemAssignment)
+                    {
+                        $templateSupportGroupID = $SRTemplate | select-object -expandproperty propertycollection | where-object{($_.path -like "*SupportGroup*")} | select-object -ExpandProperty mixedvalue
+                        Set-AssignedToPerSupportGroup -SupportGroupID $templateSupportGroupID -WorkItem $newWorkItem
                     }
                     
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
@@ -1674,10 +1710,9 @@ function Get-AssignedToWorkItemVolume ($SCSMUser)
     return $assignedToVolume
 }
 
-function Set-AssignedToPerTemplateSupportGroup ($Template, $WorkItem)
+function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
 {
-    #get the template's support group property to in turn get its GUID
-    $templateSupportGroupID = $Template | select-object -expandproperty propertycollection | where-object{($_.path -like "*TierQueue*") -or ($_.path -like "*SupportGroup*") -or ($_.path -like "*SupportTier*")} | select-object -ExpandProperty mixedvalue
+    #get the template's support group members
     $supportGroupMembers = Get-TierMembers -TierEnumID $templateSupportGroupID
 
     #based on how Dynamic Work Item assignment was configured, set the Assigned To User
