@@ -309,9 +309,9 @@ cost to your organization before enabling this feature.#>
     #search your Cireson Service Catalog based on permissions scope of the Sender
 #enableAzureCognitiveServicesForNewWI = If enabled, Azure Cognitive Services Text Analytics API will perform Sentiment Analysis
     #to either create an Incident or Service Request
-#enableAzureCognitiveServicesPriorityScoring = If enabled with enableAzureCognitiveServicesForNewWI, the Sentiment Score will be used
+#enableAzureCognitiveServicesPriorityScoring = If enabled, the Sentiment Score will be used
     #to set the Impact & Urgency and/or Urgency $ Priority on Incidents or Service Requests. Bounds can be edited within
-    #the Get-ACSWorkItemPriority function. 
+    #the Get-ACSWorkItemPriority function. This feature can also be used even when using AI Option #3 described below.
 #azureRegion = where Cognitive Services is deployed as seen in it's respective settings pane,
     #i.e. ukwest, eastus2, westus, northcentralus
 #azureCogSvcTextAnalyticsAPIKey = API key for your cognitive services text analytics deployment. This is found in the settings pane for Cognitive Services in https://portal.azure.com
@@ -340,6 +340,32 @@ $azureCogSvcTextAnalyticsAPIKey = ""
 $enableKeywordMatchForNewWI = $false
 $workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjammed\b|\bjamming\b|broke|froze|issue|unable"
 $workItemOverrideType = "ir"
+
+#ARTIFICIAL INTELLIGENCE OPTION 3, enable AI through Azure Machine Learning
+#PLEASE NOTE: HIGHLY EXPERIMENTAL!
+#While using Azure Cognitive Services introduces some intelligence to the connector, Azure Machine Learning introduces
+#a feedback loop that can ensure the connector applies increasing levels of intelligence based on your own unique SCSM environment.
+#This is done by taking a subset of data from your SCSM DW, uploading to Azure Machine Learning, and then training ML on said dataset.
+#Details on setup/configuration can be found on the SMLets Exchange Connector Wiki.
+#Once trained, you can publish an AML web service the connector can consume in order to intelligently predict the
+#Work Item Type (Incident/Service Request), Work Item Support Group, and Work Item classification. Once enabled, you to set a minimum
+#percent threshold before these values are applied. In doing so, you can ensure high standards for incoming email classification so
+#AML only engages when met otherwise it will fallback to your Default Work Item template. Finally, AML can co-exist with the ACS
+#feature that defines Priority/Urgency/Impact based on Sentiment Analysis.
+
+#### requires Azure subscription and Azure Machine Learning web service deployed ####
+#enableAzureMachineLearning = If enabled, your AML Web Service will attempt to define Work Item Type, Classification, and Support Group
+#amlAPIKey = This is the API key for your AML web service
+#amlURL = This is the URL for your AML web service
+#amlWorkItemTypeMinPercentConfidence = The minimum percentage AML must return in order to decide should an Incident or Service Request be created
+#amlWorkItemClassificationMinPercentConfidence = The minimum percentage AML must return in order to set the Classification on the New Work Item
+#amlWorkItemSupportGroupMinPercentConfidence = The minimum percentage AML must return in order set the Support Group on the New Work Item
+$enableAzureMachineLearning = $false
+$amlAPIKey = ""
+$amlURL = ""
+$amlWorkItemTypeMinPercentConfidence = "95"
+$amlWorkItemClassificationMinPercentConfidence = "95"
+$amlWorkItemSupportGroupMinPercentConfidence = "95"
 
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
@@ -607,22 +633,14 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     {
         $sentimentScore = Get-AzureEmailSentiment -messageToEvaluate $message.body
         
-        #if the sentiment is greater than or equal to what is defined, create a Service Request. Optionally define Urgency/Priority in that order.
+        #if the sentiment is greater than or equal to what is defined, create a Service Request.
         if ($sentimentScore -ge [int]$minPercentToCreateServiceRequest)
         {
             $workItemType = "sr"
-            if ($enableAzureCognitiveServicesPriorityScoring -eq $true)
-            {
-                $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.ServiceRequest"
-            }
         }
-        else #sentiment is lower than defined value, create an Incident. Optionally define Impact/Urgency in that order.
+        else #sentiment is lower than defined value, create an Incident.
         {
             $workItemType = "ir"
-            if ($enableAzureCognitiveServicesPriorityScoring -eq $true)
-            {
-                $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.Incident"
-            }
         }
     }
     elseif ($enableKeywordMatchForNewWI -eq $true -and $(Test-KeywordsFoundInMessage $message) -eq $true) {
@@ -631,6 +649,10 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     }
     elseif ($UseMailboxRedirection -eq $true) {
         $workItemType = if ($TemplatesForThisMessage) {$TemplatesForThisMessage["DefaultWiType"]} else {$defaultNewWorkItem}
+    }
+    elseif ($enableAzureMachineLearning -eq $true){
+        $amlProbability = Get-AMLWorkItemProbability -EmailSubject $title -EmailBody $description
+        $workItemType = if ($amlProbability.WorkItemTypeConfidence -ge $amlWorkItemTypeMinPercentConfidence) {$amlProbability.WorkItemType} else {$defaultNewWorkItem}
     }
     else {
         $workItemType = $defaultNewWorkItem
@@ -654,7 +676,6 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Set-SCSMObjectTemplate -Projection $irProjection -Template $IRTemplate @scsmMGMTParams
-                    if (($enableAzureCognitiveServicesPriorityScoring -eq $true) -and ($enableAzureCognitiveServicesForNewWI -eq $true)) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams}
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     if ($affectedUser)
                     {
@@ -669,10 +690,41 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                     }
 
-                    #Assign to an Analyst based on the Support Group that was set in the Template
-                    if ($DynamicWorkItemAssignment)
+                    #Set Urgency/Impact from ACS Sentiment Analysis. If it was previously defined use it, otherwise make the ACS call
+                    if (($enableAzureCognitiveServicesForNewWI -eq $true) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
                     {
-                        Set-AssignedToPerTemplateSupportGroup -Template $IRTemplate -WorkItem $newWorkItem
+                        $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.Incident"
+                        Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams
+                    }
+                    elseif (($enableAzureCognitiveServicesForNewWI -eq $false) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
+                    {
+                        $sentimentScore = Get-AzureEmailSentiment -messageToEvaluate $newWorkItem.description
+                        $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.Incident"
+                        Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams
+                    }
+
+                    #update the Support Group and Classification if Azure Machine Learning is being used
+                    if ($enableAzureMachineLearning -eq $true)
+                    {
+                        if ($amlProbability.WorkItemSupportGroupConfidence -ge $amlWorkItemSupportGroupMinPercentConfidence)
+                        {
+                            Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"TierQueue" = $amlProbability.WorkItemSupportGroup} @scsmMGMTParams
+                        }
+                        if ($amlProbability.WorkItemClassificationConfidence -ge $amlWorkItemClassificationMinPercentConfidence)
+                        {
+                            Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Classification" = $amlProbability.WorkItemClassification} @scsmMGMTParams
+                        }
+                    }
+
+                    #Assign to an Analyst based on the Support Group that was set via Azure Machine Learning or just from the Template
+                    if (($DynamicWorkItemAssignment) -and ($enableAzureMachineLearning -eq $true))
+                    {
+                        Set-AssignedToPerSupportGroup -SupportGroupID $amlProbability.WorkItemSupportGroup -WorkItem $newWorkItem
+                    }
+                    elseif ($DynamicWorkItemAssignment)
+                    {
+                        $templateSupportGroupID = $IRTemplate | select-object -expandproperty propertycollection | where-object{($_.path -like "*TierQueue*")} | select-object -ExpandProperty mixedvalue
+                        Set-AssignedToPerSupportGroup -SupportGroupID $templateSupportGroupID -WorkItem $newWorkItem
                     }
                     
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
@@ -712,7 +764,6 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Apply-SCSMTemplate -Projection $srProjection -Template $SRTemplate
                     #Set-SCSMObjectTemplate -projection $srProjection -Template $SRTemplate @scsmMGMTParams
-                    if (($enableAzureCognitiveServicesPriorityScoring -eq $true) -and ($enableAzureCognitiveServicesForNewWI -eq $true)) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams}
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     if ($affectedUser)
                     {
@@ -727,10 +778,41 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                     }
 
-                    #Assign to an Analyst based on the Support Group that was set in the Template
-                    if ($DynamicWorkItemAssignment)
+                    #Set Urgency/Priority from ACS Sentiment Analysis. If it was previously defined use it, otherwise make the ACS call
+                    if (($enableAzureCognitiveServicesForNewWI -eq $true) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
                     {
-                        Set-AssignedToPerTemplateSupportGroup -Template $SRTemplate -WorkItem $newWorkItem
+                        $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.ServiceRequest"
+                        Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams
+                    }
+                    elseif (($enableAzureCognitiveServicesForNewWI -eq $false) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
+                    {
+                        $sentimentScore = Get-AzureEmailSentiment -messageToEvaluate $newWorkItem.description
+                        $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.ServiceRequest"
+                        Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams
+                    }
+
+                    #update the Support Group and Classification if Azure Machine Learning is being used
+                    if ($enableAzureMachineLearning -eq $true)
+                    {
+                        if ($amlProbability.WorkItemSupportGroupConfidence -ge $amlWorkItemSupportGroupMinPercentConfidence)
+                        {
+                            Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"SupportGroup" = $amlProbability.WorkItemSupportGroup} @scsmMGMTParams
+                        }
+                        if ($amlProbability.WorkItemClassificationConfidence -ge $amlWorkItemClassificationMinPercentConfidence)
+                        {
+                            Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Classification" = $amlProbability.WorkItemClassification} @scsmMGMTParams
+                        }
+                    }
+
+                    #Assign to an Analyst based on the Support Group that was set via Azure Machine Learning or just from the Template
+                    if (($DynamicWorkItemAssignment) -and ($enableAzureMachineLearning -eq $true))
+                    {
+                        Set-AssignedToPerSupportGroup -SupportGroupID $amlProbability.WorkItemSupportGroup -WorkItem $newWorkItem
+                    }
+                    elseif ($DynamicWorkItemAssignment)
+                    {
+                        $templateSupportGroupID = $SRTemplate | select-object -expandproperty propertycollection | where-object{($_.path -like "*SupportGroup*")} | select-object -ExpandProperty mixedvalue
+                        Set-AssignedToPerSupportGroup -SupportGroupID $templateSupportGroupID -WorkItem $newWorkItem
                     }
                     
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
@@ -1628,10 +1710,9 @@ function Get-AssignedToWorkItemVolume ($SCSMUser)
     return $assignedToVolume
 }
 
-function Set-AssignedToPerTemplateSupportGroup ($Template, $WorkItem)
+function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
 {
-    #get the template's support group property to in turn get its GUID
-    $templateSupportGroupID = $Template | select-object -expandproperty propertycollection | where-object{($_.path -like "*TierQueue*") -or ($_.path -like "*SupportGroup*") -or ($_.path -like "*SupportTier*")} | select-object -ExpandProperty mixedvalue
+    #get the template's support group members
     $supportGroupMembers = Get-TierMembers -TierEnumID $templateSupportGroupID
 
     #based on how Dynamic Work Item assignment was configured, set the Assigned To User
@@ -2623,6 +2704,44 @@ function Get-AzureEmailKeywords ($messageToEvaluate)
 #endregion
 
 #region #### Modified version of Set-SCSMTemplateWithActivities from Morton Meisler seen here http://blog.ctglobalservices.com/service-manager-scsm/mme/set-scsmtemplatewithactivities-powershell-script/
+
+function Get-AMLWorkItemProbability ($EmailSubject, $EmailBody)
+{
+    #create the header
+    $headerTable = @{"Authorization" = "Bearer $amlAPIKey"; "Content-Type" = "application/json"}
+
+    #create the JSON request
+    $messagePayload = @"
+    {
+        "Inputs": {
+            "Input1" : {
+                "ColumnNames": ["Email_Subject", "Email_Description"],
+                "Values": [
+                    ["$EmailSubject", "$EmailBody"]
+                ]
+            }
+        },
+        "GlobalParameters": {}
+    }
+"@
+
+    #invoke the Azure Machine Learning web service for predicting Work Item Type, Classification, and Support Group
+    $probabilityResponse = Invoke-RestMethod -Uri $amlURL -Method Post -Header $headerTable -Body $messagePayload -ContentType "application/json"
+
+    #return custom probability object
+    $probabilityResults = $probabilityResponse.Results.output1.value.Values[0]
+    $probabilityMatrix = New-Object -TypeName psobject
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemType -Value $probabilityResults[0]
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemTypeConfidence -Value (($probabilityResults[1] -as [decimal]) * 100)
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassification -Value $probabilityResults[2]
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassificationConfidence -Value (($probabilityResults[3] -as [decimal]) * 100)
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroup -Value $probabilityResults[4]
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroupConfidence -Value (($probabilityResults[5] -as [decimal]) * 100)
+
+    #return the percent score
+    return ($probabilityMatrix)
+}
+
 function Update-SCSMPropertyCollection
 {
     Param ([Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateObject]$Object =$(throw "Please provide a valid template object")) 
