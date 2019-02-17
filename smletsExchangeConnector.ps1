@@ -1726,7 +1726,10 @@ function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
     }
 
     #Set the First Assigned Date
-    Set-SCSMObject -SMObject $WorkItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams
+    if (($DynamicWorkItemAssignment -eq "volume") -or ($DynamicWorkItemAssignment -eq "OOOvolume") -or ($DynamicWorkItemAssignment -eq "random") -or ($DynamicWorkItemAssignment -eq "OOOrandom"))
+    {
+        Set-SCSMObject -SMObject $WorkItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams
+    }
 }
 
 #courtesy of Leigh Kilday. Modified.
