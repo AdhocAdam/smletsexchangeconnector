@@ -187,6 +187,12 @@ $ExchangeEndpoint = ""
     #"volume" - Get all of the Analysts within a Support Group, get the Analyst with the least amount of Assigned Work Items and assign them the New Work Item
     #"OOOrandom" - Same as above but doesn't assign when Out of Office using the SCSM Out of Office Management pack. https://github.com/AdhocAdam/scsmoutofoffice
     #"OOOvolume" - Same as above but doesn't assign when Out of Office using the SCSM Out of Office Management pack. https://github.com/AdhocAdam/scsmoutofoffice
+#ExternalPartyCommentPrivacy*R = Control Comment Privacy when the User leaving the comment IS NOT the Affected User or Assigned To User
+    #Comments can continue to be left as $null (stock connector behavior), always Private ($true), or always Public ($false). Please be mindful that this setting
+    #can impact any custom Action Log notifiers you've configured and potentially expose/hide information from one party (Assigned To/Affected User).
+#ExternalPartyCommentType*R = Control the type of comment that is left on Work Items when the User leaving the comment IS NOT the Affected User or Assigned To User
+    #acceptable values are "AnalystComment" or "EndUserComment". Please be mindful modifying this setting in conjuction with the above ExternalPartyCommentPrivacy*R.
+    #This can impact any custom Action Log notifiers you've configured and potentially expose/hide information from one party (Assigned To/Affected User).
 $defaultNewWorkItem = "ir"
 $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
@@ -216,6 +222,10 @@ $changeIncidentStatusOnReplyAffectedUser = "IncidentStatusEnum.Active$"
 $changeIncidentStatusOnReplyAssignedTo = "IncidentStatusEnum.Active.Pending$"
 $changeIncidentStatusOnReplyRelatedUser = "IncidentStatusEnum.Active$"
 $DynamicWorkItemAssignment = ""
+$ExternalPartyCommentPrivacyIR = $null
+$ExternalPartyCommentPrivacySR = $null
+$ExternalPartyCommentTypeIR = "AnalystComment"
+$ExternalPartyCommentTypeSR = "AnalystComment"
 
 #processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
     #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
@@ -1071,7 +1081,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "[I][R][0-9]+")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
                             {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false}
                             "#$privateCommentKeyword" {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $true}
-                            default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $null}
+                            default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "$ExternalPartyCommentTypeIR" -IsPrivate $ExternalPartyCommentPrivacyIR}
                         }
                     }
                 }               
@@ -1186,7 +1196,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Canceled$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterCancelled }}
                             "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ClosedDate" = (Get-Date).ToUniversalTime(); "Status" = "ServiceRequestStatusEnum.Closed$"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}           
                             "#$privateCommentKeyword" {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $true}
-                            default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $null}
+                            default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "$ExternalPartyCommentTypeSR" -IsPrivate $ExternalPartyCommentPrivacySR}
                         }
                     }
                 }
