@@ -313,7 +313,7 @@ cost to your organization before enabling this feature.#>
     #to set the Impact & Urgency and/or Urgency $ Priority on Incidents or Service Requests. Bounds can be edited within
     #the Get-ACSWorkItemPriority function. This feature can also be used even when using AI Option #3 described below.
 #acsSentimentScoreClassExtensionName = You can choose to write the returned Sentiment Score into the New Work Item.
-    #This requires you to have extended the Incident AND Service Request classes with a custom Integer value and then
+    #This requires you to have extended the Incident AND Service Request classes with a custom Decimal value and then
     #enter the name of that property here.
 #azureRegion = where Cognitive Services is deployed as seen in it's respective settings pane,
     #i.e. ukwest, eastus2, westus, northcentralus
@@ -365,7 +365,7 @@ $workItemOverrideType = "ir"
 #amlWorkItemClassificationMinPercentConfidence = The minimum percentage AML must return in order to set the Classification on the New Work Item
 #amlWorkItemSupportGroupMinPercentConfidence = The minimum percentage AML must return in order set the Support Group on the New Work Item
 #amlWI*ScoreClassExtensionName = You can choose to write the returned Confidence Score into the New Work Item.
-    #This requires you to have extended the Incident AND Service Request classes with a custom Integer value and then
+    #This requires you to have extended the Incident AND Service Request classes with a custom Decimal value and then
     #enter the name of that property here.
 $enableAzureMachineLearning = $false
 $amlAPIKey = ""
