@@ -715,7 +715,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     }
 
                     #write the sentiment score into the custom Work Item extension
-                    if ($enableAzureCognitiveServicesForNewWI -or $enableAzureCognitiveServicesPriorityScoring)
+                    if ($acsSentimentScoreClassExtensionName)
                     {
                         Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreClassExtensionName -value $sentimentScore @scsmMGMTParams
                     }
@@ -815,7 +815,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     }
 
                     #write the sentiment score into the custom Work Item extension
-                    if ($enableAzureCognitiveServicesForNewWI -or $enableAzureCognitiveServicesPriorityScoring)
+                    if ($acsSentimentScoreClassExtensionName)
                     {
                         Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreClassExtensionName -value $sentimentScore @scsmMGMTParams
                     }
