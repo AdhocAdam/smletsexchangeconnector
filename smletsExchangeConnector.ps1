@@ -191,8 +191,9 @@ $ExchangeEndpoint = ""
     #Comments can continue to be left as $null (stock connector behavior), always Private ($true), or always Public ($false). Please be mindful that this setting
     #can impact any custom Action Log notifiers you've configured and potentially expose/hide information from one party (Assigned To/Affected User).
 #ExternalPartyCommentType*R = Control the type of comment that is left on Work Items when the User leaving the comment IS NOT the Affected User or Assigned To User
-    #acceptable values are "AnalystComment" or "EndUserComment". Please be mindful modifying this setting in conjuction with the above ExternalPartyCommentPrivacy*R.
-    #This can impact any custom Action Log notifiers you've configured and potentially expose/hide information from one party (Assigned To/Affected User).
+    #Comments can continue to be left as "AnalystComment" (stock connector behavior) or changed to "EndUserComment". Please be mindful modifying this setting in
+    #conjuction with the above ExternalPartyCommentPrivacy*R. This can impact any custom Action Log notifiers you've configured and potentially expose/hide
+    #information from one party (Assigned To/Affected User).
 $defaultNewWorkItem = "ir"
 $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
