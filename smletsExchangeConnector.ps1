@@ -312,6 +312,9 @@ cost to your organization before enabling this feature.#>
 #enableAzureCognitiveServicesPriorityScoring = If enabled, the Sentiment Score will be used
     #to set the Impact & Urgency and/or Urgency $ Priority on Incidents or Service Requests. Bounds can be edited within
     #the Get-ACSWorkItemPriority function. This feature can also be used even when using AI Option #3 described below.
+#acsSentimentScoreClassExtensionName = You can choose to write the returned Sentiment Score into the New Work Item.
+    #This requires you to have extended the Incident AND Service Request classes with a custom Decimal value and then
+    #enter the name of that property here.
 #azureRegion = where Cognitive Services is deployed as seen in it's respective settings pane,
     #i.e. ukwest, eastus2, westus, northcentralus
 #azureCogSvcTextAnalyticsAPIKey = API key for your cognitive services text analytics deployment. This is found in the settings pane for Cognitive Services in https://portal.azure.com
@@ -321,6 +324,7 @@ $minPercentToCreateServiceRequest = "95"
 $enableAzureCognitiveServicesForKA = $false
 $enableAzureCognitiveServicesForRO = $false
 $enableAzureCognitiveServicesPriorityScoring = $false
+$acsSentimentScoreClassExtensionName = ""
 $azureRegion = ""
 $azureCogSvcTextAnalyticsAPIKey = ""
 
@@ -360,12 +364,18 @@ $workItemOverrideType = "ir"
 #amlWorkItemTypeMinPercentConfidence = The minimum percentage AML must return in order to decide should an Incident or Service Request be created
 #amlWorkItemClassificationMinPercentConfidence = The minimum percentage AML must return in order to set the Classification on the New Work Item
 #amlWorkItemSupportGroupMinPercentConfidence = The minimum percentage AML must return in order set the Support Group on the New Work Item
+#amlWI*ScoreClassExtensionName = You can choose to write the returned Confidence Score into the New Work Item.
+    #This requires you to have extended the Incident AND Service Request classes with a custom Decimal value and then
+    #enter the name of that property here.
 $enableAzureMachineLearning = $false
 $amlAPIKey = ""
 $amlURL = ""
 $amlWorkItemTypeMinPercentConfidence = "95"
 $amlWorkItemClassificationMinPercentConfidence = "95"
 $amlWorkItemSupportGroupMinPercentConfidence = "95"
+$amlWITypeScoreClassExtensionName = ""
+$amlWIClassificationScoreClassExtensionName = ""
+$amlWISupportGroupClassExtensionName = ""
 
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
@@ -704,9 +714,21 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams
                     }
 
+                    #write the sentiment score into the custom Work Item extension
+                    if ($acsSentimentScoreClassExtensionName)
+                    {
+                        Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreClassExtensionName -value $sentimentScore @scsmMGMTParams
+                    }
+
                     #update the Support Group and Classification if Azure Machine Learning is being used
                     if ($enableAzureMachineLearning -eq $true)
                     {
+                        #write confidence scores into Work Item
+                        if ($amlWITypeScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeScoreClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
+                        if ($amlWIClassificationScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWIClassificationScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
+                        if ($amlWISupportGroupClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWISupportGroupClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
+
+                        #when scores exceed thresholds, further define Work Item
                         if ($amlProbability.WorkItemSupportGroupConfidence -ge $amlWorkItemSupportGroupMinPercentConfidence)
                         {
                             Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"TierQueue" = $amlProbability.WorkItemSupportGroup} @scsmMGMTParams
@@ -792,9 +814,21 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams
                     }
 
+                    #write the sentiment score into the custom Work Item extension
+                    if ($acsSentimentScoreClassExtensionName)
+                    {
+                        Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreClassExtensionName -value $sentimentScore @scsmMGMTParams
+                    }
+
                     #update the Support Group and Classification if Azure Machine Learning is being used
                     if ($enableAzureMachineLearning -eq $true)
                     {
+                        #write confidence scores into Work Item
+                        if ($amlWITypeScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeScoreClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
+                        if ($amlWIClassificationScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWIClassificationScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
+                        if ($amlWISupportGroupClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWISupportGroupClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
+
+                        #when scores exceed thresholds, further define Work Item
                         if ($amlProbability.WorkItemSupportGroupConfidence -ge $amlWorkItemSupportGroupMinPercentConfidence)
                         {
                             Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"SupportGroup" = $amlProbability.WorkItemSupportGroup} @scsmMGMTParams
