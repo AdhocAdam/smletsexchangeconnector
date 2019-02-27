@@ -1017,7 +1017,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
             try {$existingWiStatusName = $workItem.Status.Name} catch {}
             if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "IncidentStatusEnum.Closed") {
                 $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | foreach-object {Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $_ @scsmMGMTParams).sourceobject.id @scsmMGMTParams} | where-object {$_.Status -ne "IncidentStatusEnum.Closed"}
-                if (($relatedWorkItemFromAttachmentSearch | get-unique).count -eq 1)
+                if (($relatedWorkItemFromAttachmentSearch | get-unique).count -eq 1 -and $relatedWorkItemFromAttachmentSearch.Status.Name -ne "IncidentStatusEnum.Closed")
                 {
                     Update-WorkItem -message $message -wiType $($relatedWorkItemFromAttachmentSearch.Name.substring(0,2)) -workItemID $relatedWorkItemFromAttachmentSearch.Name
                 }
@@ -1136,7 +1136,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
             try {$existingWiStatusName = $workItem.Status.Name} catch {}
             if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "ServiceRequestStatusEnum.Closed") {
                 $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | foreach-object {Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $_ @scsmMGMTParams).sourceobject.id @scsmMGMTParams} | where-object {$_.Status -ne "ServiceRequestStatusEnum.Closed"}
-                if (($relatedWorkItemFromAttachmentSearch | get-unique).count -eq 1)
+                if (($relatedWorkItemFromAttachmentSearch | get-unique).count -eq 1 -and $relatedWorkItemFromAttachmentSearch.Status.Name -ne "ServiceRequestStatusEnum.Closed")
                 {
                     Update-WorkItem -message $message -wiType $($relatedWorkItemFromAttachmentSearch.Name.substring(0,2)) -workItemID $relatedWorkItemFromAttachmentSearch.Name
                 }
