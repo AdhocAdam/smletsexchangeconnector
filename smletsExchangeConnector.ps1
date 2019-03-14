@@ -1517,7 +1517,7 @@ function Attach-EmailToWorkItem ($message, $workItemID)
         $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $workItem.ClassName
 
         # Get count of attachents already in ticket
-        try {$existingAttachmentsCount = (Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $fileAttachmentRelClass).Count} catch {}
+        try {$existingAttachmentsCount = (Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $fileAttachmentRelClass).Count} catch {$existingAttachmentsCount = 0}
     }
     
     $messageMime = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
@@ -1570,7 +1570,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
         # Get count of attachents already in ticket
         $existingAttachments = Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $fileAttachmentRelClass
         # Only use at before the loop
-        try {$existingAttachmentsCount = $existingAttachments.Count } catch {}
+        try {$existingAttachmentsCount = $existingAttachments.Count } catch { $existingAttachmentsCount = 0 }
     }
     
     # Custom Event Handler
@@ -1589,7 +1589,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
             $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
     
             if ($MemoryStream.Length -gt $minFileSizeInKB+"kb" -and ($checkAttachmentSettings -eq $false `
-                -or ($existingAttachments.Count -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
+                -or ($existingAttachmentsCount -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
             {
                 #Create the attachment object itself and set its properties for SCSM
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
@@ -1611,7 +1611,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 if ($attachedByUser) 
                 { 
                     New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
-                    $existingAttachments.Count += 1
+                    $$existingAttachmentsCount += 1
                 }
             }
         }
@@ -1627,7 +1627,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
             $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
     
             if ($MemoryStream.Length -gt $minFileSizeInKB+"kb" -and ($checkAttachmentSettings -eq $false `
-                -or ($existingAttachments.Count -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
+                -or ($existingAttachmentsCount -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
             {
                 #Create the attachment object itself and set its properties for SCSM
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
@@ -1649,7 +1649,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 if ($attachedByUser) 
                 { 
                     New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
-                    $existingAttachments.Count += 1
+                    $existingAttachmentsCount += 1
                 }
             }
         }
