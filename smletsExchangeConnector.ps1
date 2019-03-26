@@ -10,7 +10,7 @@ enabling other organizational level processes via email
 
 .NOTES
 Author: Adam Dzyacky
-Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks
+Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2, Justin Workman
 Reviewers: Tom Hendricks, Brian Weist
 Inspiration: The Cireson Community, Anders Asp, Stefan Roth, and (of course) Travis Wright for SMlets examples
 Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installed on SCSM workflow server by virtue of stock Exchange Connector).
@@ -20,6 +20,14 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.5.0 = #22 - Feature, Auto Assign Work Items when Created
+                #112 - Feature, Predict Work Item Type, Classification and Support Group through Azure Machine Learning
+                #116 - Bug, User reply that flips Incident status should not work against Closed Incidents
+                #118 - Bug, Incidents that feature an Activity are missing their respective Activity Prefix (e.g. MA, RB)
+                #120 - Feature, Record Scoring returned from Azure into Custom Class Extensions
+                #92 - Optimization, Make it easier to configure how Related User's comments are marked on the Action Log
+                #86 - Bug, Attach-FileToWorkItem Property 'Count' cannot be found
+                #8 = Feature, Support for Custom Work Item prefixes as defined through SCSM
 Version: 1.4.6 = #93 - Optimization, Configured Template Name may return multiple values
                 #91 - Feature, Reply can change Incident Status
                 #18 - Optimization, Convert "Invoke-WebRequest" to "Invoke-RestMethod" for Cireson Portal actions
