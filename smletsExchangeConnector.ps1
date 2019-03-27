@@ -1619,7 +1619,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 if ($attachedByUser) 
                 { 
                     New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
-                    $$existingAttachmentsCount += 1
+                    $existingAttachmentsCount += 1
                 }
             }
         }
