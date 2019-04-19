@@ -8,7 +8,7 @@ layout: post
 author: Adam
 ---
 
-While dedicated developers of SCSM already know what's what when it comes to developing for Service Manager - many an onlooker have no doubt stumbled across Travis Wright's blogpost ["Creating a Custom Administration Setting"](https://blogs.technet.microsoft.com/servicemanager/2010/01/04/creating-a-custom-administration-setting/) on TechNet. In it, a primer on creating your very own truly custom management pack not only with some properties you could define, but a walkthrough of building a new Settings pane within the console, and then surfacing those properties in a way that can be edited through the SCSM Console with a custom UI. Truly the icing on any management pack cake for SCSM.
+While dedicated developers of SCSM already know what's what when it comes to developing for Service Manager - many an onlooker have no doubt stumbled across Travis Wright's blogpost ["Creating a Custom Administration Setting"](https://techcommunity.microsoft.com/t5/System-Center-Blog/Creating-a-Custom-Administration-Setting/ba-p/341330) on TechNet. In it, a primer on creating your very own truly custom management pack not only with some properties you could define, but a walkthrough of building a new Settings pane within the console, and then surfacing those properties in a way that can be edited through the SCSM Console with a custom UI. Truly the icing on any management pack cake for SCSM.
 
 <!--more-->
 
