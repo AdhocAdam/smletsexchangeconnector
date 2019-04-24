@@ -33,8 +33,6 @@ google_fonts:
   - name: "Lora"
     weights: "400,400i,700,700i"
 google_analytics: "UA-117867725-1"
-disqus:
-  shortname: smletsexchangeconnector
 # Liquid
 liquid:
   error_mode: strict

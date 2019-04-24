@@ -24,13 +24,13 @@ Think on what we're doing here for a bit - we have a single Visual Studio Soluti
 
 ![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/03.png)
 
-We'll create a project of the Windows Desktop and Class Library variety that targets .NET 3.5 for SCSM 2012 R2.
+We'll create a project of the Windows Desktop and WPF Application variety that targets .NET 3.5 for SCSM 2012 R2.
 
-![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/21.PNG)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/21.png)
 
-Now before we can even start constructing this thing, we're going to need to leverage some already existing Microsoft assemblies (`*`.dll). This is similar to the MP references we made in part 1, but now we're going to be referencing other DLL files instead of other MP files. We'll need to make sure our new project has references for the following items. You'll notice that not all of these exist on your default expansion of the References section. Namely things like Microsoft.EnterpriseManagement.* Where are they? You can find all of them in the Service Manager installation directory AND the Service Manager Authoring tool installation directory. And let me assure you, they are all there. Really really. They are incredibly easy to overlook given their similar naming but I assure you they are all definitely there!
+Now before we can even start constructing this thing, we're going to need to leverage some already existing Microsoft assemblies (`*`.dll). This is similar to the MP references we made in part 1, but now we're going to be referencing other DLL files instead of other MP files. We'll need to make sure our new project has references for the following items. You'll notice that not all of these exist on your default expansion of the References section. Namely things like Microsoft.EnterpriseManagement.* Where are they? You can find all of them in the Service Manager installation directory. And let me assure you, they are all there. Really really. They are incredibly easy to overlook given their similar naming but I assure you they are all definitely there!
 
-![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/22.PNG)
+![](/smletsexchangeconnector/images/CreateACustomMPSettingsPane/22.png)
 
 Alright, we have what we need now to actually move forward on Travis' post. Let's right click on the C#/DLL project we've created and Add a New Item of the User Control (WPF) type.
 
@@ -211,7 +211,7 @@ namespace SMLetsExchangeConnectorSettingsUI
               against the ServiceManager DB to figure out the following strSingletonBaseManagedObjectID
              */
 
-            String strSingletonBaseManagedObjectID = "6FFB0179-D405-DCCB-FC28-59845DC4A4BA";
+            String strSingletonBaseManagedObjectID = "bd376031-c759-491d-9b1f-3ce1734c1e7a";
 
             //Get the server name to connect to and connect to the server 
             String strServerName = Registry.GetValue("HKEY_CURRENT_USER\\Software\\Microsoft\\System Center\\2010\\Service Manager\\Console\\User Settings", "SDKServiceMachine", "localhost").ToString();
@@ -270,7 +270,7 @@ where the GUID you want is returned in the BaseManagedEntityID column in the res
     where FullName like 'SMLets%'
     against the ServiceManager DB to figure out the following strSingletonBaseManagedObjectID
     */
-String strSingletonBaseManagedObjectID = "6FFB0179-D405-DCCB-FC28-59845DC4A4BA";
+String strSingletonBaseManagedObjectID = "bd376031-c759-491d-9b1f-3ce1734c1e7a";
 ```
 
 This is another incredibly fundamental step much like the Public Key Token in part 1. Which means you'll have to have imported the signed MP so you can even run the SQL query against your ServiceManager DB to return a value. That returned value (i.e. a GUID) is what you'll want to set this strSingletonBaseManagedObjectID value to.
@@ -359,7 +359,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             EnterpriseManagementGroup emg = new EnterpriseManagementGroup(strServerName);
 
             //Get the AdminSettings MP so you can then get the Admin Setting class
-            ManagementPackClass smletsExchangeConnectorSettingsClass = emg.EntityTypes.GetClass(new Guid("6FFB0179-D405-DCCB-FC28-59845DC4A4BA"));
+            ManagementPackClass smletsExchangeConnectorSettingsClass = emg.EntityTypes.GetClass(new Guid("bd376031-c759-491d-9b1f-3ce1734c1e7a"));
             this.Property1 = emoAdminSetting[smletsExchangeConnectorSettingsClass, "Property1"].ToString();
             this.Property2 = emoAdminSetting[smletsExchangeConnectorSettingsClass, "Property2"].ToString();
             this.EnterpriseManagementObjectID = emoAdminSetting.Id;
@@ -371,7 +371,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             //Get the server name to connect to and connect 
             String strServerName = Registry.GetValue("HKEY_CURRENT_USER\\Software\\Microsoft\\System Center\\2010\\Service Manager\\Console\\User Settings", "SDKServiceMachine", "localhost").ToString();
             EnterpriseManagementGroup emg = new EnterpriseManagementGroup(strServerName);
-            ManagementPackClass smletsExchangeConnectorSettingsClass = emg.EntityTypes.GetClass(new Guid("6FFB0179-D405-DCCB-FC28-59845DC4A4BA"));
+            ManagementPackClass smletsExchangeConnectorSettingsClass = emg.EntityTypes.GetClass(new Guid("bd376031-c759-491d-9b1f-3ce1734c1e7a"));
 
             //Get the Connector object using the object ID 
             EnterpriseManagementObject emoAdminSetting = emg.EntityObjects.GetObject<EnterpriseManagementObject>(this.EnterpriseManagementObjectID, ObjectQueryOptions.Default);
