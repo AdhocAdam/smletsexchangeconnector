@@ -1,9 +1,13 @@
+<p align="center">
+  <img width="512" height="512" src="psExchIconReadme.png">
+</p>
+
 # SCSM Exchange Connector via SMlets
 This PowerShell script leverages the [SMlets module](https://www.powershellgallery.com/packages/smlets/0.5.0.1) to build an open and flexible Exchange Connector for controlling Microsoft System Center Service Manager 2012+
 
 
 ## So what is this for?
-The stock Exchange Connector is a seperate download for SCSM 2012+ that enables SCSM deployments to leverage an Exchange mailbox to process updates to work items. While incredibly useful, some feel limited by its inability to be customized given its nature as a sealed management pack. This PowerShell script replicates all functionality of [Exchange Connector 3.1](https://www.microsoft.com/en-ca/download/details.aspx?id=45291) introduces several new features, and most importantly enables SCSM Administrators to customize the solution to their needs.
+The stock Exchange Connector is a seperate download for SCSM 2012+ that enables SCSM deployments to leverage an Exchange mailbox to process updates to work items. While incredibly useful, some feel limited by its inability to be customized given its nature as a sealed management pack. This PowerShell script replicates all functionality of [Exchange Connector 3.1](https://www.microsoft.com/en-ca/download/details.aspx?id=45291), introduces several new features, and most importantly enables SCSM Administrators to customize the solution to their needs.
 
 ## Who is this for?
 This is aimed at SCSM administrators looking to further push the automation limits of what their SCSM deployment can do with inbound email processing. As such, you should be comfortable with PowerShell and navigating SCSM via SMlets.
@@ -11,11 +15,88 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>Intelligent Routing and Classification with Azure Machine Learning (v1.5)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/machineLearningClassification.png" /></td>
+    <td width="auto">Further compliment "Dynamic Work Item Analyst Assignment" and "Azure Cognitive Services" features with integration for Azure Machine Learning. Using AML, you can now train Azure's artificial intelligence on your SCSM environment using your very own SCSM Data Warehouse to autonomously choose Work Item Type (Incident or Service Request), Work Item Classification, and Work Item Support Group on brand new Work Items that the connector creates. Azure pricing can be found <a href="https://azure.microsoft.com/en-us/pricing/details/machine-learning-studio/">here</a> and how to configure it for your environment/connector can be found <a href="https://github.com/AdhocAdam/smletsexchangeconnector/wiki/Azure-Machine-Learning-setup">here</a>.</td>
+  </tr>
+</table>
+
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Dynamic Work Item Analyst Assignment on New Work Item (v1.5)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/Assign.png" /></td>
+    <td width="auto">When New Work Items are created, you can optionally enable the connector to assign them out to Analysts contained within the Default Template's Support Group. This can be done through several means - completely random, least assigned open Work Items, or in conjunction with the <a href="https://github.com/AdhocAdam/scsmoutofoffice">SCSM Out of Office Management pack</a> to prevent assignment when Analysts are out of the office. <i>(Requires at least the free Cireson SCSM Portal to establish the relationship between Support Groups and Analysts)</i></td>
+  </tr>
+</table>
+
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Change Incident Status based on Who Replied (v1.4)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/changeIncidentSstatusOnReply.png" /></td>
+    <td width="auto">You can now optionally enable this feature that changes the Status of Incidents when the Affected User, Assigned To, or Related User replies. This helps better reflect time within a specific status as Analysts flip to Pending and potential Pending subcategories. As an example, this means you can configure the connector so that the Assigned To updates it to Pending and the Affected User updates it to Active.</td>
+  </tr>
+</table>
+
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Dynamic Priority based on Azure Sentiment Analysis (v1.4)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/ACSPriorityScoring.png" /></td>
+    <td width="auto">If you're making use of Sentiment Analysis from Azure Cognitive Services, the returned score can now optionally dynamically drive the Impact, Urgency, and Priority on new Incidents or Service Requests. Sentiment boundaries can be edited via the Get-ACSWorkItemPriority function.</td>
+  </tr>
+</table>
+
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Custom Theming for Suggested Knowledge Article or Request Offering emails (v1.4)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/HTMLSuggestionTemplate.png" /></td>
+    <td width="auto">Now when emails go out suggesting Knowledge Articles or Request Offerings based on the email's subject and body, you can theme them to match your organization's respective style. Customizations made to these HTML templates will be preserved throughout updates of the connector.</td>
+  </tr>
+</table>
+
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Redact Sensitive Information (v1.4)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/redacted.png" /></td>
+    <td width="auto">Using a custom defined regex file you can optionally have the connector replace words of your regex choice with [redacted] in New Work Item Descriptions or Comments. Customizations made to this regex list will be preserved throughout updates of the connector.</td>
+  </tr>
+</table>
+
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Enhanced Action Logging (v1.4)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/enhancedActionlog.png" /></td>
+    <td width="auto">Now when using the [resolved], [closed], [take], and other relevant keywords the Work Item's Action Log matches the visual style of these actions as opposed to simply leaving an Analyst Comment.</td>
+  </tr>
+</table>
+
+*More Keyword functionality for Manual Activites (v1.4)*
+- You can now use the [take] keyword against Manual Activites.
+
+*Set First Response Date on Request Offering/Knowledge Article Suggestion (v1.4)*
+- If you've enabled Suggested Request Offerings from your Service Catalog or Knowledge Articles from your Knowledge Base, this feature can now optionally set the First Response Date when the connector sends suggestions back to the Affected User giving you more data points to report against.
+
+<table border="0">
+  <tr>
     <td colspan="3"><i>Microsoft Azure Cognitive Services integration (v1.4)</i></td>
   </tr>
   <tr>
     <td width="200"><img src ="https://msdnshared.blob.core.windows.net/media/2017/03/Azure-Cognitive-Services-e1489079006258.png" /></td>
-    <td width="auto">Ever wish you could create an Incident or Service Request based on the nature of the email? How about using the suggested Knowledge Article/Request Offering feature of this connector, but achieve even faster processing times? Leveraging the power of Azure Cognitive Services emails can now be optionally run through Keyword Analysis for more concise search results and Sentiment Analysis for dynamic creation of an Incident or Service Request based on the Affected User's perceived attitude. <a href="https://azure.microsoft.com/en-us/pricing/details/cognitive-services/text-analytics/">Microsoft pricing information can be found here.</a></td>
+    <td width="auto">Ever wish you could create an Incident or Service Request based on the nature of the email? How about using the suggested Knowledge Article/Request Offering feature of this connector, but achieve even faster processing times? Leveraging the power of Azure Cognitive Services emails can now be optionally run through Keyword Analysis for more concise search results and/or Sentiment Analysis for dynamic creation of an Incident or Service Request based on the Affected User's perceived attitude. <a href="https://azure.microsoft.com/en-us/pricing/details/cognitive-services/text-analytics/">Microsoft pricing information can be found here.</a> Not ready for Azure? You can alternatively define a list of keywords that will control whether or not an Incident or Service Request is created.
+    </td>
   </tr>
 </table>
 
@@ -23,7 +104,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
 - Whether you're dealing with external vendors or streamlining process, you can now configure the connector to create either Problems or Change Requests by default.
 
 *Process multiple mailboxes with unique templates and default ticket types (v1.4)*
-- Redirect multiple mailboxes to a single inbox and this connector can process each message based on the default work item type and templates for the original mailbox, as though it was directly connected to each. This can be helpful for multiple teams that each have their own mailbox, for example, but does not require many instances of the connector running against all mailboxes as the MS Exchange Connector did.
+- Redirect multiple mailboxes to a single inbox and this connector can process each message based on the default work item type and templates for the original mailbox, as though it was directly connected to each. This can be helpful for multiple teams that each have their own mailbox, for example, but does not require many instances of the connector running against all mailboxes as the MS Exchange Connector did. In addition, it can also process those mailboxes should be they be featured on the CC or BCC lines.
 
 *Generate a new, related work item when comments are emailed to closed tickets (v1.4)*
 - Was the affected user on vacation? Did they try to add to an old incident ticket for a new instance of the same issue? Now you can optionally generate Work Items when a user comments on a closed ticket. If enabled, a new work item will be generated that is related to the old work item and contains many of the same properties, but also contains the new details from their email message.
@@ -32,7 +113,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
 - Service Requests can now use the [acknowledge] and [hold] keywords.
 
 *[take] Keyword can now optionally test for membership in the Support Group (v1.4)*
-- If this feature is enabled, the sender's membership in the current Support Group will be tested before they are assigned to a ticket. This requires the Cireson Analyst Portal and in turn Cireson Portal Group Mapping in order to establish relationship between Support Groups/Analysts.
+- If this feature is enabled, the sender's membership in the current Support Group will be tested before they are assigned to a ticket (Incident, Service Request. Manual Activity and Change Request require a class extension). This requires the Cireson Analyst Portal and in turn Cireson Portal Group Mapping in order to establish relationship between Support Groups/Analysts.
 
 <table border="0">
   <tr>
@@ -58,7 +139,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
 </table>
 
 *Search Cireson Portal Service Catalog (v1.3)*
-- When enabled this feature will email the Affected User suggested Cireson Portal Request Offerings within the Affected User's Service Catalog permission scope based on the content of their email when a New Work Item is generated. This feature has been tested and confirmed working with v7.x and v8.x of their SCSM portal. If both this and the "Search Cireson HTML Knowledge Base" feature are enabled, only a single summarized email will be sent to the Affected User containing links to Knowledge Articles and Request Offerings.
+- When enabled this feature will email the Affected User suggested Cireson Portal Request Offerings within the Affected User's Service Catalog permission scope based on the content of their email when a New Work Item is generated. This feature has been tested and confirmed working with v7.x and v8.x of their SCSM portal. If both this and the "Search Cireson HTML Knowledge Base" feature are enabled, only a single summarized email will be sent to the Affected User containing links to Knowledge Articles and Request Offerings.
 
 <table border="0">
   <tr>
@@ -115,7 +196,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
   </tr>
   <tr>
     <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/take.png" /></td>
-    <td width="auto">[Take] - When emailing your workflow account, it will assign the Incident, Service Request, Change Request, or Problem to you (from address) when this keyword is featured in the body of the email.</td>
+    <td width="auto">[Take] - When emailing your workflow account, it will assign the Incident, Service Request, Change Request, or Problem to you (from address) when this keyword is featured in the body of the email.</td>
   </tr>
 </table>
 
@@ -157,12 +238,12 @@ This is aimed at SCSM administrators looking to further push the automation limi
   </tr>
   <tr>
     <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/privateComment.png" /></td>
-    <td width="auto">#private - When the message is attached to the Action Log, it will be marked as private if #private is featured in the body of the message.</td>
+    <td width="auto">#private - When the message is attached to the Action Log, it will be marked as private if #private is featured in the body of the message. This keyword is configurable.</td>
   </tr>
 </table>
 
 *Assigned To/Affected User relationships on the Action Log*
-- When someone who isn't the Assigned To/Affected User leaves a comment on the Action Log the comment's "IsPrivate" flag is marked as null (this is a bug in the EC v3.0 and v3.1 that has yet to be addressed by Microsoft). As such Cireson's Action Log Notify has no qualifier to go of off. With this script, the same functionality is present but now can be altered to get in line with SCSM and Cireson's MP.
+- When someone who isn't the Assigned To/Affected User leaves a comment on the Action Log the comment's "IsPrivate" flag is marked as null (this is a bug in the EC v3.0 and v3.1 that has yet to be addressed by Microsoft). As such Cireson's Action Log Notify has no qualifier to go of off. With this script, the same functionality is present but now can be altered to get in line with SCSM and Cireson's MP.
 
 *Search Cireson HTML Knowledge Base*
-- If you're a customer of Cireson and this feature is enabled, your respective Cireson Portal HTML KB will be searched when a New Work item is generated using its title and description. The Sender will be sent a summarized HTML email with links directly to those knowledge articles about their recently created Work Item using the Exchange EWS API defined therein. As an example email, I've included an email body that features a [Resolved] and [Cancelled] link should the Affected User wish to mark their Incident/Service Request accordingly in the event the KB addresses their request. It should be noted, this is using the Cireson Web API to get KB through a now deprecated function. While this works, it goes without saying if Cireson drops this in coming versions it would cease to work. It has been tested and confirmed working with v7.x of their SCSM HTML KB portal.
+- If you're a customer of Cireson and this feature is enabled, your respective Cireson Portal HTML KB will be searched when a New Work item is generated using its title and description. The Sender will be sent a summarized HTML email with links directly to those knowledge articles about their recently created Work Item using the Exchange EWS API defined therein. As an example email, I've included an email body that features a [Resolved] and [Cancelled] link should the Affected User wish to mark their Incident/Service Request accordingly in the event the KB addresses their request. It should be noted, this is using the Cireson Web API to get KB through a now deprecated function. While this works, it goes without saying if Cireson drops this in coming versions it would cease to work. It has been tested and confirmed working with v7.x of their SCSM HTML KB portal.

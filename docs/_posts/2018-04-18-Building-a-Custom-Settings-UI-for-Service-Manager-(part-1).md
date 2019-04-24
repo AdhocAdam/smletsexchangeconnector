@@ -8,7 +8,7 @@ layout: post
 author: Adam
 ---
 
-While dedicated developers of SCSM already know what's what when it comes to developing for Service Manager - many an onlooker have no doubt stumbled across Travis Wright's blogpost ["Creating a Custom Administration Setting"](https://blogs.technet.microsoft.com/servicemanager/2010/01/04/creating-a-custom-administration-setting/) on TechNet. In it, a primer on creating your very own truly custom management pack not only with some properties you could define, but a walkthrough of building a new Settings pane within the console, and then surfacing those properties in a way that can be edited through the SCSM Console with a custom UI. Truly the icing on any management pack cake for SCSM.
+While dedicated developers of SCSM already know what's what when it comes to developing for Service Manager - many an onlooker have no doubt stumbled across Travis Wright's blogpost ["Creating a Custom Administration Setting"](https://techcommunity.microsoft.com/t5/System-Center-Blog/Creating-a-Custom-Administration-Setting/ba-p/341330) on TechNet. In it, a primer on creating your very own truly custom management pack not only with some properties you could define, but a walkthrough of building a new Settings pane within the console, and then surfacing those properties in a way that can be edited through the SCSM Console with a custom UI. Truly the icing on any management pack cake for SCSM.
 
 <!--more-->
 
@@ -34,8 +34,10 @@ We're going to use Visual Studio to ultimately assemble a Management Pack Bundle
  The free community edition will do so long as the version you have is one of the following 2017/2015/2013/2012  
 * **Visual Studio Authoring Extensions (VSAE)**  
  [https://www.microsoft.com/en-ca/download/details.aspx?id=30169]( https://www.microsoft.com/en-ca/download/details.aspx?id=30169)
+ * **Service Manager Authoring Tool**  
+ [https://www.microsoft.com/en-us/download/details.aspx?id=54059]( https://www.microsoft.com/en-us/download/details.aspx?id=54059)
 
-While the Authoring Tool provided by Microsoft gives most of us the ability to make simple modification such as Class Extensions or Form Customizations. VSAE gives us is the ability to build management packs inside of Visual Studio using all of the power of Visual Studio for what is generally reserved as a truly dedicated developer tool. Make no mistake SCSM Administrators, you're about to cross the development bridge here not only with the use of Visual Studio but a wholly new way to truly construct management packs from scratch.
+While the Authoring Tool provided by Microsoft gives most of us the ability to make simple modification such as Class Extensions or Form Customizations. VSAE gives us is the ability to build management packs inside of Visual Studio using all of the power of Visual Studio for what is generally reserved as a truly dedicated developer tool. However we'll need the Authoring Tool as it makes some MPs and MPBs available that we'll need for VSAE. Make no mistake SCSM Administrators, you're about to cross the development bridge here not only with the use of Visual Studio but a wholly new way to truly construct management packs from scratch.
 
 Get both of these items installed and fire up Visual Studio. No looking back. Let’s do this!
   
@@ -232,7 +234,7 @@ Next, Travis says we need to add some Categories. I'm going to use the Categorie
   <Category ID="Category.SMLets.Exchange.Connector" Value="Console!Microsoft.EnterpriseManagement.ServiceManager.ManagementPack">
     <ManagementPackName>SMLets.Exchange.Connector</ManagementPackName>
     <ManagementPackVersion>1.0.0.34</ManagementPackVersion>
-    <ManagementPackPublicKeyToken>60928c42f024b3d5</ManagementPackPublicKeyToken>
+    <ManagementPackPublicKeyToken>446c13d5880992f3</ManagementPackPublicKeyToken>
   </Category>
 </Categories>
 ```
@@ -279,7 +281,7 @@ The **"Public key token is"** is the line that provides the value we're looking 
   <Category ID="Category.SMLets.Exchange.Connector" Value="Console!Microsoft.EnterpriseManagement.ServiceManager.ManagementPack">
     <ManagementPackName>SMLets.Exchange.Connector</ManagementPackName>
     <ManagementPackVersion>1.0.0.34</ManagementPackVersion>
-    <ManagementPackPublicKeyToken>60928c42f024b3d5</ManagementPackPublicKeyToken>
+    <ManagementPackPublicKeyToken>446c13d5880992f3</ManagementPackPublicKeyToken>
   </Category>
 </Categories>
 ```

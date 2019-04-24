@@ -10,16 +10,55 @@ enabling other organizational level processes via email
 
 .NOTES
 Author: Adam Dzyacky
-Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks
+Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2, Justin Workman
 Reviewers: Tom Hendricks, Brian Weist
 Inspiration: The Cireson Community, Anders Asp, Stefan Roth, and (of course) Travis Wright for SMlets examples
 Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installed on SCSM workflow server by virtue of stock Exchange Connector).
     3rd party option: If you're a Cireson customer and make use of their paid SCSM Portal with HTML Knowledge Base this will work as is
-        if you aren't, you'll need to create your own Type Projection for Change Requests for the Add-ChangeRequestComment
+        if you aren't, you'll need to create your own Type Projection for Change Requests for the Add-ActionLogEntry
         function. Navigate to that function to read more. If you don't make use of their HTML KB, you'll want to keep $searchCiresonHTMLKB = $false
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.5.0 = #22 - Feature, Auto Assign Work Items when Created
+                #112 - Feature, Predict Work Item Type, Classification and Support Group through Azure Machine Learning
+                #116 - Bug, User reply that flips Incident status should not work against Closed Incidents
+                #118 - Bug, Incidents that feature an Activity are missing their respective Activity Prefix (e.g. MA, RB)
+                #120 - Feature, Record Scoring returned from Azure into Custom Class Extensions
+                #92 - Optimization, Make it easier to configure how Related User's comments are marked on the Action Log
+                #86 - Bug, Attach-FileToWorkItem Property 'Count' cannot be found
+                #8 = Feature, Support for Custom Work Item prefixes as defined through SCSM
+Version: 1.4.6 = #93 - Optimization, Configured Template Name may return multiple values
+                #91 - Feature, Reply can change Incident Status
+                #18 - Optimization, Convert "Invoke-WebRequest" to "Invoke-RestMethod" for Cireson Portal actions
+                #97 - Optimization, Combine Get-SCSMAttachmentSettings and Get-SCSMObjectPrefix
+                #104 - Bug, Dates that should be set by keywords are not
+                #95 - Optimization, Convert Suggestion logic matrix to a Function
+                #84 - Feature, Leverage keywords as an alternative to ACS Sentiment in order to drive New IR/SR creation
+                #85 - Bug, Get-ScsmClassProperty error when using CR / MA support group enums
+                #83 - Optimization, Process CC and BCC fields for multiple mailbox routing
+                Milestone notes available at https://github.com/AdhocAdam/smletsexchangeconnector/milestone/3?closed=1
+Version: 1.4.5 = #75 - Feature, Use Azure Cognitive Services Text Analytics API to set Urgency/Priority
+                #68 - Feature, Redact sensitive information
+                #69 - Optimization, Custom HTML Email Templates for Suggestions feature
+                #71 - Optimization, Sort Suggestions back to Affected User sorts by words matched
+Version: 1.4.4 = #48 - Created the ability to optionally set First Response Date on IR/SR when the connector makes Knowledge Article or Request Offering
+                    suggestions to the Affected User
+                #51 - Fixed issue with updating Work Items from Meeting Requests when the [Work Item] doesn't appear in the subject using an updated
+                    version of the Verify-WorkItem function to perform the lookup
+                #58 - Fixed issue with the connector leaving two comments when the Affected User is also the Assigned To user. Matching functionality
+                    with the OOB Exchange Connector the comment is now marked as a Public End User Comment
+                #56 - Introduce [take] keyword on Manual Activities
+                #59 - Introduce Class Extension support for MA/CR Support Groups to support [take] enforcement
+                #63 - #private is now a configurable keyword through the new $privateCommentKeyword
+                #62 - Create a single Action Log function that allows multiple entry types (Actions and Comments)
+                #60 - [resolved] keyword should trigger a Resolved Record Action Log entry instead of an Analyst Comment and allow
+                    a default Resolution Category to be set. This was extended to include Service Requests, Problems, and their respective
+                    Resolution Descriptions/Implementation Notes as well
+                #61 - [reactivated] keyword should trigger a Record Reopened Action Log entry instead of an Analyst Comment
+                #65 - Add minimum words to match to Knowledge Base suggestions
+                #66 - Independently control Azure Cognitive Services in KA/RO Suggestion Feature
+                #67 - Suggesting Request Offerings from the Cireson Portal returns no results
 Version: 1.4.3 = Introduction of Azure Cognitive Services integration
 Version: 1.4.2 = Fixed issue with attachment size comparison, when using SCSM size limits.
                  Fixed issue with [Take] function, if support group membership is checked.
@@ -108,6 +147,11 @@ $ExchangeEndpoint = ""
 
 #defaultNewWorkItem = set to either "ir", "sr", "pr", or "cr"
 #default*RTemplate = define the displayname of the template you'll be using based on what you've set for $defaultNewWorkItem
+#default(WORKITEM)ResolutionCategory = Optionally set the default Resolution Category for Incidents, Problems, or Service Requests when using the [resolved] 
+    # or [completed] keywords. Examples include:
+    #$defaultIncidentResolutionCategory = "IncidentResolutionCategoryEnum.FixedByAnalyst$"
+    #$defaultProblemResolutionCategory = "ProblemResolutionEnum.Documentation$"
+    #$defaultServiceRequestImplementationCategory = "ServiceRequestImplementationResultsEnum.SuccessfullyImplemented$"
 #checkAttachmentSettings = If $true, instructs the script to query SCSM for its attachment size and count limits per work item type.  If $false, neither is restricted.
 #minFileSizeInKB = Set the minimum file size in kilobytes to be attached to work items
 #createUsersNotInCMDB = If someone from outside your org emails into SCSM this allows you to take that email and create a User in your CMDB
@@ -125,11 +169,47 @@ $ExchangeEndpoint = ""
 #CreateNewWorkItemWhenClosed = When set to $true, replies to a closed work item will create a new work item.
 #takeRequiresGroupMembership = When set to $true, the [take] keyword only functions when the sender belongs to the ticket's support group.
     #This functionality requires the Cireson Analyst Portal for Service Manager.  Set $false if you do not use the Cireson Analyst Portal.
+#crSupportGroupEnumGUID = Enter the GUID of the Enum for your custom CR Support Group to be leveraged with items such as takeRequiresGroupMembership. The best way to verify this is to
+    #perform a: (Get-SCSMEnumeration -name "CR Support Group List name" | select-object id, name, displayname) to verify the ID of the Support Group property name for your Change Requests.
+    #This is value needs to be set to the ID/GUID of your result.
+    #This functionality requires the Cireson Analyst Portal for Service Manager.
+#maSupportGroupEnumGUID = Enter the Name of the Enum for your custom MA Support Group to be leveraged with items such as takeRequiresGroupMembership. The best way to verify this is to
+    #perform a: (Get-SCSMEnumeration -name "MA Support Group List name" | select-object id, name, displayname) to verify the ID of the Support Group property name for your Manual Activities. This is value needs to be
+    #This is value needs to be set to the ID/GUID of your result.
+    #This functionality requires the Cireson Analyst Portal for Service Manager.
+#redactPiiFromMessage = if $true, instructs the script to remove personally identifiable information from message description in work-items.
+    #The PII being redacted is listed as regex's in a text file located in the same directory as the script. The file is called "pii_regex.txt", has 1 regex per line, written without quotes.
+#changeIncidentStatusOnReply = if $true, updates to Incidents will change their status based on who replied
+#changeIncidentStatusOnReplyAffectedUser = If changeIncidentStatusOnReply is $true, the Status enum an Incident should change to when the Affected User updates the Incident via email
+    #perform a: Get-SCSMChildEnumeration -Enumeration (Get-SCSMEnumeration -name "IncidentStatusEnum$") | Where-Object {$_.displayname -eq "myCustomStatusHere"}
+    #to verify your Incident Status enum value Name if not using the out of box enums
+#changeIncidentStatusOnReplyAssignedTo = If changeIncidentStatusOnReply is $true, The Status enum an Incident should change to when the Assigned To updates the Incident via email
+    #perform a: Get-SCSMChildEnumeration -Enumeration (Get-SCSMEnumeration -name "IncidentStatusEnum$") | Where-Object {$_.displayname -eq "myCustomStatusHere"}
+    #to verify your Incident Status enum value Name if not using the out of box enums
+#changeIncidentStatusOnReplyRelatedUser = If changeIncidentStatusOnReply is $true, The Status enum an Incident should change to when a Related User updates the Incident via email
+    #perform a: Get-SCSMChildEnumeration -Enumeration (Get-SCSMEnumeration -name "IncidentStatusEnum$") | Where-Object {$_.displayname -eq "myCustomStatusHere"}
+    #to verify your Incident Status enum value Name if not using the out of box enums
+#DynamicWorkItemAssignment = This functionality requires the Cireson Analyst Portal for Service Manager.
+    #When variable is set to one of the following values, on New Work Item creation the Assigned To will be set based on:
+    #"random" - Get all of the Analysts within a Support Group and randomly assign one of them to the New Work Item
+    #"volume" - Get all of the Analysts within a Support Group, get the Analyst with the least amount of Assigned Work Items and assign them the New Work Item
+    #"OOOrandom" - Same as above but doesn't assign when Out of Office using the SCSM Out of Office Management pack. https://github.com/AdhocAdam/scsmoutofoffice
+    #"OOOvolume" - Same as above but doesn't assign when Out of Office using the SCSM Out of Office Management pack. https://github.com/AdhocAdam/scsmoutofoffice
+#ExternalPartyCommentPrivacy*R = Control Comment Privacy when the User leaving the comment IS NOT the Affected User or Assigned To User
+    #Comments can continue to be left as $null (stock connector behavior), always Private ($true), or always Public ($false). Please be mindful that this setting
+    #can impact any custom Action Log notifiers you've configured and potentially expose/hide information from one party (Assigned To/Affected User).
+#ExternalPartyCommentType*R = Control the type of comment that is left on Work Items when the User leaving the comment IS NOT the Affected User or Assigned To User
+    #Comments can continue to be left as "AnalystComment" (stock connector behavior) or changed to "EndUserComment". Please be mindful modifying this setting in
+    #conjuction with the above ExternalPartyCommentPrivacy*R. This can impact any custom Action Log notifiers you've configured and potentially expose/hide
+    #information from one party (Assigned To/Affected User).
 $defaultNewWorkItem = "ir"
 $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
 $defaultPRTemplateName = "PR Template Name Goes Here"
 $defaultCRTemplateName = "CR Template Name Goes Here"
+$defaultIncidentResolutionCategory = ""
+$defaultProblemResolutionCategory = ""
+$defaultServiceRequestImplementationCategory = ""
 $checkAttachmentSettings = $false
 $minFileSizeInKB = "25"
 $createUsersNotInCMDB = $true
@@ -143,6 +223,18 @@ $Mailboxes = @{
 }
 $CreateNewWorkItemWhenClosed = $false
 $takeRequiresGroupMembership = $false
+$crSupportGroupEnumGUID = ""
+$maSupportGroupEnumGUID = ""
+$redactPiiFromMessage = $false
+$changeIncidentStatusOnReply = $false
+$changeIncidentStatusOnReplyAffectedUser = "IncidentStatusEnum.Active$"
+$changeIncidentStatusOnReplyAssignedTo = "IncidentStatusEnum.Active.Pending$"
+$changeIncidentStatusOnReplyRelatedUser = "IncidentStatusEnum.Active$"
+$DynamicWorkItemAssignment = ""
+$ExternalPartyCommentPrivacyIR = $null
+$ExternalPartyCommentPrivacySR = $null
+$ExternalPartyCommentTypeIR = "AnalystComment"
+$ExternalPartyCommentTypeSR = "AnalystComment"
 
 #processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
     #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
@@ -165,15 +257,21 @@ $mergeReplies = $false
 #this uses the now depricated Cireson KB API Search by Text, it works as of v7.x but should be noted it could be entirely removed in future portals
 #$numberOfWordsToMatchFromEmailToRO = defines the minimum number of words that must be matched from an email/new work item before Request Offerings will be
     #suggested to the Affected User about them
+#$numberOfWordsToMatchFromEmailToKA = defines the minimum number of words that must be matched from an email/new work item before Knowledge Articles will be
+    #suggested to the Affected User about them
 #searchAvailableCiresonPortalOfferings = search available Request Offerings within the Affected User's permission scope based words matched in
     #their email/new work item
-#$ciresonPortalServer = URL that will be used to search for KB articles via invoke-webrequest. Make sure to leave the "/" after your tld!
-#$ciresonPortalWindowsAuth = how invoke-webrequest should attempt to authenticate to your portal server.
+#enableSetFirstResponseDateOnSuggestions = When Knowledge Article or Request Offering suggestions are made to the Affected User, you can optionally
+    #set the First Response Date value on a New Work Item
+#$ciresonPortalServer = URL that will be used to search for KB articles via invoke-restmethod. Make sure to leave the "/" after your tld!
+#$ciresonPortalWindowsAuth = how invoke-restmethod should attempt to authenticate to your portal server.
     #Leave true if your portal uses Windows Auth, change to False for Forms authentication.
     #If using forms, you'll need to set the ciresonPortalUsername and Password variables. For ease, you could set this equal to the username/password defined above
 $searchCiresonHTMLKB = $false
 $numberOfWordsToMatchFromEmailToRO = 1
+$numberOfWordsToMatchFromEmailToKA = 1
 $searchAvailableCiresonPortalOfferings = $false
+$enableSetFirstResponseDateOnSuggestions = $false
 $ciresonPortalServer = "https://portalserver.domain.tld/"
 $ciresonPortalWindowsAuth = $true
 $ciresonPortalUsername = ""
@@ -202,10 +300,11 @@ $lowAnnouncemnentExpirationInHours = 7
 $normalAnnouncemnentExpirationInHours = 3
 $criticalAnnouncemnentExpirationInHours = 1
 
-<#enable integration with Azure Cognitive Services.
+<#ARTIFICIAL INTELLIGENCE OPTION 1, enable AI through Azure Cognitive Services
 #PLEASE NOTE: HIGHLY EXPERIMENTAL!
 By enabling this feature, the entire body of the email on New Work Item creation will be sent to the Azure
 subscription provided and parsed by Cognitive Services. This information is collected and stored by Microsoft.
+Use of this feature will vary between work items and isn't something that can be refined/configured.
 #### SENTIMENT ANALYSIS ####
 The information returned to this script is a percentage estimate of the perceived sentiment of the email in a
 range from 0% to 100%. With 0% being negative and 100% being positive. Using this range, you can customize at
@@ -222,15 +321,80 @@ https://azure.microsoft.com/en-us/pricing/details/cognitive-services/text-analyt
 Using this URL, you can better plan for possible monetary charges and ensure you understand the potential financial
 cost to your organization before enabling this feature.#>
 
-#### requires Azure subscription and Cognitive Services deployed ####
+#### requires Azure subscription and Cognitive Services Text Analytics API deployed ####
+#enableAzureCognitiveServicesForKA = If enabled, Azure Cognitive Services Text Analytics API will extract keywords from the email to
+    #search your Cireson Knowledge Base
+#enableAzureCognitiveServicesForRO = If enabled, Azure Cognitive Services Text Analytics API will extract keywords from the email to
+    #search your Cireson Service Catalog based on permissions scope of the Sender
+#enableAzureCognitiveServicesForNewWI = If enabled, Azure Cognitive Services Text Analytics API will perform Sentiment Analysis
+    #to either create an Incident or Service Request
+#enableAzureCognitiveServicesPriorityScoring = If enabled, the Sentiment Score will be used
+    #to set the Impact & Urgency and/or Urgency $ Priority on Incidents or Service Requests. Bounds can be edited within
+    #the Get-ACSWorkItemPriority function. This feature can also be used even when using AI Option #3 described below.
+#acsSentimentScoreClassExtensionName = You can choose to write the returned Sentiment Score into the New Work Item.
+    #This requires you to have extended the Incident AND Service Request classes with a custom Decimal value and then
+    #enter the name of that property here.
 #azureRegion = where Cognitive Services is deployed as seen in it's respective settings pane,
     #i.e. ukwest, eastus2, westus, northcentralus
-#azureCogSvcAPIKey = API key for your cognitive services deployment. This is found in the settings pane for Cognitive Services in https://portal.azure.com
+#azureCogSvcTextAnalyticsAPIKey = API key for your cognitive services text analytics deployment. This is found in the settings pane for Cognitive Services in https://portal.azure.com
 #minPercentToCreateServiceRequest = The minimum sentiment rating required to create a Service Request, a number less than this will create an Incident
-$enableAzureCognitiveServices = $false
-$azureRegion = ""
-$azureCogSvcAPIKey = ""
+$enableAzureCognitiveServicesForNewWI = $false
 $minPercentToCreateServiceRequest = "95"
+$enableAzureCognitiveServicesForKA = $false
+$enableAzureCognitiveServicesForRO = $false
+$enableAzureCognitiveServicesPriorityScoring = $false
+$acsSentimentScoreClassExtensionName = ""
+$azureRegion = ""
+$azureCogSvcTextAnalyticsAPIKey = ""
+
+#ARTIFICIAL INTELLIGENCE OPTION 2, enable AI through pre-defined keywords
+#If Azure Cognitive Services isn't an option for you can alternatively enable this more controlled mechanism
+#that you configure with specific keywords in order to create either an Incident or Service Request when those keywords are present.
+#For example, you could set the default Work Item type near the top of the configuration to be a Service Request but
+#if any of these words are found, then an Incident would be created.
+#enableKeywordMatchForNewWI = Indicates whether or not to use a list of keywords, which if found will force a different work item type to be used.
+    #     NOTE: This will only function if Azure Cognitive Services is not also enabled.  ACS supersedes this functionality if enabled.
+#workItemTypeOverrideKeywords = A regular expression containing keywords that will cause the new work item to be created as the $workItemOverrideType if found.
+    #Use the pipe ("|") character to separate key words (it is the regex "OR")
+    #you can test it out directly in PowerShell with the following 2 lines of PowerShell
+    #     $workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjammed\b|\bjamming\b|broke|froze|issue|unable"
+    #     "i have a problem with my computer" -match $workItemTypeOverrideKeywords
+#workItemOverrideType = The type of work item to create if key words are found in the message.
+$enableKeywordMatchForNewWI = $false
+$workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjammed\b|\bjamming\b|broke|froze|issue|unable"
+$workItemOverrideType = "ir"
+
+#ARTIFICIAL INTELLIGENCE OPTION 3, enable AI through Azure Machine Learning
+#PLEASE NOTE: HIGHLY EXPERIMENTAL!
+#While using Azure Cognitive Services introduces some intelligence to the connector, Azure Machine Learning introduces
+#a feedback loop that can ensure the connector applies increasing levels of intelligence based on your own unique SCSM environment.
+#This is done by taking a subset of data from your SCSM DW, uploading to Azure Machine Learning, and then training ML on said dataset.
+#Details on setup/configuration can be found on the SMLets Exchange Connector Wiki.
+#Once trained, you can publish an AML web service the connector can consume in order to intelligently predict the
+#Work Item Type (Incident/Service Request), Work Item Support Group, and Work Item classification. Once enabled, you to set a minimum
+#percent threshold before these values are applied. In doing so, you can ensure high standards for incoming email classification so
+#AML only engages when met otherwise it will fallback to your Default Work Item template. Finally, AML can co-exist with the ACS
+#feature that defines Priority/Urgency/Impact based on Sentiment Analysis.
+
+#### requires Azure subscription and Azure Machine Learning web service deployed ####
+#enableAzureMachineLearning = If enabled, your AML Web Service will attempt to define Work Item Type, Classification, and Support Group
+#amlAPIKey = This is the API key for your AML web service
+#amlURL = This is the URL for your AML web service
+#amlWorkItemTypeMinPercentConfidence = The minimum percentage AML must return in order to decide should an Incident or Service Request be created
+#amlWorkItemClassificationMinPercentConfidence = The minimum percentage AML must return in order to set the Classification on the New Work Item
+#amlWorkItemSupportGroupMinPercentConfidence = The minimum percentage AML must return in order set the Support Group on the New Work Item
+#amlWI*ScoreClassExtensionName = You can choose to write the returned Confidence Score into the New Work Item.
+    #This requires you to have extended the Incident AND Service Request classes with a custom Decimal value and then
+    #enter the name of that property here.
+$enableAzureMachineLearning = $false
+$amlAPIKey = ""
+$amlURL = ""
+$amlWorkItemTypeMinPercentConfidence = "95"
+$amlWorkItemClassificationMinPercentConfidence = "95"
+$amlWorkItemSupportGroupMinPercentConfidence = "95"
+$amlWITypeScoreClassExtensionName = ""
+$amlWIClassificationScoreClassExtensionName = ""
+$amlWISupportGroupClassExtensionName = ""
 
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
@@ -262,10 +426,15 @@ $completedKeyword = "completed"
 $skipKeyword = "skipped"
 $approvedKeyword = "approved"
 $rejectedKeyword = "rejected"
+$privateCommentKeyword = "private"
 
 #define the path to the Exchange Web Services API and MimeKit
+#the PII regex file and HTML Suggestion Template paths will only be leveraged if these features are enabled above.
+#$htmlSuggestionTemplatePath must end with a "\"
 $exchangeEWSAPIPath = "C:\Program Files\Microsoft\Exchange\Web Services\1.2\Microsoft.Exchange.WebServices.dll"
 $mimeKitDLLPath = "C:\smletsExchangeConnector\mimekit.dll"
+$piiRegexPath = "C:\smletsExchangeConnector\pii_regex.txt"
+$htmlSuggestionTemplatePath = "c:\smletsexchangeconnector\htmlEmailTemplates\"
 
 #enable logging per standard Exchange Connector registry keys
 #valid options on that registry key are 1 to 7 where 7 is the most verbose
@@ -278,7 +447,7 @@ $mimeKitDLLPath = "C:\smletsExchangeConnector\mimekit.dll"
     # If running in SMA OR as a scheduled task with the custom events script in the same folder, use this format: . .\smletsExchangeConnector_CustomEvents.ps1
     # If running as a scheduled task and you have stored the events script in another folder, use this format: . C:\otherFolder\smletsExchangeConnector_CustomEvents.ps1'
 $ceScripts = . .\smletsExchangeConnector_CustomEvents.ps1
-#endregion
+#endregion #### Configuration ####
 
 #region #### Process User Configs and Prep SMLets ####
 # Ensure SMLets is loaded in the current session.
@@ -308,12 +477,11 @@ if ($UseMailboxRedirection -eq $true) {
     $Mailboxes.add("$($workflowEmailAddress)", @{"DefaultWiType"=$defaultNewWorkItem;"IRTemplate"=$DefaultIRTemplateName;"SRTemplate"=$DefaultSRTemplateName;"PRTemplate"=$DefaultPRTemplateName;"CRTemplate"=$DefaultCRTemplateName})
 }
 else {
-    $defaultIRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultIRTemplateName @scsmMGMTParams
-    $defaultSRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultSRTemplateName @scsmMGMTParams
-    $defaultPRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultPRTemplateName @scsmMGMTParams
-    $defaultCRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultCRTemplateName @scsmMGMTParams
+    $defaultIRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultIRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultIRTemplateName"}
+    $defaultSRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultSRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultSRTemplateName"}
+    $defaultPRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultPRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultPRTemplateName"}
+    $defaultCRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultCRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultCRTemplateName"}
 }
-
 #endregion
 
 #region #### SCSM Classes ####
@@ -361,6 +529,16 @@ $prTypeProjection = Get-SCSMTypeProjection -name "system.workitem.problem.projec
 $crTypeProjection = Get-SCSMTypeProjection -Name "system.workitem.changerequestprojection$" @scsmMGMTParams
 
 $userHasPrefProjection = Get-SCSMTypeProjection -name "System.User.Preferences.Projection$" @scsmMGMTParams
+
+# Retrieve Support Group Class Extensions on CR/MA if defined
+if ($maSupportGroupEnumGUID)
+{
+    $maSupportGroupPropertyName = ($maClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.EnumType -like "*$maSupportGroupEnumGUID*")}).Name
+}
+if ($crSupportGroupEnumGUID)
+{
+    $crSupportGroupPropertyName = ($crClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.EnumType -like "*$crSupportGroupEnumGUID*")}).Name
+}
 #endregion
 
 #region #### Exchange Connector Functions ####
@@ -372,6 +550,12 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     $title = $message.subject
     $description = $message.body
 
+    #removes PII if RedactPiiFromMessage is enabled
+    if ($redactPiiFromMessage -eq $true)
+    {
+        $description = remove-PII $description
+    }
+    
     #if the message is longer than 4000 characters take only the first 4000.
     if ($description.length -ge "4000")
     {
@@ -380,28 +564,17 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
 
     #find Affected User from the From Address
     $relatedUsers = @()
-    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$from'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-    if ($userSMTPNotification) 
-    { 
-        $affectedUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
-    }
-    else
-    {
-        if ($createUsersNotInCMDB -eq $true)
-        {
-            $affectedUser = create-userincmdb $from
-        }
-    }
+    $affectedUser = Get-SCSMUserByEmailAddress -EmailAddress "$from"
+    if ((!$affectedUser) -and ($createUsersNotInCMDB -eq $true)) {$affectedUser = create-userincmdb "$from"}
 
     #find Related Users (To)       
     if ($to.count -gt 0)
     {
         if ($to.count -eq 1)
         {
-            $userToSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($to.address)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-            if ($userToSMTPNotification) 
+            $relatedUser = Get-SCSMUserByEmailAddress -EmailAddress "$($to.address)"
+            if ($relatedUser) 
             { 
-                $relatedUser = (Get-SCSMRelationshipObject -ByTarget $userToSMTPNotification @scsmMGMTParams).sourceObject 
                 $relatedUsers += $relatedUser
             }
             else
@@ -419,10 +592,9 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
             while ($x -lt $to.count)
             {
                 $ToSMTP = $to[$x]
-                $userToSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($ToSMTP.address)'"  @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-                if ($userToSMTPNotification) 
+                $relatedUser = Get-SCSMUserByEmailAddress -EmailAddress "$($ToSMTP.address)"
+                if ($relatedUser) 
                 { 
-                    $relatedUser = (Get-SCSMRelationshipObject -ByTarget $userToSMTPNotification @scsmMGMTParams).sourceObject 
                     $relatedUsers += $relatedUser
                 }
                 else
@@ -443,10 +615,9 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     {
         if ($cced.count -eq 1)
         {
-            $userCCSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($cced.address)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-            if ($userCCSMTPNotification) 
+            $relatedUser = Get-SCSMUserByEmailAddress -EmailAddress "$($cced.address)"
+            if ($relatedUser) 
             { 
-                $relatedUser = (Get-SCSMRelationshipObject -ByTarget $userCCSMTPNotification @scsmMGMTParams).sourceObject 
                 $relatedUsers += $relatedUser
             }
             else
@@ -464,10 +635,9 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
             while ($x -lt $cced.count)
             {
                 $ccSMTP = $cced[$x]
-                $userCCSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($ccSMTP.address)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-                if ($userCCSMTPNotification) 
+                $relatedUser = Get-SCSMUserByEmailAddress -EmailAddress "$($ccSMTP.address)"
+                if ($relatedUser) 
                 { 
-                    $relatedUser = (Get-SCSMRelationshipObject -ByTarget $userCCSMTPNotification @scsmMGMTParams).sourceObject 
                     $relatedUsers += $relatedUser
                 }
                 else
@@ -483,26 +653,35 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
         }
     }
     
+    $TemplatesForThisMessage = Get-TemplatesByMailbox $message
+    
     # Use the global default work item type or, if mailbox redirection is used, use the default work item type for the
     # specific mailbox that the current message was sent to. If Azure Cognitive Services is enabled
     # run the message through it to determine the Default Work Item type. Otherwise, use default if there is no match.
-    if ($enableAzureCognitiveServices -eq $true)
+    if ($enableAzureCognitiveServicesForNewWI -eq $true)
     {
         $sentimentScore = Get-AzureEmailSentiment -messageToEvaluate $message.body
         
-        #if the sentiment is greater than or equal to what is defined, create a Service Request
+        #if the sentiment is greater than or equal to what is defined, create a Service Request.
         if ($sentimentScore -ge [int]$minPercentToCreateServiceRequest)
         {
             $workItemType = "sr"
         }
-        else #sentiment is lower than defined value, create an Incident
+        else #sentiment is lower than defined value, create an Incident.
         {
             $workItemType = "ir"
         }
     }
+    elseif ($enableKeywordMatchForNewWI -eq $true -and $(Test-KeywordsFoundInMessage $message) -eq $true) {
+        #Keyword override is true and keyword(s) found in message
+        $workItemType = $workItemOverrideType
+    }
     elseif ($UseMailboxRedirection -eq $true) {
-        $TemplatesForThisMessage = Get-TemplatesByMailbox $message
         $workItemType = if ($TemplatesForThisMessage) {$TemplatesForThisMessage["DefaultWiType"]} else {$defaultNewWorkItem}
+    }
+    elseif ($enableAzureMachineLearning -eq $true){
+        $amlProbability = Get-AMLWorkItemProbability -EmailSubject $title -EmailBody $description
+        $workItemType = if ($amlProbability.WorkItemTypeConfidence -ge $amlWorkItemTypeMinPercentConfidence) {$amlProbability.WorkItemType} else {$defaultNewWorkItem}
     }
     else {
         $workItemType = $defaultNewWorkItem
@@ -515,17 +694,18 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     switch ($workItemType) 
     {
         "ir" {
-                    if ($UseMailboxRedirection -eq $true -And $TemplatesForThisMessage) {
+                    if ($UseMailboxRedirection -eq $true -And $TemplatesForThisMessage.Count -gt 0) {
                         $IRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["IRTemplate"]) @scsmMGMTParams
                     }
                     else {
                         $IRTemplate = $defaultIRTemplate
                     }
-                    $newWorkItem = New-SCSMObject -Class $irClass -PropertyHashtable @{"ID" = "IR{0}"; "Status" = $irActiveStatus; "Title" = $title; "Description" = $description; "Classification" = $null; "Impact" = $irLowImpact; "Urgency" = $irLowUrgency; "Source" = "IncidentSourceEnum.Email$"} -PassThru @scsmMGMTParams
+                    $newWorkItem = New-SCSMObject -Class $irClass -PropertyHashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Incident")["Prefix"] + "{0}"; "Status" = $irActiveStatus; "Title" = $title; "Description" = $description; "Classification" = $null; "Impact" = $irLowImpact; "Urgency" = $irLowUrgency; "Source" = "IncidentSourceEnum.Email$"} -PassThru @scsmMGMTParams
                     $irProjection = Get-SCSMObjectProjection -ProjectionName $irTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
-                    Set-SCSMObjectTemplate -Projection $irProjection -Template $IRTemplate @scsmMGMTParams
+                    Apply-SCSMTemplate -Projection $irProjection -Template $IRTemplate
+                    #Set-SCSMObjectTemplate -Projection $irProjection -Template $IRTemplate @scsmMGMTParams
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     if ($affectedUser)
                     {
@@ -539,105 +719,88 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                             New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $newWorkItem -Target $relatedUser -Bulk @scsmMGMTParams
                         }
                     }
-                
+
+                    #Set Urgency/Impact from ACS Sentiment Analysis. If it was previously defined use it, otherwise make the ACS call
+                    if (($enableAzureCognitiveServicesForNewWI -eq $true) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
+                    {
+                        $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.Incident"
+                        Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams
+                    }
+                    elseif (($enableAzureCognitiveServicesForNewWI -eq $false) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
+                    {
+                        $sentimentScore = Get-AzureEmailSentiment -messageToEvaluate $newWorkItem.description
+                        $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.Incident"
+                        Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams
+                    }
+
+                    #write the sentiment score into the custom Work Item extension
+                    if ($acsSentimentScoreClassExtensionName)
+                    {
+                        Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreClassExtensionName -value $sentimentScore @scsmMGMTParams
+                    }
+
+                    #update the Support Group and Classification if Azure Machine Learning is being used
+                    if ($enableAzureMachineLearning -eq $true)
+                    {
+                        #write confidence scores into Work Item
+                        if ($amlWITypeScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeScoreClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
+                        if ($amlWIClassificationScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWIClassificationScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
+                        if ($amlWISupportGroupClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWISupportGroupClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
+
+                        #when scores exceed thresholds, further define Work Item
+                        if ($amlProbability.WorkItemSupportGroupConfidence -ge $amlWorkItemSupportGroupMinPercentConfidence)
+                        {
+                            Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"TierQueue" = $amlProbability.WorkItemSupportGroup} @scsmMGMTParams
+                        }
+                        if ($amlProbability.WorkItemClassificationConfidence -ge $amlWorkItemClassificationMinPercentConfidence)
+                        {
+                            Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Classification" = $amlProbability.WorkItemClassification} @scsmMGMTParams
+                        }
+                    }
+
+                    #Assign to an Analyst based on the Support Group that was set via Azure Machine Learning or just from the Template
+                    if (($DynamicWorkItemAssignment) -and ($enableAzureMachineLearning -eq $true))
+                    {
+                        Set-AssignedToPerSupportGroup -SupportGroupID $amlProbability.WorkItemSupportGroup -WorkItem $newWorkItem
+                    }
+                    elseif ($DynamicWorkItemAssignment)
+                    {
+                        $templateSupportGroupID = $IRTemplate | select-object -expandproperty propertycollection | where-object{($_.path -like "*TierQueue*")} | select-object -ExpandProperty mixedvalue
+                        Set-AssignedToPerSupportGroup -SupportGroupID $templateSupportGroupID -WorkItem $newWorkItem
+                    }
+                    
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
-                    if (($searchCiresonHTMLKB -eq $true) -and ($searchAvailableCiresonPortalOfferings -eq $true))
+                    $ciresonSuggestionURLs = Get-CiresonSuggestionURL -SuggestKA:$searchCiresonHTMLKB -AzureKA:$enableAzureCognitiveServicesForKA -SuggestRO:$searchAvailableCiresonPortalOfferings -AzureRO:$enableAzureCognitiveServicesForRO -WorkItem $newWorkItem -AffectedUser $affectedUser
+                    if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
                     {
-                        #get the user object from the Cireson Portal
-                        $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
-
-                        #get matching Knowledge Base Articles and matching Request Offering URLs
-                        if ($enableAzureCognitiveServices -eq $true)
-                        {
-                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery $discoveredKeywords -ciresonPortalUser $portalUser
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery $discoveredKeywords 
-                        }
-                        else
-                        {
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)" -ciresonPortalUser $portalUser
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)"
-                        }
-                        #combine KB results and Offering results into a single email back to the Affected User
-                        $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
-                        $emailBodyResponse = "We found some knowledge articles and requests that may be of assistance to you <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $kbURLs<br /><br />
-                        Requests: <br /><br />
-                        $requestURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
+                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                     }
-                    elseif (($searchCiresonHTMLKB -eq $true) -and ($searchAvailableCiresonPortalOfferings -eq $false))
+                    elseif ($ciresonSuggestionURLs[0])
                     {
-                        #get the user object from the Cireson Portal
-                        $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
-
-                        #get matching Knowledge Base Articles URLs
-                        if ($enableAzureCognitiveServices -eq $true)
-                        {
-                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery $discoveredKeywords -ciresonPortalUser $portalUser
-                        }
-                        else
-                        {
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)" -ciresonPortalUser $portalUser
-                        }
-                        #prepare KB result email back to the Affected User
-                        $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
-                        $emailBodyResponse = "We found some knowledge articles that may be of assistance to you <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $kbURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
+                        Send-CiresonSuggestionEmail -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                     }
-                    elseif (($searchCiresonHTMLKB -eq $false) -and ($searchAvailableCiresonPortalOfferings -eq $true))
+                    elseif ($ciresonSuggestionURLs[1])
                     {
-                        #get the user object from the Cireson Portal
-                        $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
-
-                        #get matching Request Offering URLs
-                        if ($enableAzureCognitiveServices -eq $true)
-                        {
-                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery $discoveredKeywords 
-                        }
-                        else
-                        {
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)"
-                        }
-                        #prepare Request Offering results email back to the Affected User
-                        $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolve</a>"
-                        $emailBodyResponse = "We found some requests on the portal that help you get what you need faster <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $requestURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
+                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                     }
                     else
                     {
                         #both options are set to $false
                         #don't suggest anything to the Affected User based on their recently created Default Work Item
                     }
-                    
+
                     # Custom Event Handler
                     if ($ceScripts) { Invoke-AfterCreateIR }
                     
                 }
         "sr" {
-                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage) {
+                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage.Count -gt 0) {
                         $SRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["SRTemplate"]) @scsmMGMTParams
                     }
                     else {
                         $SRTemplate = $defaultSRTemplate
                     }
-                    $newWorkItem = new-scsmobject -class $srClass -propertyhashtable @{"ID" = "SR{0}"; "Title" = $title; "Description" = $description; "Status" = "ServiceRequestStatusEnum.New$"} -PassThru @scsmMGMTParams
+                    $newWorkItem = new-scsmobject -class $srClass -propertyhashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.ServiceRequest")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ServiceRequestStatusEnum.New$"} -PassThru @scsmMGMTParams
                     $srProjection = Get-SCSMObjectProjection -ProjectionName $srTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
@@ -656,86 +819,69 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                             New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $newWorkItem -Target $relatedUser -Bulk @scsmMGMTParams
                         }
                     }
+
+                    #Set Urgency/Priority from ACS Sentiment Analysis. If it was previously defined use it, otherwise make the ACS call
+                    if (($enableAzureCognitiveServicesForNewWI -eq $true) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
+                    {
+                        $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.ServiceRequest"
+                        Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams
+                    }
+                    elseif (($enableAzureCognitiveServicesForNewWI -eq $false) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
+                    {
+                        $sentimentScore = Get-AzureEmailSentiment -messageToEvaluate $newWorkItem.description
+                        $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.ServiceRequest"
+                        Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams
+                    }
+
+                    #write the sentiment score into the custom Work Item extension
+                    if ($acsSentimentScoreClassExtensionName)
+                    {
+                        Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreClassExtensionName -value $sentimentScore @scsmMGMTParams
+                    }
+
+                    #update the Support Group and Classification if Azure Machine Learning is being used
+                    if ($enableAzureMachineLearning -eq $true)
+                    {
+                        #write confidence scores into Work Item
+                        if ($amlWITypeScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeScoreClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
+                        if ($amlWIClassificationScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWIClassificationScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
+                        if ($amlWISupportGroupClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWISupportGroupClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
+
+                        #when scores exceed thresholds, further define Work Item
+                        if ($amlProbability.WorkItemSupportGroupConfidence -ge $amlWorkItemSupportGroupMinPercentConfidence)
+                        {
+                            Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"SupportGroup" = $amlProbability.WorkItemSupportGroup} @scsmMGMTParams
+                        }
+                        if ($amlProbability.WorkItemClassificationConfidence -ge $amlWorkItemClassificationMinPercentConfidence)
+                        {
+                            Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Classification" = $amlProbability.WorkItemClassification} @scsmMGMTParams
+                        }
+                    }
+
+                    #Assign to an Analyst based on the Support Group that was set via Azure Machine Learning or just from the Template
+                    if (($DynamicWorkItemAssignment) -and ($enableAzureMachineLearning -eq $true))
+                    {
+                        Set-AssignedToPerSupportGroup -SupportGroupID $amlProbability.WorkItemSupportGroup -WorkItem $newWorkItem
+                    }
+                    elseif ($DynamicWorkItemAssignment)
+                    {
+                        $templateSupportGroupID = $SRTemplate | select-object -expandproperty propertycollection | where-object{($_.path -like "*SupportGroup*")} | select-object -ExpandProperty mixedvalue
+                        Set-AssignedToPerSupportGroup -SupportGroupID $templateSupportGroupID -WorkItem $newWorkItem
+                    }
                     
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
-                    if (($searchCiresonHTMLKB -eq $true) -and ($searchAvailableCiresonPortalOfferings -eq $true))
+                    $ciresonSuggestionURLs = Get-CiresonSuggestionURL -SuggestKA:$searchCiresonHTMLKB -AzureKA:$enableAzureCognitiveServicesForKA -SuggestRO:$searchAvailableCiresonPortalOfferings -AzureRO:$enableAzureCognitiveServicesForRO -WorkItem $newWorkItem -AffectedUser $affectedUser
+                    if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
                     {
-                        #get the user object from the Cireson Portal
-                        $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
-
-                        #get matching Knowledge Base Articles and matching Request Offering URLs
-                        if ($enableAzureCognitiveServices -eq $true)
-                        {
-                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery $discoveredKeywords -ciresonPortalUser $portalUser
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery $discoveredKeywords 
-                        }
-                        else
-                        {
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)" -ciresonPortalUser $portalUser
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)"
-                        }
-                        #combine KB results and Offering results into a single email back to the Affected User
-                        $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
-                        $emailBodyResponse = "We found some knowledge articles and requests that may be of assistance to you <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $kbURLs<br /><br />
-                        Requests: <br /><br />
-                        $requestURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
+                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                     }
-                    elseif (($searchCiresonHTMLKB -eq $true) -and ($searchAvailableCiresonPortalOfferings -eq $false))
+                    elseif ($ciresonSuggestionURLs[0])
                     {
-                        #get the user object from the Cireson Portal
-                        $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
-
-                        #get matching Knowledge Base Articles URLs
-                        if ($enableAzureCognitiveServices -eq $true)
-                        {
-                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery $discoveredKeywords -ciresonPortalUser $portalUser
-                        }
-                        else
-                        {
-                            $kbURLs = Search-CiresonKnowledgeBase -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)" -ciresonPortalUser $portalUser
-                        }
-                        #prepare KB result email back to the Affected User
-                        $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
-                        $emailBodyResponse = "We found some knowledge articles that may be of assistance to you <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $kbURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
+                        Send-CiresonSuggestionEmail -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                     }
-                    elseif (($searchCiresonHTMLKB -eq $false) -and ($searchAvailableCiresonPortalOfferings -eq $true))
+                    elseif ($ciresonSuggestionURLs[1])
                     {
-                        #get the user object from the Cireson Portal
-                        $portalUser = Get-CiresonPortalUser -username $affectedUser.UserName -domain $affectedUser.Domain
-
-                        #get matching Request Offering URLs
-                        if ($enableAzureCognitiveServices -eq $true)
-                        {
-                            $discoveredKeywords = (Get-AzureEmailKeywords "$($newWorkItem.title.trim()) $($newWorkItem.description)") -join " "
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery $discoveredKeywords 
-                        }
-                        else
-                        {
-                            $requestURLs = Search-AvailableCiresonPortalOfferings -ciresonPortalUser $portalUser -searchQuery "$($newWorkItem.title.trim()) $($newWorkItem.description)"
-                        }
-                        #prepare Request Offering results email back to the Affected User
-                        $resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $newWorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"
-                        $emailBodyResponse = "We found some requests on the portal that help you get what you need faster <br/><br/>
-                        Knowledge Articles: <br/><br />
-                        $requestURLs<br /><br />
-                        If any of the above helped you out, you can $resolveMailTo your original request."
-                        
-                        #send the message
-                        Send-EmailFromWorkflowAccount -subject "[$($newWorkItem.id)] - $($newWorkItem.title)" -body $emailBodyResponse -bodyType "HTML" -toRecipients $from
+                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                     }
                     else
                     {
@@ -747,13 +893,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($ceScripts) { Invoke-AfterCreateSR }					
                 }
         "pr" {
-                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage) {
+                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage.Count -gt 0) {
                         $PRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["PRTemplate"]) @scsmMGMTParams
                     }
                     else {
                         $PRTemplate = $defaultPRTemplate
                     }
-                    $newWorkItem = new-scsmobject -class $prClass -propertyhashtable @{"ID" = "PR{0}"; "Title" = $title; "Description" = $description; "Status" = "ProblemStatusEnum.Active$"} -PassThru @scsmMGMTParams
+                    $newWorkItem = new-scsmobject -class $prClass -propertyhashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Problem")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ProblemStatusEnum.Active$"} -PassThru @scsmMGMTParams
                     $prProjection = Get-SCSMObjectProjection -ProjectionName $prTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     if($message.Attachments){Attach-FileToWorkItem $message $newWorkItem.ID}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
@@ -776,13 +922,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($ceScripts) { Invoke-AfterCreatePR }
                 }
         "cr" {
-                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage) {
+                    if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage.Count -gt 0) {
                         $CRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["CRTemplate"]) @scsmMGMTParams
                     }
                     else {
                         $CRTemplate = $defaultCRTemplate
                     }
-                    $newWorkItem = new-scsmobject -class $crClass -propertyhashtable @{"ID" = "CR{0}"; "Title" = $title; "Description" = $description; "Status" = "ChangeStatusEnum.New$"} -PassThru @scsmMGMTParams
+                    $newWorkItem = new-scsmobject -class $crClass -propertyhashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.ChangeRequest")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ChangeStatusEnum.New$"} -PassThru @scsmMGMTParams
                     $crProjection = Get-SCSMObjectProjection -ProjectionName $crTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     #Set-SCSMObjectTemplate -Projection $crProjection -Template $defaultCRTemplate @scsmMGMTParams
                     Apply-SCSMTemplate -Projection $crProjection -Template $CRTemplate
@@ -820,6 +966,12 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
 
 function Update-WorkItem ($message, $wiType, $workItemID) 
 {
+    #removes PII if RedactPiiFromMessage is enable
+    if ($redactPiiFromMessage -eq $true)
+    {
+        $message.body = remove-PII $message.body
+    }
+      
     #determine the comment to add and ensure it's less than 4000 characters
     if ($includeWholeEmail -eq $true)
     {
@@ -854,18 +1006,8 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
     if ($ceScripts) { Invoke-BeforeUpdateAnyWorkItem }
     
     #determine who left the comment
-    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.From)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-    if ($userSMTPNotification) 
-    { 
-        $commentLeftBy = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
-    }
-    else
-    {
-        if ($createUsersNotInCMDB -eq $true)
-        {
-            $commentLeftBy = create-userincmdb $message.From
-        }
-    }
+    $commentLeftBy = Get-SCSMUserByEmailAddress -EmailAddress "$($message.From)"
+    if ((!$commentLeftBy) -and ($createUsersNotInCMDB -eq $true) ){$commentLeftBy = create-userincmdb $message.From}
 
     #add any attachments
     if ($message.Attachments)
@@ -882,49 +1024,111 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
 
             try {$existingWiStatusName = $workItem.Status.Name} catch {}
             if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "IncidentStatusEnum.Closed") {
-                $newWi = New-WorkItem -message $message -wiType $($workItem.Name.substring(0,2)) -returnWIBool $true
-
-                #copy essential info over from old to new
-                $NewDesc = "New ticket generated from reply to $($workItem.Name) (Closed). `n ---- `n $($newWi.Description) `n --- `n Original description: `n --- `n $($workItem.Description)"
-                $NewWiPropertiesFromOld = @{"Description"=$NewDesc;"TierQueue"=$($workItem.TierQueue);"Classification"=$($workItem.Classfification);"Impact"=$($workItem.Impact);"Urgency"=$($workItem.Urgency);}
-                Set-SCSMObject -SMObject $newWi -PropertyHashTable $newWiPropertiesFromOld @scsmMGMTParams
-
-                #relate old and new wi
-                New-SCSMRelationshipObject -Relationship $wiRelatesToWiRelClass -Source $newWi -Target $workItem -Bulk @scsmMGMTParams
+                $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | foreach-object {Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $_ @scsmMGMTParams).sourceobject.id @scsmMGMTParams} | where-object {$_.Status -ne "IncidentStatusEnum.Closed"}
+                if (($relatedWorkItemFromAttachmentSearch | get-unique).count -eq 1 -and $relatedWorkItemFromAttachmentSearch.Status.Name -ne "IncidentStatusEnum.Closed")
+                {
+                    Update-WorkItem -message $message -wiType "ir" -workItemID $relatedWorkItemFromAttachmentSearch.Name
+                }
+                else
+                {
+                    $newWi = New-WorkItem -message $message -wiType "ir" -returnWIBool $true
+            
+                    #copy essential info over from old to new
+                    $NewDesc = "New ticket generated from reply to $($workItem.Name) (Closed). `n ---- `n $($newWi.Description) `n --- `n Original description: `n --- `n $($workItem.Description)"
+                    $NewWiPropertiesFromOld = @{"Description"=$NewDesc;"TierQueue"=$($workItem.TierQueue);"Classification"=$($workItem.Classfification);"Impact"=$($workItem.Impact);"Urgency"=$($workItem.Urgency);}
+                    Set-SCSMObject -SMObject $newWi -PropertyHashTable $newWiPropertiesFromOld @scsmMGMTParams
+                
+                    #relate old and new wi
+                    New-SCSMRelationshipObject -Relationship $wiRelatesToWiRelClass -Source $newWi -Target $workItem -Bulk @scsmMGMTParams
+                }
             }
             else {
                 try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
                 if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                 try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
                 if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
-                #write to the Action log
+                if ($assignedToSMTP.TargetAddress -eq $affectedUserSMTP.TargetAddress){$assignedToSMTP = $null}
+                #write to the Action log and take action on the Work Item if neccesary
                 switch ($message.From)
                 {
-                    $affectedUserSMTP.TargetAddress {Add-IncidentComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -AnalystComment $false -isPrivate $false}
-                    $assignedToSMTP.TargetAddress {if($commentToAdd -match "#private"){$isPrivateBool = $true}else{$isPrivateBool = $false};Add-IncidentComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -AnalystComment $true -isPrivate $isPrivateBool}
-                    default {if($commentToAdd -match "#private"){$isPrivateBool = $true}else{$isPrivateBool = $null};Add-IncidentComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $true -isPrivate $isPrivateBool}
-                }
-                #take action on the Work Item if neccesary
-                switch -Regex ($commentToAdd)
-                {
-                    "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams;if ($ceScripts) { Invoke-AfterAcknowledge }}}
-                    "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Resolved$" @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;if ($ceScripts) { Invoke-AfterResolved }}
-                    "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Closed$" @scsmMGMTParams;if ($ceScripts) { Invoke-AfterClosed }}
-                    "\[$takeKeyword]" { 
-                        $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.TierQueue.Id
-                        if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
-                            New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
-                            # Custom Event Handler
-                            if ($ceScripts) { Invoke-AfterTake }
-                        }
-                        else {
-                            #TODO: Send an email to let them know it failed?
+                    $affectedUserSMTP.TargetAddress {
+                        if ($changeIncidentStatusOnReply -and ($workitem.Status.Name -ne "IncidentStatusEnum.Closed")) {Set-SCSMObject -SMObject $workItem -Property Status -Value "$changeIncidentStatusOnReplyAffectedUser" @scsmMGMTParams}
+                        switch -Regex ($commentToAdd) {
+                            "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterAcknowledge }}}
+                            "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ResolvedDate" = (Get-Date).ToUniversalTime(); "Status" = "IncidentStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Resolved" -IsPrivate $false; if ($defaultIncidentResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property ResolutionCategory -Value $defaultIncidentResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}
+                            "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ClosedDate" = (Get-Date).ToUniversalTime(); "Status" = "IncidentStatusEnum.Closed$"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Closed" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}
+                            "\[$takeKeyword]" { 
+                                $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.TierQueue.Id
+                                if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
+                                    New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                                    Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Assign" -IsPrivate $false
+                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    # Custom Event Handler
+                                    if ($ceScripts) { Invoke-AfterTake }
+                                }
+                                else {
+                                    #TODO: Send an email to let them know it failed?
+                                }
+                            }
+                            "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Active$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
+                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
+                            {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false}
+                            default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false}
                         }
                     }
-                    "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Active$" @scsmMGMTParams;if ($ceScripts) { Invoke-AfterReactivate }}}
-                    "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "[I][R][0-9]+")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
-                    {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}}
-                }
+                    $assignedToSMTP.TargetAddress {
+                        if ($changeIncidentStatusOnReply -and ($workitem.Status.Name -ne "IncidentStatusEnum.Closed")) {Set-SCSMObject -SMObject $workItem -Property Status -Value "$changeIncidentStatusOnReplyAssignedTo" @scsmMGMTParams}
+                        switch -Regex ($commentToAdd) {
+                            "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterAcknowledge }}}
+                            "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ResolvedDate" = (Get-Date).ToUniversalTime(); "Status" = "IncidentStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Resolved" -IsPrivate $false; if ($defaultIncidentResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property ResolutionCategory -Value $defaultIncidentResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}
+                            "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ClosedDate" = (Get-Date).ToUniversalTime(); "Status" = "IncidentStatusEnum.Closed$"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Closed" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}
+                            "\[$takeKeyword]" { 
+                                $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.TierQueue.Id
+                                if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
+                                    New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                                    Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Assign" -IsPrivate $false
+                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    # Custom Event Handler
+                                    if ($ceScripts) { Invoke-AfterTake }
+                                }
+                                else {
+                                    #TODO: Send an email to let them know it failed?
+                                }
+                            }
+                            "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Active$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
+                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
+                            {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false}
+                            "#$privateCommentKeyword" {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $true}
+                            default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false}
+                        }
+                    }
+                    default {
+                        if ($changeIncidentStatusOnReply -and ($workitem.Status.Name -ne "IncidentStatusEnum.Closed")) {Set-SCSMObject -SMObject $workItem -Property Status -Value "$changeIncidentStatusOnReplyRelatedUser" @scsmMGMTParams}
+                        switch -Regex ($commentToAdd) {
+                            "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterAcknowledge }}}
+                            "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ResolvedDate" = (Get-Date).ToUniversalTime(); "Status" = "IncidentStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Resolved" -IsPrivate $false; if ($defaultIncidentResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property ResolutionCategory -Value $defaultIncidentResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}
+                            "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ClosedDate" = (Get-Date).ToUniversalTime(); "Status" = "IncidentStatusEnum.Closed$"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Closed" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}
+                            "\[$takeKeyword]" { 
+                                $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.TierQueue.Id
+                                if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
+                                    New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                                    Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false
+                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    # Custom Event Handler
+                                    if ($ceScripts) { Invoke-AfterTake }
+                                }
+                                else {
+                                    #TODO: Send an email to let them know it failed?
+                                }
+                            }
+                            "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Active$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
+                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
+                            {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false}
+                            "#$privateCommentKeyword" {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $true}
+                            default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "$ExternalPartyCommentTypeIR" -IsPrivate $ExternalPartyCommentPrivacyIR}
+                        }
+                    }
+                }               
                 #relate the user to the work item
                 New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams
                 #add any new attachments
@@ -939,45 +1143,106 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
 
             try {$existingWiStatusName = $workItem.Status.Name} catch {}
             if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "ServiceRequestStatusEnum.Closed") {
-                $newWi = New-WorkItem -message $message -wiType $($workItem.Name.substring(0,2)) -returnWIBool $true
-
-                #copy essential info over from old to new
-                $NewDesc = "New ticket generated from reply to $($workItem.Name) (Closed). `n ---- `n $($newWi.Description) `n --- `n Original description: `n --- `n $($workItem.Description)"
-                $NewWiPropertiesFromOld = @{"Description"=$NewDesc;"SupportGroup"=$($workItem.SupportGroup);"ServiceRequestCategory"=$($workItem.ServiceRequestCategory);"Priority"=$($workItem.Priority);"Urgency"=$($workItem.Urgency)}
-                Set-SCSMObject -SMObject $newWi -PropertyHashTable $newWiPropertiesFromOld @scsmMGMTParams
-
-                #relate old and new wi
-                New-SCSMRelationshipObject -Relationship $wiRelatesToWiRelClass -Source $newWi -Target $workItem -Bulk @scsmMGMTParams
+                $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | foreach-object {Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $_ @scsmMGMTParams).sourceobject.id @scsmMGMTParams} | where-object {$_.Status -ne "ServiceRequestStatusEnum.Closed"}
+                if (($relatedWorkItemFromAttachmentSearch | get-unique).count -eq 1 -and $relatedWorkItemFromAttachmentSearch.Status.Name -ne "ServiceRequestStatusEnum.Closed")
+                {
+                    Update-WorkItem -message $message -wiType "sr" -workItemID $relatedWorkItemFromAttachmentSearch.Name
+                }
+                else
+                {
+                    $newWi = New-WorkItem -message $message -wiType "sr" -returnWIBool $true
+            
+                    #copy essential info over from old to new
+                    $NewDesc = "New ticket generated from reply to $($workItem.Name) (Closed). `n ---- `n $($newWi.Description) `n --- `n Original description: `n --- `n $($workItem.Description)"
+                    $NewWiPropertiesFromOld = @{"Description"=$NewDesc;"SupportGroup"=$($workItem.SupportGroup);"ServiceRequestCategory"=$($workItem.ServiceRequestCategory);"Priority"=$($workItem.Priority);"Urgency"=$($workItem.Urgency)}
+                    Set-SCSMObject -SMObject $newWi -PropertyHashTable $newWiPropertiesFromOld @scsmMGMTParams
+                
+                    #relate old and new wi
+                    New-SCSMRelationshipObject -Relationship $wiRelatesToWiRelClass -Source $newWi -Target $workItem -Bulk @scsmMGMTParams
+                }
             }
             else {
                 try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
                 if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                 try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
                 if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+                if ($assignedToSMTP.TargetAddress -eq $affectedUserSMTP.TargetAddress){$assignedToSMTP = $null}
                 switch ($message.From)
                 {
-                    $affectedUserSMTP.TargetAddress {Add-ServiceRequestComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -AnalystComment $false -isPrivate $false}
-                    $assignedToSMTP.TargetAddress {if($commentToAdd -match "#private"){$isPrivateBool = $true}else{$isPrivateBool = $false};Add-ServiceRequestComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -AnalystComment $true -isPrivate $isPrivateBool}
-                    default {if($commentToAdd -match "#private"){$isPrivateBool = $true}else{$isPrivateBool = $null};Add-ServiceRequestComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $true -isPrivate $isPrivateBool}
-                }
-                switch -Regex ($commentToAdd)
-                {
-                    "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams}}
-                    "\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.OnHold$" @scsmMGMTParams;if ($ceScripts) { Invoke-AfterHold }}
-                    "\[$takeKeyword]" {
-                        $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.SupportGroup.Id
-                        if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
-                            New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
-                            # Custom Event Handler
-                            if ($ceScripts) { Invoke-AfterTake }
-                        }
-                        else {
-                            #TODO: Send an email to let them know it failed?
+                    $affectedUserSMTP.TargetAddress {
+                        switch -Regex ($commentToAdd)
+                        {
+                            "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false}}
+                            "\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.OnHold$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterHold }}
+                            "\[$takeKeyword]" {
+                                $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.SupportGroup.Id
+                                if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
+                                    New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                                    Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Assign" -IsPrivate $false
+                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    # Custom Event Handler
+                                    if ($ceScripts) { Invoke-AfterTake }
+                                }
+                                else {
+                                    #TODO: Send an email to let them know it failed?
+                                }
+                            }
+                            "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"CompletedDate" = (Get-Date).ToUniversalTime(); "Status" = "ServiceRequestStatusEnum.Completed$"; "Notes" = "$commentToAdd"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false; if ($defaultServiceRequestImplementationCategory) {Set-SCSMObject -SMObject $workItem -Property ImplementationResults -Value $defaultServiceRequestImplementationCategory}; if ($ceScripts) { Invoke-AfterCompleted }}
+                            "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Canceled$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterCancelled }}
+                            "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ClosedDate" = (Get-Date).ToUniversalTime(); "Status" = "ServiceRequestStatusEnum.Closed$"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}
+                            default {if($commentToAdd -match "#$privateCommentKeyword"){$isPrivateBool = $true}else{$isPrivateBool = $false};Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $isPrivateBool}
                         }
                     }
-                    "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Completed$" @scsmMGMTParams;if ($ceScripts) { Invoke-AfterCompleted }}
-                    "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Canceled$" @scsmMGMTParams;if ($ceScripts) { Invoke-AfterCancelled }}
-                    "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Closed$" @scsmMGMTParams;if ($ceScripts) { Invoke-AfterClosed }}
+                    $assignedToSMTP.TargetAddress {
+                        switch -Regex ($commentToAdd)
+                        {
+                            "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false}}
+                            "\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.OnHold$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterHold }}
+                            "\[$takeKeyword]" {
+                                $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.SupportGroup.Id
+                                if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
+                                    New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                                    Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Assign" -IsPrivate $false
+                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    # Custom Event Handler
+                                    if ($ceScripts) { Invoke-AfterTake }
+                                }
+                                else {
+                                    #TODO: Send an email to let them know it failed?
+                                }
+                            }
+                            "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"CompletedDate" = (Get-Date).ToUniversalTime(); "Status" = "ServiceRequestStatusEnum.Completed$"; "Notes" = "$commentToAdd"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false; if ($defaultServiceRequestImplementationCategory) {Set-SCSMObject -SMObject $workItem -Property ImplementationResults -Value $defaultServiceRequestImplementationCategory}; if ($ceScripts) { Invoke-AfterCompleted }}
+                            "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Canceled$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterCancelled }}
+                            "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ClosedDate" = (Get-Date).ToUniversalTime(); "Status" = "ServiceRequestStatusEnum.Closed$"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}           
+                            "#$privateCommentKeyword" {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $true}
+                            default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false}
+                        }
+                    }
+                    default {
+                        switch -Regex ($commentToAdd)
+                        {
+                            "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false}}
+                            "\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.OnHold$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterHold }}
+                            "\[$takeKeyword]" {
+                                $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.SupportGroup.Id
+                                if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
+                                    New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                                    Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false
+                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    # Custom Event Handler
+                                    if ($ceScripts) { Invoke-AfterTake }
+                                }
+                                else {
+                                    #TODO: Send an email to let them know it failed?
+                                }
+                            }
+                            "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"CompletedDate" = (Get-Date).ToUniversalTime(); "Status" = "ServiceRequestStatusEnum.Completed$"; "Notes" = "$commentToAdd"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($defaultServiceRequestImplementationCategory) {Set-SCSMObject -SMObject $workItem -Property ImplementationResults -Value $defaultServiceRequestImplementationCategory}; if ($ceScripts) { Invoke-AfterCompleted }}
+                            "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.Canceled$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterCancelled }}
+                            "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ClosedDate" = (Get-Date).ToUniversalTime(); "Status" = "ServiceRequestStatusEnum.Closed$"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}           
+                            "#$privateCommentKeyword" {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $true}
+                            default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "$ExternalPartyCommentTypeSR" -IsPrivate $ExternalPartyCommentPrivacySR}
+                        }
+                    }
                 }
                 #relate the user to the work item
                 New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams
@@ -994,17 +1259,34 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     #write to the Action log
                     switch ($message.From)
                     {
-                        $assignedToSMTP.TargetAddress {Add-ProblemComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -AnalystComment $true -isPrivate $false}
-                        default {Add-ProblemComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $true -isPrivate $null}
-                    }
-                    #take action on the Work Item if neccesary
-                    switch -Regex ($commentToAdd)
-                    {
-                         "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Resolved$" @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;if ($ceScripts) { Invoke-AfterResolved }}
-                         "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Closed$" @scsmMGMTParams;if ($ceScripts) { Invoke-AfterClosed }}
-                         "\[$takeKeyword]" {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;if ($ceScripts) { Invoke-AfterTake }}
-                         "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "ProblemStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Active$" @scsmMGMTParams};if ($ceScripts) { Invoke-AfterReactivate }}
-                        {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}}
+                        $assignedToSMTP.TargetAddress {
+                            switch -Regex ($commentToAdd)
+                            {
+                                "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ResolvedDate" = (Get-Date).ToUniversalTime(); "Status" = "ProblemStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Resolved" -IsPrivate $false; if ($defaultProblemResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property Resolution -Value $defaultProblemResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}
+                                "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ClosedDate" = (Get-Date).ToUniversalTime(); "Status" = "ProblemStatusEnum.Closed$"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}
+                                "\[$takeKeyword]" {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;
+                                    Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false;
+                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    if ($ceScripts){ Invoke-AfterTake }}
+                                "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "ProblemStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Active$" @scsmMGMTParams}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}
+                                {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false}
+                                default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false}
+                            }
+                        }
+                        default {
+                            switch -Regex ($commentToAdd)
+                            {
+                                "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ResolvedDate" = (Get-Date).ToUniversalTime(); "Status" = "ProblemStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Resolved" -IsPrivate $false; if ($defaultProblemResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property Resolution -Value $defaultProblemResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}
+                                "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ClosedDate" = (Get-Date).ToUniversalTime(); "Status" = "ProblemStatusEnum.Closed$"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}
+                                "\[$takeKeyword]" {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;
+                                    Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false;
+                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    if ($ceScripts) { Invoke-AfterTake }}
+                                "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "ProblemStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Active$" @scsmMGMTParams}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}
+                                {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false}
+                                default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false}
+                            }
+                        }
                     }
                     #relate the user to the work item
                     New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams
@@ -1018,19 +1300,55 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     $workItem = get-scsmobject -class $crClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
                     try{$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
                     if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
-                    #write to the Action log
+                    #write to the Action log and take action on the Work Item if neccesary
                     switch ($message.From)
                     {
-                        $assignedToSMTP.TargetAddress {Add-ChangeRequestComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -AnalystComment $true -isPrivate $false}
-                        default {Add-ChangeRequestComment -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $false -isPrivate $false}
-                    }
-                    #take action on the Work Item if neccesary
-                    switch -Regex ($commentToAdd)
-                    {
-                        "\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ChangeStatusEnum.OnHold$" @scsmMGMTParams;if ($ceScripts) { Invoke-AfterHold }}
-                        "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ChangeStatusEnum.Cancelled$" @scsmMGMTParams;if ($ceScripts) { Invoke-AfterCancelled }}
-                        "\[$takeKeyword]" {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk; if ($ceScripts) { Invoke-AfterTake }}
-                        {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}}
+                        $assignedToSMTP.TargetAddress {
+                            switch -Regex ($commentToAdd)
+                            {
+                                "\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ChangeStatusEnum.OnHold$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterHold }}
+                                "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ChangeStatusEnum.Cancelled$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterCancelled }}
+                                "\[$takeKeyword]" { 
+                                    $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.$crSupportGroupPropertyName.Id
+                                    if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
+                                        New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                                        Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Assign" -IsPrivate $false
+                                        if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                        # Custom Event Handler
+                                        if ($ceScripts) { Invoke-AfterTake }
+                                    }
+                                    else {
+                                        #TODO: Send an email to let them know it failed?
+                                    }
+                                }
+                                {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "EndUserComment" -IsPrivate $false}
+                                "#$privateCommentKeyword" {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $true}
+                                default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false}
+                            }
+                        }
+                        default {
+                            switch -Regex ($commentToAdd)
+                            {
+                                "\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ChangeStatusEnum.OnHold$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterHold }}
+                                "\[$cancelledKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ChangeStatusEnum.Cancelled$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterCancelled }}
+                                "\[$takeKeyword]" { 
+                                    $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.$crSupportGroupPropertyName.Id
+                                    if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
+                                        New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                                        Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false
+                                        if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                        # Custom Event Handler
+                                        if ($ceScripts) { Invoke-AfterTake }
+                                    }
+                                    else {
+                                        #TODO: Send an email to let them know it failed?
+                                    }
+                                }
+                                {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
+                                "#$privateCommentKeyword" {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $true}
+                                default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false}
+                            } 
+                        }
                     }
                     #relate the user to the work item
                     New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams
@@ -1077,10 +1395,10 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             {
                                 $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Get_Id().Guid
                                 switch ($parentWorkItem.Classname)
-                                {
-                                    "System.WorkItem.ChangeRequest" {Add-ChangeRequestComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $false -IsPrivate $false}
-                                    "System.WorkItem.ServiceRequest" {Add-ServiceRequestComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $false -IsPrivate $false}
-                                    "System.WorkItem.Incident" {Add-IncidentComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $false -IsPrivate $false}
+                                {                                    
+                                    "System.WorkItem.ChangeRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
+                                    "System.WorkItem.ServiceRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
+                                    "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
                                 }                       
                             }
                         }
@@ -1119,9 +1437,9 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                     $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Get_Id().Guid
                                     switch ($parentWorkItem.Classname)
                                     {
-                                        "System.WorkItem.ChangeRequest" {Add-ChangeRequestComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -AnalystComment $false -IsPrivate $false}
-                                        "System.WorkItem.ServiceRequest" {Add-ServiceRequestComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -AnalystComment $false -IsPrivate $false}
-                                        "System.WorkItem.Incident" {Add-IncidentComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -AnalystComment $false -IsPrivate $false}
+                                        "System.WorkItem.ChangeRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -Action "EndUserComment" -IsPrivate $false}
+                                        "System.WorkItem.ServiceRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -Action "EndUserComment" -IsPrivate $false}
+                                        "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -Action "EndUserComment" -IsPrivate $false}
                                     }
                                 }
                                 else {
@@ -1143,6 +1461,21 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     try {$activityImplementer = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
                     if ($activityImplementer){$activityImplementerSMTP = Get-SCSMRelatedObject -SMObject $activityImplementer @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                     
+                    #take
+                    switch -Regex ($commentToAdd)
+                    {
+                        "\[$takeKeyword]" { 
+                            $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.$maSupportGroupPropertyName.Id
+                            if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
+                                New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                                # Custom Event Handler
+                                if ($ceScripts) { Invoke-AfterTake }
+                            }
+                            else {
+                                #TODO: Send an email to let them know it failed?
+                            }
+                        }
+                    }
                     #completed
                     if (($activityImplementerSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$completedKeyword]"))
                     {
@@ -1153,7 +1486,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     #skipped
                     elseif (($activityImplementerSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$skipKeyword]"))
                     {
-                        Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "ActivityStatusEnum.Skipped$"; "ActualEndDate" = (get-date).ToUniversalTime(); "Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams
+                        Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "ActivityStatusEnum.Skipped$"; "Skip" = $true; "ActualEndDate" = (get-date).ToUniversalTime(); "Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams
                         # Custom Event Handler
                         if ($ceScripts) { Invoke-AfterSkipped }
                     }
@@ -1168,9 +1501,9 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                         $parentWorkItem = Get-SCSMWorkItemParent $workItem.Get_Id().Guid
                         switch ($parentWorkItem.Classname)
                         {
-                            "System.WorkItem.ChangeRequest" {Add-ChangeRequestComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $false -IsPrivate $false}
-                            "System.WorkItem.ServiceRequest" {Add-ServiceRequestComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $false -IsPrivate $false}
-                            "System.WorkItem.Incident" {Add-IncidentComment -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -AnalystComment $false -IsPrivate $false}
+                            "System.WorkItem.ChangeRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
+                            "System.WorkItem.ServiceRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
+                            "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
                         }
                             
                     }
@@ -1189,11 +1522,10 @@ function Attach-EmailToWorkItem ($message, $workItemID)
     # Get attachment limits and attachment count in ticket, if configured to
     if ($checkAttachmentSettings -eq $true) {
         $workItem = Get-ScsmObject @scsmMGMTParams -class $wiClass -filter "Name -eq $workItemID"
-        $workItemPrefix = $workItem.Name.Substring(0,2)
-        $attachLimits = Get-ScsmAttachmentSettings $workItemPrefix
+        $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $workItem.ClassName
 
         # Get count of attachents already in ticket
-        try {$existingAttachmentsCount = (Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $fileAttachmentRelClass).Count} catch {}
+        try {$existingAttachmentsCount = (Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $fileAttachmentRelClass).Count} catch {$existingAttachmentsCount = 0}
     }
     
     $messageMime = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
@@ -1204,7 +1536,7 @@ function Attach-EmailToWorkItem ($message, $workItemID)
     
     # if #checkAttachmentSettings -eq $true, test whether the email size (IN KB!) exceeds the limit and if the number of existing attachments is under the limit
     if ($checkAttachmentSettings -eq $false -or `
-        (($MemoryStream.Length / 1024) -le $($attachLimits["MaxAttachmentSize"]) -and $existingAttachmentsCount -le $($attachLimits["MaxAttachments"])))
+        (($MemoryStream.Length / 1024) -le $($workItemSettings["MaxAttachmentSize"]) -and $existingAttachmentsCount -le $($workItemSettings["MaxAttachments"])))
     {
         #Create the attachment object itself and set its properties for SCSM
         $emailAttachment = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
@@ -1222,10 +1554,9 @@ function Attach-EmailToWorkItem ($message, $workItemID)
         $WorkItemProjection.__base.Commit()
                 
         #create the Attached By relationship if possible
-        $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-        if ($userSMTPNotification) 
+        $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
+        if ($attachedByUser) 
         { 
-            $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
             New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
         }
         
@@ -1240,15 +1571,14 @@ function Attach-FileToWorkItem ($message, $workItemId)
     # Get attachment limits and attachment count in ticket, if configured to
     if ($checkAttachmentSettings -eq $true) {
         $workItem = Get-ScsmObject @scsmMGMTParams -class $wiClass -filter "Name -eq $workItemID"
-        $workItemPrefix = $workItem.Name.Substring(0,2)
-        $attachLimits = Get-ScsmAttachmentSettings $workItemPrefix
-        $attachMaxSize = $attachLimits["MaxAttachmentSize"]
-        $attachMaxCount = $attachLimits["MaxAttachments"]
+        $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $workItem.ClassName
+        $attachMaxSize = $workItemSettings["MaxAttachmentSize"]
+        $attachMaxCount = $workItemSettings["MaxAttachments"]
 
         # Get count of attachents already in ticket
         $existingAttachments = Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $fileAttachmentRelClass
         # Only use at before the loop
-        try {$existingAttachmentsCount = $existingAttachments.Count } catch {}
+        try {$existingAttachmentsCount = $existingAttachments.Count } catch { $existingAttachmentsCount = 0 }
     }
     
     # Custom Event Handler
@@ -1267,7 +1597,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
             $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
     
             if ($MemoryStream.Length -gt $minFileSizeInKB+"kb" -and ($checkAttachmentSettings -eq $false `
-                -or ($existingAttachments.Count -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
+                -or ($existingAttachmentsCount -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
             {
                 #Create the attachment object itself and set its properties for SCSM
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
@@ -1285,12 +1615,11 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $WorkItemProjection.__base.Commit()
     
                 #create the Attached By relationship if possible
-                $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-                if ($userSMTPNotification) 
+                $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
+                if ($attachedByUser) 
                 { 
-                    $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
                     New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
-                    $existingAttachments.Count += 1
+                    $existingAttachmentsCount += 1
                 }
             }
         }
@@ -1306,7 +1635,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
             $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
     
             if ($MemoryStream.Length -gt $minFileSizeInKB+"kb" -and ($checkAttachmentSettings -eq $false `
-                -or ($existingAttachments.Count -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
+                -or ($existingAttachmentsCount -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
             {
                 #Create the attachment object itself and set its properties for SCSM
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
@@ -1324,12 +1653,11 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $WorkItemProjection.__base.Commit()
     
                 #create the Attached By relationship if possible
-                $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-                if ($userSMTPNotification) 
+                $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
+                if ($attachedByUser) 
                 { 
-                    $attachedByUser = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
                     New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
-                    $existingAttachments.Count += 1
+                    $existingAttachmentsCount += 1
                 }
             }
         }
@@ -1395,6 +1723,67 @@ function Get-TierMembership ($UserSamAccountName, $TierId) {
         }
     }
     return $isMember
+}
+
+function Get-TierMembers ($TierEnumId)
+{
+    #define classes
+    $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping"
+
+    #pull the group based on support tier mapping
+    $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierEnumId.Guid }
+    $groupId = $mapping.AdGroupId
+
+    #get the AD group object name
+    $grpInScsm = (Get-ScsmObject @scsmMGMTParams -Id $groupId)
+    $grpSamAccountName = $grpInScsm.UserName
+    
+    #determine which domain to query, in case of multiple domains and trusts
+    $AdRoot = (Get-AdDomain @adParams -Identity $grpInScsm.Domain).DNSRoot
+
+    if ($grpSamAccountName)
+    {
+        # Get the group membership
+        [array]$supportTierMembers = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive | foreach-object {Get-SCSMObject -Class $domainUserClass -filter "Username -eq '$($_.samaccountname)'"}
+    }
+    return $supportTierMembers
+}
+
+function Get-AssignedToWorkItemVolume ($SCSMUser)
+{
+    #initialize the counter, get the user's assigned Work Items that aren't in some form of "Done"
+    $assignedCount = 0
+    $assignedWorkItemRelationships = Get-SCSMRelationshipObject -TargetRelationship $assignedToUserRelClass -TargetObject $SCSMUser @scsmMGMTParams
+    $assignedWorkItemRelationships = $assignedWorkItemRelationships | select-object SourceObject -ExpandProperty SourceObject | select-object -ExpandProperty values | ?{($_.type.name -eq "Status") -and (($_.value -notlike "*Resolve*") -and ($_.value -notlike "*Close*") -and ($_.value -notlike "*Complete*") -and ($_.value -notlike "*Skip*") -and ($_.value -notlike "*Cancel*"))}
+    $assignedWorkItemRelationships | foreach-object {$assignedCount++}
+    
+    #build Assigned To Volume object
+    $assignedToVolume = New-Object System.Object
+    $assignedToVolume | Add-Member -type NoteProperty -name SCSMUser -value $SCSMUser
+    $assignedToVolume | Add-Member -type NoteProperty -name AssignedCount -value $assignedCount
+    return $assignedToVolume
+}
+
+function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
+{
+    #get the template's support group members
+    $supportGroupMembers = Get-TierMembers -TierEnumID $templateSupportGroupID
+
+    #based on how Dynamic Work Item assignment was configured, set the Assigned To User
+    switch ($DynamicWorkItemAssignment)
+    {
+        "volume" {$supportGroupMembers | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object -first 1 | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
+        "OOOvolume" {$supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object -first 1 | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
+        "random" {$supportGroupMembers | Get-Random | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
+        "OOOrandom" {$supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | Get-Random | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
+        default {<#the config variable has a value that wasn't part of the set#>}
+    }
+
+    #Set the First Assigned Date
+    if (($DynamicWorkItemAssignment -eq "volume") -or ($DynamicWorkItemAssignment -eq "OOOvolume") -or ($DynamicWorkItemAssignment -eq "random") -or ($DynamicWorkItemAssignment -eq "OOOrandom"))
+    {
+        Set-SCSMObject -SMObject $WorkItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams
+    }
 }
 
 #courtesy of Leigh Kilday. Modified.
@@ -1480,289 +1869,164 @@ function Create-UserInCMDB ($userEmail)
     return $newUser
 }
 
+#combined previous 4 individual comment functions featured from versions 1 to 1.4.3 into single function and introduced more Action Log functionality
 #inspired and modified from Travis Wright here - https://blogs.technet.microsoft.com/servicemanager/2013/01/16/creating-membership-and-hosting-objectsrelationships-using-new-scsmobjectprojection-in-smlets/
-function Add-IncidentComment {
+#inspired and modified from Anders Asp here - http://www.scsm.se/?p=1423
+#inspired and modified from Xapity here - http://www.xapity.com/single-post/2016/11/27/PowerShell-for-SCSM-Updating-the-Action-Log
+function Add-ActionLogEntry {
     param (
-        [parameter(Mandatory=$True,Position=0)]$WIObject,
-        [parameter(Mandatory=$True,Position=1)]$Comment,
-        [parameter(Mandatory=$True,Position=2)]$EnteredBy,
-        [parameter(Mandatory=$False,Position=3)]$AnalystComment,
-        [parameter(Mandatory=$False,Position=4)]$IsPrivate
+        [parameter(Mandatory=$true, Position=0)]
+        $WIObject,
+        [parameter(Mandatory=$true, Position=1)] 
+        [ValidateSet("Assign","AnalystComment","Closed","Escalated","EmailSent","EndUserComment","FileAttached","FileDeleted","Reactivate","Resolved","TemplateApplied")] 
+        [string] $Action,
+        [parameter(Mandatory=$true, Position=2)]
+        [string] $Comment,
+        [parameter(Mandatory=$true, Position=3)]
+        [string] $EnteredBy,
+        [parameter(Mandatory=$false, Position=4)]
+        [Nullable[boolean]] $IsPrivate = $false
     )
- 
-    # Make sure that the WI Object it passed to the function
-    If ($WIObject.Id -ne $NULL) {
 
-        If ($AnalystComment -eq $true) {
-            $CommentClass = "System.WorkItem.TroubleTicket.AnalystCommentLog"
-            $CommentClassName = "AnalystComments"
-        } else {
-            $CommentClass = "System.WorkItem.TroubleTicket.UserCommentLog"
-            $CommentClassName = "UserComments"
+    #Choose the Action Log Entry to be created. Depending on the Action Log being used, the $propDescriptionComment Property could be either Comment or Description.
+    switch ($Action) 
+    {
+        Assign {$CommentClass = "System.WorkItem.TroubleTicket.ActionLog"; $ActionType = "System.WorkItem.ActionLogEnum.RecordAssigned"; $ActionEnum = get-scsmenumeration $ActionType @scsmMGMTParams; $propDescriptionComment = "Description"}
+        AnalystComment {$CommentClass = "System.WorkItem.TroubleTicket.AnalystCommentLog"; $propDescriptionComment = "Comment"}
+        Closed {$CommentClass = "System.WorkItem.TroubleTicket.ActionLog"; $ActionType = "System.WorkItem.ActionLogEnum.RecordClosed"; $ActionEnum = get-scsmenumeration $ActionType @scsmMGMTParams; $propDescriptionComment = "Description"}
+        Escalated {$CommentClass = "System.WorkItem.TroubleTicket.ActionLog"; $ActionType = "System.WorkItem.ActionLogEnum.RecordEscalated"; $ActionEnum = get-scsmenumeration $ActionType @scsmMGMTParams; $propDescriptionComment = "Description"}
+        EmailSent {$CommentClass = "System.WorkItem.TroubleTicket.ActionLog"; $ActionType = "System.WorkItem.ActionLogEnum.EmailSent"; $ActionEnum = get-scsmenumeration $ActionType @scsmMGMTParams; $propDescriptionComment = "Description"}
+        EndUserComment {$CommentClass = "System.WorkItem.TroubleTicket.UserCommentLog"; $propDescriptionComment = "Comment"}
+        FileAttached {$CommentClass = "System.WorkItem.TroubleTicket.ActionLog"; $ActionType = "System.WorkItem.ActionLogEnum.FileAttached"; $ActionEnum = get-scsmenumeration $ActionType @scsmMGMTParams; $propDescriptionComment = "Description"}
+        FileDeleted {$CommentClass = "System.WorkItem.TroubleTicket.ActionLog"; $ActionType = "System.WorkItem.ActionLogEnum.FileDeleted"; $ActionEnum = get-scsmenumeration $ActionType @scsmMGMTParams; $propDescriptionComment = "Description"}
+        Reactivate {$CommentClass = "System.WorkItem.TroubleTicket.ActionLog"; $ActionType = "System.WorkItem.ActionLogEnum.RecordReopened"; $ActionEnum = get-scsmenumeration $ActionType @scsmMGMTParams; $propDescriptionComment = "Description"}
+        Resolved {$CommentClass = "System.WorkItem.TroubleTicket.ActionLog"; $ActionType = "System.WorkItem.ActionLogEnum.RecordResolved"; $ActionEnum = get-scsmenumeration $ActionType @scsmMGMTParams; $propDescriptionComment = "Description"}
+        TemplateApplied {$CommentClass = "System.WorkItem.TroubleTicket.ActionLog"; $ActionType = "System.WorkItem.ActionLogEnum.TemplateApplied"; $ActionEnum = get-scsmenumeration $ActionType @scsmMGMTParams; $propDescriptionComment = "Description"}
+    }
+
+    #Alias on Type Projection for Service Requests and Problem and are singular, whereas Incident and Change Request are plural. Update $CommentClassName
+    if (($WIObject.ClassName -eq "System.WorkItem.Problem") -or ($WIObject.ClassName -eq "System.WorkItem.ServiceRequest")) {$CommentClassName = "ActionLog"} else {$CommentClassName = "ActionLogs"}
+
+    #Analyst and End User Comments Classes have different Names based on the Work Item class
+    if ($Action -eq "AnalystComment")
+    {    
+        switch ($WIObject.ClassName)
+        {
+            "System.WorkItem.Incident" {$CommentClassName = "AnalystComments"}
+            "System.WorkItem.ServiceRequest" {$CommentClassName = "AnalystCommentLog"}
+            "System.WorkItem.Problem" {$CommentClassName = "Comment"}
+            "System.WorkItem.ChangeRequest" {$CommentClassName = "AnalystComments"}   
         }
- 
-        # Generate a new GUID for the comment
-        $NewGUID = ([guid]::NewGuid()).ToString()
- 
-        # Create the object projection with properties
-        $Projection = @{__CLASS = "$($WIObject.ClassName)";
-                        __SEED = $WIObject;
-                        $CommentClassName = @{__CLASS = $CommentClass;
-                                            __OBJECT = @{Id = $NewGUID;
-                                                        DisplayName = $NewGUID;
-                                                        Comment = $Comment;
-                                                        EnteredBy = $EnteredBy;
-                                                        EnteredDate = (Get-Date).ToUniversalTime();
-                                                        IsPrivate = $IsPrivate;
-                                            }
-                        }
+    }
+    if ($Action -eq "EndUserComment")
+    {    
+        switch ($WIObject.ClassName)
+        {
+            "System.WorkItem.Incident" {$CommentClassName = "UserComments"}
+            "System.WorkItem.ServiceRequest" {$CommentClassName = "EndUserCommentLog"}
+            "System.WorkItem.Problem" {$CommentClass = "System.WorkItem.TroubleTicket.AnalystCommentLog"; $CommentClassName = "Comment"}
+            "System.WorkItem.ChangeRequest" {$CommentClassName = "UserComments"}   
         }
- 
-        # Create the actual comment
-        New-SCSMObjectProjection -Type "System.WorkItem.IncidentPortalProjection" -Projection $Projection @scsmMGMTParams
-    } else {
-        Throw "Invalid Incident Object!"
+    }
+
+    # Generate a new GUID for the entry
+    $NewGUID = ([guid]::NewGuid()).ToString()
+
+    # Create the object projection with properties
+    $Projection = @{__CLASS = "$($WIObject.ClassName)";
+                    __SEED = $WIObject;
+                    $CommentClassName = @{__CLASS = $CommentClass;
+                                        __OBJECT = @{Id = $NewGUID;
+                                            DisplayName = $NewGUID;
+                                            ActionType = $ActionType;
+                                            $propDescriptionComment = $Comment;
+                                            Title = "$($ActionEnum.DisplayName)";
+                                            EnteredBy  = $EnteredBy;
+                                            EnteredDate = (Get-Date).ToUniversalTime();
+                                            IsPrivate = $IsPrivate;
+                                        }
+                    }
+    }
+    
+    #create the projection based on the work item class
+    switch ($WIObject.ClassName)
+    {
+        "System.WorkItem.Incident" {New-SCSMObjectProjection -Type "System.WorkItem.IncidentPortalProjection" -Projection $Projection @scsmMGMTParams}
+        "System.WorkItem.ServiceRequest" {New-SCSMObjectProjection -Type "System.WorkItem.ServiceRequestProjection" -Projection $Projection @scsmMGMTParams}
+        "System.WorkItem.Problem" {New-SCSMObjectProjection -Type "System.WorkItem.Problem.ProjectionType" -Projection $Projection @scsmMGMTParams}
+        "System.WorkItem.ChangeRequest" {New-SCSMObjectProjection -Type "Cireson.ChangeRequest.ViewModel" -Projection $Projection @scsmMGMTParams}
     }
 }
 
-#inspired and modified from Anders Asp here - http://www.scsm.se/?p=1423
-function Add-ServiceRequestComment {
-    param (
-        [parameter(Mandatory=$True,Position=0)]$WIObject,
-        [parameter(Mandatory=$True,Position=1)]$Comment,
-        [parameter(Mandatory=$True,Position=2)]$EnteredBy,
-        [parameter(Mandatory=$False,Position=3)]$AnalystComment,
-        [parameter(Mandatory=$False,Position=4)]$IsPrivate
-    )
- 
-    # Make sure that the SR Object it passed to the function
-    If ($WIObject.Id -ne $NULL) {
-         
- 
-        If ($AnalystComment -eq $true) {
-            $CommentClass = "System.WorkItem.TroubleTicket.AnalystCommentLog"
-            $CommentClassName = "AnalystCommentLog"
-        } else {
-            $CommentClass = "System.WorkItem.TroubleTicket.UserCommentLog"
-            $CommentClassName = "EndUserCommentLog"
-        }
- 
-        # Generate a new GUID for the comment
-        $NewGUID = ([guid]::NewGuid()).ToString()
- 
-        # Create the object projection with properties
-        $Projection = @{__CLASS = "$($WIObject.Classname)";
-                        __SEED = $WIObject;
-                        $CommentClassName = @{__CLASS = $CommentClass;
-                                            __OBJECT = @{Id = $NewGUID;
-                                                        DisplayName = $NewGUID;
-                                                        Comment = $Comment;
-                                                        EnteredBy = $EnteredBy;
-                                                        EnteredDate = (Get-Date).ToUniversalTime();
-                                                        IsPrivate = $IsPrivate;
-                                            }
-                        }
-        }
- 
-        # Create the actual comment
-        New-SCSMObjectProjection -Type "System.WorkItem.ServiceRequestProjection" -Projection $Projection @scsmMGMTParams
-    } else {
-        Throw "Invalid Service Request Object!"
-    }
-}
-
-#inspired and modified from Anders Asp here - http://www.scsm.se/?p=1423
-function Add-ProblemComment {
-    param (
-        [parameter(Mandatory=$True,Position=0)]$WIObject,
-        [parameter(Mandatory=$True,Position=1)]$Comment,
-        [parameter(Mandatory=$True,Position=2)]$EnteredBy,
-        [parameter(Mandatory=$False,Position=3)]$AnalystComment,
-        [parameter(Mandatory=$False,Position=4)]$IsPrivate
-    )
- 
-    # Make sure that the SR Object it passed to the function
-    If ($WIObject.Id -ne $NULL) {
-         
- 
-        If ($AnalystComment -eq $true) {
-            $CommentClass = "System.WorkItem.TroubleTicket.AnalystCommentLog"
-            $CommentClassName = "Comment"
-        } else {
-            $CommentClass = "System.WorkItem.TroubleTicket.UserCommentLog"
-            $CommentClassName = "EndUserCommentLog"
-        }
- 
-        # Generate a new GUID for the comment
-        $NewGUID = ([guid]::NewGuid()).ToString()
- 
-        # Create the object projection with properties
-        $Projection = @{__CLASS = "$($WIObject.Classname)";
-                        __SEED = $WIObject;
-                        $CommentClassName = @{__CLASS = $CommentClass;
-                                            __OBJECT = @{Id = $NewGUID;
-                                                        DisplayName = $NewGUID;
-                                                        Comment = $Comment;
-                                                        EnteredBy = $EnteredBy;
-                                                        EnteredDate = (Get-Date).ToUniversalTime();
-                                                        IsPrivate = $IsPrivate;
-                                            }
-                        }
-        }
- 
-        # Create the actual comment
-        New-SCSMObjectProjection -Type "System.WorkItem.Problem.ProjectionType" -Projection $Projection @scsmMGMTParams
-    } else {
-        Throw "Invalid Problem Object!"
-    }
-}
-
-#inspired and modified from Anders Asp here - http://www.scsm.se/?p=1423
-function Add-ChangeRequestComment {
-    param (
-        [parameter(Mandatory=$True,Position=0)]$WIObject,
-        [parameter(Mandatory=$True,Position=1)]$Comment,
-        [parameter(Mandatory=$True,Position=2)]$EnteredBy,
-        [parameter(Mandatory=$False,Position=3)]$AnalystComment,
-        [parameter(Mandatory=$False,Position=4)]$IsPrivate
-    )
- 
-    # Make sure that the SR Object it passed to the function
-    If ($WIObject.Id -ne $NULL) {
-         
- 
-        If ($AnalystComment -eq $true) {
-            $CommentClass = "System.WorkItem.TroubleTicket.AnalystCommentLog"
-            $CommentClassName = "AnalystComments"
-        } else {
-            $CommentClass = "System.WorkItem.TroubleTicket.UserCommentLog"
-            $CommentClassName = "UserComments"
-        }
- 
-        # Generate a new GUID for the comment
-        $NewGUID = ([guid]::NewGuid()).ToString()
- 
-        # Create the object projection with properties
-        $Projection = @{__CLASS = "$($WIObject.Classname)";
-                        __SEED = $WIObject;
-                        $CommentClassName = @{__CLASS = $CommentClass;
-                                            __OBJECT = @{Id = $NewGUID;
-                                                        DisplayName = $NewGUID;
-                                                        Comment = $Comment;
-                                                        EnteredBy = $EnteredBy;
-                                                        EnteredDate = (Get-Date).ToUniversalTime();
-                                                        IsPrivate = $IsPrivate;
-                                            }
-                        }
-        }
- 
-        # Create the actual comment
-        #NOTE: This Projection is 100% based on Cireson's CR projection as this is the ONLY projection
-        #that features AssignedTo, AffectedUser, CreatedBy, and EndUser/Analyst Action Log comments
-        #If you aren't a customer of Cireson, you'll need to create your own type projection
-        #to use here.
-        New-SCSMObjectProjection -Type "Cireson.ChangeRequest.ViewModel" -Projection $Projection @scsmMGMTParams
-    } else {
-        Throw "Invalid Change Request Object!"
-    }
+#if using windows authentication, retrieve a Cireson Web API token
+function Get-CiresonPortalAPIToken
+{
+    $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
+    $ciresonTokenURL = $ciresonPortalServer+"api/V3/Authorization/GetToken"
+    $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials
+    $ciresonAPIToken = "Token" + " " + $ciresonAPIToken
+    return $ciresonAPIToken
 }
 
 #retrieve a user from SCSM through the Cireson Web Portal API
 function Get-CiresonPortalUser ($username, $domain)
 {
+    $isAuthUserAPIurl = "api/V3/User/IsUserAuthorized?userName=$username&domain=$domain"
     if ($ciresonPortalWindowsAuth -eq $true)
     {
-        $isAuthUserAPIurl = "api/V3/User/IsUserAuthorized?userName=$username&domain=$domain"
-        $returnedUser = Invoke-WebRequest -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -UseDefaultCredentials -SessionVariable userWebRequestSessionVar
-        $ciresonPortalUserObject = $returnedUser.Content | ConvertFrom-Json
+        $ciresonPortalUserObject = Invoke-RestMethod -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -UseDefaultCredentials
     }
     else
     {
-        $portalLoginRequest = Invoke-WebRequest -Uri $ciresonPortalServer -Method get -SessionVariable userWebRequestSessionVar
-        $loginForm = $portalLoginRequest.Forms[0]
-        $loginForm.Fields["UserName"] = $ciresonPortalUsername
-        $loginForm.Fields["Password"] = $ciresonPortalPassword
-    
-        $portalLoginPost = Invoke-WebRequest -Uri ($ciresonPortalServer + "Login/Login?ReturnUrl=%2f") -Method post -Body $loginForm.Fields -WebSession $userWebRequestSessionVar 
-        $isAuthUserAPIurl = "api/V3/User/IsUserAuthorized?userName=$username&domain=$domain"
-        $returnedUser = Invoke-WebRequest -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -WebSession $userWebRequestSessionVar
-        $ciresonPortalUserObject = $returnedUser.Content | ConvertFrom-Json
+        $ciresonPortalUserObject = Invoke-RestMethod -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
     }
-
     return $ciresonPortalUserObject
 }
 
 #retrieve a group from SCSM through the Cireson Web Portal API
 function Get-CiresonPortalGroup ($groupEmail)
 {
-    $groupName = Get-ADGroup @adParams -Filter "Mail -eq $groupEmail"
+    $adGroup = Get-ADGroup @adParams -Filter "Mail -eq $groupEmail"
 
     if($ciresonPortalWindowsAuth)
     {
         #wanted to use a get groups style request, but "api/V3/User/GetConsoleGroups" feels costly instead of a search
-        $cwpGroupResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($groupName.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -UseDefaultCredentials
-        $ciresonPortalGroup = ($cwpGroupResponse.content | ConvertFrom-Json) | select-object @{Name='AccessGroupId'; Expression={$_.Id}}, name | ?{$_.name -eq $($groupName.Name)} 
-        return $ciresonPortalGroup
+        $cwpGroupResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($adGroup.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -UseDefaultCredentials
     }
     else
     {
-        $portalLoginRequest = Invoke-WebRequest -Uri $ciresonPortalServer -Method get -SessionVariable groupWebRequestSessionVar
-        $loginForm = $portalLoginRequest.Forms[0]
-        $loginForm.Fields["UserName"] = $ciresonPortalUsername
-        $loginForm.Fields["Password"] = $ciresonPortalPassword
-    
-        $portalLoginPost = Invoke-WebRequest -Uri ($ciresonPortalServer + "Login/Login?ReturnUrl=%2f") -Method post -Body $loginForm.Fields -WebSession $groupWebRequestSessionVar 
-        $cwpGroupResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($groupName.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -WebSession $groupWebRequestSessionVar
-        $ciresonPortalGroup = ($cwpGroupResponse.content | ConvertFrom-Json) | select-object @{Name='AccessGroupId'; Expression={$_.Id}}, name | ?{$_.name -eq $($groupName.Name)} 
-        return $ciresonPortalGroup
+        $cwpGroupResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($adGroup.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
     }
+    $ciresonPortalGroup = $cwpGroupResponse | select-object @{Name='AccessGroupId'; Expression={$_.Id}}, name | ?{$_.name -eq $($adGroup.Name)}
+    return $ciresonPortalGroup
 }
 
 #retrieve all the announcements on the portal
 function Get-CiresonPortalAnnouncements ($languageCode)
 {
+    $allAnnouncementsURL = "api/V3/Announcement/GetAllAnnouncements?languageCode=$($languageCode)"
     if($ciresonPortalWindowsAuth)
     {
-        $allAnnouncementsURL = "api/V3/Announcement/GetAllAnnouncements?languageCode=$($languageCode)"
-        $allCiresonPortalAnnouncements = Invoke-WebRequest -uri ($ciresonPortalServer+$allAnnouncementsURL) -UseDefaultCredentials | ConvertFrom-Json
-        return $allCiresonPortalAnnouncements
+        $allCiresonPortalAnnouncements = Invoke-RestMethod -uri ($ciresonPortalServer+$allAnnouncementsURL) -UseDefaultCredentials
     }
     else
     {
-        $portalLoginRequest = Invoke-WebRequest -Uri $ciresonPortalServer -Method get -SessionVariable announcementWebRequestSessionVar
-        $loginForm = $portalLoginRequest.Forms[0]
-        $loginForm.Fields["UserName"] = $ciresonPortalUsername
-        $loginForm.Fields["Password"] = $ciresonPortalPassword
-    
-        $portalLoginPost = Invoke-WebRequest -Uri ($ciresonPortalServer + "Login/Login?ReturnUrl=%2f") -Method post -Body $loginForm.Fields -WebSession $announcementWebRequestSessionVar
-        $allAnnouncementsURL = "api/V3/Announcement/GetAllAnnouncements?languageCode=$($languageCode)"
-        $allCiresonPortalAnnouncements = Invoke-WebRequest -uri ($ciresonPortalServer+$allAnnouncementsURL) -WebSession $announcementWebRequestSessionVar | ConvertFrom-Json
-        return $allCiresonPortalAnnouncements
+        $allCiresonPortalAnnouncements = Invoke-RestMethod -uri ($ciresonPortalServer+$allAnnouncementsURL) -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
     }
+    return $allCiresonPortalAnnouncements
 }
 
 #search for available Request Offerings based on content from a New Work Item and notify the Affected user via the Cireson Portal API
 function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUser)
 {
-    #$searchQuery = $workItem.Title.Trim() + " " + $workItem.Description.Trim()
-
+    $serviceCatalogAPIurl = "api/V3/ServiceCatalog/GetServiceCatalog?userId=$($ciresonPortalUser.id)&isScoped=$($ciresonPortalUser.Security.IsServiceCatalogScoped)"
     if ($ciresonPortalWindowsAuth -eq $true)
     {
-        $serviceCatalogAPIurl = "api/V3/ServiceCatalog/GetServiceCatalog?userId=$($ciresonPortalUser.id)&isScoped=$($ciresonPortalUser.Security.IsServiceCatalogScoped)"
-        $serviceCatalogResults = Invoke-WebRequest -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -UseDefaultCredentials -SessionVariable ecWebSession
-        $serviceCatalogResults = $serviceCatalogResults.Content | ConvertFrom-Json
+        $serviceCatalogResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -UseDefaultCredentials
     }
     else
     {
-        $portalLoginRequest = Invoke-WebRequest -Uri $ciresonPortalServer -Method get -SessionVariable ecWebSession
-        $loginForm = $portalLoginRequest.Forms[0]
-        $loginForm.Fields["UserName"] = $ciresonPortalUsername
-        $loginForm.Fields["Password"] = $ciresonPortalPassword
-    
-        $portalLoginPost = Invoke-WebRequest -Uri ($ciresonPortalServer + "Login/Login?ReturnUrl=%2f") -Method post -Body $loginForm.Fields -WebSession $ecWebSession 
-        $serviceCatalogAPIurl = "api/V3/ServiceCatalog/GetServiceCatalog?userId=$($ciresonPortalUser.id)&isScoped=$($ciresonPortalUser.Security.IsServiceCatalogScoped)"
-        $serviceCatalogResults = Invoke-WebRequest -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -WebSession $ecWebSession
-        $serviceCatalogResults = $serviceCatalogResults.Content | ConvertFrom-Json | Select-Object RequestOfferingTitle, RequestOfferingDescription, Service, RequestOfferingId, ServiceOfferingId
+        $serviceCatalogResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
     }
 
     #### If the user has access to some Request Offerings, find which RO Titles/Description contain words from their original message ####
@@ -1772,14 +2036,18 @@ function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUse
         $matchingRequestURLs = @()
         foreach ($serviceCatalogResult in $serviceCatalogResults)
         {
-            $wordsMatched = ($searchQuery.Split() | ?{($serviceCatalogResult.title -match "\b$_\b") -or ($serviceCatalogResult.description -match "\b$_\b")}).count
+            $wordsMatched = ($searchQuery.Split() | ?{($serviceCatalogResult.RequestOfferingTitle -match "\b$_\b") -or ($serviceCatalogResult.RequestOfferingDescription -match "\b$_\b")}).count
             if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToRO)
             {
                 $ciresonPortalRequestURL = "`"" + $ciresonPortalServer + "SC/ServiceCatalog/RequestOffering/" + $serviceCatalogResult.RequestOfferingId + "," + $serviceCatalogResult.ServiceOfferingId + "`""
-                $matchingRequestURLs += "<a href=$ciresonPortalRequestURL/>$($serviceCatalogResult.RequestOfferingTitle)</a><br />"
+                $RequestOfferingURL = "<a href=$ciresonPortalRequestURL/>$($serviceCatalogResult.RequestOfferingTitle)</a><br />"
+                $requestOfferingSuggestion = New-Object System.Object
+                $requestOfferingSuggestion | Add-Member -type NoteProperty -name RequestOfferingURL -value $RequestOfferingURL
+                $requestOfferingSuggestion | Add-Member -type NoteProperty -name WordsMatched -value $wordsMatched
+                $matchingRequestURLs += $requestOfferingSuggestion
             }
         }
-
+        $matchingRequestURLs = ($matchingRequestURLs | sort-object WordsMatched -Descending).RequestOfferingURL
         return $matchingRequestURLs
     }
 }
@@ -1787,24 +2055,16 @@ function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUse
 #search the Cireson KB based on content from a New Work Item and notify the Affected User
 function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
 {
-    #$searchQuery = $workItem.Title.Trim() + " " + $workItem.Description.Trim()
-
+    $kbAPIurl = "api/V3/KnowledgeBase/GetHTMLArticlesFullTextSearch?userId=$($ciresonPortalUser.Id)&searchValue=$searchQuery&isManager=$([bool]$ciresonPortalUser.KnowledgeManager)&userLanguageCode=$($ciresonPortalUser.LanguageCode)"
     if ($ciresonPortalWindowsAuth -eq $true)
     {
-        $kbResults = Invoke-WebRequest -Uri ($ciresonPortalServer + "api/V3/KnowledgeBase/GetHTMLArticlesFullTextSearch?userId=$($ciresonPortalUser.Id)&searchValue=$searchQuery&isManager=$([bool]$ciresonPortalUser.KnowledgeManager)&userLanguageCode=$($ciresonPortalUser.LanguageCode)") -UseDefaultCredentials
+        $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$kbAPIurl) -UseDefaultCredentials
     }
     else
     {
-        $portalLoginRequest = Invoke-WebRequest -Uri $ciresonPortalServer -Method get -SessionVariable ecPortalSession
-        $loginForm = $portalLoginRequest.Forms[0]
-        $loginForm.Fields["UserName"] = $ciresonPortalUsername
-        $loginForm.Fields["Password"] = $ciresonPortalPassword
-    
-        $portalLoginPost = Invoke-WebRequest -Uri ($ciresonPortalServer + "Login/Login?ReturnUrl=%2f") -WebSession $ecPortalSession -Method post -Body $loginForm.Fields
-        $kbResults = Invoke-WebRequest -Uri ($ciresonPortalServer + "api/V3/KnowledgeBase/GetHTMLArticlesFullTextSearch?userId=$($ciresonPortalUser.Id)&searchValue=$searchQuery&isManager=$([bool]$ciresonPortalUser.KnowledgeManager)&userLanguageCode=$($ciresonPortalUser.LanguageCode)") -WebSession $ecPortalSession
+        $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$kbAPIurl) -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
     }
 
-    $kbResults = $kbResults.Content | ConvertFrom-Json
     $kbResults =  $kbResults | ?{$_.endusercontent -ne ""} | select-object articleid, title
     
     if ($kbResults)
@@ -1812,11 +2072,116 @@ function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
         $matchingKBURLs = @()
         foreach ($kbResult in $kbResults)
         {
-            $matchingKBURLs += "<a href=$ciresonPortalServer" + "KnowledgeBase/View/$($kbResult.articleid)#/>$($kbResult.title)</a><br />"
+            $wordsMatched = ($searchQuery.Split() | ?{($kbResult.title -match "\b$_\b")}).count
+            if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToKA)
+            {
+                $knowledgeSuggestion = New-Object System.Object
+                $KnowledgeArticleURL = "<a href=$ciresonPortalServer" + "KnowledgeBase/View/$($kbResult.articleid)#/>$($kbResult.title)</a><br />"
+                $knowledgeSuggestion | Add-Member -type NoteProperty -name KnowledgeArticleURL -value $KnowledgeArticleURL
+                $knowledgeSuggestion | Add-Member -type NoteProperty -name WordsMatched -value $wordsMatched
+                $matchingKBURLs += $knowledgeSuggestion
+            }
         }
-
+        $matchingKBURLs = ($matchingKBURLs | sort-object WordsMatched -Descending).KnowledgeArticleURL
         return $matchingKBURLs
     }
+}
+
+#retrieve Cireson Knowledge Base articles and/or Request Offerings, optionally leverage Azure Cognitive Services if enabled. Return results as an HTML formatted array of URLs
+function Get-CiresonSuggestionURL
+{
+    [cmdletbinding()]
+    Param
+    (
+        [Parameter()]
+        [switch]$SuggestKA,
+        [Parameter()]
+        [switch]$SuggestRO,
+        [Parameter()]
+        [switch]$AzureKA,
+        [Parameter()]
+        [switch]$AzureRO,
+        [Parameter()]
+        [object]$WorkItem,
+        [Parameter()]
+        [object]$AffectedUser
+    )
+    
+    #retrieve the cireson portal user
+    $portalUser = Get-CiresonPortalUser -username $AffectedUser.UserName -domain $AffectedUser.Domain
+
+    #Define the initial keyword hashtable to use against the Cireson Web API
+    $searchQueriesHash = @{"AzureRO" = "$($WorkItem.title.trim()) $($WorkItem.description)"; "AzureKA" = "$($WorkItem.title.trim()) $($WorkItem.description)"}
+
+    #if at least 1 ACS feature is being used, retrieve the keywords from ACS
+    if ($AzureKA -or $AzureRO)
+    {
+        $acsKeywordsToSet = (Get-AzureEmailKeywords -messageToEvaluate "$($WorkItem.title.trim()) $($WorkItem.description)") -join " "
+    }
+
+    #update the hashtable to set the ACS Keywords on the relevant feature(s)
+    foreach ($paramName in 'AzureKA', 'AzureRO')
+    {
+        if ($PSBoundParameters[$paramName])
+        {
+            $change = $searchQueriesHash.GetEnumerator() | where-object {$_.Name -eq $paramName}
+            $change | foreach-object {$searchQueriesHash[$_.Key]="$acsKeywordsToSet"}
+        }
+    }
+
+    #determine which Suggestion features will be used
+    $isSuggestionFeatureUsed = 
+        foreach ($paramName in 'SuggestKA', 'SuggestRO')
+        {
+            if ($PSBoundParameters[$paramName]) {$paramName}
+        }
+    
+    #call the Suggestion functions passing the search query (work item description/keywords) per the enabled features
+    switch ($isSuggestionFeatureUsed)
+    {
+        "SuggestKA" {$kbURLs = Search-CiresonKnowledgeBase -searchQuery $($searchQueriesHash["AzureKA"]) -ciresonPortalUser $portalUser}
+        "SuggestRO" {$requestURLs = Search-AvailableCiresonPortalOfferings -searchQuery $($searchQueriesHash["AzureRO"]) -ciresonPortalUser $portalUser}
+    }
+    return $kbURLs, $requestURLs
+}
+
+#take suggestion URL arrays returned from Get-CiresonSuggestionURL, load custom HTML templates, and send results back out to the Affected User about their Work Item
+function Send-CiresonSuggestionEmail
+{
+    [cmdletbinding()]
+    Param
+    (
+        [Parameter()]
+        [array]$KnowledgeBaseURLs,
+        [Parameter()]
+        [array]$RequestOfferingURLs,
+        [Parameter()]
+        [object]$WorkItem,
+        [Parameter()]
+        [string]$AffectedUserEmailAddress
+    )
+
+    switch ($WorkItem.ClassName)
+    {
+        "System.WorkItem.Incident" {$resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $WorkItem.id + "]" + "&body=This%20can%20be%20[$resolvedKeyword]" + "`">resolved</a>"}
+        "System.WorkItem.ServiceRequest" {$resolveMailTo= "<a href=`"mailto:$workflowEmailAddress" + "?subject=" + "[" + $WorkItem.id + "]" + "&body=This%20can%20be%20[$cancelledKeyword]" + "`">cancel</a>"}
+    }
+
+    #determine which template to use
+    if ($KnowledgeBaseURLs -and $RequestOfferingURLs) {$emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKARO.html") -raw}
+    if ($KnowledgeBaseURLs -and !$RequestOfferingURLs) {$emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestKA.html") -raw}
+    if (!$KnowledgeBaseURLs -and $RequestOfferingURLs) {$emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestRO.html") -raw}
+
+    #replace tokens in the template with URLs
+    $emailTemplate = try {$emailTemplate.Replace("{0}", $KnowledgeBaseURLs)} catch {}
+    $emailTemplate = try {$emailTemplate.Replace("{1}", $RequestOfferingURLs)} catch {}
+    $emailTemplate = try {$emailTemplate.Replace("{2}", $resolveMailTo)} catch {}
+
+    #send the email to the affected user
+    Send-EmailFromWorkflowAccount -subject "[$($WorkItem.id)] - $($WorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $AffectedUserEmailAddress
+    
+    #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
+    if ($enableSetFirstResponseDateOnSuggestions) {Set-SCSMObject -SMObject $WorkItem -Property FirstResponseDate -Value (get-date).ToUniversalTime() @scsmMGMTParams}
 }
 
 #send an email from the SCSM Workflow Account
@@ -1876,7 +2241,7 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
     }
 }
 
-function Verify-WorkItem ($message)
+function Verify-WorkItem ($message, $returnWorkItem)
 {
     #If emails are being attached to New Work Items, filter on the File Attachment Description that equals the Exchange Conversation ID as defined in the Attach-EmailToWorkItem function
     if ($attachEmailToWorkItem -eq $true)
@@ -1887,8 +2252,9 @@ function Verify-WorkItem ($message)
         {
             switch ($relatedWorkItemFromAttachmentSearch.ClassName)
             {
-                "System.WorkItem.Incident" {Update-WorkItem -message $message -wiType "ir" -workItemID $relatedWorkItemFromAttachmentSearch.id}
-                "System.WorkItem.ServiceRequest" {Update-WorkItem -message $message -wiType "sr" -workItemID $relatedWorkItemFromAttachmentSearch.id}
+                "System.WorkItem.Incident" {Update-WorkItem -message $message -wiType "ir" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
+                "System.WorkItem.ServiceRequest" {Update-WorkItem -message $message -wiType "sr" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
+                "System.WorkItem.ChangeRequest" {Update-WorkItem -message $message -wiType "cr" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
             }
         }
         else
@@ -1933,46 +2299,154 @@ function Get-TemplatesByMailbox ($message)
         return $Mailboxes[$MailboxToUse]
     }
     else {
-        Write-Debug "No redirection from known mailbox.  Using Default templates"
-        return $Mailboxes[$ScsmEmail]
+        # check CC
+        foreach ($recipient in $message.CC) {
+            if ($recipient.Address) { $recipientAddress = $recipient.Address } else { $recipientAddress = $recipient }
+            Write-Debug $recipientAddress
+        
+            # Break on the first match
+            if ($Mailboxes[$recipientAddress]) {
+                $MailboxToUse = $recipientAddress
+                break
+            }
+        }
+        
+        if ($MailboxToUse) {
+            Write-Debug "Redirection from known mailbox: $mailboxToUse.  Found in CC field.  Using custom templates."
+            return $Mailboxes[$MailboxToUse]
+        }
+        else {
+            # If not found in the To OR CC field, look in headers (BCC won't be readable)
+            # Resent-From is the ideal field, but usually removed before the object is accessed.  Return-Path is a good second choice
+            $HeaderSchema = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.EmailMessageSchema]::InternetMessageHeaders)
+            $msgWithHeaders = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.Id,$HeaderSchema)
+            $ReturnPath = $msgWithHeaders.InternetMessageHeaders.Find("Return-Path").Value
+            if ($Mailboxes[$ReturnPath]) {
+                $MailboxToUse = $ReturnPath
+            }
+
+            if ($MailboxToUse) {
+                Write-Debug "Redirection from known mailbox: $mailboxToUse.  Found in Return-Path field.  Using custom templates."
+                return $Mailboxes[$MailboxToUse]
+            }
+            else {
+                Write-Debug "No redirection from known mailbox.  Using Default templates"
+                return $Mailboxes[$ScsmEmail]
+            }
+        }
     }
 }
 
-function Get-ScsmAttachmentSettings ($workItemType) {
-    switch ($workItemType) {
-        "ir" {
+function Get-SCSMWorkItemSettings ($WorkItemClass) {   
+    switch ($WorkItemClass) {
+        "System.WorkItem.Incident" {
             $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.WorkItem.Incident.GeneralSetting"
             $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
             $maxAttach = $settings.MaxAttachments
             $maxSize = $settings.MaxAttachmentSize
+            $prefix = $settings.PrefixForId
+            $prefixRegex = ""
+            foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
         }
-        "sr" {
+        "System.WorkItem.ServiceRequest" {
             $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ServiceRequestSettings"
             $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
             $maxAttach = $settings.MaxFileAttachmentsCount
             $maxSize = $settings.MaxFileAttachmentSizeinKB
+            $prefix = $settings.ServiceRequestPrefix
+            $prefixRegex = ""
+            foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
         }
-        "cr" {
+        "System.WorkItem.ChangeRequest" {
             $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ChangeSettings"
             $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
             $maxAttach = $settings.MaxFileAttachmentsCount
             $maxSize = $settings.MaxFileAttachmentSizeinKB
+            $prefix = $settings.SystemWorkItemChangeRequestIdPrefix
+            $prefixRegex = ""
+            foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
         }
-        "pr" {
+        "System.WorkItem.Problem" {
             $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ProblemSettings"
             $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
             $maxAttach = $settings.MaxFileAttachmentsCount
             $maxSize = $settings.MaxFileAttachmentSizeinKB
+            $prefix = $settings.ProblemIdPrefix
+            $prefixRegex = ""
+            foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
         }
-        "rr" {
+        "System.WorkItem.Release" {
             $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ReleaseSettings"
             $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
             $maxAttach = $settings.MaxFileAttachmentsCount
             $maxSize = $settings.MaxFileAttachmentSizeinKB
+            $prefix = $settings.SystemWorkItemReleaseRecordIdPrefix
+            $prefixRegex = ""
+            foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
+        }
+        "System.WorkItem.Activity.ReviewActivity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.SystemWorkItemActivityReviewActivityIdPrefix
+            $prefixRegex = ""
+            foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
+        }
+        "System.WorkItem.Activity.ManualActivity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.SystemWorkItemActivityManualActivityIdPrefix
+            $prefixRegex = ""
+            foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
+        }
+        "System.WorkItem.Activity.ParallelActivity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.SystemWorkItemActivityParallelActivityIdPrefix
+            $prefixRegex = ""
+            foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
+        }
+        "System.WorkItem.Activity.SequentialActivity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.SystemWorkItemActivitySequentialActivityIdPrefix
+            $prefixRegex = ""
+            foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
+        }
+        "System.WorkItem.Activity.DependentActivity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.SystemWorkItemActivityDependentActivityIdPrefix
+            $prefixRegex = ""
+            foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
+        }
+        "Microsoft.SystemCenter.Orchestrator.RunbookAutomationActivity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.MicrosoftSystemCenterOrchestratorRunbookAutomationActivityBaseIdPrefix
+            $prefixRegex = ""
+            foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
+        }
+        "System.WorkItem.Activity.SMARunbookActivity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.MicrosoftSystemCenterOrchestratorRunbookAutomationActivityBaseIdPrefix
+            $prefixRegex = ""
+            foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
+        }
+        "Cireson.Powershell.Activity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.SystemWorkItemActivityIdPrefix
+            $prefixRegex = ""
+            foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
         }
     }
 
-    return @{"MaxAttachments"=$maxAttach;"MaxAttachmentSize"=$maxSize}
+    return @{"MaxAttachments"=$maxAttach;"MaxAttachmentSize"=$maxSize;"Prefix"=$prefix;"PrefixRegex"=$prefixRegex}
+}
+
+# Test a message for the presence of certain key words
+function Test-KeywordsFoundInMessage ($message) {
+    $found = $false
+    #check the subject first
+    $found = ($message.subject -match $workItemTypeOverrideKeywords)
+    #if necessary, check the body
+    if (-Not $found) {
+        $found = ($message.body -match $workItemTypeOverrideKeywords)
+    }
+    return $found
 }
 
 #retrieve sender's ability to post announcement based on previously defined email addresses or an AD group
@@ -2127,8 +2601,7 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
     }
 
     #Get the user that is posting the announcement (from) from the SCSM/Cireson Portal to determine their language code to post the announcement
-    $announcerSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$($message.from)'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
-    $announcerSCSMObject = Get-SCSMObject -id (Get-SCSMRelationshipObject -ByTarget $announcerSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
+    $announcerSCSMObject = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
     $ciresonPortalAnnouncer = Get-CiresonPortalUser -username $announcerSCSMObject.username -domain $announcerSCSMObject.domain
 
     #Get any announcements that already exist for the Work Item
@@ -2136,15 +2609,6 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
     $allPortalAnnouncements = $allPortalAnnouncements | ?{$_.title -match "\[" + $workitem.name + "\]"}
 
     #determine authentication to use (windows/forms)
-    if ($ciresonPortalWindowsAuth -eq $false)
-    {
-        $portalLoginRequest = Invoke-WebRequest -Uri $ciresonPortalServer -Method get -SessionVariable newAnnouncementWebRequestSessionVar
-        $loginForm = $portalLoginRequest.Forms[0]
-        $loginForm.Fields["UserName"] = $ciresonPortalUsername
-        $loginForm.Fields["Password"] = $ciresonPortalPassword
-        $portalLoginPost = Invoke-WebRequest -Uri ($ciresonPortalServer + "Login/Login?ReturnUrl=%2f") -Method post -Body $loginForm.Fields -WebSession $newAnnouncementWebRequestSessionVar
-    }
-
     if ($allPortalAnnouncements)
     {
         #### there are announcements to create/update ####
@@ -2171,13 +2635,13 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
             $announcement = $announcement | ConvertTo-Json
 
             #post the announcement
-            if ($ciresonPortalWindowsAuth)
+            if ($ciresonPortalWindowsAuth -eq $true)
             {
-                $announcementResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -UseDefaultCredentials
+                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -UseDefaultCredentials
             }
             else
             {
-                $announcementResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -WebSession $newAnnouncementWebRequestSessionVar
+                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
             }
         }
 
@@ -2196,13 +2660,13 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
             $announcement = $announcement | ConvertTo-Json
 
             #post the announcement
-            if ($ciresonPortalWindowsAuth)
+            if ($ciresonPortalWindowsAuth -eq $true)
             {
-                $announcementResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -UseDefaultCredentials
+                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -UseDefaultCredentials
             }
             else
             {
-                $announcementResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -WebSession $newAnnouncementWebRequestSessionVar
+                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
             }
         }
     }
@@ -2227,11 +2691,11 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
             #post the announcement
             if ($ciresonPortalWindowsAuth)
             {
-                $announcementResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -UseDefaultCredentials
+                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -UseDefaultCredentials
             }
             else
             {
-                $announcementResponse = Invoke-WebRequest -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -WebSession $newAnnouncementWebRequestSessionVar
+                $announcementResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+$updateAnnouncementURL) -Method post -Body $announcement -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
             }
         }
     }
@@ -2254,12 +2718,54 @@ function Get-AzureEmailSentiment ($messageToEvaluate)
     $messagePayload = ConvertTo-Json $final
 
     #invoke the Cognitive Services Sentiment API
-    $sentimentResult = Invoke-RestMethod -Method Post -Uri $sentimentURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcAPIKey } -Body $messagePayload -ContentType "application/json"
+    $sentimentResult = Invoke-RestMethod -Method Post -Uri $sentimentURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcTextAnalyticsAPIKey } -Body $messagePayload -ContentType "application/json"
     
     #return the percent score
     return ($sentimentResult.documents.score * 100)
 }
+function Get-ACSWorkItemPriority ($score, $wiClass)
+{  
+    #change boundaries as neccesary
+    switch ($wiClass)
+    {
+        #impact/urgency
+        "System.WorkItem.Incident" {
+            switch ($score)
+            {
+                {$_ -ge 0 -and $_ -le 20} {$priorityCombo = "hi/hi"}
+                {$_ -ge 20 -and $_ -le 60} {$priorityCombo = "med/med"}
+                {$_ -ge 60 -and $_ -le 80} {$priorityCombo = "med/low"}
+                {$_ -ge 80 -and $_ -le 90} {$priorityCombo = "low/med"}
+                {$_ -ge 90 -and $_ -le 100} {$priorityCombo = "low/low"}
+            }
+        }
+        #urgency/priority
+        "System.WorkItem.ServiceRequest" {
+            switch ($score)
+            {
+                {$_ -ge 0 -and $_ -le 20} {$priorityCombo = "imm/imm"}
+                {$_ -ge 20 -and $_ -le 60} {$priorityCombo = "hi/med"}
+                {$_ -ge 60 -and $_ -le 80} {$priorityCombo = "med/low"}
+                {$_ -ge 80 -and $_ -le 90} {$priorityCombo = "med/med"}
+                {$_ -ge 90 -and $_ -le 100} {$priorityCombo = "low/low"}
+            }
+        }
+    }
 
+    $priorityCalc = @()
+    switch ($wiClass)
+    {
+        "System.WorkItem.Incident" {
+            $priorityCalc + $priorityCombo.Split("/")[0].Replace("hi", "System.WorkItem.TroubleTicket.ImpactEnum.High$").Replace("med", "System.WorkItem.TroubleTicket.ImpactEnum.Medium$").Replace("low", "System.WorkItem.TroubleTicket.ImpactEnum.Low$");
+            $priorityCalc + $priorityCombo.Split("/")[1].Replace("hi", "System.WorkItem.TroubleTicket.UrgencyEnum.High$").Replace("med", "System.WorkItem.TroubleTicket.UrgencyEnum.Medium$").Replace("low", "System.WorkItem.TroubleTicket.UrgencyEnum.Low$");
+        }
+        "System.WorkItem.ServiceRequest" {
+            $priorityCalc + $priorityCombo.Split("/")[0].Replace("imm", "ServiceRequestUrgencyEnum.Immediate$").Replace("hi", "ServiceRequestUrgencyEnum.High$").Replace("med", "ServiceRequestUrgencyEnum.Medium$").Replace("low", "ServiceRequestUrgencyEnum.Low$");
+            $priorityCalc + $priorityCombo.Split("/")[1].Replace("imm", "ServiceRequestPriorityEnum.Immediate$").Replace("hi", "ServiceRequestPriorityEnum.High$").Replace("med", "ServiceRequestPriorityEnum.Medium$").Replace("low", "ServiceRequestPriorityEnum.Low$");
+        }
+    }
+    return $priorityCalc
+}
 function Get-AzureEmailKeywords ($messageToEvaluate)
 {
     #define cognitive services URLs
@@ -2273,7 +2779,7 @@ function Get-AzureEmailKeywords ($messageToEvaluate)
     $messagePayload = ConvertTo-Json $final
 
     #invoke the Text Analytics Keyword API
-    $keywordResult = Invoke-RestMethod -Method Post -Uri $keyPhraseURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcAPIKey } -Body $messagePayload -ContentType "application/json" 
+    $keywordResult = Invoke-RestMethod -Method Post -Uri $keyPhraseURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcTextAnalyticsAPIKey } -Body $messagePayload -ContentType "application/json" 
 
     #return the keywords
     return $keywordResult.documents.keyPhrases
@@ -2281,32 +2787,42 @@ function Get-AzureEmailKeywords ($messageToEvaluate)
 #endregion
 
 #region #### Modified version of Set-SCSMTemplateWithActivities from Morton Meisler seen here http://blog.ctglobalservices.com/service-manager-scsm/mme/set-scsmtemplatewithactivities-powershell-script/
-function Get-SCSMObjectPrefix
+
+function Get-AMLWorkItemProbability ($EmailSubject, $EmailBody)
 {
-    Param ([string]$ClassName =$(throw "Please provide a classname"))
-    
-    switch ($ClassName)
+    #create the header
+    $headerTable = @{"Authorization" = "Bearer $amlAPIKey"; "Content-Type" = "application/json"}
+
+    #create the JSON request
+    $messagePayload = @"
     {
-        default 
-        {
-            #Get prefix from Activity Settings
-            if ($ClassName.StartsWith("System.WorkItem.Activity") -or ($ClassName.Equals("Microsoft.SystemCenter.Orchestrator.RunbookAutomationActivity")) -or ($ClassName.Equals("Cireson.Powershell.Activity")))
-            {
-                $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Id "5e04a50d-01d1-6fce-7946-15580aa8681d" @scsmMGMTParams) @scsmMGMTParams
-                
-                if ($ClassName.Equals("System.WorkItem.Activity.ReviewActivity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivityReviewActivityIdPrefix}
-                if ($ClassName.Equals("System.WorkItem.Activity.ManualActivity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivityManualActivityIdPrefix}
-                if ($ClassName.Equals("System.WorkItem.Activity.ParallelActivity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivityParallelActivityIdPrefix}
-                if ($ClassName.Equals("System.WorkItem.Activity.SequentialActivity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivitySequentialActivityIdPrefix}
-                if ($ClassName.Equals("System.WorkItem.Activity.DependentActivity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivityDependentActivityIdPrefix}
-                if ($ClassName.Equals("Microsoft.SystemCenter.Orchestrator.RunbookAutomationActivity")) {$prefix = $ActivitySettingsObj.MicrosoftSystemCenterOrchestratorRunbookAutomationActivityBaseIdPrefix}
-                if ($ClassName.Equals("System.WorkItem.Activity.SMARunbookActivity")) {$prefix = $ActivitySettingsObj.MicrosoftSystemCenterOrchestratorRunbookAutomationActivityBaseIdPrefix}
-                if ($ClassName.Equals("Cireson.Powershell.Activity")) {$prefix = $ActivitySettingsObj.SystemWorkItemActivityIdPrefix}
-            } 
-            else {throw "Class Name $ClassName is not supported"}
-        }
+        "Inputs": {
+            "Input1" : {
+                "ColumnNames": ["Email_Subject", "Email_Description"],
+                "Values": [
+                    ["$EmailSubject", "$EmailBody"]
+                ]
+            }
+        },
+        "GlobalParameters": {}
     }
-    return $prefix
+"@
+
+    #invoke the Azure Machine Learning web service for predicting Work Item Type, Classification, and Support Group
+    $probabilityResponse = Invoke-RestMethod -Uri $amlURL -Method Post -Header $headerTable -Body $messagePayload -ContentType "application/json"
+
+    #return custom probability object
+    $probabilityResults = $probabilityResponse.Results.output1.value.Values[0]
+    $probabilityMatrix = New-Object -TypeName psobject
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemType -Value $probabilityResults[0]
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemTypeConfidence -Value (($probabilityResults[1] -as [decimal]) * 100)
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassification -Value $probabilityResults[2]
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassificationConfidence -Value (($probabilityResults[3] -as [decimal]) * 100)
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroup -Value $probabilityResults[4]
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroupConfidence -Value (($probabilityResults[5] -as [decimal]) * 100)
+
+    #return the percent score
+    return ($probabilityMatrix)
 }
 
 function Update-SCSMPropertyCollection
@@ -2318,7 +2834,7 @@ function Update-SCSMPropertyCollection
     if (($Object.Path -match $pattern) -and (($Matches[0].StartsWith("System.WorkItem.Activity")) -or ($Matches[0].StartsWith("Microsoft.SystemCenter.Orchestrator")) -or ($Matches[0].StartsWith("Cireson.Powershell.Activity"))))
     {
         #Set prefix from activity class
-        $prefix = Get-SCSMObjectPrefix -ClassName $Matches[0]
+        $prefix = (Get-SCSMWorkItemSettings -WorkItemClass $Matches[0])["Prefix"]
        
         #Create template property object
         $propClass = [Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateProperty]
@@ -2358,6 +2874,26 @@ function Apply-SCSMTemplate
     }
     #Apply update template
     Set-SCSMObjectTemplate -Projection $Projection -Template $Template -ErrorAction Stop @scsmMGMTParams
+}
+
+function Remove-PII ($body)
+{
+    <#Regexes
+    Visa = 4[0-9]{15}
+    Mastercard = (?:5[1-5][0-9]{2}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}
+    Discover = 6(?:011|5[0-9]{2})[0-9]{12}
+    American Express = 3[47][0-9]{13}
+    SSN/ITIN = \d{3}-?\d{2}-?\d{4}
+    #>
+    $piiRegexes = Get-Content $piiRegexPath
+    ForEach ($regex in $piiRegexes)
+    {
+        switch -Regex ($body)
+        {
+            "$regex" {$body = $body -replace "$regex", "[redacted]"}
+        }
+    }
+    return $body
 }
 
 #endregion 
@@ -2493,6 +3029,17 @@ if (($processDigitallySignedMessages -eq $true) -or ($processEncryptedMessages -
     }
 }
 
+#load the Work Item regex patterns before the email processing loop
+$irRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Incident")["PrefixRegex"]
+$srRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.ServiceRequest")["PrefixRegex"]
+$prRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Problem")["PrefixRegex"]
+$crRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.ChangeRequest")["PrefixRegex"]
+$maRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Activity.ManualActivity")["PrefixRegex"]
+$paRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Activity.ParallelActivity")["PrefixRegex"]
+$saRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Activity.SequentialActivity")["PrefixRegex"]
+$daRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Activity.DependentActivity")["PrefixRegex"]
+$raRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Activity.ReviewActivity")["PrefixRegex"]
+
 # Custom Event Handler
 if ($ceScripts) { Invoke-BeforeConnect }
 
@@ -2590,14 +3137,14 @@ foreach ($message in $inbox)
         switch -Regex ($email.subject) 
         { 
             #### primary work item types ####
-            "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
  
             #### activities ####
-            "\[[R][A][0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
-            "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
+            "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
+            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
 
             #### 3rd party classes, work items, etc. add here ####
             "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
@@ -2605,7 +3152,7 @@ foreach ($message in $inbox)
             #### Email is a Reply and does not contain a [Work Item ID]
             # Check if Work Item (Title, Body, Sender, CC, etc.) exists
             # and the user was replying too fast to receive Work Item ID notification
-            "([R][E][:])(?!.*\[(([I|S|P|C][R])|([M|R][A]))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
+            "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
 
             #### default action, create work item ####
             default {new-workitem $email $defaultNewWorkItem} 
@@ -2652,14 +3199,14 @@ foreach ($message in $inbox)
         switch -Regex ($email.subject) 
         { 
             #### primary work item types ####
-            "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
  
             #### activities ####
-            "\[[R][A][0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
-            "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
+            "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
+            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
 
             #### 3rd party classes, work items, etc. add here ####
             "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
@@ -2667,7 +3214,7 @@ foreach ($message in $inbox)
             #### Email is a Reply and does not contain a [Work Item ID]
             # Check if Work Item (Title, Body, Sender, CC, etc.) exists
             # and the user was replying too fast to receive Work Item ID notification
-            "([R][E][:])(?!.*\[(([I|S|P|C][R])|([M|R][A]))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
+            "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
 
             #### default action, create work item ####
             default {new-workitem $email $defaultNewWorkItem} 
@@ -2720,14 +3267,14 @@ foreach ($message in $inbox)
             switch -Regex ($email.subject) 
             { 
                 #### primary work item types ####
-                "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
  
                 #### activities ####
-                "\[[R][A][0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
-                "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
+                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
+                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
 
                 #### 3rd party classes, work items, etc. add here ####
                 "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
@@ -2735,7 +3282,7 @@ foreach ($message in $inbox)
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(([I|S|P|C][R])|([M|R][A]))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
+                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
 
                 #### default action, create work item ####
                 default {new-workitem $email $defaultNewWorkItem} 
@@ -2781,14 +3328,14 @@ foreach ($message in $inbox)
             switch -Regex ($email.subject) 
             { 
                 #### primary work item types ####
-                "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
  
                 #### activities ####
-                "\[[R][A][0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
-                "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
+                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
+                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
 
                 #### 3rd party classes, work items, etc. add here ####
                 "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
@@ -2796,7 +3343,7 @@ foreach ($message in $inbox)
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(([I|S|P|C][R])|([M|R][A]))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
+                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
 
                 #### default action, create work item ####
                 default {new-workitem $email $defaultNewWorkItem} 
@@ -2842,17 +3389,17 @@ foreach ($message in $inbox)
         switch -Regex ($appointment.subject) 
         { 
             #### primary work item types ####
-            "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){schedule-workitem $appointment "ir" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "ir" -workItemID $result.name}}
-            "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){schedule-workitem $appointment "sr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "sr" -workItemID $result.name}}
-            "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){schedule-workitem $appointment "pr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "pr" -workItemID $result.name}}
-            "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){schedule-workitem $appointment "cr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "cr" -workItemID $result.name}}
-            "\[[R][R][0-9]+\]" {$result = get-workitem $matches[0] $rrClass; if ($result){schedule-workitem $appointment "rr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "rr" -workItemID $result.name}}
+            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){schedule-workitem $appointment "ir" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "ir" -workItemID $result.name}}
+            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){schedule-workitem $appointment "sr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "sr" -workItemID $result.name}}
+            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){schedule-workitem $appointment "pr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "pr" -workItemID $result.name}}
+            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){schedule-workitem $appointment "cr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "cr" -workItemID $result.name}}
+            "\[$rrRegex[0-9]+\]" {$result = get-workitem $matches[0] $rrClass; if ($result){schedule-workitem $appointment "rr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "rr" -workItemID $result.name}}
 
             #### activities ####
-            "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){schedule-workitem $appointment "ma" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "ma" -workItemID $result.name}}
-            "\[[P][A][0-9]+\]" {$result = get-workitem $matches[0] $paClass; if ($result){schedule-workitem $appointment "pa" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "pa" -workItemID $result.name}}
-            "\[[S][A][0-9]+\]" {$result = get-workitem $matches[0] $saClass; if ($result){schedule-workitem $appointment "sa" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "sa" -workItemID $result.name}}
-            "\[[D][A][0-9]+\]" {$result = get-workitem $matches[0] $daClass; if ($result){schedule-workitem $appointment "da" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "da" -workItemID $result.name}}
+            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){schedule-workitem $appointment "ma" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "ma" -workItemID $result.name}}
+            "\[$paRegex[0-9]+\]" {$result = get-workitem $matches[0] $paClass; if ($result){schedule-workitem $appointment "pa" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "pa" -workItemID $result.name}}
+            "\[$saRegex[0-9]+\]" {$result = get-workitem $matches[0] $saClass; if ($result){schedule-workitem $appointment "sa" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "sa" -workItemID $result.name}}
+            "\[$daRegex[0-9]+\]" {$result = get-workitem $matches[0] $daClass; if ($result){schedule-workitem $appointment "da" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "da" -workItemID $result.name}}
 
             #### 3rd party classes, work items, etc. add here ####
 
@@ -2888,19 +3435,20 @@ foreach ($message in $inbox)
         switch -Regex ($appointment.subject) 
         { 
             #### primary work item types ####
-            "\[[I][R][0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){schedule-workitem $appointment "ir" $result; Update-WorkItem -message $appointment -wiType "ir" -workItemID $result.name}}
-            "\[[S][R][0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){schedule-workitem $appointment "sr" $result; Update-WorkItem -message $appointment -wiType "sr" -workItemID $result.name}}
-            "\[[P][R][0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){schedule-workitem $appointment "pr" $result; Update-WorkItem -message $appointment -wiType "pr" -workItemID $result.name}}
-            "\[[C][R][0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){schedule-workitem $appointment "cr" $result; Update-WorkItem -message $appointment -wiType "cr" -workItemID $result.name}}
-            "\[[R][R][0-9]+\]" {$result = get-workitem $matches[0] $rrClass; if ($result){schedule-workitem $appointment "rr" $result; Update-WorkItem -message $appointment -wiType "rr" -workItemID $result.name}}
+            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){schedule-workitem $appointment "ir" $result; Update-WorkItem -message $appointment -wiType "ir" -workItemID $result.name}}
+            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){schedule-workitem $appointment "sr" $result; Update-WorkItem -message $appointment -wiType "sr" -workItemID $result.name}}
+            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){schedule-workitem $appointment "pr" $result; Update-WorkItem -message $appointment -wiType "pr" -workItemID $result.name}}
+            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){schedule-workitem $appointment "cr" $result; Update-WorkItem -message $appointment -wiType "cr" -workItemID $result.name}}
+            "\[$rrRegex[0-9]+\]" {$result = get-workitem $matches[0] $rrClass; if ($result){schedule-workitem $appointment "rr" $result; Update-WorkItem -message $appointment -wiType "rr" -workItemID $result.name}}
 
             #### activities ####
-            "\[[M][A][0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){schedule-workitem $appointment "ma" $result; Update-WorkItem -message $appointment -wiType "ma" -workItemID $result.name}}
-            "\[[P][A][0-9]+\]" {$result = get-workitem $matches[0] $paClass; if ($result){schedule-workitem $appointment "pa" $result; Update-WorkItem -message $appointment -wiType "pa" -workItemID $result.name}}
-            "\[[S][A][0-9]+\]" {$result = get-workitem $matches[0] $saClass; if ($result){schedule-workitem $appointment "sa" $result; Update-WorkItem -message $appointment -wiType "sa" -workItemID $result.name}}
-            "\[[D][A][0-9]+\]" {$result = get-workitem $matches[0] $daClass; if ($result){schedule-workitem $appointment "da" $result; Update-WorkItem -message $appointment -wiType "da" -workItemID $result.name}}
+            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){schedule-workitem $appointment "ma" $result; Update-WorkItem -message $appointment -wiType "ma" -workItemID $result.name}}
+            "\[$paRegex[0-9]+\]" {$result = get-workitem $matches[0] $paClass; if ($result){schedule-workitem $appointment "pa" $result; Update-WorkItem -message $appointment -wiType "pa" -workItemID $result.name}}
+            "\[$saRegex[0-9]+\]" {$result = get-workitem $matches[0] $saClass; if ($result){schedule-workitem $appointment "sa" $result; Update-WorkItem -message $appointment -wiType "sa" -workItemID $result.name}}
+            "\[$daRegex[0-9]+\]" {$result = get-workitem $matches[0] $daClass; if ($result){schedule-workitem $appointment "da" $result; Update-WorkItem -message $appointment -wiType "da" -workItemID $result.name}}
 
             #### 3rd party classes, work items, etc. add here ####
+            "([C][a][n][c][e][l][e][d][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){$result = Verify-WorkItem $appointment -returnWorkItem $true; schedule-workitem $appointment $defaultNewWorkItem $result} else{new-workitem $appointment $defaultNewWorkItem}}
 
             #### default action, create/schedule a new default work item ####
             default {$returnedNewWorkItemToSchedule = new-workitem $appointment $defaultNewWorkItem $true; schedule-workitem -calAppt $appointment -wiType $defaultNewWorkItem -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)} 
