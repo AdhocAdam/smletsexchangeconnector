@@ -1,0 +1,172 @@
+﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.ProcessingLogicForm" 
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:sys="clr-namespace:System;assembly=mscorlib"
+            xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
+            xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
+            xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="551" Height="1085.8" 
+            xmlns:local="clr-namespace:SMLetsExchangeConnectorSettingsUI.Validation" >
+
+    <Grid Name="ConfigurationGrid" Margin="15,10,10,10">
+        <!-- header -->
+        <Label Content="Processing Logic" Margin="1,0,9,0" VerticalAlignment="Top" Height="46" FontWeight="Bold" FontSize="26"/>
+        <TextBlock Margin="10,43,0,0" VerticalAlignment="Top" Height="24" FontWeight="Light" FontSize="14" TextWrapping="Wrap" Text="Optionally enable the connector to perform additional types of processing" />
+
+        <!-- configuration -->
+        <ScrollViewer Name="scrollViewer" HorizontalAlignment="Left" Width="510" Margin="0,80,0,10" ScrollViewer.VerticalScrollBarVisibility="Hidden">
+            <StackPanel Name="stackPanel" Orientation="Vertical" Height="966" VerticalAlignment="Top" Width="520">
+                <TextBlock x:Name="txtBlkGeneralProcessing" Text="General" FontWeight="Bold"/>
+                <CheckBox x:Name="chkCreateUsersInCMDB" Content="Create Users not Found in CMDB" IsChecked="{Binding Path=CreateUsersNotFoundtInCMDB, Mode=TwoWay}" ToolTip="Enable if you want users not from your domain to be created so they can be set as the Affected User on a Work Item" Margin="5,0,0,0"/>
+                <CheckBox x:Name="chkIncludeWholeEmail" Content="Include Whole Email on Action Log" IsChecked="{Binding Path=IncludeWholeEmail, Mode=TwoWay}" ToolTip="Enable if you only want the latest email in the chain to be added as an entry within the Action Log of a Work Item" Margin="5,0,0,0"/>
+                <CheckBox x:Name="chkAttachEmailToWorkItem" Content="Attach Email to Work Item" IsChecked="{Binding Path=AttachEmailToWorkItem, Mode=TwoWay}" ToolTip="Enable if you want emails to be seen the Related Items tab of Work Items" Margin="5,0,0,0"/>
+                <TextBlock x:Name="txtBlkAdvancedProcessing" Text="Advanced Processing" FontWeight="Bold"/>
+                <CheckBox x:Name="chkVoteOnBehalfOfADGroup" Margin="5,0,0,0" Content="Vote on Behalf of AD Groups" IsChecked="{Binding Path=ProcessADGroupVote, Mode=TwoWay}" ToolTip="Enable if you've set Active Directory Groups as Reviewers on Review Activties and wish members to speak for the group"/>
+                <CheckBox x:Name="chkProcessMeetings" Margin="5,0,0,0" Content="Process Meeting Requests" IsChecked="{Binding Path=ProcessCalendarAppointments, Mode=TwoWay}" ToolTip="Enable if meeting requests sent should be processed just like email. Meeting Start/End times will be used to set the Scheduled Start/End Time on the Work Item"/>
+                <CheckBox x:Name="chkMergeReplies" Margin="5,0,0,0" IsChecked="{Binding Path=ProcessMergeReplies, Mode=TwoWay}" IsEnabled="{Binding IsChecked, ElementName=chkAttachEmailToWorkItem}" >
+                    <TextBlock x:Name="txtBlkMergeReplies" Text="Update Work Items missing [Work Item] in the Email Subject by matching Exchange Conversation ID (requries Attach Email to Work Item)" TextWrapping="Wrap" ToolTip="Enable if Users replying in a thread that forget to put the [Work Item] in the subject should simply append to the one true Work Item instead of creating new 'duplicate' Work Items" />
+                </CheckBox>
+
+                <TextBlock x:Name="txtBlkWorkItemManagement" Text="Work Item Management" FontWeight="Bold" Margin="0,10,0,0" />
+                <CheckBox x:Name="chkCreateWIWHenWIClosed" Margin="5,0,0,0" IsChecked="{Binding Path=ProcessClosedWorkItemsToNewWorkItems, Mode=TwoWay}" >
+                    <TextBlock Text="If Work Item to Update is Closed - Create, Relate, and Copy into a New Work Item." TextWrapping="Wrap" ToolTip="Enable if when attempting to update a Closed Work Item should Create, Relate, and Copy into a brand new Work Item" />
+                </CheckBox>
+
+                <CheckBox x:Name="chkRemovePII" Margin="5,0,0,0"  IsChecked="{Binding Path=RemovePII, Mode=TwoWay}">
+                    <TextBlock Text="Prevent PII from being saved in Work Items per custom defined regex file" TextWrapping="Wrap" Width="437"  Margin="0,0,0,0"/>
+                </CheckBox>
+                
+                <CheckBox x:Name="chkTakeRequiresCiresonGroupMembership" Margin="5,0,0,0" IsChecked="{Binding Path=EnforceSupportGroupTake, Mode=TwoWay}">
+                    <TextBlock Text="[Take] requires Support Group membership (Cireson Support Group Mapping Required)" TextWrapping="Wrap" Width="437" ToolTip="Enable to verify the Analyst taking work is part of the Work Item's currently assigned Support Group"/>
+                </CheckBox>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,0" IsEnabled="{Binding IsChecked, ElementName=chkTakeRequiresCiresonGroupMembership}">
+                    <Label Content="Change Request Support Group (del clears):" Margin="0,8,0,0"/>
+                    <ComboBox x:Name="crSupportGroup" Width="265" ItemsSource="{Binding Path=ChangeRequestEnumExtensions}" SelectedItem="{Binding Path=ChangeRequestSupportGroupExtensionEnum}" DisplayMemberPath="DisplayName" KeyDown="crSupportGroup_KeyDown" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,0" IsEnabled="{Binding IsChecked, ElementName=chkTakeRequiresCiresonGroupMembership}" >
+                    <Label Content="Manual Activity Support Group (del clears):" Margin="0,8,4,0"/>
+                    <ComboBox x:Name="maSupportGroup" Width="266" ItemsSource="{Binding Path=ManualActivityEnumExtensions}" SelectedItem="{Binding Path=ManualActivitySupportGroupExtensionEnum}" DisplayMemberPath="DisplayName" KeyDown="maSupportGroup_KeyDown" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,0" IsEnabled="False">
+                    <Label Content="Problem Support Group (del clears):" Margin="0,8,42,0"/>
+                    <ComboBox x:Name="prSupportGroup" Width="265" ItemsSource="{Binding Path=ProblemEnumExtensions}" SelectedItem="{Binding Path=ProblemSupportGroupExtensionEnum}" DisplayMemberPath="DisplayName" KeyDown="prSupportGroup_KeyDown" />
+                </StackPanel>
+
+                <TextBlock x:Name="txtBlkWorkItemManagementIRStatusControl" Text="Incident Status Management" FontWeight="Bold" Margin="0,10,0,0" />
+                <CheckBox x:Name="chkChangeIRStatusOnReply" Margin="5,10,0,0"  IsChecked="{Binding Path=ChangeIncidentStatusOnReply, Mode=TwoWay}" Checked="chkChangeIRStatusOnReply_Checked">
+                    <TextBlock Text="Change Incident Status on Incidents based on Who replied" TextWrapping="Wrap" Width="437"/>
+                </CheckBox>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,0" IsEnabled="{Binding IsChecked, ElementName=chkChangeIRStatusOnReply}" >
+                    <Label Content="When the Affected User Replies, Change Incident Status to:" Margin="0,8,0,0"/>
+                    <ComboBox x:Name="cbIRStatusAUReply" Width="186" Margin="0,8,0,0" ItemsSource="{Binding Path=IncidentStatusEnums}" SelectedItem="{Binding Path=DefaultIncidentStatusOnAUReplyEnum}" DisplayMemberPath="DisplayName"  />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,0" IsEnabled="{Binding IsChecked, ElementName=chkChangeIRStatusOnReply}">
+                    <Label Content="When the Assigned To Replies, Change Incident Status to:" Margin="0,8,0,0"/>
+                    <ComboBox x:Name="cbIRStatusATReply" Width="193" Margin="0,8,0,0" ItemsSource="{Binding Path=IncidentStatusEnums}" SelectedItem="{Binding Path=DefaultIncidentStatusOnATReplyEnum}" DisplayMemberPath="DisplayName"  />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,0" IsEnabled="{Binding IsChecked, ElementName=chkChangeIRStatusOnReply}">
+                    <Label Content="When a Related User Replies, Change Incident Status to:" Margin="0,8,0,0"/>
+                    <ComboBox x:Name="cbIRStatusRELReply" Width="201" Margin="0,8,0,0"  ItemsSource="{Binding Path=IncidentStatusEnums}" SelectedItem="{Binding Path=DefaultIncidentStatusOnRelReplyEnum}" DisplayMemberPath="DisplayName"  />
+                </StackPanel>
+
+                <TextBlock x:Name="txtBlkWorkItemManagementResolveControl" Text="Resolution Management when using [resolve] Keyword (delete key clears)" FontWeight="Bold" Margin="0,10,0,0" />
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Default Incident Resolution Category:" Margin="0,8,0,0"/>
+                    <ComboBox x:Name="cbIRResCat" Width="300" Margin="0,8,0,0" ItemsSource="{Binding Path=IncidentResolutionCategoryEnums}" SelectedItem="{Binding Path=DefaultIncidentResolutionCategoryEnum}" DisplayMemberPath="DisplayName" KeyDown="cbIRResCat_KeyDown" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Default Service Request Implementation Category:" Margin="0,8,0,0"/>
+                    <ComboBox x:Name="cbSRImplementCat" Width="231" Margin="0,8,0,0" ItemsSource="{Binding Path=ServiceRequestImplementationCategoryEnums}" SelectedItem="{Binding Path=DefaultServiceRequestImplementationCategoryEnum}" DisplayMemberPath="DisplayName" KeyDown="cbSRImplementCat_KeyDown" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Default Problem Resolution Category:" Margin="0,8,0,0"/>
+                    <ComboBox x:Name="cbProblemResCat" Width="298" Margin="0,8,0,0" ItemsSource="{Binding Path=ProblemResolutionCategoryEnums}" SelectedItem="{Binding Path=DefaultProblemResolutionCategoryEnum}" DisplayMemberPath="DisplayName" KeyDown="cbProblemResCat_KeyDown" />
+                </StackPanel>
+
+                <TextBlock Text="Dynamic Analyst Assignment (delete key clears)" FontWeight="Bold" Margin="0,10,0,0" />
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Assign Analysts on New Work Items:" Margin="0,8,0,0"/>
+                    <ComboBox x:Name="cbDynamicAssignment" Width="305" Margin="0,8,0,0" IsSynchronizedWithCurrentItem="True" IsEnabled="{Binding ElementName=assignAnalystOnNewWorkitem, Path=IsChecked}" SelectedItem="{Binding DynamicAnalystAssignment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" KeyDown="cbDynamicAssignment_KeyDown" >
+                        <sys:String>Random</sys:String>
+                        <sys:String>Volume</sys:String>
+                        <sys:String>OOORandom</sys:String>
+                        <sys:String>OOOVolume</sys:String>
+                    </ComboBox>
+                </StackPanel>
+                <TextBlock x:Name="txtBlkCommentMgmt" FontWeight="Bold" Margin="0,10,0,0" Text="Comment Management for Related Users" />
+                <TextBlock TextWrapping="Wrap" Margin="5,0,0,0">
+                    <Hyperlink RequestNavigate="Hyperlink_RequestNavigate" NavigateUri="https://github.com/AdhocAdam/smletsexchangeconnector/issues/92">Help me understand the implications of changing these</Hyperlink>
+                </TextBlock>
+
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Related User Incident Comments should be treated as:" Margin="0,8,0,0"/>
+                    <ComboBox x:Name="CBExternalIRCommentType" Width="204" Margin="0,8,0,0" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding ExternalIRCommentType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" >
+                        <sys:String>EndUserComment</sys:String>
+                        <sys:String>AnalystComment</sys:String>
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Related User Incident Comments are private:" Margin="0,8,0,0"/>
+                    <ComboBox x:Name="CBExternalIRCommentTypePrivate" Width="256" Margin="0,8,0,0" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding ExternalIRCommentPrivate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                        <ComboBox.Style>
+                            <Style TargetType="{x:Type ComboBox}">
+                                <Setter Property="IsEnabled" Value="True" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ElementName=CBExternalIRCommentType, Path=SelectedIndex}" Value="0">
+                                        <Setter Property="IsEnabled" Value="False" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ComboBox.Style>
+                        <sys:String>null</sys:String>
+                        <sys:String>true</sys:String>
+                        <sys:String>false</sys:String>
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Related User Service Request Comments should be treated as:" Margin="0,8,0,0"/>
+                    <ComboBox x:Name="CBExternalSRCommentType" Width="165" Margin="0,8,0,0" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding ExternalSRCommentType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                        <sys:String>EndUserComment</sys:String>
+                        <sys:String>AnalystComment</sys:String>
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Related User Service Request Comments are private:" Margin="0,8,0,0"/>
+                    <ComboBox x:Name="CBExternalSRCommentTypePrivate" Width="217" Margin="0,8,0,0" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding ExternalSRCommentPrivate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                        <ComboBox.Style>
+                            <Style TargetType="{x:Type ComboBox}">
+                                <Setter Property="IsEnabled" Value="True" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ElementName=CBExternalSRCommentType, Path=SelectedIndex}" Value="0">
+                                        <Setter Property="IsEnabled" Value="False" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ComboBox.Style>
+                        <sys:String>null</sys:String>
+                        <sys:String>true</sys:String>
+                        <sys:String>false</sys:String>
+                    </ComboBox>
+                </StackPanel>
+
+                <TextBlock x:Name="CryptoProcessing" Text="Digital Signatures/Encryption" FontWeight="Bold" Margin="0,8,0,0"/>
+                <CheckBox x:Name="chkProcessEncryptedMessages" Margin="5,0,0,0"  Content="Process Encrypted Emails (requires MimeKit)" IsChecked="{Binding Path=ProcessEncryptedEmails, Mode=TwoWay}"/>
+                <CheckBox x:Name="chkProcessDigitallySignedMessages" Margin="5,8,0,0"  Content="Process Digitally Signed Emails (requires MimeKit)" IsChecked="{Binding Path=ProcessDigitallySignedEmails, Mode=TwoWay}" />
+
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Decrypting certificate store:" Margin="0,8,0,0"/>
+                    <ComboBox HorizontalAlignment="Left" Width="175" Margin="0,8,0,0" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding CertificateStore, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" >
+                        <sys:String>user</sys:String>
+                        <sys:String>machine</sys:String>
+                    </ComboBox>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</wpfwiz:WizardRegularPageBase> 

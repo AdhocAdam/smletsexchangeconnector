@@ -1,0 +1,1143 @@
+﻿<ManagementPackFragment SchemaVersion="SM2.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <TypeDefinitions>
+    <EntityTypes>
+      <ClassTypes>
+        <!-- CLASS: Admin Settings -->
+        <ClassType ID="SMLets.Exchange.Connector.AdminSettings"
+              Accessibility="Public"
+              Abstract="false"
+              Base="SAL!System.SolutionSettings"
+              Hosted="false"
+              Singleton="true"
+              Extension="false">
+
+          <!--Exchange Properties-->
+          <Property ID="SCSMmgmtServer"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="WorkflowEmailAddress"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="UseAutoDiscover"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+          <Property ID="ExchangeAutodiscoverURL"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <!--File Paths-->
+          <Property ID="FilePathEWSDLL"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="FilePathMimeKitDLL"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="FilePathPIIRegex"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="FilePathHTMLSuggestionTemplates"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="FilePathCustomEvents"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+
+          <!--Processing Logic-->
+            <!--Stock properties-->
+            <Property ID="CreateUsersNotInCMDB"
+                Type="bool"
+                Key="false"
+                Required="false" />
+
+            <Property ID="IncludeWholeEmail"
+                Type="bool"
+                Key="false"
+                Required="false" />
+
+            <Property ID="AttachEmailToWorkItem"
+                Type="bool"
+                Key="false"
+                Required="false" />
+
+            <!--Advanced Processing-->
+            <Property ID="MergeReplies"
+                Type="bool"
+                Key="false"
+                Required="false" />
+
+            <Property ID="VoteOnBehalfOfADGroup"
+                Type="bool"
+                Key="false"
+                Required="false" />
+
+            <Property ID="UseMailboxRedirection"
+                Type="bool"
+                Key="false"
+                Required="false" />
+
+            <Property ID="CreateNewWorkItemIfWorkItemClosed"
+                Type="bool"
+                Key="false"
+                Required="false" />
+
+            <Property ID="TakeRequiresSupportGroupMembership"
+                Type="bool"
+                Key="false"
+                Required="false" />
+
+            <Property ID="RemovePII"
+                Type="bool"
+                Key="false"
+                Required="false" />
+
+
+            <!--Default Resolution Properties-->
+            <Property ID="IncidentResolutionCategory"
+                Type="enum"
+                AutoIncrement="false"
+                Key="false"
+                CaseSensitive="false"
+                MaxLength="256"
+                MinLength="0"
+                Scale="0"
+                Required="false"
+                EnumType="Incident!IncidentResolutionCategoryEnum" />
+
+            <Property ID="ServiceRequestImplementationCategory"
+                Type="enum"
+                AutoIncrement="false"
+                Key="false"
+                CaseSensitive="false"
+                MaxLength="256"
+                MinLength="0"
+                Scale="0"
+                Required="false"
+                EnumType="ServiceRequest!ServiceRequestImplementationResultsEnum" />
+
+            <Property ID="ProblemResolutionCategory"
+                Type="enum"
+                AutoIncrement="false"
+                Key="false"
+                CaseSensitive="false"
+                MaxLength="256"
+                MinLength="0"
+                Scale="0"
+                Required="false"
+                EnumType="Problem!ProblemResolutionEnum" />
+
+            <!--Advanced Processing, Changing Incident Status-->
+            <Property ID="ChangeIncidentStatusOnReply"
+                Type="bool"
+                Key="false"
+                Required="false" />
+
+            <Property ID="IncidentStatusOnAffectedUserReply"
+                Type="enum"
+                AutoIncrement="false"
+                Key="false"
+                CaseSensitive="false"
+                MaxLength="256"
+                MinLength="0"
+                Scale="0"
+                Required="false"
+                EnumType="Incident!IncidentStatusEnum" />
+
+            <Property ID="IncidentStatusOnAssignedToReply"
+                Type="enum"
+                AutoIncrement="false"
+                Key="false"
+                CaseSensitive="false"
+                MaxLength="256"
+                MinLength="0"
+                Scale="0"
+                Required="false"
+                EnumType="Incident!IncidentStatusEnum" />
+
+            <Property ID="IncidentStatusOnRelatedUserReply"
+                Type="enum"
+                AutoIncrement="false"
+                Key="false"
+                CaseSensitive="false"
+                MaxLength="256"
+                MinLength="0"
+                Scale="0"
+                Required="false"
+                EnumType="Incident!IncidentStatusEnum" />
+
+            <!--Advanced Processing, Dynamic Analyst Assignment-->
+            <Property ID="DynamicAnalystAssignmentType"
+                Type="string"
+                AutoIncrement="false"
+                Key="false"
+                CaseSensitive="false"
+                MaxLength="256"
+                MinLength="0"
+                Required="false" />
+
+            <!--External Comments-->
+            <Property ID="ExternalPartyCommentPrivacyIR"
+                Type="string"
+                AutoIncrement="false"
+                Key="false"
+                CaseSensitive="false"
+                MaxLength="256"
+                MinLength="0"
+                Required="false" />
+
+            <Property ID="ExternalPartyCommentPrivacySR"
+                Type="string"
+                AutoIncrement="false"
+                Key="false"
+                CaseSensitive="false"
+                MaxLength="256"
+                MinLength="0"
+                Required="false" />
+
+            <Property ID="ExternalPartyCommentTypeIR"
+                Type="string"
+                AutoIncrement="false"
+                Key="false"
+                CaseSensitive="false"
+                MaxLength="256"
+                MinLength="0"
+                Required="false" />
+
+            <Property ID="ExternalPartyCommentTypeSR"
+                Type="string"
+                AutoIncrement="false"
+                Key="false"
+                CaseSensitive="false"
+                MaxLength="256"
+                MinLength="0"
+                Required="false" />
+
+            <!--Custom Support Group Processing on MA, CR, PR-->
+            <Property ID="CRSupportGroupGUID"
+                Type="guid"
+                AutoIncrement="false"
+                Key="false"
+                CaseSensitive="false"
+                MaxLength="256"
+                MinLength="0"
+                Required="false"
+                Scale="0" />
+
+            <Property ID="MASupportGroupGUID"
+                Type="guid"
+                AutoIncrement="false"
+                Key="false"
+                CaseSensitive="false"
+                MaxLength="256"
+                MinLength="0"
+                Required="false"
+                Scale="0" />
+
+            <Property ID="PRSupportGroupGUID"
+                Type="guid"
+                AutoIncrement="false"
+                Key="false"
+                CaseSensitive="false"
+                MaxLength="256"
+                MinLength="0"
+                Required="false"
+                Scale="0" />
+
+            <!--Additional Mail Types Processing: Calendar, Encrypted/Signed Emails-->
+            <Property ID="ProcessCalendarAppointments"
+                Type="bool"
+                Key="false"
+                Required="false" />
+
+            <Property ID="ProcessDigitallySignedMessages"
+                Type="bool"
+                Key="false"
+                Required="false" />
+
+            <Property ID="ProcessDigitallyEncryptedMessages"
+                Type="bool"
+                Key="false"
+                Required="false" />
+
+            <Property ID="CertificateStore"
+                Type="string"
+                AutoIncrement="false"
+                Key="false"
+                CaseSensitive="false"
+                MaxLength="256"
+                MinLength="0"
+                Required="false" />
+
+          
+          <!--File Attachment-->
+          <Property ID="EnforceFileAttachmentSettings"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+          <Property ID="MinimumFileAttachmentSize"
+              Type="decimal"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="38"
+              MinLength="0"
+              Scale="2"
+              Required="false" />
+
+          <!--Default Templates-->
+          <Property ID="DefaultWorkItemType"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="DefaultIncidentTemplateGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="DefaultServiceRequestTemplateGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="DefaultChangeRequestTemplateGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="DefaultProblemTemplateGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <!--The Keywords-->
+          <Property ID="SCSMKeywordAnnouncement"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCSMKeywordFrom"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCSMKeywordAcknowledge"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCSMKeywordReactivate"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCSMKeywordResolved"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCSMKeywordClosed"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCSMKeywordHold"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCSMKeywordCancelled"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCSMKeywordTake"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCSMKeywordCompleted"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCSMKeywordSkipped"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCSMKeywordApprove"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCSMKeywordReject"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCOMKeywordHealth"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <!--Cireson Integration-->
+          <Property ID="EnableCiresonIntegration"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+          <Property ID="CiresonSearchKnowledgeBase"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+          <Property ID="CiresonSearchRequestOfferings"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+          <Property ID="CiresonPortalURL"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="NumberOfWordsToMatchFromEmailToCiresonKnowledgeArticle"
+              Type="int"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0"  />
+
+          <Property ID="NumberOfWordsToMatchFromEmailToCiresonRequestOffering"
+              Type="int"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0" />
+
+          <Property ID="EnableSetFirstResponseDateOnSuggestions"
+               Type="bool"
+               Key="false"
+               Required="false" />
+
+          <!--Announcement Properties-->
+          <Property ID="EnableAnnouncements"
+               Type="bool"
+               Key="false"
+               Required="false" />
+
+          <Property ID="EnableSCSMAnnouncements"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+          <Property ID="EnableCiresonSCSMAnnouncements"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+          <Property ID="SCSMApprovedAnnouncementGroupDisplayName"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCSMApprovedAnnouncementGroupGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCSMApprovedAnnouncementUsers"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCSMAnnouncementApprovedMemberType"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="AnnouncementKeywordLow"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="AnnouncementKeywordMedium"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="AnnouncementKeywordHigh"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="AnnouncementPriorityLowExpirationInHours"
+              Type="decimal"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="38"
+              MinLength="0"
+              Required="false"
+              Scale="2" />
+
+          <Property ID="AnnouncementPriorityNormalExpirationInHours"
+              Type="decimal"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="38"
+              MinLength="0"
+              Required="false"
+              Scale="2" />
+
+          <Property ID="AnnouncementPriorityCriticalExpirationInHours"
+              Type="decimal"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="38"
+              MinLength="0"
+              Required="false"
+              Scale="2" />
+
+          <!--SCOM Integration Properties-->
+          <Property ID="EnableSCOMIntegration"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+          <Property ID="SCOMmgmtServer"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCOMApprovedMemberType"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCOMApprovedGroupGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="SCOMApprovedUsers"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <!-- Artificial Intelligence Properties, Option 0: Disabled -->
+          <Property ID="EnableArtificialIntelligence"
+              Type="bool"
+              Key="false"
+              Required="false" />
+          
+          <!--Artificial Intelligence Properties, Option 1: Azure Cognitive Services-->
+          <Property ID="EnableACSForNewWorkItem"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+          <Property ID="MinACSSentimentToCreateSR"
+              Type="decimal"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="38"
+              MinLength="0"
+              Required="false"
+              Scale="4" />
+
+          <Property ID="EnableACSForCiresonKASuggestion"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+          <Property ID="EnableACSForCiresonROSuggestion"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+          <Property ID="EnableACSPriorityScoring"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+          <Property ID="ACSSentimentScoreIncidentClassExtensionGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0" />
+
+          <Property ID="ACSSentimentScoreServiceRequestClassExtensionGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0" />
+          
+          <Property ID="EnableACSTextAnalytics"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+          <Property ID="ACSTextAnalyticsRegion"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="ACSTextAnalyticsAPIKey"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <!--Artificial Intelligence Properties, Option 2: Keyword Matching-->
+          <Property ID="EnableKeywordMatchForNewWorkItem"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+          <Property ID="KeywordMatchRegexForNewWorkItem"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="KeywordMatchWorkItemType"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <!--Artificial Intelligence Properties, Option 3: Azure Machine Learning-->
+          <Property ID="EnableAML"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+          <Property ID="AMLAPIKey"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="AMLurl"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="AMLMinConfidenceWorkItemType"
+              Type="decimal"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="38"
+              MinLength="0"
+              Required="false"
+              Scale="2" />
+
+          <Property ID="AMLMinConfidenceWorkItemClassification"
+              Type="decimal"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="38"
+              MinLength="0"
+              Required="false"
+              Scale="2" />
+
+          <Property ID="AMLMinConfidenceWorkItemSupportGroup"
+              Type="decimal"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="38"
+              MinLength="0"
+              Required="false"
+              Scale="2" />       
+         
+          <Property ID="AMLIncidentConfidenceClassExtensionGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0" />
+
+          <Property ID="AMLIncidentClassificationConfidenceClassExtensionGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0" />
+
+          <Property ID="AMLIncidentClassificationPredictionClassExtensionGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0" />
+
+          <Property ID="AMLIncidentSupportGroupConfidenceClassExtensionGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0" />
+
+          <Property ID="AMLIncidentSupportGroupPredictionClassExtensionGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0" />
+
+          <Property ID="AMLServiceRequestConfidenceClassExtensionGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0" />
+
+          <Property ID="AMLServiceRequestClassificationConfidenceClassExtensionGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0" />
+
+          <Property ID="AMLServiceRequestClassificationPredictionClassExtensionGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0" />
+
+          <Property ID="AMLServiceRequestSupportGroupConfidenceClassExtensionGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0" />
+
+          <Property ID="AMLServiceRequestSupportGroupPredictionClassExtensionGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0" />
+          
+        </ClassType>
+        
+        <!-- CLASS: Additional Mailbox -->
+        <ClassType ID="SMLets.Exchange.Connector.AdminSettings.AdditionalMailbox"
+              Accessibility="Public"
+              Abstract="false"
+              Base="SAL!System.GlobalSetting"
+              Hosted="false"
+              Singleton="false"
+              Extension="false">
+
+          <Property ID="MailboxID"
+                    Type="guid"
+                    AutoIncrement="false"
+                    Key="true"
+                    CaseSensitive="false"
+                    MaxLength="256"
+                    MinLength="0"
+                    Required="true"
+                    Scale="0" />
+
+          <Property ID="MailboxAddress"
+                  Type="string"
+                  AutoIncrement="false"
+                  Key="false"
+                  CaseSensitive="false"
+                  MaxLength="256"
+                  MinLength="0"
+                  Required="true"
+                  Scale="0" />
+
+          <Property ID="MailboxTemplateWorkItemType"
+                     Type="string"
+                     AutoIncrement="false"
+                     Key="false"
+                     CaseSensitive="false"
+                     MaxLength="256"
+                     MinLength="0"
+                     Required="true"
+                     Scale="0" />
+          <!-- MultiMailbox Incident Template -->
+          <Property ID="MailboxIRTemplateDisplayName"
+                    Type="string"
+                    AutoIncrement="false"
+                    Key="false"
+                    CaseSensitive="false"
+                    MaxLength="256"
+                    MinLength="0"
+                    Required="false"
+                    Scale="0" />
+          
+          <Property ID="MailboxIRTemplateGUID"
+                    Type="guid"
+                    AutoIncrement="false"
+                    Key="false"
+                    CaseSensitive="false"
+                    MaxLength="256"
+                    MinLength="0"
+                    Required="false"
+                    Scale="0" />
+          <!-- MultiMailbox Service Request Template -->
+          <Property ID="MailboxSRTemplateDisplayName"
+                    Type="string"
+                    AutoIncrement="false"
+                    Key="false"
+                    CaseSensitive="false"
+                    MaxLength="256"
+                    MinLength="0"
+                    Required="false"
+                    Scale="0" />
+
+          <Property ID="MailboxSRTemplateGUID"
+                    Type="guid"
+                    AutoIncrement="false"
+                    Key="false"
+                    CaseSensitive="false"
+                    MaxLength="256"
+                    MinLength="0"
+                    Required="false"
+                    Scale="0" />
+          <!-- MultiMailbox Change Request Template -->
+          <Property ID="MailboxCRTemplateDisplayName"
+                    Type="string"
+                    AutoIncrement="false"
+                    Key="false"
+                    CaseSensitive="false"
+                    MaxLength="256"
+                    MinLength="0"
+                    Required="false"
+                    Scale="0" />
+
+          <Property ID="MailboxCRTemplateGUID"
+                    Type="guid"
+                    AutoIncrement="false"
+                    Key="false"
+                    CaseSensitive="false"
+                    MaxLength="256"
+                    MinLength="0"
+                    Required="false"
+                    Scale="0" />
+          <!-- MultiMailbox Problem Template -->
+          <Property ID="MailboxPRTemplateDisplayName"
+                    Type="string"
+                    AutoIncrement="false"
+                    Key="false"
+                    CaseSensitive="false"
+                    MaxLength="256"
+                    MinLength="0"
+                    Required="false"
+                    Scale="0" />
+
+          <Property ID="MailboxPRTemplateGUID"
+                    Type="guid"
+                    AutoIncrement="false"
+                    Key="false"
+                    CaseSensitive="false"
+                    MaxLength="256"
+                    MinLength="0"
+                    Required="false"
+                    Scale="0" />
+        </ClassType>
+      </ClassTypes>
+    </EntityTypes>
+  </TypeDefinitions>
+  <Categories>
+    <Category ID="Category.SMLets.Exchange.Connector" Value="Console!Microsoft.EnterpriseManagement.ServiceManager.ManagementPack">
+      <ManagementPackName>SMLets.Exchange.Connector</ManagementPackName>
+      <ManagementPackVersion>2.0.0.0</ManagementPackVersion>
+      <ManagementPackPublicKeyToken>446c13d5880992f3</ManagementPackPublicKeyToken>
+    </Category>
+    <Category ID="Category.DoubleClickEditAdminSetting" Target="SMLets.Exchange.Connector.AdminSettings.Edit" Value="Console!Microsoft.EnterpriseManagement.ServiceManager.UI.Console.DoubleClickTask" />
+  </Categories>
+  <Presentation>
+    <ConsoleTasks>
+      <ConsoleTask ID="SMLets.Exchange.Connector.AdminSettings.Edit" Accessibility="Public" Enabled="true" Target="SMLets.Exchange.Connector.AdminSettings" RequireOutput="false">
+        <Assembly>Console!SdkDataAccessAssembly</Assembly>
+        <Handler>Microsoft.EnterpriseManagement.UI.SdkDataAccess.ConsoleTaskHandler</Handler>
+        <Parameters>
+          <Argument Name="Assembly">SMLetsExchangeConnectorSettingsUI</Argument>
+          <Argument Name="Type">SMLetsExchangeConnectorSettingsUI.AdminTaskHandler</Argument>
+        </Parameters>
+      </ConsoleTask>
+    </ConsoleTasks>
+    <ImageReferences>
+      <ImageReference ElementID="SMLets.Exchange.Connector.AdminSettings.Edit" ImageID="settingsIcon"></ImageReference>
+      <ImageReference ElementID="SMLets.Exchange.Connector.AdminSettings" ImageID="settingsIcon"></ImageReference>
+    </ImageReferences>
+  </Presentation>
+  <LanguagePacks>
+    <LanguagePack ID="ENU" IsDefault="true">
+      <DisplayStrings>
+        <DisplayString ElementID="SMLets.Exchange.Connector">
+          <Name>SMLets Exchange Connector</Name>
+          <Description>Provides centralized, persistent settings for the Powershell based SMLets Exchange Connector</Description>
+        </DisplayString>
+        <DisplayString ElementID="SMLets.Exchange.Connector.AdminSettings">
+          <Name>SMLets Exchange Connector Settings</Name>
+          <Description>Defines the settings for the open source SMLets based Exchange Connector</Description>
+        </DisplayString>
+        <DisplayString ElementID="SMLets.Exchange.Connector.AdminSettings.AdditionalMailbox">
+          <Name>Additional Mailbox</Name>
+          <Description>Defines additional mailboxes within the SMLets Exchange Connector</Description>
+        </DisplayString>
+        <DisplayString ElementID="SMLets.Exchange.Connector.AdminSettings.Edit">
+          <Name>Edit</Name>
+          <Description>View or edit the settings for the open source SMLets based Exchange Connector</Description>
+        </DisplayString>
+      </DisplayStrings>
+      <KnowledgeArticles></KnowledgeArticles>
+    </LanguagePack>
+  </LanguagePacks>
+  <Resources>
+    <Assembly ID="SMLetsExchangeConnectorSettingsUI.Assembly" Accessibility="Public" FileName="SMLetsExchangeConnectorSettingsUI.dll" HasNullStream="false" QualifiedName="SMLetsExchangeConnectorSettingsUI, Version=1.0.0.0, Culture=neutral" />
+    <Image ID="settingsIcon" Accessibility="Public" FileName="16x16.png" HasNullStream="false"/>
+  </Resources>
+</ManagementPackFragment>

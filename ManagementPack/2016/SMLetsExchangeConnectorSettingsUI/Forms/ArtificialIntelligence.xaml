@@ -1,0 +1,261 @@
+﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.ArtificialIntelligence" 
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:sys="clr-namespace:System;assembly=mscorlib"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
+            xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
+            xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d"  Width="726" Height="1334"
+            xmlns:converters="clr-namespace:SMLetsExchangeConnectorSettingsUI.Validation" >
+
+    <Grid Name="ConfigurationGrid" Margin="15,25,15,10">
+        <!-- header -->
+        <Label Content="Artifical Intelligence" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
+        <TextBlock Margin="10,50,10,0" VerticalAlignment="Top" Height="26" FontWeight="Light" FontSize="14" TextWrapping="Wrap"><Run Text="Take Service Manager to new levels. "/>
+
+        </TextBlock>
+
+        <!--Radio Button chocies-->
+        <StackPanel Height="63" Margin="10,77,10,0" VerticalAlignment="Top" Orientation="Vertical" >
+            <RadioButton Name="option0" GroupName="AIOptions" Content="disabled" IsChecked="{Binding Path=IsArtificialIntelligenceEnabled, Mode=TwoWay}" />
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,0" Height="52">
+                <RadioButton Name="option1" GroupName="AIOptions" Content="Azure Cognitive Services" IsChecked="{Binding Path=IsAzureCognitiveServicesEnabled, Mode=TwoWay}" Margin="0,0,0,10" />
+                <RadioButton Name="option2" GroupName="AIOptions" Content="Keyword Matching" Margin="10,0,10,10" IsChecked="{Binding Path=IsKeywordMatchingEnabled, Mode=TwoWay}"/>
+                <RadioButton Name="option3" GroupName="AIOptions"  IsChecked="{Binding Path=IsAzureMachineLearningEnabled, Mode=TwoWay}" Margin="0,0,0,10" >
+                    <TextBlock Text="Azure Machine Learning + Cognitive Services" TextWrapping="Wrap" Height="34" Width="150" />
+                </RadioButton>
+            </StackPanel>
+        </StackPanel>
+
+        <!--Config section-->
+        <ScrollViewer Name="scrollViewer" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left"  Width="533" Margin="0,145,0,10" >
+            <StackPanel Name="stackPanel" Orientation="Vertical" Height="1124" Width="523" HorizontalAlignment="Left" VerticalAlignment="Top" >
+                <StackPanel.Resources>
+                    <converters:BooleanToHiddenVisibility x:Key="boolToVis"/>
+                </StackPanel.Resources>
+
+                <!--Azure Cognitive Services-->
+                <StackPanel x:Name="acsView" VerticalAlignment="Top" Height="430" Visibility="{Binding Path=IsChecked, ElementName=option1, Converter={StaticResource boolToVis}}" >
+                    <TextBlock FontStyle="Italic" TextWrapping="Wrap" ><Run Text="Harness the power of Artificial Intelligence without the need for data science."/>
+                        <InlineUIContainer>
+        		            <TextBlock>
+                                <Hyperlink RequestNavigate="Hyperlink_RequestNavigate" NavigateUri="https://github.com/AdhocAdam/smletsexchangeconnector/wiki/Azure-Cognitive-Services-setup" >Help me configure this.</Hyperlink>
+                            </TextBlock>
+        	            </InlineUIContainer>
+                    </TextBlock>
+
+                    <Label Height="25" Padding="0" Margin="0,10,0,0" Name="lblACSAPIKey" Content="Azure Cognitive Services Cognitive Services Text Analytics API Key"/>
+                    <TextBox Height="25" Margin="0,-8,0,10" Name="txtAzureCogSvcAnalyticsAPIKey" >
+                        <TextBox.Text>
+                            <Binding Path="AzureCognitiveServicesAPIKey" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" />
+                        </TextBox.Text>
+                    </TextBox>
+
+                    <Label Height="25" Padding="0" Margin="0,0,0,0" Name="lblACSRegion" Content="Azure Cognitive Services Text Analytics Region" />
+                    <TextBox Height="25" Margin="0,-8,0,10" Name="txtAzureCogSvcAnalyticsRegion" >
+                        <TextBox.Text>
+                            <Binding Path="ACSRegion" Mode="TwoWay" FallbackValue=""/>
+                        </TextBox.Text>
+                    </TextBox>
+                    
+                    <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblMinPercentForSR" Content="Minimum Percent at which to Create Service Requests"/>
+                    <TextBox Height="25" Margin="0,-8,0,10" Name="txtAzureCogSvcAnalyticsMinPercent" >
+                        <TextBox.Text>
+                            <Binding Path="MinimumPercentToCreateServiceRequest" Mode="TwoWay" />
+                        </TextBox.Text>
+                    </TextBox>
+
+                    <CheckBox x:Name="chkImproveCiresonKASuggestion" IsChecked="{Binding Path=IsACSForKAEnabled, Mode=TwoWay}">
+                        <TextBlock Text="Use Text Analytics to improve Cireson Knowledge Article Suggestions" TextWrapping="Wrap"/>
+                    </CheckBox>
+                    <CheckBox x:Name="chkImproveCiresonROSuggestion" IsChecked="{Binding Path=IsACSForROEnabled, Mode=TwoWay}">
+                        <TextBlock Text="Use Text Analytics to improve Cireson Request Offering Suggestions" TextWrapping="Wrap"/>
+                    </CheckBox>
+                    <CheckBox IsChecked="{Binding Path=IsACSForPriorityScoringEnabled, Mode=TwoWay}">
+                        <TextBlock Text="Use Sentiment Score to dynamically score Urgency/Priority/Impact on the Default Work Item type" TextWrapping="Wrap"/>
+                    </CheckBox>
+
+                    <TextBlock Text="(optional) Record Azure Sentiment Scores into New Work Items through custom Decimal Class Extensions" TextWrapping="Wrap" Margin="0,10,0,0" FontWeight="Bold" />
+                    <StackPanel Margin="10,0,-90,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,-60,0">
+                            <StackPanel Orientation="Vertical" Margin="0,0,20,0" Width="140">
+                                <TextBlock Text="Incident" FontStyle="Italic" HorizontalAlignment="Center" />
+                                <Label Height="25" Padding="0" Margin="0,0,0,0" Content="ACS IR Sentiment" />
+                                <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=IncidentDecExtensions}" SelectedItem="{Binding Path=ACSIncidentSentimentDecExtension}" DisplayMemberPath="DisplayName" />
+                            </StackPanel>
+                            <StackPanel Orientation="Vertical" Margin="0,0,0,0" Width="140">
+                                <TextBlock Text="Service Request" FontStyle="Italic" HorizontalAlignment="Center"  />
+                                <Label Height="25" Padding="0" Margin="0,0,0,0" Content="ACS SR Sentiment" />
+                                <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=ServiceRequestDecExtensions}" SelectedItem="{Binding Path=ACSServiceRequestSentimentDecExtension}" DisplayMemberPath="DisplayName" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Keyword Matching -->
+                <StackPanel x:Name="keywordView" VerticalAlignment="Top" Visibility="{Binding Path=IsChecked, ElementName=option2, Converter={StaticResource boolToVis}}" >
+                    <TextBlock TextWrapping="Wrap" FontStyle="Italic" ><Run Text="Not quite ready for Artificial Intelligence? No problem. Use the presence of words in an email to trigger Work Item creation via regex patterns."/>
+                        <InlineUIContainer>
+        		            <TextBlock>
+                                <Hyperlink RequestNavigate="Hyperlink_RequestNavigate" NavigateUri="https://regexr.com/">Help me build a regex at https://regexr.com</Hyperlink>
+                            </TextBlock>
+        	            </InlineUIContainer>
+                    </TextBlock>
+
+
+                    <Label Height="25" Padding="0" Margin="0,10,0,0" x:Name="lblKeyordMatching" Content="Regex keyword pattern to match"/>
+                    <TextBox Height="25" Margin="0,-8,0,10" Name="txtKeywordMatchingPattern" IsEnabled="{Binding ElementName=option2, Path=IsChecked}" >
+                        <TextBox.Text>
+                            <Binding Path="KeywordMatchingRegexPattern" Mode="TwoWay" FallbackValue=""/>
+                        </TextBox.Text>
+                    </TextBox>
+                    <Label Height="25" Padding="0" Margin="0,10,0,0" x:Name="lblWorkItemOverride" Content="When the pattern above is matched, create a..."/>
+                    <ComboBox x:Name="cbDefaultWorkItemType" HorizontalAlignment="Left" Width="171" Margin="0,0,0,0" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding KeywordWorkItemTypeOverride, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                        <sys:String>IR</sys:String>
+                        <sys:String>SR</sys:String>
+                    </ComboBox>
+                    <TextBlock Margin="10,10,10,0" Text="NOTE: This should be set to the opposite of your default Work Item. So if you're creating Service Requests (SR) by default, you'll want to create Incidents (IR) here and vice versa." TextWrapping="Wrap" />
+                </StackPanel>
+
+                <!-- Azure Machine Learning -->
+                <StackPanel x:Name="amlView" VerticalAlignment="Top" Height="1199" Visibility="{Binding Path=IsChecked, ElementName=option3, Converter={StaticResource boolToVis}}" >
+                    <TextBlock FontStyle="Italic" TextWrapping="Wrap" ><Run Text="Use your Data Warehouse to train Azure how to decision, route, and classify emails."/>
+                        <InlineUIContainer>
+        		            <TextBlock>
+                                <Hyperlink RequestNavigate="Hyperlink_RequestNavigate" NavigateUri="https://github.com/AdhocAdam/smletsexchangeconnector/wiki/Azure-Machine-Learning-setup" >Help me configure this.</Hyperlink>
+                            </TextBlock>
+        	            </InlineUIContainer>
+                    </TextBlock>
+                    <Label Height="25" Padding="0" Margin="0,10,0,0" x:Name="lblAMLWebServiceURL" Content="Azure Machine Learning Web Service URL"/>
+                    <TextBox Height="25" Margin="0,-8,0,10" Name="txtAMLWebServiceURL" >
+                        <TextBox.Text>
+                            <Binding Path="AzureMachineLearningURL" Mode="TwoWay" FallbackValue=""/>
+                        </TextBox.Text>
+                    </TextBox>
+
+                    <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLAPIKey" Content="Azure Machine Learning Web Service API Key"/>
+                    <TextBox Height="25" Margin="0,-8,0,10" Name="txtAMLAPIKey" >
+                        <TextBox.Text>
+                            <Binding Path="AzureMachineLearningAPIKey" Mode="TwoWay" FallbackValue=""/>
+                        </TextBox.Text>
+                    </TextBox>
+
+                    <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLWIMinConfidence" Content="Minimum Confidence to Decide Work Item Type"/>
+                    <TextBox Height="25" Margin="0,-8,0,10" Name="txtAMLWIMinConfidence" >
+                        <TextBox.Text>
+                            <Binding Path="AzureMachineLearningWIConfidence" Mode="TwoWay" FallbackValue=""/>
+                        </TextBox.Text>
+                    </TextBox>
+
+                    <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLClassificationMinConfidence" Content="Minimum Confidence to Decide Work Item Classification"/>
+                    <TextBox Height="25" Margin="0,-8,0,10" Name="txtAMLClassificationMinConfidence" >
+                        <TextBox.Text>
+                            <Binding Path="AzureMachineLearningClassificationConfidence" Mode="TwoWay" FallbackValue=""/>
+                        </TextBox.Text>
+                    </TextBox>
+
+                    <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLSupportGroupMinConfidence" Content="Minimum Confidence to Decide Work Item Support Group"/>
+                    <TextBox Height="25" Margin="0,-8,0,10" Name="txtAMSupportGroupIMinConfidence" >
+                        <TextBox.Text>
+                            <Binding Path="AzureMachineLearningSupportGroupConfidence" Mode="TwoWay" FallbackValue=""/>
+                        </TextBox.Text>
+                    </TextBox>
+
+                    <TextBlock Text="(optional) Record Azure Machine Learning Scores and Predictions into New Work Items regardless of decisioning outcome through custom Decimal and Enum Class Extensions" TextWrapping="Wrap" FontWeight="Bold" />
+                    <StackPanel Orientation="Horizontal" Margin="10,0,-150,0" Height="285">
+                        <StackPanel Orientation="Vertical" Margin="0,0,50,0" Width="200">
+                            <TextBlock Text="Incident" FontStyle="Italic" HorizontalAlignment="Center" />
+                            <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLIRClassExtensionWorkItem" Content="Work Item confidence"/>
+                            <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=IncidentDecExtensions}" SelectedItem="{Binding Path=AMLIncidentConfidenceDecExtension}" DisplayMemberPath="DisplayName" />
+
+                            <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLIRClassExtensionClassification" Content="Classification confidence"/>
+                            <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=IncidentDecExtensions}" SelectedItem="{Binding Path=AMLIncidentClassificationConfidenceDecExtension}" DisplayMemberPath="DisplayName"  />
+
+                            <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLIRClassExtensionSG" Content="Support Group confidence"/>
+                            <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=IncidentDecExtensions}" SelectedItem="{Binding Path=AMLIncidentSupportGroupConfidenceDecExtension}" DisplayMemberPath="DisplayName" />
+
+                            <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLIRClassExtensionPredictionEnum" Content="Classification prediction enum"/>
+                            <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=IncidentEnumExtensions}" SelectedItem="{Binding Path=AMLIncidentClassificationPredictionEnumExtension}" DisplayMemberPath="DisplayName"  />
+
+                            <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLIRClassExtensionSGPredictionEnum" Content="Support Group prediction enum"/>
+                            <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=IncidentEnumExtensions}" SelectedItem="{Binding Path=AMLIncidentSupportGroupPredictionEnumExtension}" DisplayMemberPath="DisplayName" />
+
+                        </StackPanel>
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,0" Width="200">
+                            <TextBlock Text="Service Request" FontStyle="Italic" HorizontalAlignment="Center" />
+                            <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLSRClassExtensionWorkItem" Content="Work Item confidence"/>
+                            <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=ServiceRequestDecExtensions}" SelectedItem="{Binding Path=AMLServiceRequestConfidenceDecExtension}" DisplayMemberPath="DisplayName" />
+
+                            <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLSRClassExtensionClassification" Content="Classification confidence"/>
+                            <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=ServiceRequestDecExtensions}" SelectedItem="{Binding Path=AMLServiceRequestClassificationConfidenceDecExtension}" DisplayMemberPath="DisplayName" />
+
+                            <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLSRClassExtensionSG" Content="Support Group confidence"/>
+                            <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=ServiceRequestDecExtensions}" SelectedItem="{Binding Path=AMLServiceRequestSupportGroupConfidenceDecExtension}" DisplayMemberPath="DisplayName"  />
+
+                            <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLSRClassExtensionPredictionEnum" Content="Classification prediction enum"/>
+                            <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=ServiceRequestEnumExtensions}" SelectedItem="{Binding Path=AMLServiceRequestClassificationPredictionEnumExtension}" DisplayMemberPath="DisplayName" />
+
+                            <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLSRClassExtensionSGPredictionEnum" Content="Support Group prediction enum"/>
+                            <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=ServiceRequestEnumExtensions}" SelectedItem="{Binding Path=AMLServiceRequestSupportGroupPredictionEnumExtension}" DisplayMemberPath="DisplayName"  />
+
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- ACS for AML -->
+                    <TextBlock Text="Azure Cognitive Services (optional)" TextWrapping="Wrap" FontWeight="Bold" />
+                    <TextBlock Text="Let AML decision, route, classify for Analysts and use ACS to better aid Affected Users" FontStyle="Italic" TextWrapping="Wrap" />
+
+                    <TextBlock Margin="0,10,0,0" Text="Azure Cognitive Services Cognitive Services Text Analytics API Key" />
+                    <TextBox Height="25" Margin="0,0,0,0" Name="txtAzureCogSvcAnalyticsAPIKeyForAML" >
+                        <TextBox.Text>
+                            <Binding Path="AzureCognitiveServicesAPIKey" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" />
+                        </TextBox.Text>
+                    </TextBox>
+
+                    <TextBlock Margin="0,10,0,0" Text="Azure Cognitive Services Cognitive Services Region (eastus2, westus, etc.)" />
+                    <TextBox Height="25" Margin="0,0,0,0" Name="txtAzureCogSvcAnalyticsRegionForAML" >
+                        <TextBox.Text>
+                            <Binding Path="ACSRegion" Mode="TwoWay" FallbackValue=""/>
+                        </TextBox.Text>
+                    </TextBox>
+
+                    <CheckBox x:Name="chkImproveCiresonKASuggestionAML" IsChecked="{Binding Path=IsACSForKAEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,10,0,0">
+                        <TextBlock Text="Use Text Analytics to improve Cireson Knowledge Article Suggestions through keyword extraction" TextWrapping="Wrap"/>
+                    </CheckBox>
+                    <CheckBox x:Name="chkImproveCiresonROSuggestionAML" IsChecked="{Binding Path=IsACSForROEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" >
+                        <TextBlock Text="Use Text Analytics to improve Cireson Request Offering Suggestions through keyword extraction" TextWrapping="Wrap"/>
+                    </CheckBox>
+                    <CheckBox IsChecked="{Binding Path=IsACSForPriorityScoringEnabled, Mode=TwoWay}">
+                        <TextBlock Text="Use Sentiment Score to dynamically score Urgency/Priority/Impact on the Default Work Item type" TextWrapping="Wrap"/>
+                    </CheckBox>
+                    
+                    <TextBlock Text="(optional) Record Azure Sentiment Scores into New Work Items through custom Decimal Class Extensions" TextWrapping="Wrap" Margin="0,10,0,0" FontWeight="Bold" />
+                    <StackPanel Margin="10,0,-90,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,-60,0">
+                            <StackPanel Orientation="Vertical" Margin="0,0,20,0" Width="140">
+                                <TextBlock Text="Incident" FontStyle="Italic" HorizontalAlignment="Center" />
+                                <Label Height="25" Padding="0" Margin="0,0,0,0" Content="ACS IR Sentiment" />
+                                <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=IncidentDecExtensions}" SelectedItem="{Binding Path=ACSIncidentSentimentDecExtension}" DisplayMemberPath="DisplayName" />
+                            </StackPanel>
+                            <StackPanel Orientation="Vertical" Margin="0,0,0,0" Width="140">
+                                <TextBlock Text="Service Request" FontStyle="Italic" HorizontalAlignment="Center"  />
+                                <Label Height="25" Padding="0" Margin="0,0,0,0" Content="ACS SR Sentiment" />
+                                <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=ServiceRequestDecExtensions}" SelectedItem="{Binding Path=ACSServiceRequestSentimentDecExtension}" DisplayMemberPath="DisplayName" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- graphic -->
+        <StackPanel Margin="0,0,0,10">
+            <StackPanel.Resources>
+                <converters:BooleanToHiddenVisibility x:Key="boolToVis"/>
+            </StackPanel.Resources>
+            <Image Visibility="{Binding Path=IsChecked, ElementName=option1, Converter={StaticResource boolToVis}}" Margin="0,145,0,0" Height="150" VerticalAlignment="Top" Source="/SMLetsExchangeConnectorSettingsUI;component/AssemblyImages/azureCognitiveServicesIcon150x150.png" HorizontalAlignment="Right" Width="150" />
+            <TextBlock Visibility="{Binding Path=IsChecked, ElementName=option2, Converter={StaticResource boolToVis}}" Margin="0,145,0,0" Height="150" VerticalAlignment="Top" Text="(.*)" FontSize="95" FontWeight="Bold" HorizontalAlignment="Right" Width="150" />
+            <Image Visibility="{Binding Path=IsChecked, ElementName=option3, Converter={StaticResource boolToVis}}" Margin="0,145,0,0" Height="150" VerticalAlignment="Top" Source="/SMLetsExchangeConnectorSettingsUI;component/AssemblyImages/ViennaLogo.png" HorizontalAlignment="Right" Width="150" />
+        </StackPanel>
+    </Grid>
+</wpfwiz:WizardRegularPageBase> 
