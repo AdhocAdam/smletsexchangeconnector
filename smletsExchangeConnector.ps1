@@ -123,8 +123,11 @@ Version: 1.1 = GitHub issue raised on updating work items. Per discussion was pi
 #>
 
 #region #### Configuration ####
+#retrieve the SMLets Exchange Connector MP to define configuration
+$smexcoSettingsMP = ((Get-SCSMObject -Class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings$")))
+
 #define the SCSM management server, this could be a remote name or localhost
-$scsmMGMTServer = "localhost"
+$scsmMGMTServer = "$($smexcoSettingsMP.SCSMmgmtServer)"
 #if you are running this script in SMA or Orchestrator, you may need/want to present a credential object to the management server.  Leave empty, otherwise.
 $scsmMGMTCreds = $null
 
@@ -138,12 +141,12 @@ $scsmMGMTCreds = $null
 #UseAutoDiscover = Determines whether ($true) or not ($false) to connect to Exchange using autodiscover.  If $false, provide a URL for $ExchangeEndpoint
     #ExchangeEndpoint = A URL in the format of 'https://<yourservername.domain.tld>/EWS/Exchange.asmx' such as 'https://mail.contoso.com/EWS/Exchange.asmx'
 $exchangeAuthenticationType = "windows"
-$workflowEmailAddress = ""
+$workflowEmailAddress = "$($smexcoSettingsMP.WorkflowEmailAddress)"
 $username = ""
 $password = ""
 $domain = ""
-$UseAutodiscover = $true
-$ExchangeEndpoint = ""
+$UseAutodiscover = $smexcoSettingsMP.UseAutoDiscover
+$ExchangeEndpoint = "$($smexcoSettingsMP.ExchangeAutodiscoverURL)"
 
 #defaultNewWorkItem = set to either "ir", "sr", "pr", or "cr"
 #default*RTemplate = define the displayname of the template you'll be using based on what you've set for $defaultNewWorkItem
@@ -202,39 +205,39 @@ $ExchangeEndpoint = ""
     #Comments can continue to be left as "AnalystComment" (stock connector behavior) or changed to "EndUserComment". Please be mindful modifying this setting in
     #conjuction with the above ExternalPartyCommentPrivacy*R. This can impact any custom Action Log notifiers you've configured and potentially expose/hide
     #information from one party (Assigned To/Affected User).
-$defaultNewWorkItem = "ir"
+$defaultNewWorkItem = "$($smexcoSettingsMP.DefaultWorkItemType)"
 $defaultIRTemplateName = "IR Template Name Goes Here"
 $defaultSRTemplateName = "SR Template Name Goes Here"
 $defaultPRTemplateName = "PR Template Name Goes Here"
 $defaultCRTemplateName = "CR Template Name Goes Here"
-$defaultIncidentResolutionCategory = ""
-$defaultProblemResolutionCategory = ""
-$defaultServiceRequestImplementationCategory = ""
-$checkAttachmentSettings = $false
-$minFileSizeInKB = "25"
-$createUsersNotInCMDB = $true
-$includeWholeEmail = $false
-$attachEmailToWorkItem = $false
-$voteOnBehalfOfGroups = $false
-$fromKeyword = "From"
-$UseMailboxRedirection = $false
+$defaultIncidentResolutionCategory = "$($smexcoSettingsMP.IncidentResolutionCategory.Name + "$")"
+$defaultProblemResolutionCategory = "$($smexcoSettingsMP.ProblemResolutionCategory.Name + "$")"
+$defaultServiceRequestImplementationCategory = "$($smexcoSettingsMP.ServiceRequestImplementationCategory.Name + "$")"
+$checkAttachmentSettings = $smexcoSettingsMP.EnforceFileAttachmentSettings
+$minFileSizeInKB = "$($smexcoSettingsMP.MinimumFileAttachmentSize)"
+$createUsersNotInCMDB = $smexcoSettingsMP.CreateUsersNotInCMDB
+$includeWholeEmail = $smexcoSettingsMP.IncludeWholeEmail
+$attachEmailToWorkItem = $smexcoSettingsMP.AttachEmailToWorkItem
+$voteOnBehalfOfGroups = $smexcoSettingsMP.VoteOnBehalfOfADGroup
+$fromKeyword = "$($smexcoSettingsMP.SCSMKeywordFrom)"
+$UseMailboxRedirection = $smexcoSettingsMP.UseMailboxRedirection
 $Mailboxes = @{
     "MyOtherMailbox@company.com" = @{"DefaultWiType"="SR";"IRTemplate"="My IR Template";"SRTemplate"="My SR Template";"PRTemplate"="My PR Template";"CRTemplate"="My CR Template"};
 }
-$CreateNewWorkItemWhenClosed = $false
-$takeRequiresGroupMembership = $false
-$crSupportGroupEnumGUID = ""
-$maSupportGroupEnumGUID = ""
-$redactPiiFromMessage = $false
-$changeIncidentStatusOnReply = $false
-$changeIncidentStatusOnReplyAffectedUser = "IncidentStatusEnum.Active$"
-$changeIncidentStatusOnReplyAssignedTo = "IncidentStatusEnum.Active.Pending$"
-$changeIncidentStatusOnReplyRelatedUser = "IncidentStatusEnum.Active$"
-$DynamicWorkItemAssignment = ""
-$ExternalPartyCommentPrivacyIR = $null
-$ExternalPartyCommentPrivacySR = $null
-$ExternalPartyCommentTypeIR = "AnalystComment"
-$ExternalPartyCommentTypeSR = "AnalystComment"
+$CreateNewWorkItemWhenClosed = $smexcoSettingsMP.CreateNewWorkItemIfWorkItemClosed
+$takeRequiresGroupMembership = $smexcoSettingsMP.TakeRequiresSupportGroupMembership
+$crSupportGroupEnumGUID = "$($smexcoSettingsMP.CRSupportGroupGUID.Id)"
+$maSupportGroupEnumGUID = "$($smexcoSettingsMP.MASupportGroupGUID.Id)"
+$redactPiiFromMessage = $smexcoSettingsMP.RemovePII
+$changeIncidentStatusOnReply = $smexcoSettingsMP.ChangeIncidentStatusOnReply
+$changeIncidentStatusOnReplyAffectedUser = "$($smexcoSettingsMP.IncidentStatusOnAffectedUserReply.Name + "$")"
+$changeIncidentStatusOnReplyAssignedTo = "$($smexcoSettingsMP.IncidentStatusOnAssignedToReply.Name + "$")"
+$changeIncidentStatusOnReplyRelatedUser = "$($smexcoSettingsMP.IncidentStatusOnRelatedUserReply.Name + "$")"
+$DynamicWorkItemAssignment = $smexcoSettingsMP.DynamicAnalystAssignmentType
+$ExternalPartyCommentPrivacyIR = Get-Variable -Name $smexcoSettingsMP.ExternalPartyCommentPrivacyIR -ValueOnly
+$ExternalPartyCommentPrivacySR = Get-Variable -Name $smexcoSettingsMP.ExternalPartyCommentPrivacySR -ValueOnly
+$ExternalPartyCommentTypeIR = "$($smexcoSettingsMP.ExternalPartyCommentTypeIR)"
+$ExternalPartyCommentTypeSR = "$($smexcoSettingsMP.ExternalPartyCommentTypeSR)"
 
 #processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
     #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
@@ -247,11 +250,11 @@ $ExternalPartyCommentTypeSR = "AnalystComment"
     #of either "user" or "machine"
 #mergeReplies = If $true, emails that are Replies (signified by RE: in the subject) will attempt to be matched to a Work Item in SCSM by their
     #Exchange Conversation ID and will also override $attachEmailToWorkItem to be $true if set to $false
-$processCalendarAppointment = $false
-$processDigitallySignedMessages = $false
-$processEncryptedMessages = $false
-$certStore = "user"
-$mergeReplies = $false
+$processCalendarAppointment = $smexcoSettingsMP.ProcessCalendarAppointments
+$processDigitallySignedMessages = $smexcoSettingsMP.ProcessDigitallySignedMessages
+$processEncryptedMessages = $smexcoSettingsMP.ProcessDigitallyEncryptedMessages
+$certStore = "$($smexcoSettingsMP.CertificateStore)"
+$mergeReplies = $smexcoSettingsMP.MergeReplies
 
 #optional, enable integration with Cireson Knowledge Base/Service Catalog
 #this uses the now depricated Cireson KB API Search by Text, it works as of v7.x but should be noted it could be entirely removed in future portals
@@ -267,12 +270,12 @@ $mergeReplies = $false
 #$ciresonPortalWindowsAuth = how invoke-restmethod should attempt to authenticate to your portal server.
     #Leave true if your portal uses Windows Auth, change to False for Forms authentication.
     #If using forms, you'll need to set the ciresonPortalUsername and Password variables. For ease, you could set this equal to the username/password defined above
-$searchCiresonHTMLKB = $false
-$numberOfWordsToMatchFromEmailToRO = 1
-$numberOfWordsToMatchFromEmailToKA = 1
-$searchAvailableCiresonPortalOfferings = $false
-$enableSetFirstResponseDateOnSuggestions = $false
-$ciresonPortalServer = "https://portalserver.domain.tld/"
+$searchCiresonHTMLKB = $smexcoSettingsMP.CiresonSearchKnowledgeBase
+$numberOfWordsToMatchFromEmailToRO = $smexcoSettingsMP.NumberOfWordsToMatchFromEmailToCiresonRequestOffering
+$numberOfWordsToMatchFromEmailToKA = $smexcoSettingsMP.NumberOfWordsToMatchFromEmailToCiresonKnowledgeArticle
+$searchAvailableCiresonPortalOfferings = $smexcoSettingsMP.CiresonSearchRequestOfferings
+$enableSetFirstResponseDateOnSuggestions = $smexcoSettingsMP.EnableSetFirstResponseDateOnSuggestions
+$ciresonPortalServer = "$($smexcoSettingsMP.CiresonPortalURL)"
 $ciresonPortalWindowsAuth = $true
 $ciresonPortalUsername = ""
 $ciresonPortalPassword = ""
@@ -288,17 +291,17 @@ $ciresonPortalPassword = ""
 #priorityExpirationInHours: Since both SCSM and the Cireson require an announcement expiration date, when announcements are created
     #this is the number of hours added to the current time to set the announcement to expire. If you send Calendar Meetings which by definition
     #have a start and end time, these expirationInHours style variables are ignored
-$enableSCSMAnnouncements = $false
-$enableCiresonPortalAnnouncements = $false
-$announcementKeyword = "announcement"
-$approvedADGroupForSCSMAnnouncements = "my custom AD SCSM Authorized Announcers Users group"
-$approvedUsersForSCSMAnnouncements = "myfirst.email@domain.com", "mysecond.address@domain.com"
-$approvedMemberTypeForSCSMAnnouncer = "group"
-$lowAnnouncemnentPriorityKeyword = "low"
-$criticalAnnouncemnentPriorityKeyword = "high"
-$lowAnnouncemnentExpirationInHours = 7
-$normalAnnouncemnentExpirationInHours = 3
-$criticalAnnouncemnentExpirationInHours = 1
+$enableSCSMAnnouncements = $smexcoSettingsMP.EnableSCSMAnnouncements
+$enableCiresonPortalAnnouncements = $smexcoSettingsMP.EnableCiresonSCSMAnnouncements
+$announcementKeyword = $smexcoSettingsMP.SCSMKeywordAnnouncement
+$approvedADGroupForSCSMAnnouncements = "$($smexcoSettingsMP.SCSMApprovedAnnouncementGroupDisplayName)"
+$approvedUsersForSCSMAnnouncements = "$($smexcoSettingsMP.SCSMApprovedAnnouncementUsers)"
+$approvedMemberTypeForSCSMAnnouncer = "$($smexcoSettingsMP.SCSMAnnouncementApprovedMemberType)"
+$lowAnnouncemnentPriorityKeyword = $smexcoSettingsMP.AnnouncementKeywordLow
+$criticalAnnouncemnentPriorityKeyword = $smexcoSettingsMP.AnnouncementKeywordHigh
+$lowAnnouncemnentExpirationInHours = $smexcoSettingsMP.AnnouncementPriorityLowExpirationInHours
+$normalAnnouncemnentExpirationInHours = $smexcoSettingsMP.AnnouncementPriorityNormalExpirationInHours
+$criticalAnnouncemnentExpirationInHours = $smexcoSettingsMP.AnnouncementPriorityCriticalExpirationInHours
 
 <#ARTIFICIAL INTELLIGENCE OPTION 1, enable AI through Azure Cognitive Services
 #PLEASE NOTE: HIGHLY EXPERIMENTAL!
@@ -338,14 +341,14 @@ cost to your organization before enabling this feature.#>
     #i.e. ukwest, eastus2, westus, northcentralus
 #azureCogSvcTextAnalyticsAPIKey = API key for your cognitive services text analytics deployment. This is found in the settings pane for Cognitive Services in https://portal.azure.com
 #minPercentToCreateServiceRequest = The minimum sentiment rating required to create a Service Request, a number less than this will create an Incident
-$enableAzureCognitiveServicesForNewWI = $false
-$minPercentToCreateServiceRequest = "95"
-$enableAzureCognitiveServicesForKA = $false
-$enableAzureCognitiveServicesForRO = $false
-$enableAzureCognitiveServicesPriorityScoring = $false
+$enableAzureCognitiveServicesForNewWI = $smexcoSettingsMP.EnableACSForNewWorkItem
+$minPercentToCreateServiceRequest = "$($smexcoSettingsMP.MinACSSentimentToCreateSR)"
+$enableAzureCognitiveServicesForKA = $smexcoSettingsMP.EnableACSForCiresonKASuggestion
+$enableAzureCognitiveServicesForRO = $smexcoSettingsMP.EnableACSForCiresonROSuggestion
+$enableAzureCognitiveServicesPriorityScoring = $smexcoSettingsMP.EnableACSPriorityScoring
 $acsSentimentScoreClassExtensionName = ""
-$azureRegion = ""
-$azureCogSvcTextAnalyticsAPIKey = ""
+$azureRegion = "$($smexcoSettingsMP.ACSTextAnalyticsRegion)"
+$azureCogSvcTextAnalyticsAPIKey = "$($smexcoSettingsMP.ACSTextAnalyticsAPIKey)"
 
 #ARTIFICIAL INTELLIGENCE OPTION 2, enable AI through pre-defined keywords
 #If Azure Cognitive Services isn't an option for you can alternatively enable this more controlled mechanism
@@ -360,9 +363,9 @@ $azureCogSvcTextAnalyticsAPIKey = ""
     #     $workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjammed\b|\bjamming\b|broke|froze|issue|unable"
     #     "i have a problem with my computer" -match $workItemTypeOverrideKeywords
 #workItemOverrideType = The type of work item to create if key words are found in the message.
-$enableKeywordMatchForNewWI = $false
-$workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjammed\b|\bjamming\b|broke|froze|issue|unable"
-$workItemOverrideType = "ir"
+$enableKeywordMatchForNewWI = "$($smexcoSettingsMP.EnableKeywordMatchForNewWorkItem)"
+$workItemTypeOverrideKeywords = "$($smexcoSettingsMP.KeywordMatchRegexForNewWorkItem)"
+$workItemOverrideType = "$($smexcoSettingsMP.KeywordMatchWorkItemType)"
 
 #ARTIFICIAL INTELLIGENCE OPTION 3, enable AI through Azure Machine Learning
 #PLEASE NOTE: HIGHLY EXPERIMENTAL!
@@ -386,12 +389,12 @@ $workItemOverrideType = "ir"
 #amlWI*ScoreClassExtensionName = You can choose to write the returned Confidence Score into the New Work Item.
     #This requires you to have extended the Incident AND Service Request classes with a custom Decimal value and then
     #enter the name of that property here.
-$enableAzureMachineLearning = $false
-$amlAPIKey = ""
-$amlURL = ""
-$amlWorkItemTypeMinPercentConfidence = "95"
-$amlWorkItemClassificationMinPercentConfidence = "95"
-$amlWorkItemSupportGroupMinPercentConfidence = "95"
+$enableAzureMachineLearning = $smexcoSettingsMP.EnableAML
+$amlAPIKey = "$($smexcoSettingsMP.AMLAPIKey)"
+$amlURL = "$($smexcoSettingsMP.AMLurl)"
+$amlWorkItemTypeMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemType)"
+$amlWorkItemClassificationMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemClassification)"
+$amlWorkItemSupportGroupMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemSupportGroup)"
 $amlWITypeScoreClassExtensionName = ""
 $amlWIClassificationScoreClassExtensionName = ""
 $amlWISupportGroupClassExtensionName = ""
@@ -407,34 +410,34 @@ $amlWISupportGroupClassExtensionName = ""
 #approvedUsersForSCOM = if approvedUsersForSCOM = users, set this to a comma seperated list of email addresses that are allowed to make SCOM email requests
     #this approach allows you to control through this script
 #distributedApplicationHealthKeyword = the keyword to use in the subject for the connector to request DA status from SCOM
-$enableSCOMIntegration = $false
-$scomMGMTServer = ""
-$approvedMemberTypeForSCOM = "group"
-$approvedADGroupForSCOM = "my custom AD SCOM Authorized Users group"
-$approvedUsersForSCOM = "myfirst.email@domain.com", "mysecond.address@domain.com"
-$distributedApplicationHealthKeyword = "health"
+$enableSCOMIntegration = $smexcoSettingsMP.EnableSCOMIntegration
+$scomMGMTServer = "$($smexcoSettingsMP.SCOMmgmtServer)"
+$approvedMemberTypeForSCOM = "$($smexcoSettingsMP.SCOMApprovedMemberType)"
+$approvedADGroupForSCOM = ""
+$approvedUsersForSCOM = "$($smexcoSettingsMP.SCOMApprovedUsers)"
+$distributedApplicationHealthKeyword = "$($smexcoSettingsMP.SCOMKeywordHealth)"
 
 #define SCSM Work Item keywords to be used
-$acknowledgedKeyword = "acknowledge"
-$reactivateKeyword = "reactivate"
-$resolvedKeyword = "resolved"
-$closedKeyword = "closed"
-$holdKeyword = "hold"
-$cancelledKeyword = "cancelled"
-$takeKeyword = "take"
-$completedKeyword = "completed"
-$skipKeyword = "skipped"
-$approvedKeyword = "approved"
-$rejectedKeyword = "rejected"
+$acknowledgedKeyword = "$($smexcoSettingsMP.SCSMKeywordAcknowledge)"
+$reactivateKeyword = "$($smexcoSettingsMP.SCSMKeywordReactivate)"
+$resolvedKeyword = "$($smexcoSettingsMP.SCSMKeywordResolved)"
+$closedKeyword = "$($smexcoSettingsMP.SCSMKeywordClosed)"
+$holdKeyword = "$($smexcoSettingsMP.SCSMKeywordHold)"
+$cancelledKeyword = "$($smexcoSettingsMP.SCSMKeywordCancelled)"
+$takeKeyword = "$($smexcoSettingsMP.SCSMKeywordTake)"
+$completedKeyword = "$($smexcoSettingsMP.SCSMKeywordCompleted)"
+$skipKeyword = "$($smexcoSettingsMP.SCSMKeywordSkipped)"
+$approvedKeyword = "$($smexcoSettingsMP.SCSMKeywordApprove)"
+$rejectedKeyword = "$($smexcoSettingsMP.SCSMKeywordReject)"
 $privateCommentKeyword = "private"
 
 #define the path to the Exchange Web Services API and MimeKit
 #the PII regex file and HTML Suggestion Template paths will only be leveraged if these features are enabled above.
 #$htmlSuggestionTemplatePath must end with a "\"
-$exchangeEWSAPIPath = "C:\Program Files\Microsoft\Exchange\Web Services\1.2\Microsoft.Exchange.WebServices.dll"
-$mimeKitDLLPath = "C:\smletsExchangeConnector\mimekit.dll"
-$piiRegexPath = "C:\smletsExchangeConnector\pii_regex.txt"
-$htmlSuggestionTemplatePath = "c:\smletsexchangeconnector\htmlEmailTemplates\"
+$exchangeEWSAPIPath = "$($smexcoSettingsMP.FilePathEWSDLL)"
+$mimeKitDLLPath = "$($smexcoSettingsMP.FilePathMimeKitDLL)"
+$piiRegexPath = "$($smexcoSettingsMP.FilePathPIIRegex)"
+$htmlSuggestionTemplatePath = "$($smexcoSettingsMP.FilePathHTMLSuggestionTemplates)"
 
 #enable logging per standard Exchange Connector registry keys
 #valid options on that registry key are 1 to 7 where 7 is the most verbose
