@@ -125,6 +125,7 @@ Version: 1.1 = GitHub issue raised on updating work items. Per discussion was pi
 #region #### Configuration ####
 #retrieve the SMLets Exchange Connector MP to define configuration
 $smexcoSettingsMP = ((Get-SCSMObject -Class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings$")))
+$smexcoSettingsMPMailboxes = ((Get-SCSMObject -Class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings.AdditionalMailbox$")))
 
 #define the SCSM management server, this could be a remote name or localhost
 $scsmMGMTServer = "$($smexcoSettingsMP.SCSMmgmtServer)"
@@ -206,10 +207,10 @@ $ExchangeEndpoint = "$($smexcoSettingsMP.ExchangeAutodiscoverURL)"
     #conjuction with the above ExternalPartyCommentPrivacy*R. This can impact any custom Action Log notifiers you've configured and potentially expose/hide
     #information from one party (Assigned To/Affected User).
 $defaultNewWorkItem = "$($smexcoSettingsMP.DefaultWorkItemType)"
-$defaultIRTemplateName = "IR Template Name Goes Here"
-$defaultSRTemplateName = "SR Template Name Goes Here"
-$defaultPRTemplateName = "PR Template Name Goes Here"
-$defaultCRTemplateName = "CR Template Name Goes Here"
+$defaultIRTemplateGuid = "$($smexcoSettingsMP.DefaultIncidentTemplateGUID.Guid)"
+$defaultSRTemplateGuid = "$($smexcoSettingsMP.DefaultServiceRequestTemplateGUID.Guid)"
+$defaultPRTemplateGuid = "$($smexcoSettingsMP.DefaultProblemTemplateGUID.Guid)"
+$defaultCRTemplateGuid = "$($smexcoSettingsMP.DefaultChangeRequestTemplateGUID.Guid)"
 $defaultIncidentResolutionCategory = "$($smexcoSettingsMP.IncidentResolutionCategory.Name + "$")"
 $defaultProblemResolutionCategory = "$($smexcoSettingsMP.ProblemResolutionCategory.Name + "$")"
 $defaultServiceRequestImplementationCategory = "$($smexcoSettingsMP.ServiceRequestImplementationCategory.Name + "$")"
@@ -221,9 +222,7 @@ $attachEmailToWorkItem = $smexcoSettingsMP.AttachEmailToWorkItem
 $voteOnBehalfOfGroups = $smexcoSettingsMP.VoteOnBehalfOfADGroup
 $fromKeyword = "$($smexcoSettingsMP.SCSMKeywordFrom)"
 $UseMailboxRedirection = $smexcoSettingsMP.UseMailboxRedirection
-$Mailboxes = @{
-    "MyOtherMailbox@company.com" = @{"DefaultWiType"="SR";"IRTemplate"="My IR Template";"SRTemplate"="My SR Template";"PRTemplate"="My PR Template";"CRTemplate"="My CR Template"};
-}
+if ($smexcoSettingsMPMailboxes) {$Mailboxes += $smexcoSettingsMPMailboxes | foreach-object {@{$_.MailboxAddress = @{"DefaultWiType"="$($_.MailboxTemplateWorkItemType)";"IRTemplate"="$($_.MailboxIRTemplateGUID)";"SRTemplate"="$($_.MailboxSRTemplateGUID)";"PRTemplate"="$($_.MailboxPRTemplateGUID)";"CRTemplate"="$($_.MailboxCRTemplateGUID)"};}}}
 $CreateNewWorkItemWhenClosed = $smexcoSettingsMP.CreateNewWorkItemIfWorkItemClosed
 $takeRequiresGroupMembership = $smexcoSettingsMP.TakeRequiresSupportGroupMembership
 $crSupportGroupEnumGUID = "$($smexcoSettingsMP.CRSupportGroupGUID.Id)"
@@ -477,13 +476,13 @@ else {
 
 # Set default templates and mailbox settings
 if ($UseMailboxRedirection -eq $true) {
-    $Mailboxes.add("$($workflowEmailAddress)", @{"DefaultWiType"=$defaultNewWorkItem;"IRTemplate"=$DefaultIRTemplateName;"SRTemplate"=$DefaultSRTemplateName;"PRTemplate"=$DefaultPRTemplateName;"CRTemplate"=$DefaultCRTemplateName})
+    $Mailboxes.add("$($workflowEmailAddress)", @{"DefaultWiType"=$defaultNewWorkItem;"IRTemplate"=$DefaultIRTemplateGuid;"SRTemplate"=$DefaultSRTemplateGuid;"PRTemplate"=$DefaultPRTemplateGuid;"CRTemplate"=$DefaultCRTemplateGuid})
 }
 else {
-    $defaultIRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultIRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultIRTemplateName"}
-    $defaultSRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultSRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultSRTemplateName"}
-    $defaultPRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultPRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultPRTemplateName"}
-    $defaultCRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultCRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultCRTemplateName"}
+    $defaultIRTemplate = Get-SCSMObjectTemplate -Id $DefaultIRTemplateGuid @scsmMGMTParams
+    $defaultSRTemplate = Get-SCSMObjectTemplate -Id $DefaultSRTemplateGuid @scsmMGMTParams
+    $defaultPRTemplate = Get-SCSMObjectTemplate -Id $DefaultPRTemplateGuid @scsmMGMTParams
+    $defaultCRTemplate = Get-SCSMObjectTemplate -Id $DefaultCRTemplateGuid @scsmMGMTParams
 }
 #endregion
 
@@ -698,7 +697,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     {
         "ir" {
                     if ($UseMailboxRedirection -eq $true -And $TemplatesForThisMessage.Count -gt 0) {
-                        $IRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["IRTemplate"]) @scsmMGMTParams
+                        $IRTemplate = Get-ScsmObjectTemplate -Id $($TemplatesForThisMessage["IRTemplate"]) @scsmMGMTParams
                     }
                     else {
                         $IRTemplate = $defaultIRTemplate
@@ -798,7 +797,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                 }
         "sr" {
                     if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage.Count -gt 0) {
-                        $SRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["SRTemplate"]) @scsmMGMTParams
+                        $SRTemplate = Get-ScsmObjectTemplate -Id $($TemplatesForThisMessage["SRTemplate"]) @scsmMGMTParams
                     }
                     else {
                         $SRTemplate = $defaultSRTemplate
@@ -897,7 +896,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                 }
         "pr" {
                     if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage.Count -gt 0) {
-                        $PRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["PRTemplate"]) @scsmMGMTParams
+                        $PRTemplate = Get-ScsmObjectTemplate -Id $($TemplatesForThisMessage["PRTemplate"]) @scsmMGMTParams
                     }
                     else {
                         $PRTemplate = $defaultPRTemplate
@@ -926,7 +925,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                 }
         "cr" {
                     if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage.Count -gt 0) {
-                        $CRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["CRTemplate"]) @scsmMGMTParams
+                        $CRTemplate = Get-ScsmObjectTemplate -Id $($TemplatesForThisMessage["CRTemplate"]) @scsmMGMTParams
                     }
                     else {
                         $CRTemplate = $defaultCRTemplate
