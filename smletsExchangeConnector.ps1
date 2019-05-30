@@ -412,7 +412,7 @@ $amlWISupportGroupClassExtensionName = ""
 $enableSCOMIntegration = $smexcoSettingsMP.EnableSCOMIntegration
 $scomMGMTServer = "$($smexcoSettingsMP.SCOMmgmtServer)"
 $approvedMemberTypeForSCOM = "$($smexcoSettingsMP.SCOMApprovedMemberType)"
-$approvedADGroupForSCOM = ""
+$approvedADGroupForSCOM = Get-SCSMObject -id ($smexcoSettingsMP.SCOMApprovedGroupGUID.Guid) | select-object username -ExpandProperty username
 $approvedUsersForSCOM = "$($smexcoSettingsMP.SCOMApprovedUsers)"
 $distributedApplicationHealthKeyword = "$($smexcoSettingsMP.SCOMKeywordHealth)"
 
@@ -428,7 +428,7 @@ $completedKeyword = "$($smexcoSettingsMP.SCSMKeywordCompleted)"
 $skipKeyword = "$($smexcoSettingsMP.SCSMKeywordSkipped)"
 $approvedKeyword = "$($smexcoSettingsMP.SCSMKeywordApprove)"
 $rejectedKeyword = "$($smexcoSettingsMP.SCSMKeywordReject)"
-$privateCommentKeyword = "private"
+$privateCommentKeyword = "$($smexcoSettingsMP.SCSMKeywordPrivate)"
 
 #define the path to the Exchange Web Services API and MimeKit
 #the PII regex file and HTML Suggestion Template paths will only be leveraged if these features are enabled above.
@@ -2914,7 +2914,7 @@ function Get-SCOMAuthorizedRequester ($sender)
                         return $false
                     }        
                 }
-        "group" {$group = Get-ADGroup @adParams -Identity $approvedADGroupForSCOM
+        "group" {$group = Get-ADGroup @adParams -Identity "$approvedADGroupForSCOM"
                     $adUser = Get-ADUser @adParams -Filter "EmailAddress -eq '$sender'"
                     if ($adUser)
                     {
