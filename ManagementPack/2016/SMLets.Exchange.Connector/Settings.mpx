@@ -497,6 +497,15 @@
               MinLength="0"
               Required="false" />
 
+          <Property ID="SCSMKeywordPrivate"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
           <Property ID="SCOMKeywordHealth"
               Type="string"
               AutoIncrement="false"
@@ -1111,6 +1120,7 @@
     <ImageReferences>
       <ImageReference ElementID="SMLets.Exchange.Connector.AdminSettings.Edit" ImageID="settingsIcon"></ImageReference>
       <ImageReference ElementID="SMLets.Exchange.Connector.AdminSettings" ImageID="settingsIcon"></ImageReference>
+      <ImageReference ElementID="SMLets.Exchange.Connector.AdminSettings.AdditionalMailbox" ImageID="exchangeMailboxIcon"></ImageReference>
     </ImageReferences>
   </Presentation>
   <LanguagePacks>
@@ -1139,5 +1149,6 @@
   <Resources>
     <Assembly ID="SMLetsExchangeConnectorSettingsUI.Assembly" Accessibility="Public" FileName="SMLetsExchangeConnectorSettingsUI.dll" HasNullStream="false" QualifiedName="SMLetsExchangeConnectorSettingsUI, Version=1.0.0.0, Culture=neutral" />
     <Image ID="settingsIcon" Accessibility="Public" FileName="16x16.png" HasNullStream="false"/>
+    <Image ID="exchangeMailboxIcon" Accessibility="Public" FileName="exchangeMailbox16x16.png" HasNullStream="false"/>
   </Resources>
 </ManagementPackFragment>

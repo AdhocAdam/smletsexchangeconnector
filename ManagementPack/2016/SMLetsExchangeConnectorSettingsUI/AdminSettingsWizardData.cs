@@ -105,6 +105,7 @@ namespace SMLetsExchangeConnectorSettingsUI
         private String strRejectKW = String.Empty;
         private String strHealthKW = String.Empty;
         private String strAnnouncementKW = String.Empty;
+        private String strPrivateKW = String.Empty;
 
         //cireson
         private Boolean boolCiresonMPExists = false;
@@ -1089,6 +1090,21 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.strAnnouncementKW != value)
                 {
                     this.strAnnouncementKW = value;
+                }
+            }
+        }
+
+        public String KeywordPrivate
+        {
+            get
+            {
+                return this.strPrivateKW;
+            }
+            set
+            {
+                if (this.strPrivateKW != value)
+                {
+                    this.strPrivateKW = value;
                 }
             }
         }
@@ -2247,6 +2263,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.KeywordReject = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordReject"].ToString();
             this.KeywordAnnouncement = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordAnnouncement"].ToString();
             this.KeywordHealth = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMKeywordHealth"].ToString();
+            this.KeywordPrivate = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordPrivate"].ToString();
 
             //Cireson Integration
             this.CiresonPortalURL = emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonPortalURL"].ToString();
@@ -2705,6 +2722,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordReject"].Value = this.KeywordReject;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordAnnouncement"].Value = this.KeywordAnnouncement;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMKeywordHealth"].Value = this.KeywordHealth;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordPrivate"].Value = this.KeywordPrivate;
 
             //Cireson Integration
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableCiresonIntegration"].Value = this.IsCiresonIntegrationEnabled;
