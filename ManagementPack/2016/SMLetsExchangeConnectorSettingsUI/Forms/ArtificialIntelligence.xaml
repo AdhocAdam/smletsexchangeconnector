@@ -35,7 +35,7 @@
                 </StackPanel.Resources>
 
                 <!--Azure Cognitive Services-->
-                <StackPanel x:Name="acsView" VerticalAlignment="Top" Height="430" Visibility="{Binding Path=IsChecked, ElementName=option1, Converter={StaticResource boolToVis}}" >
+                <StackPanel x:Name="acsView" VerticalAlignment="Top" Height="1095" Visibility="{Binding Path=IsChecked, ElementName=option1, Converter={StaticResource boolToVis}}" >
                     <TextBlock FontStyle="Italic" TextWrapping="Wrap" ><Run Text="Harness the power of Artificial Intelligence without the need for data science."/>
                         <InlineUIContainer>
         		            <TextBlock>
@@ -71,7 +71,7 @@
                     <CheckBox x:Name="chkImproveCiresonROSuggestion" IsChecked="{Binding Path=IsACSForROEnabled, Mode=TwoWay}">
                         <TextBlock Text="Use Text Analytics to improve Cireson Request Offering Suggestions" TextWrapping="Wrap"/>
                     </CheckBox>
-                    <CheckBox IsChecked="{Binding Path=IsACSForPriorityScoringEnabled, Mode=TwoWay}">
+                    <CheckBox x:Name="chkEnableACSPriorityScoring" IsChecked="{Binding Path=IsACSForPriorityScoringEnabled, Mode=TwoWay}">
                         <TextBlock Text="Use Sentiment Score to dynamically score Urgency/Priority/Impact on the Default Work Item type" TextWrapping="Wrap"/>
                     </CheckBox>
 
@@ -90,6 +90,72 @@
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
+                    <TextBlock Text="(optional) Control Impact, Urgency, and Priority based on Sentiment Score" TextWrapping="Wrap" Margin="0,10,0,0" FontWeight="Bold" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                        <Button Width="120" Height="25" Content="Add IR Boundary" Margin="0,0,15,0" Click="AddIRACSBoundary_Click" IsEnabled="{Binding ElementName=chkEnableACSPriorityScoring, Path=IsChecked}" />
+                        <Button Width="120" Height="25" Content="Add SR Boundary" Margin="0,0,15,0" Click="AddSRACSBoundary_Click" IsEnabled="{Binding ElementName=chkEnableACSPriorityScoring, Path=IsChecked}" />
+                        <Button Width="120" Height="25" Content="Remove Boundary" Click="RemoveACSBoundary_Click" IsEnabled="{Binding ElementName=chkEnableACSPriorityScoring, Path=IsChecked}" />
+                    </StackPanel>
+                    <ListView x:Name="ACSBoundaryListViewControl" Margin="0,5,0,0" Height="500" IsEnabled="{Binding ElementName=chkEnableACSPriorityScoring, Path=IsChecked}">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Work Item Type" >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <ComboBox SelectedItem="{Binding WorkItemType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="False" >
+                                                <sys:String>IR</sys:String>
+                                                <sys:String>SR</sys:String>
+                                            </ComboBox>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Min" >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBox x:Name="txtMinRange" Text="{Binding MinBoundary, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Custom:Validation.RegexPattern="(?:\b|-)([0-9]{1,2}[0]?|100)\b" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Max" >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBox x:Name="txtMaxRange" Text="{Binding MaxBoundary, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Custom:Validation.RegexPattern="(?:\b|-)([0-9]{1,2}[0]?|100)\b" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="IR Impact/SR Urgency" >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <ComboBox x:Name="cbImpactUrgency" ItemsSource="{Binding Path=IRImpactSRUrgencyEnums}" DisplayMemberPath="DisplayName" >
+                                                <ComboBox.SelectedItem>
+                                                    <Binding Path="IRImpactSRUrgency">
+                                                        <Binding.ValidationRules>
+                                                            <converters:SelectionValidationRule ValidatesOnTargetUpdated="True"/>
+                                                        </Binding.ValidationRules>
+                                                    </Binding>
+                                                </ComboBox.SelectedItem>
+                                            </ComboBox>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="IR Urgency/SR Priority" >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <ComboBox x:Name="cbUrgencyPriority" ItemsSource="{Binding Path=IRUrgencySRPriorityEnums}" DisplayMemberPath="DisplayName" >
+                                                <ComboBox.SelectedItem>
+                                                    <Binding Path="IRUrgencySRPriority">
+                                                        <Binding.ValidationRules>
+                                                            <converters:SelectionValidationRule ValidatesOnTargetUpdated="True"/>
+                                                        </Binding.ValidationRules>
+                                                    </Binding>
+                                                </ComboBox.SelectedItem>
+                                            </ComboBox>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
                 </StackPanel>
 
                 <!-- Keyword Matching -->

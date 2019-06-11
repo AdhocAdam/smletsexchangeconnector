@@ -796,6 +796,15 @@
               MinLength="0"
               Required="false" />
 
+        <Property ID="ACSPriorityScoringBoundaries"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="25000"
+              MinLength="0"
+              Required="false" />
+
           <!--Artificial Intelligence Properties, Option 2: Keyword Matching-->
           <Property ID="EnableKeywordMatchForNewWorkItem"
               Type="bool"

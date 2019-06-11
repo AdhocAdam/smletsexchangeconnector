@@ -218,6 +218,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             {
                 mailboxToRemoveStringArray[y] +=
                     mailboxToRemove.MailboxID;
+                y++;
             }
 
             //Send back over to AdminSettingsWizardData for Save
