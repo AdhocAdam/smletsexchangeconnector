@@ -225,8 +225,8 @@ $UseMailboxRedirection = $smexcoSettingsMP.UseMailboxRedirection
 if ($smexcoSettingsMPMailboxes) {$Mailboxes += $smexcoSettingsMPMailboxes | foreach-object {@{$_.MailboxAddress = @{"DefaultWiType"="$($_.MailboxTemplateWorkItemType)";"IRTemplate"="$($_.MailboxIRTemplateGUID)";"SRTemplate"="$($_.MailboxSRTemplateGUID)";"PRTemplate"="$($_.MailboxPRTemplateGUID)";"CRTemplate"="$($_.MailboxCRTemplateGUID)"};}}}
 $CreateNewWorkItemWhenClosed = $smexcoSettingsMP.CreateNewWorkItemIfWorkItemClosed
 $takeRequiresGroupMembership = $smexcoSettingsMP.TakeRequiresSupportGroupMembership
-$crSupportGroupEnumGUID = "$($smexcoSettingsMP.CRSupportGroupGUID.Id)"
-$maSupportGroupEnumGUID = "$($smexcoSettingsMP.MASupportGroupGUID.Id)"
+$crSupportGroupEnumGUID = "$($smexcoSettingsMP.CRSupportGroupGUID.Guid)"
+$maSupportGroupEnumGUID = "$($smexcoSettingsMP.MASupportGroupGUID.Guid)"
 $redactPiiFromMessage = $smexcoSettingsMP.RemovePII
 $changeIncidentStatusOnReply = $smexcoSettingsMP.ChangeIncidentStatusOnReply
 $changeIncidentStatusOnReplyAffectedUser = "$($smexcoSettingsMP.IncidentStatusOnAffectedUserReply.Name + "$")"
@@ -333,7 +333,7 @@ cost to your organization before enabling this feature.#>
 #enableAzureCognitiveServicesPriorityScoring = If enabled, the Sentiment Score will be used
     #to set the Impact & Urgency and/or Urgency $ Priority on Incidents or Service Requests. Bounds can be edited within
     #the Get-ACSWorkItemPriority function. This feature can also be used even when using AI Option #3 described below.
-#acsSentimentScoreClassExtensionName = You can choose to write the returned Sentiment Score into the New Work Item.
+#acsSentimentScore*RClassExtensionName = You can choose to write the returned Sentiment Score into the New Work Item.
     #This requires you to have extended the Incident AND Service Request classes with a custom Decimal value and then
     #enter the name of that property here.
 #azureRegion = where Cognitive Services is deployed as seen in it's respective settings pane,
@@ -345,7 +345,8 @@ $minPercentToCreateServiceRequest = "$($smexcoSettingsMP.MinACSSentimentToCreate
 $enableAzureCognitiveServicesForKA = $smexcoSettingsMP.EnableACSForCiresonKASuggestion
 $enableAzureCognitiveServicesForRO = $smexcoSettingsMP.EnableACSForCiresonROSuggestion
 $enableAzureCognitiveServicesPriorityScoring = $smexcoSettingsMP.EnableACSPriorityScoring
-$acsSentimentScoreClassExtensionName = ""
+$acsSentimentScoreIRClassExtensionName = "$($smexcoSettingsMP.ACSSentimentScoreIncidentClassExtensionGUID.Guid)"
+$acsSentimentScoreSRClassExtensionName = "$($smexcoSettingsMP.ACSSentimentScoreServiceRequestClassExtensionGUID.Guid)"
 $azureRegion = "$($smexcoSettingsMP.ACSTextAnalyticsRegion)"
 $azureCogSvcTextAnalyticsAPIKey = "$($smexcoSettingsMP.ACSTextAnalyticsAPIKey)"
 
@@ -394,9 +395,12 @@ $amlURL = "$($smexcoSettingsMP.AMLurl)"
 $amlWorkItemTypeMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemType)"
 $amlWorkItemClassificationMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemClassification)"
 $amlWorkItemSupportGroupMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemSupportGroup)"
-$amlWITypeScoreClassExtensionName = ""
-$amlWIClassificationScoreClassExtensionName = ""
-$amlWISupportGroupClassExtensionName = ""
+$amlWITypeScoreIRClassExtensionName = "$($smexcoSettingsMP.AMLIncidentConfidenceClassExtensionGUID.Guid)"
+$amlWITypeScoreSRClassExtensionName = "$($smexcoSettingsMP.AMLServiceRequestConfidenceClassExtensionGUID.Guid)"
+$amlWIClassificationIRScoreClassExtensionName = "$($smexcoSettingsMP.AMLIncidentClassificationConfidenceClassExtensionGUID.Guid)"
+$amlWIClassificationSRScoreClassExtensionName = "$($smexcoSettingsMP.AMLServiceRequestClassificationConfidenceClassExtensionGUID.Guid)"
+$amlWISupportGroupIRClassExtensionName = "$($smexcoSettingsMP.AMLIncidentSupportGroupConfidenceClassExtensionGUID.Guid)"
+$amlWISupportGroupSRClassExtensionName = "$($smexcoSettingsMP.AMLServiceRequestSupportGroupConfidenceClassExtensionGUID.Guid)"
 
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
@@ -532,7 +536,7 @@ $crTypeProjection = Get-SCSMTypeProjection -Name "system.workitem.changerequestp
 
 $userHasPrefProjection = Get-SCSMTypeProjection -name "System.User.Preferences.Projection$" @scsmMGMTParams
 
-# Retrieve Support Group Class Extensions on CR/MA if defined
+# Retrieve Class Extensions on IR/SR/CR/MA if defined
 if ($maSupportGroupEnumGUID)
 {
     $maSupportGroupPropertyName = ($maClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.EnumType -like "*$maSupportGroupEnumGUID*")}).Name
@@ -540,6 +544,40 @@ if ($maSupportGroupEnumGUID)
 if ($crSupportGroupEnumGUID)
 {
     $crSupportGroupPropertyName = ($crClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.EnumType -like "*$crSupportGroupEnumGUID*")}).Name
+}
+#azure cognitive services
+if ($acsSentimentScoreIRClassExtensionName)
+{
+    $acsSentimentScoreIRClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$acsSentimentScoreIRClassExtensionName*")}).Name
+}
+if ($acsSentimentScoreSRClassExtensionName)
+{
+    $acsSentimentScoreSRClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$acsSentimentScoreSRClassExtensionName*")}).Name
+}
+#azure machine learning
+if ($amlWITypeScoreIRClassExtensionName)
+{
+    $amlWITypeScoreIRClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWITypeScoreIRClassExtensionName*")}).Name
+}
+if ($amlWITypeScoreSRClassExtensionName)
+{
+    $amlWITypeScoreSRClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWITypeScoreSRClassExtensionName*")}).Name
+}
+if ($amlWIClassificationIRScoreClassExtensionName)
+{
+    $amlWIClassificationIRScoreClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWIClassificationIRScoreClassExtensionName*")}).Name
+}
+if ($amlWIClassificationSRScoreClassExtensionName)
+{
+    $amlWIClassificationSRScoreClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWIClassificationSRScoreClassExtensionName*")}).Name
+}
+if ($amlWISupportGroupIRClassExtensionName)
+{
+    $amlWISupportGroupIRClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWISupportGroupIRClassExtensionName*")}).Name
+}
+if ($amlWISupportGroupSRClassExtensionName)
+{
+    $amlWISupportGroupSRClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWISupportGroupSRClassExtensionName*")}).Name
 }
 #endregion
 
@@ -736,18 +774,18 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     }
 
                     #write the sentiment score into the custom Work Item extension
-                    if ($acsSentimentScoreClassExtensionName)
+                    if ($acsSentimentScoreIRClassExtensionName)
                     {
-                        Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreClassExtensionName -value $sentimentScore @scsmMGMTParams
+                        Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreIRClassExtensionName -value $sentimentScore @scsmMGMTParams
                     }
 
                     #update the Support Group and Classification if Azure Machine Learning is being used
                     if ($enableAzureMachineLearning -eq $true)
                     {
                         #write confidence scores into Work Item
-                        if ($amlWITypeScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeScoreClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
-                        if ($amlWIClassificationScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWIClassificationScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
-                        if ($amlWISupportGroupClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWISupportGroupClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
+                        if ($amlWITypeScoreIRClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeScoreIRClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
+                        if ($amlWIClassificationIRScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWIClassificationIRScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
+                        if ($amlWISupportGroupIRClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWISupportGroupIRClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
 
                         #when scores exceed thresholds, further define Work Item
                         if ($amlProbability.WorkItemSupportGroupConfidence -ge $amlWorkItemSupportGroupMinPercentConfidence)
@@ -836,18 +874,18 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     }
 
                     #write the sentiment score into the custom Work Item extension
-                    if ($acsSentimentScoreClassExtensionName)
+                    if ($acsSentimentScoreSRClassExtensionName)
                     {
-                        Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreClassExtensionName -value $sentimentScore @scsmMGMTParams
+                        Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreSRClassExtensionName -value $sentimentScore @scsmMGMTParams
                     }
 
                     #update the Support Group and Classification if Azure Machine Learning is being used
                     if ($enableAzureMachineLearning -eq $true)
                     {
                         #write confidence scores into Work Item
-                        if ($amlWITypeScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeScoreClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
-                        if ($amlWIClassificationScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWIClassificationScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
-                        if ($amlWISupportGroupClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWISupportGroupClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
+                        if ($amlWITypeScoreSRClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeScoreSRClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
+                        if ($amlWIClassificationSRScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWIClassificationSRScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
+                        if ($amlWISupportGroupSRClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWISupportGroupSRClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
 
                         #when scores exceed thresholds, further define Work Item
                         if ($amlProbability.WorkItemSupportGroupConfidence -ge $amlWorkItemSupportGroupMinPercentConfidence)
@@ -2727,45 +2765,11 @@ function Get-AzureEmailSentiment ($messageToEvaluate)
 }
 function Get-ACSWorkItemPriority ($score, $wiClass)
 {  
-    #change boundaries as neccesary
-    switch ($wiClass)
-    {
-        #impact/urgency
-        "System.WorkItem.Incident" {
-            switch ($score)
-            {
-                {$_ -ge 0 -and $_ -le 20} {$priorityCombo = "hi/hi"}
-                {$_ -ge 20 -and $_ -le 60} {$priorityCombo = "med/med"}
-                {$_ -ge 60 -and $_ -le 80} {$priorityCombo = "med/low"}
-                {$_ -ge 80 -and $_ -le 90} {$priorityCombo = "low/med"}
-                {$_ -ge 90 -and $_ -le 100} {$priorityCombo = "low/low"}
-            }
-        }
-        #urgency/priority
-        "System.WorkItem.ServiceRequest" {
-            switch ($score)
-            {
-                {$_ -ge 0 -and $_ -le 20} {$priorityCombo = "imm/imm"}
-                {$_ -ge 20 -and $_ -le 60} {$priorityCombo = "hi/med"}
-                {$_ -ge 60 -and $_ -le 80} {$priorityCombo = "med/low"}
-                {$_ -ge 80 -and $_ -le 90} {$priorityCombo = "med/med"}
-                {$_ -ge 90 -and $_ -le 100} {$priorityCombo = "low/low"}
-            }
-        }
-    }
-
-    $priorityCalc = @()
-    switch ($wiClass)
-    {
-        "System.WorkItem.Incident" {
-            $priorityCalc + $priorityCombo.Split("/")[0].Replace("hi", "System.WorkItem.TroubleTicket.ImpactEnum.High$").Replace("med", "System.WorkItem.TroubleTicket.ImpactEnum.Medium$").Replace("low", "System.WorkItem.TroubleTicket.ImpactEnum.Low$");
-            $priorityCalc + $priorityCombo.Split("/")[1].Replace("hi", "System.WorkItem.TroubleTicket.UrgencyEnum.High$").Replace("med", "System.WorkItem.TroubleTicket.UrgencyEnum.Medium$").Replace("low", "System.WorkItem.TroubleTicket.UrgencyEnum.Low$");
-        }
-        "System.WorkItem.ServiceRequest" {
-            $priorityCalc + $priorityCombo.Split("/")[0].Replace("imm", "ServiceRequestUrgencyEnum.Immediate$").Replace("hi", "ServiceRequestUrgencyEnum.High$").Replace("med", "ServiceRequestUrgencyEnum.Medium$").Replace("low", "ServiceRequestUrgencyEnum.Low$");
-            $priorityCalc + $priorityCombo.Split("/")[1].Replace("imm", "ServiceRequestPriorityEnum.Immediate$").Replace("hi", "ServiceRequestPriorityEnum.High$").Replace("med", "ServiceRequestPriorityEnum.Medium$").Replace("low", "ServiceRequestPriorityEnum.Low$");
-        }
-    }
+    $wiClass = $wiClass.Replace("System.WorkItem.Incident", "IR").Replace("System.WorkItem.ServiceRequest", "SR")
+    [xml]$acsXMLBoundaries = $smexcoSettingsMP.ACSPriorityScoringBoundaries
+    $priorityCalc = $acsXMLBoundaries.ACSPriorityBoundaries.ACSPriorityBoundary | foreach-object {if (($score -ge $_.Min) -and ($score -le $_.Max) -and ($wiClass -eq $_.WorkItemType)) {$_.IRImpactSRUrgencyEnum, $_.IRUrgencySRPriorityEnum}}
+    $priorityCalc = $priorityCalc | foreach-object {Get-SCSMEnumeration -id $_ | select-object name -ExpandProperty name } | foreach-object {$_ + "$"}
+        
     return $priorityCalc
 }
 function Get-AzureEmailKeywords ($messageToEvaluate)
