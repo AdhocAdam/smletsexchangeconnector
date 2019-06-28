@@ -1767,7 +1767,7 @@ function Get-AssignedToWorkItemVolume ($SCSMUser)
 function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
 {
     #get the template's support group members
-    $supportGroupMembers = Get-TierMembers -TierEnumID $templateSupportGroupID
+    $supportGroupMembers = Get-TierMembers -TierEnumID $SupportGroupID
 
     #based on how Dynamic Work Item assignment was configured, set the Assigned To User
     switch ($DynamicWorkItemAssignment)
