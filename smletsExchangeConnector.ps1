@@ -383,18 +383,26 @@ $workItemOverrideType = "ir"
 #amlWorkItemTypeMinPercentConfidence = The minimum percentage AML must return in order to decide should an Incident or Service Request be created
 #amlWorkItemClassificationMinPercentConfidence = The minimum percentage AML must return in order to set the Classification on the New Work Item
 #amlWorkItemSupportGroupMinPercentConfidence = The minimum percentage AML must return in order set the Support Group on the New Work Item
-#amlWI*ScoreClassExtensionName = You can choose to write the returned Confidence Score into the New Work Item.
-    #This requires you to have extended the Incident AND Service Request classes with a custom Decimal value and then
-    #enter the name of that property here.
+#aml*ClassificationScoreClassExtensionName = Optionally write the returned percent confidence value to a decimal class extension on Incidents or Service Requests
+#aml*ClassificationEnumPredictionExtName = Optionally write the returned enum value to an enum class extension bound to Classification/Area on Incidents or Service Requests
 $enableAzureMachineLearning = $false
 $amlAPIKey = ""
 $amlURL = ""
 $amlWorkItemTypeMinPercentConfidence = "95"
 $amlWorkItemClassificationMinPercentConfidence = "95"
 $amlWorkItemSupportGroupMinPercentConfidence = "95"
-$amlWITypeScoreClassExtensionName = ""
-$amlWIClassificationScoreClassExtensionName = ""
-$amlWISupportGroupClassExtensionName = ""
+$amlWITypeIncidentStringClassExtensionName = ""
+$amlWITypeServiceRequestStringClassExtensionName = ""
+$amlWITypeIncidentScoreClassExtensionName = ""
+$amlWITypeServiceRequestScoreClassExtensionName = ""
+$amlIncidentClassificationScoreClassExtensionName = ""
+$amlIncidentClassificationEnumPredictionExtName = ""
+$amlIncidentTierQueueScoreClassExtensionName = ""
+$amlIncidentTierQueueEnumPredictionExtName = ""
+$amlServiceRequestAreaScoreClassExtensionName = ""
+$amlServiceRequestAreaEnumPredictionExtName = ""
+$amlServiceRequestSupportGroupScoreClassExtensionName = ""
+$amlServiceRequestSupportGroupEnumPredictionExtName = ""
 
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
@@ -742,10 +750,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     #update the Support Group and Classification if Azure Machine Learning is being used
                     if ($enableAzureMachineLearning -eq $true)
                     {
-                        #write confidence scores into Work Item
-                        if ($amlWITypeScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeScoreClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
-                        if ($amlWIClassificationScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWIClassificationScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
-                        if ($amlWISupportGroupClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWISupportGroupClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
+                        #write confidence scores and enum predictions into Work Item
+                        if ($amlWITypeIncidentStringClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeIncidentStringClassExtensionName" = $amlProbability.WorkItemType} @scsmMGMTParams}
+                        if ($amlWITypeIncidentScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeIncidentScoreClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
+                        if ($amlIncidentClassificationScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlIncidentClassificationScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
+                        if ($amlIncidentTierQueueScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlIncidentTierQueueScoreClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
+                        if ($amlIncidentTierQueueEnumPredictionExtName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlIncidentTierQueueEnumPredictionExtName" = $amlProbability.WorkItemSupportGroup} @scsmMGMTParams}
+                        if ($amlIncidentClassificationEnumPredictionExtName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlIncidentClassificationEnumPredictionExtName" = $amlProbability.WorkItemClassification} @scsmMGMTParams}
 
                         #when scores exceed thresholds, further define Work Item
                         if ($amlProbability.WorkItemSupportGroupConfidence -ge $amlWorkItemSupportGroupMinPercentConfidence)
@@ -843,9 +854,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($enableAzureMachineLearning -eq $true)
                     {
                         #write confidence scores into Work Item
-                        if ($amlWITypeScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeScoreClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
-                        if ($amlWIClassificationScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWIClassificationScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
-                        if ($amlWISupportGroupClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWISupportGroupClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
+                        if ($amlWITypeServiceRequestStringClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeServiceRequestStringClassExtensionName" = $amlProbability.WorkItemType} @scsmMGMTParams}
+                        if ($amlWITypeServiceRequestScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeServiceRequestScoreClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
+                        if ($amlServiceRequestAreaScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestAreaScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
+                        if ($amlServiceRequestSupportGroupScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestSupportGroupScoreClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
+                        if ($amlServiceRequestSupportGroupEnumPredictionExtName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestSupportGroupEnumPredictionExtName" = $amlProbability.WorkItemSupportGroup} @scsmMGMTParams}
+                        if ($amlServiceRequestAreaEnumPredictionExtName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestAreaEnumPredictionExtName" = $amlProbability.WorkItemClassification} @scsmMGMTParams}
+
 
                         #when scores exceed thresholds, further define Work Item
                         if ($amlProbability.WorkItemSupportGroupConfidence -ge $amlWorkItemSupportGroupMinPercentConfidence)
