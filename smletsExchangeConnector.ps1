@@ -227,6 +227,7 @@ $CreateNewWorkItemWhenClosed = $smexcoSettingsMP.CreateNewWorkItemIfWorkItemClos
 $takeRequiresGroupMembership = $smexcoSettingsMP.TakeRequiresSupportGroupMembership
 $crSupportGroupEnumGUID = "$($smexcoSettingsMP.CRSupportGroupGUID.Guid)"
 $maSupportGroupEnumGUID = "$($smexcoSettingsMP.MASupportGroupGUID.Guid)"
+$prSupportGroupEnumGUID = "$($smexcoSettingsMP.PRSupportGroupGUID.Guid)"
 $redactPiiFromMessage = $smexcoSettingsMP.RemovePII
 $changeIncidentStatusOnReply = $smexcoSettingsMP.ChangeIncidentStatusOnReply
 $changeIncidentStatusOnReplyAffectedUser = "$($smexcoSettingsMP.IncidentStatusOnAffectedUserReply.Name + "$")"
@@ -544,6 +545,10 @@ if ($maSupportGroupEnumGUID)
 if ($crSupportGroupEnumGUID)
 {
     $crSupportGroupPropertyName = ($crClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.EnumType -like "*$crSupportGroupEnumGUID*")}).Name
+}
+if ($prSupportGroupEnumGUID)
+{
+    $prSupportGroupPropertyName = ($prClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.EnumType -like "*$prSupportGroupEnumGUID*")}).Name
 }
 #azure cognitive services
 if ($acsSentimentScoreIRClassExtensionName)
