@@ -16,39 +16,39 @@
         <StackPanel Name="scrollViewer" HorizontalAlignment="Left" Width="240" Margin="0,117,0,10">
             <StackPanel Name="stackPanelLeft" Orientation="Vertical" Height="437" VerticalAlignment="Top" >
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblFromKeyword" Content="Email reply parsing keyword (e.g. From)"/>
-                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtFromKW" Text="{Binding KeywordFrom, FallbackValue='', Mode=TwoWay}"/>
+                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtFromKW" Text="{Binding KeywordFrom, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAckKeyword" Content="[Acknowledge]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtAckKW" Text="{Binding KeywordAcknowledge, FallbackValue='', Mode=TwoWay}"/>
+                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtAckKW" Text="{Binding KeywordAcknowledge, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblReactivateKeyword" Content="[Reactivate]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtReactivateKW" Text="{Binding KeywordReactivate, FallbackValue='', Mode=TwoWay}" />
+                <TextBox Height="25" Margin="0,-8,10,10" Name="txtReactivateKW" Text="{Binding KeywordReactivate, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblResolvedKeyword" Content="[Resolved]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtResolvedKW" Text="{Binding KeywordResolve, FallbackValue='', Mode=TwoWay}" />
+                <TextBox Height="25" Margin="0,-8,10,10" Name="txtResolvedKW" Text="{Binding KeywordResolve, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblClosedKeyword" Content="[Closed]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtClosedKW" Text="{Binding KeywordClose, FallbackValue='', Mode=TwoWay}" />
+                <TextBox Height="25" Margin="0,-8,10,10" Name="txtClosedKW" Text="{Binding KeywordClose, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblHoldKeyword" Content="[Hold]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtHoldKW" Text="{Binding KeywordHold, FallbackValue='', Mode=TwoWay}" />
+                <TextBox Height="25" Margin="0,-8,10,10" Name="txtHoldKW" Text="{Binding KeywordHold, FallbackValue='', Mode=TwoWay}"  Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAnnouncementKeyword" Content="[Announcement]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" ToolTip="announcement" x:Name="txtBlkAnnouncementKeyword" Text="{Binding KeywordAnnouncement, FallbackValue='', Mode=TwoWay}" />
+                <TextBox Height="25" Margin="0,-8,10,10" ToolTip="announcement" x:Name="txtBlkAnnouncementKeyword" Text="{Binding KeywordAnnouncement, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblPrivateKeyword" Content="#private"/>
-                <TextBox Height="25" Margin="0,-8,10,10" ToolTip="announcement" x:Name="txtBlkPrivateKeyword" Text="{Binding KeywordPrivate, FallbackValue='', Mode=TwoWay}" />
+                <TextBox Height="25" Margin="0,-8,10,10" ToolTip="announcement" x:Name="txtBlkPrivateKeyword" Text="{Binding KeywordPrivate, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
             </StackPanel>
         </StackPanel>
         <StackPanel x:Name="scrollViewer_Copy" HorizontalAlignment="Left" Width="240" Margin="271,117,0,10">
             <StackPanel Name="stackPanelRight" Orientation="Vertical" Height="437" VerticalAlignment="Top">
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblCancelKeyword" Content="[Cancelled]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtCancelledKW" Text="{Binding KeywordCancel, FallbackValue='', Mode=TwoWay}"/>
+                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtCancelledKW" Text="{Binding KeywordCancel, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblCompletedKeyword" Content="[Completed]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtCompletedKW" Text="{Binding KeywordComplete, FallbackValue='', Mode=TwoWay}" />
+                <TextBox Height="25" Margin="0,-8,10,10" Name="txtCompletedKW" Text="{Binding KeywordComplete, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblSkipKeyword" Content="[Skipped]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtSkipKW" Text="{Binding KeywordSkip, FallbackValue='', Mode=TwoWay}" />
+                <TextBox Height="25" Margin="0,-8,10,10" Name="txtSkipKW" Text="{Binding KeywordSkip, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblApproveKeyword" Content="[Approve]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtApproveKW" Text="{Binding KeywordApprove, FallbackValue='', Mode=TwoWay}" />
+                <TextBox Height="25" Margin="0,-8,10,10" Name="txtApproveKW" Text="{Binding KeywordApprove, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblRejectKeyword" Content="[Reject]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtRejectKW" Text="{Binding KeywordReject, FallbackValue='', Mode=TwoWay}" />
+                <TextBox Height="25" Margin="0,-8,10,10" Name="txtRejectKW" Text="{Binding KeywordReject, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblTakeKeyword" Content="[Take]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtTakeKW" Text="{Binding KeywordTake, FallbackValue='', Mode=TwoWay}" />
+                <TextBox Height="25" Margin="0,-8,10,10" Name="txtTakeKW" Text="{Binding KeywordTake, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblHealthKeyword" Content="[SCOM Distributed App Health Status]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtSCOMHealthKeyword" Text="{Binding KeywordHealth, FallbackValue='', Mode=TwoWay}"/>
+                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtSCOMHealthKeyword" Text="{Binding KeywordHealth, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
             </StackPanel>
         </StackPanel>
     </Grid>

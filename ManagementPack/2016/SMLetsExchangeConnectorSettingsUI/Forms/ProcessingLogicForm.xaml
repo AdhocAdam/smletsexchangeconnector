@@ -50,7 +50,7 @@
                     <ComboBox x:Name="maSupportGroup" Width="266" ItemsSource="{Binding Path=ManualActivityEnumExtensions}" SelectedItem="{Binding Path=ManualActivitySupportGroupExtensionEnum}" DisplayMemberPath="DisplayName" KeyDown="maSupportGroup_KeyDown" />
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal" Margin="0,0,10,0" IsEnabled="False">
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,0" IsEnabled="{Binding IsChecked, ElementName=chkTakeRequiresCiresonGroupMembership}" >
                     <Label Content="Problem Support Group (del clears):" Margin="0,8,42,0"/>
                     <ComboBox x:Name="prSupportGroup" Width="265" ItemsSource="{Binding Path=ProblemEnumExtensions}" SelectedItem="{Binding Path=ProblemSupportGroupExtensionEnum}" DisplayMemberPath="DisplayName" KeyDown="prSupportGroup_KeyDown" />
                 </StackPanel>
