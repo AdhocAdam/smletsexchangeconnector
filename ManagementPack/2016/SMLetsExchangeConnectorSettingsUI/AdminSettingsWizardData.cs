@@ -2826,7 +2826,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableCiresonIntegration"].Value = this.IsCiresonIntegrationEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonSearchKnowledgeBase"].Value = this.IsCiresonKBSearchEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonSearchRequestOfferings"].Value = this.IsCiresonROSearchEnabled;
-            emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonPortalURL"].Value = this.CiresonPortalURL;
+            if (!(this.CiresonPortalURL.EndsWith("/"))) { emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonPortalURL"].Value = this.CiresonPortalURL + "/"; }
+            else { emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonPortalURL"].Value = this.CiresonPortalURL; }
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "NumberOfWordsToMatchFromEmailToCiresonRequestOffering"].Value = this.MinWordCountToSuggestRO;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "NumberOfWordsToMatchFromEmailToCiresonKnowledgeArticle"].Value = this.MinWordCountToSuggestKA;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableSetFirstResponseDateOnSuggestions"].Value = this.IsCiresonFirstResponseDateOnSuggestionsEnabled;
