@@ -1769,21 +1769,34 @@ function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
     #get the template's support group members
     $supportGroupMembers = Get-TierMembers -TierEnumID $SupportGroupID
 
-    #based on how Dynamic Work Item assignment was configured, set the Assigned To User
-    switch ($DynamicWorkItemAssignment)
-    {
-        "volume" {$supportGroupMembers | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object -first 1 | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
-        "OOOvolume" {$supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object -first 1 | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
-        "random" {$supportGroupMembers | Get-Random | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
-        "OOOrandom" {$supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | Get-Random | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
-        default {<#the config variable has a value that wasn't part of the set#>}
-    }
-
-    #Set the First Assigned Date
-    if (($DynamicWorkItemAssignment -eq "volume") -or ($DynamicWorkItemAssignment -eq "OOOvolume") -or ($DynamicWorkItemAssignment -eq "random") -or ($DynamicWorkItemAssignment -eq "OOOrandom"))
-    {
-        Set-SCSMObject -SMObject $WorkItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams
-    }
+        #based on how Dynamic Work Item assignment was configured, set the Assigned To User
+        if ($DynamicWorkItemAssignment -eq "volume")
+        {
+            $userToAssign = $supportGroupMembers | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object -first 1 
+        }
+        elseif ($DynamicWorkItemAssignment -eq "OOOvolume")
+        {
+            $userToAssign = $supportGroupMembers | Where-Object {$supportGroupMembers.OutOfOffice -ne $true} | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object -first 1
+        }
+        elseif ($DynamicWorkItemAssignment -eq "random")
+        {
+            $userToAssign = $supportGroupMembers | Get-Random
+        }
+        elseif ($DynamicWorkItemAssignment -eq "OOOrandom")
+        {
+            $userToAssign = $supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | Get-Random
+        }
+        else
+        {
+            <#the config variable has a value that wasn't part of the set#>
+        }
+    
+        #assign the work item to the selected user and set the first assigned date
+        if ($userToAssign)
+        {
+            New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $userToAssign -Bulk @scsmMGMTParams
+            Set-SCSMObject -SMObject $WorkItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams
+        }
 }
 
 #courtesy of Leigh Kilday. Modified.
