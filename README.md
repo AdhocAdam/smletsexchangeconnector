@@ -19,7 +19,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
   </tr>
   <tr>
     <td width="200"><img src ="/FeatureScreenshots/translate.png" /></td>
-    <td width="auto">explanation</td>
+    <td width="auto">Remove the barriers to communication from Affected Users with integration to Azure Translate. When enabled, New Work Items will see the immediate creation of an End User Comment on the Action Log in a default language of your choosing. Ready to close the loop so the Assigned User can work with the Affected User in their native language? A new complimentary project has arrived so Comments left on the Action Log area translated, and then the other party is notified of the translated comment. Get the Advanced Action Log Notify management pack over <a href="https://github.com/AdhocAdam/scsmtranslate">here</a>. Read up on Azure Translate pricing <a href="https://azure.microsoft.com/en-us/pricing/details/cognitive-services/translator-text-api/">here</a> and view the list of supported languages <a href="https://docs.microsoft.com/en-us/azure/cognitive-services/translator/language-support">here</a></td>
   </tr>
 </table>
 
