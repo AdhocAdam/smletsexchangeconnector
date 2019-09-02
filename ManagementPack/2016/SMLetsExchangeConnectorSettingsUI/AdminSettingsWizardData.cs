@@ -2152,6 +2152,7 @@ namespace SMLetsExchangeConnectorSettingsUI
                 $maClass = Get-SCSMClass -name "System.WorkItem.Activity.ManualActivity$"
                 $maClass.GetProperties(1, 1) | Where-Object {($_.SystemType.Name -eq "enum") -and ($_.identifier -notlike "*System.WorkItem.Activity.Library*")}
             */
+            ManagementPackClass incidentRequestClass = emg.EntityTypes.GetClass(new Guid("a604b942-4c7b-2fb2-28dc-61dc6f465c68"));
             ManagementPackClass changeRequestClass = emg.EntityTypes.GetClass(new Guid("e6c9cf6e-d7fe-1b5d-216c-c3f5d2c7670c"));
             ManagementPackClass manualActivityClass = emg.EntityTypes.GetClass(new Guid("7ac62bd4-8fce-a150-3b40-16a39a61383d"));
             ManagementPackClass problemClass = emg.EntityTypes.GetClass(new Guid("422afc88-5eff-f4c5-f8f6-e01038cde67f"));
@@ -2268,7 +2269,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             //Templates
             this.DefaultWorkItem = emoAdminSetting[smletsExchangeConnectorSettingsClass, "DefaultWorkItemType"].ToString();
 
-                /*get the Incident Templates by Type Projection ID/GUID
+                /*
                 ##PowerShell SMlets equivalent requires use of retrieving Type Projection, and 3 semi-C# style calls to connect to the management group,
                   perform a near identical ManagementPackTemplateCritieria search as seen below in C#, and finally a C# style call to retrieve said templates
                   as Get-SCSMObjectTemplate does not accept a critiera parameter:
@@ -2284,10 +2285,43 @@ namespace SMLetsExchangeConnectorSettingsUI
                     $problemTemplateCritiera = new-object Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateCriteria("TypeID = '$($prTypeProjection.ID)'")
 
                     $managementGroup.Templates.GetObjectTemplates($changeRequestTemplateCritiera)
+                 * 
+                 However what makes this different is that we need to retrieve Templates as they fall under any kind of Type Projection that could have
+                 been created. To do this, we need to obtain all of the Type Projections per a Work Item class. Then cycle through the above for each
+                 returned Type Projection.
                 */
-                ManagementPackObjectTemplateCriteria mpotcIncidents = new ManagementPackObjectTemplateCriteria("TypeID = '285cb0a2-f276-bccb-563e-bb721df7cdec'");
-                this.IncidentTemplates = emg.Templates.GetObjectTemplates(mpotcIncidents);
+                //first, we need to build Type Projection criteria per the 4 Primary Work Item classes, their GUIDs are as follows within "Type ="
+                ManagementPackTypeProjectionCriteria irTPCriteria = new ManagementPackTypeProjectionCriteria("Type = 'a604b942-4c7b-2fb2-28dc-61dc6f465c68'");
+                ManagementPackTypeProjectionCriteria srTPCriteria = new ManagementPackTypeProjectionCriteria("Type = '04b69835-6343-4de2-4b19-6be08c612989'");
+                ManagementPackTypeProjectionCriteria crTPCriteria = new ManagementPackTypeProjectionCriteria("Type = 'e6c9cf6e-d7fe-1b5d-216c-c3f5d2c7670c'");
+                ManagementPackTypeProjectionCriteria prTPCriteria = new ManagementPackTypeProjectionCriteria("Type = '422afc88-5eff-f4c5-f8f6-e01038cde67f'");
+
+                //second, we need to get all of the Type Projections that could be getting used for a particular class. This ensures that if anyone has
+                //custom Type Projections or has modified stock forms through the Authoring tool that we make those Templates available for selection
+                IList<ManagementPackTypeProjection> irTPs = emg.EntityTypes.GetTypeProjections(irTPCriteria);
+                IList<ManagementPackTypeProjection> srTPs = emg.EntityTypes.GetTypeProjections(srTPCriteria);
+                IList<ManagementPackTypeProjection> crTPs = emg.EntityTypes.GetTypeProjections(crTPCriteria);
+                IList<ManagementPackTypeProjection> prTPs = emg.EntityTypes.GetTypeProjections(prTPCriteria);
+
+                //third, create some empty lists to add all of the templates
+                IList<ManagementPackObjectTemplate> irTemplateList = new List<ManagementPackObjectTemplate>();
+                IList<ManagementPackObjectTemplate> srTemplateList = new List<ManagementPackObjectTemplate>();
+                IList<ManagementPackObjectTemplate> crTemplateList = new List<ManagementPackObjectTemplate>();
+                IList<ManagementPackObjectTemplate> prTemplateList = new List<ManagementPackObjectTemplate>();
+
+                //get the Incident Templates by Type Projection ID/GUID
+                foreach (ManagementPackTypeProjection tp in irTPs)
+                {
+                    ManagementPackObjectTemplateCriteria mpotcIncidents = new ManagementPackObjectTemplateCriteria(string.Format("TypeID = '{0}'", tp.Id.ToString()));
+                    IList<ManagementPackObjectTemplate> retrievedTemplates = emg.Templates.GetObjectTemplates(mpotcIncidents);
+                    foreach (ManagementPackObjectTemplate template in retrievedTemplates)
+                    {
+                        irTemplateList.Add(template);
+                    }  
+                }
+                this.IncidentTemplates = irTemplateList;
                 this.IncidentTemplates = this.IncidentTemplates.OrderBy(template => template.DisplayName).ToList();
+
                 try {
                     Guid irTemplateGuid = (Guid)emoAdminSetting[null, "DefaultIncidentTemplateGUID"].Value;
                     this.DefaultIncidentTemplate = emg.Templates.GetObjectTemplate(irTemplateGuid);
@@ -2295,9 +2329,18 @@ namespace SMLetsExchangeConnectorSettingsUI
                 catch { }
 
                 //get the Service Request Templates by Type Projection ID/GUID
-                ManagementPackObjectTemplateCriteria mpotcServiceRequests = new ManagementPackObjectTemplateCriteria("TypeID = 'e44b7c06-590d-64d6-56d2-2219c5e763e0'");
-                this.ServiceRequestTemplates = emg.Templates.GetObjectTemplates(mpotcServiceRequests);
+                foreach (ManagementPackTypeProjection tp in srTPs)
+                {
+                    ManagementPackObjectTemplateCriteria mpotcServiceRequests = new ManagementPackObjectTemplateCriteria(string.Format("TypeID = '{0}'", tp.Id.ToString()));
+                    IList<ManagementPackObjectTemplate> retrievedTemplates = emg.Templates.GetObjectTemplates(mpotcServiceRequests);
+                    foreach (ManagementPackObjectTemplate template in retrievedTemplates)
+                    {
+                        srTemplateList.Add(template);
+                    } 
+                }
+                this.ServiceRequestTemplates = srTemplateList;
                 this.ServiceRequestTemplates = this.ServiceRequestTemplates.OrderBy(template => template.DisplayName).ToList();
+
                 try
                 {
                     Guid srTemplateGuid = (Guid)emoAdminSetting[null, "DefaultServiceRequestTemplateGUID"].Value;
@@ -2306,8 +2349,16 @@ namespace SMLetsExchangeConnectorSettingsUI
                 catch { }
 
                 //get the Change Request Templates by Type Projection ID/GUID
-                ManagementPackObjectTemplateCriteria mpotcChangeRequests = new ManagementPackObjectTemplateCriteria("TypeID = '674194d8-0246-7b90-d871-e1ea015b2ea7'");
-                this.ChangeRequestTemplates = emg.Templates.GetObjectTemplates(mpotcChangeRequests);
+                foreach (ManagementPackTypeProjection tp in crTPs)
+                {
+                    ManagementPackObjectTemplateCriteria mpotcChangeRequests = new ManagementPackObjectTemplateCriteria(string.Format("TypeID = '{0}'", tp.Id.ToString()));
+                    IList<ManagementPackObjectTemplate> retrievedTemplates = emg.Templates.GetObjectTemplates(mpotcChangeRequests);
+                    foreach (ManagementPackObjectTemplate template in retrievedTemplates)
+                    {
+                        crTemplateList.Add(template);
+                    } 
+                }
+                this.ChangeRequestTemplates = crTemplateList;
                 this.ChangeRequestTemplates = this.ChangeRequestTemplates.OrderBy(template => template.DisplayName).ToList();
                 try
                 {
@@ -2317,8 +2368,16 @@ namespace SMLetsExchangeConnectorSettingsUI
                 catch { }
 
                 //get the Problem Templates by Type Projection ID/GUID
-                ManagementPackObjectTemplateCriteria mpotcProblems = new ManagementPackObjectTemplateCriteria("TypeID = '45c1c404-f3fe-1050-dcef-530e1c2533e1'");
-                this.ProblemTemplates = emg.Templates.GetObjectTemplates(mpotcProblems);
+                foreach (ManagementPackTypeProjection tp in prTPs)
+                {
+                    ManagementPackObjectTemplateCriteria mpotcProblems = new ManagementPackObjectTemplateCriteria(string.Format("TypeID = '{0}'", tp.Id.ToString()));
+                    IList<ManagementPackObjectTemplate> retrievedTemplates = emg.Templates.GetObjectTemplates(mpotcProblems);
+                    foreach (ManagementPackObjectTemplate template in retrievedTemplates)
+                    {
+                        prTemplateList.Add(template);
+                    }
+                }
+                this.ProblemTemplates = prTemplateList;
                 this.ProblemTemplates = this.ProblemTemplates.OrderBy(template => template.DisplayName).ToList();
                 try
                 {
@@ -2826,6 +2885,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableCiresonIntegration"].Value = this.IsCiresonIntegrationEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonSearchKnowledgeBase"].Value = this.IsCiresonKBSearchEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonSearchRequestOfferings"].Value = this.IsCiresonROSearchEnabled;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonPortalURL"].Value = this.CiresonPortalURL;
             if (!(this.CiresonPortalURL.EndsWith("/"))) { emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonPortalURL"].Value = this.CiresonPortalURL + "/"; }
             else { emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonPortalURL"].Value = this.CiresonPortalURL; }
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "NumberOfWordsToMatchFromEmailToCiresonRequestOffering"].Value = this.MinWordCountToSuggestRO;
