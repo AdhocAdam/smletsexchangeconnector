@@ -15,6 +15,16 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>Language Translation for New Work Items with Azure Translation (v1.6)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/translate.png" /></td>
+    <td width="auto">explanation</td>
+  </tr>
+</table>
+
+<table border="0">
+  <tr>
     <td colspan="3"><i>Intelligent Routing and Classification with Azure Machine Learning (v1.5)</i></td>
   </tr>
   <tr>
