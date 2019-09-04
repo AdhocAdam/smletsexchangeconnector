@@ -3119,7 +3119,14 @@ foreach ($message in $inbox)
     {
         $email = New-Object System.Object 
         $email | Add-Member -type NoteProperty -name From -value $message.From.Address
-        $email | Add-Member -type NoteProperty -name To -value $message.ToRecipients
+        if ($message.ReceivedBy -ne $NULL)
+        {
+            $email | Add-Member -type NoteProperty -name To -value $message.ReceivedBy
+        }
+        else
+        {
+            $email | Add-Member -type NoteProperty -name To -value $message.ToRecipients
+        }
         $email | Add-Member -type NoteProperty -name CC -value $message.CcRecipients
         $email | Add-Member -type NoteProperty -name Subject -value $message.Subject
         $email | Add-Member -type NoteProperty -name Attachments -value $message.Attachments
