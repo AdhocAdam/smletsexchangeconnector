@@ -759,7 +759,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         
                         if (($detectedLanguage.isTranslationSupported -eq $true) -and ($detectedLanguage.language -ne $defaultAzureTranslateLanguage))
                         {
-                            $translatedDescription = Get-AzureEmailTranslation -TextToTranslate $text -SourceLanguage "$($detectedLanguage.language)" -TargetLanguage "$defaultAzureTranslateLanguage"
+                            $translatedDescription = Get-AzureEmailTranslation -TextToTranslate $description -SourceLanguage "$($detectedLanguage.language)" -TargetLanguage "$defaultAzureTranslateLanguage"
                             Add-ActionLogEntry -WIObject $newWorkItem -Action "EndUserComment" -Comment $translatedDescription -EnteredBy "Azure Translate/$($affectedUser.DisplayName)"
                         }
                     }
@@ -885,7 +885,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         
                         if (($detectedLanguage.isTranslationSupported -eq $true) -and ($detectedLanguage.language -ne $defaultAzureTranslateLanguage))
                         {
-                            $translatedDescription = Get-AzureEmailTranslation -TextToTranslate $text -SourceLanguage "$($detectedLanguage.language)" -TargetLanguage "$defaultAzureTranslateLanguage"
+                            $translatedDescription = Get-AzureEmailTranslation -TextToTranslate $description -SourceLanguage "$($detectedLanguage.language)" -TargetLanguage "$defaultAzureTranslateLanguage"
                             Add-ActionLogEntry -WIObject $newWorkItem -Action "EndUserComment" -Comment $translatedDescription -EnteredBy "Azure Translate/$($affectedUser.DisplayName)"
                         }
                     }
