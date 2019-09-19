@@ -404,19 +404,6 @@ $amlServiceRequestAreaEnumPredictionExtName = ""
 $amlServiceRequestSupportGroupScoreClassExtensionName = ""
 $amlServiceRequestSupportGroupEnumPredictionExtName = ""
 
-#optional, enable Language Translation through Azure Cognitive Services
-#Use Translation services from Azure in order to create New Work Items that feature a translated Description as the First Comment in the
-#Action Log. This Comment is a Public End User Comment that will be Entered By "Azure Translate/AUDISPLAYNAME" where AUDISPLAYNAME is
-#the Affected User's Display Name
-#defaultAzureTranslateLanguage = Pick the language code to which all New Work Items should be translated into. If the IR/SR is that language
-#already, then significantly less will be consumed in Azure spend. A list of support languages and their codes can be found here
-#https://docs.microsoft.com/en-us/azure/cognitive-services/translator/language-support
-#pricing details can be found here: https://azure.microsoft.com/en-ca/pricing/details/cognitive-services/translator-text-api/
-#azureCogSvcTranslateAPIKey = The API key for your deployed Azure Translation service
-$enableAzureTranslateForNewWI = $false
-$defaultAzureTranslateLanguage = "en"
-$azureCogSvcTranslateAPIKey = ""
-
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
 #scomMGMTServer = set equal to the name of your scom management server
@@ -741,29 +728,6 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                     }
 
-                    #Translate the Description and enter as an Action Log entry if Azure Translate is used
-                    #Since this function kicks off before Dynamic Analyst assignment, we'll prevent unnecesary notifications
-                    #AdhocAdam Advanced Action Log Notifier won't engage on Comments Entered By -like "Azure Translate"
-                    if ($enableAzureTranslateForNewWI -eq $true)
-                    {
-                        $descriptionSentence = $description.IndexOf(".")
-                        $sampleDescription = $description.substring(0, $descriptionSentence)
-                        if ($sampleDescription.Length -gt 1)
-                        {
-                            $detectedLanguage = Get-AzureEmailLanguage -TextToEvaluate $sampleDescription
-                        }
-                        else 
-                        {
-                            $detectedLanguage = Get-AzureEmailLanguage -TextToEvaluate $description
-                        }
-                        
-                        if (($detectedLanguage.isTranslationSupported -eq $true) -and ($detectedLanguage.language -ne $defaultAzureTranslateLanguage))
-                        {
-                            $translatedDescription = Get-AzureEmailTranslation -TextToTranslate $text -SourceLanguage "$($detectedLanguage.language)" -TargetLanguage "$defaultAzureTranslateLanguage"
-                            Add-ActionLogEntry -WIObject $newWorkItem -Action "EndUserComment" -Comment $translatedDescription -EnteredBy "Azure Translate/$($affectedUser.DisplayName)"
-                        }
-                    }
-
                     #Set Urgency/Impact from ACS Sentiment Analysis. If it was previously defined use it, otherwise make the ACS call
                     if (($enableAzureCognitiveServicesForNewWI -eq $true) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
                     {
@@ -864,29 +828,6 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         foreach ($relatedUser in $relatedUsers)
                         {
                             New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $newWorkItem -Target $relatedUser -Bulk @scsmMGMTParams
-                        }
-                    }
-
-                    #Translate the Description and enter as an Action Log entry if Azure Translate is used
-                    #Since this function kicks off before Dynamic Analyst assignment, we'll prevent unnecesary notifications
-                    #AdhocAdam Advanced Action Log Notifier won't engage on Comments Entered By -like "Azure Translate"
-                    if ($enableAzureTranslateForNewWI -eq $true)
-                    {
-                        $descriptionSentence = $description.IndexOf(".")
-                        $sampleDescription = $description.substring(0, $descriptionSentence)
-                        if ($sampleDescription.Length -gt 1)
-                        {
-                            $detectedLanguage = Get-AzureEmailLanguage -TextToEvaluate $sampleDescription
-                        }
-                        else 
-                        {
-                            $detectedLanguage = Get-AzureEmailLanguage -TextToEvaluate $description
-                        }
-                        
-                        if (($detectedLanguage.isTranslationSupported -eq $true) -and ($detectedLanguage.language -ne $defaultAzureTranslateLanguage))
-                        {
-                            $translatedDescription = Get-AzureEmailTranslation -TextToTranslate $text -SourceLanguage "$($detectedLanguage.language)" -TargetLanguage "$defaultAzureTranslateLanguage"
-                            Add-ActionLogEntry -WIObject $newWorkItem -Action "EndUserComment" -Comment $translatedDescription -EnteredBy "Azure Translate/$($affectedUser.DisplayName)"
                         }
                     }
 
@@ -2810,47 +2751,6 @@ function Get-AzureEmailSentiment ($messageToEvaluate)
     #return the percent score
     return ($sentimentResult.documents.score * 100)
 }
-
-#determine the language being used before converting it
-function Get-AzureEmailLanguage ($TextToEvaluate)
-{  
-    #build the request
-    $translationServiceURI = "https://api.cognitive.microsofttranslator.com/detect?api-version=3.0"
-    $RecoRequestHeader = @{
-      'Ocp-Apim-Subscription-Key' = "$azureCogSvcTranslateAPIKey";
-      'Content-Type' = "application/json"
-    }
-
-    #prepare the body of the request
-    $TextToEvaluate = @{'Text' = $($TextToEvaluate)} | ConvertTo-Json
-
-    #Send text to Azure for translation
-    $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToEvaluate)]"
-
-    #Return the language with the highest match score
-    return $RecoResponse | sort-object score | select-object -first 1
-}
-
-#translate the language
-function Get-AzureEmailTranslation ($TextToTranslate, $SourceLanguage, $TargetLanguage)
-{  
-    #build the request
-    $translationServiceURI = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=$($SourceLanguage)&to=$($TargetLanguage)"
-    $RecoRequestHeader = @{
-      'Ocp-Apim-Subscription-Key' = "$azureCogSvcTranslateAPIKey";
-      'Content-Type' = "application/json"
-    }
-
-    #prepare the body of the request
-    $TextToTranslate = @{'Text' = $($TextToTranslate)} | ConvertTo-Json
-
-    #Send text to Azure for translation
-    $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToTranslate)]"
-
-    #Return the converted text
-    return $($RecoResponse.translations[0].text)
-}
-
 function Get-ACSWorkItemPriority ($score, $wiClass)
 {  
     #change boundaries as neccesary
