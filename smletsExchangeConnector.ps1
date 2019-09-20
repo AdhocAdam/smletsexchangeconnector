@@ -762,6 +762,18 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                             $translatedDescription = Get-AzureEmailTranslation -TextToTranslate $description -SourceLanguage "$($detectedLanguage.language)" -TargetLanguage "$defaultAzureTranslateLanguage"
                             Add-ActionLogEntry -WIObject $newWorkItem -Action "EndUserComment" -Comment $translatedDescription -EnteredBy "Azure Translate/$($affectedUser.DisplayName)"
                         }
+
+                        #if the detected language scores identical to the top alternative, use source language that isn't the default target language
+                        $primaryAlternativeLang = $detectedLanguage.alternatives | select -first 1
+                        if (($detectedLanguage.score -eq $primaryAlternativeLang.score) -and ($detectedLanguage.isTranslationSupported -eq $true) -and ($primaryAlternativeLang.isTranslationSupported -eq $true))
+                        {
+                            if (($detectedLanguage.language -eq $defaultAzureTranslateLanguage) -and ($primaryAlternativeLang.language -ne $defaultAzureTranslateLanguage))
+                            {
+                                #translate with alternative
+                                $translatedDescription = Get-AzureEmailTranslation -TextToTranslate $description -SourceLanguage "$($primaryAlternativeLang.language)" -TargetLanguage "$defaultAzureTranslateLanguage"
+                                Add-ActionLogEntry -WIObject $newWorkItem -Action "EndUserComment" -Comment $translatedDescription -EnteredBy "Azure Translate/$($affectedUser.DisplayName)"
+                            }
+                        }
                     }
 
                     #Set Urgency/Impact from ACS Sentiment Analysis. If it was previously defined use it, otherwise make the ACS call
@@ -887,6 +899,18 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         {
                             $translatedDescription = Get-AzureEmailTranslation -TextToTranslate $description -SourceLanguage "$($detectedLanguage.language)" -TargetLanguage "$defaultAzureTranslateLanguage"
                             Add-ActionLogEntry -WIObject $newWorkItem -Action "EndUserComment" -Comment $translatedDescription -EnteredBy "Azure Translate/$($affectedUser.DisplayName)"
+                        }
+
+                        #if the detected language scores identical to the top alternative, use source language that isn't the default target language
+                        $primaryAlternativeLang = $detectedLanguage.alternatives | select -first 1
+                        if (($detectedLanguage.score -eq $primaryAlternativeLang.score) -and ($detectedLanguage.isTranslationSupported -eq $true) -and ($primaryAlternativeLang.isTranslationSupported -eq $true))
+                        {
+                            if (($detectedLanguage.language -eq $defaultAzureTranslateLanguage) -and ($primaryAlternativeLang.language -ne $defaultAzureTranslateLanguage))
+                            {
+                                #translate with alternative
+                                $translatedDescription = Get-AzureEmailTranslation -TextToTranslate $description -SourceLanguage "$($primaryAlternativeLang.language)" -TargetLanguage "$defaultAzureTranslateLanguage"
+                                Add-ActionLogEntry -WIObject $newWorkItem -Action "EndUserComment" -Comment $translatedDescription -EnteredBy "Azure Translate/$($affectedUser.DisplayName)"
+                            }
                         }
                     }
 
@@ -2823,6 +2847,8 @@ function Get-AzureEmailLanguage ($TextToEvaluate)
 
     #prepare the body of the request
     $TextToEvaluate = @{'Text' = $($TextToEvaluate)} | ConvertTo-Json
+    $originalBytes = [Text.Encoding]::Default.GetBytes($TextToEvaluate)
+    $TextToEvaluate = [Text.Encoding]::Utf8.GetString($originalBytes)
 
     #Send text to Azure for translation
     $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToEvaluate)]"
@@ -2843,6 +2869,8 @@ function Get-AzureEmailTranslation ($TextToTranslate, $SourceLanguage, $TargetLa
 
     #prepare the body of the request
     $TextToTranslate = @{'Text' = $($TextToTranslate)} | ConvertTo-Json
+    $originalBytes = [Text.Encoding]::Default.GetBytes($TextToTranslate)
+    $TextToTranslate = [Text.Encoding]::Utf8.GetString($originalBytes)
 
     #Send text to Azure for translation
     $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToTranslate)]"
