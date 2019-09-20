@@ -2842,7 +2842,7 @@ function Get-AzureEmailLanguage ($TextToEvaluate)
     $translationServiceURI = "https://api.cognitive.microsofttranslator.com/detect?api-version=3.0"
     $RecoRequestHeader = @{
       'Ocp-Apim-Subscription-Key' = "$azureCogSvcTranslateAPIKey";
-      'Content-Type' = "application/json"
+      'Content-Type' = "application/json; charset=utf-8"
     }
 
     #prepare the body of the request
@@ -2864,7 +2864,7 @@ function Get-AzureEmailTranslation ($TextToTranslate, $SourceLanguage, $TargetLa
     $translationServiceURI = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=$($SourceLanguage)&to=$($TargetLanguage)"
     $RecoRequestHeader = @{
       'Ocp-Apim-Subscription-Key' = "$azureCogSvcTranslateAPIKey";
-      'Content-Type' = "application/json"
+      'Content-Type' = "application/json; charset=utf-8"
     }
 
     #prepare the body of the request
