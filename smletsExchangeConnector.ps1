@@ -20,6 +20,11 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.6.0 = #135 = Bug, Dynamic Analyst Assignment not working
+                #140 = Feature, Language Translation via Azure Translate
+                #127 = Enhancement, Extended Support for AML returned values
+                #130 = Bug, Add-ActionLogEntry has potential issue with similarly named Type Projections 
+                #132 = Documentation, includeWholeEmail notes incorrect
 Version: 1.5.0 = #22 - Feature, Auto Assign Work Items when Created
                 #112 - Feature, Predict Work Item Type, Classification and Support Group through Azure Machine Learning
                 #116 - Bug, User reply that flips Incident status should not work against Closed Incidents
