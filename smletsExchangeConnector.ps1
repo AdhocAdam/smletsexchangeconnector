@@ -20,6 +20,11 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.6.0 = #135 = Bug, Dynamic Analyst Assignment not working
+                #140 = Feature, Language Translation via Azure Translate
+                #127 = Enhancement, Extended Support for AML returned values
+                #130 = Bug, Add-ActionLogEntry has potential issue with similarly named Type Projections 
+                #132 = Documentation, includeWholeEmail notes incorrect
 Version: 1.5.0 = #22 - Feature, Auto Assign Work Items when Created
                 #112 - Feature, Predict Work Item Type, Classification and Support Group through Azure Machine Learning
                 #116 - Bug, User reply that flips Incident status should not work against Closed Incidents
@@ -162,7 +167,7 @@ $ExchangeEndpoint = "$($smexcoSettingsMP.ExchangeAutodiscoverURL)"
 #includeWholeEmail = If long chains get forwarded into SCSM, you can choose to write the whole email to a single action log entry OR the beginning to the first finding of "From:"
 #attachEmailToWorkItem = If $true, attach email as an *.eml to each work item. Additionally, write the Exchange Conversation ID into the Description of the Attachment object
 #voteOnBehalfOfGroups = If $true, Review Activities featuring an AD group can be Voted on Behalf of if one of the groups members Approve or Reject
-#fromKeyword = If $includeWholeEmail is set to true, messages will be parsed UNTIL they find this word
+#fromKeyword = If $includeWholeEmail is set to false, messages will be parsed UNTIL they find this word
 #UseMailboxRedirection = Emails redirected to the mailbox this script connects to can have different templates applied, based on the address of another mailbox that redirects to it.
     # Mailboxes = This is a list of mailboxes that redirect to your primary workflow mailbox, and their properties. You DO NOT need to add the mailbox that you are connecting to.
         # DefaultWiType = Mail not associated with an existing ticket should be processed as a new work item of this type.
@@ -387,21 +392,39 @@ $workItemOverrideType = "$($smexcoSettingsMP.KeywordMatchWorkItemType)"
 #amlWorkItemTypeMinPercentConfidence = The minimum percentage AML must return in order to decide should an Incident or Service Request be created
 #amlWorkItemClassificationMinPercentConfidence = The minimum percentage AML must return in order to set the Classification on the New Work Item
 #amlWorkItemSupportGroupMinPercentConfidence = The minimum percentage AML must return in order set the Support Group on the New Work Item
-#amlWI*ScoreClassExtensionName = You can choose to write the returned Confidence Score into the New Work Item.
-    #This requires you to have extended the Incident AND Service Request classes with a custom Decimal value and then
-    #enter the name of that property here.
-$enableAzureMachineLearning = $smexcoSettingsMP.EnableAML
-$amlAPIKey = "$($smexcoSettingsMP.AMLAPIKey)"
-$amlURL = "$($smexcoSettingsMP.AMLurl)"
-$amlWorkItemTypeMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemType)"
-$amlWorkItemClassificationMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemClassification)"
-$amlWorkItemSupportGroupMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemSupportGroup)"
-$amlWITypeScoreIRClassExtensionName = "$($smexcoSettingsMP.AMLIncidentConfidenceClassExtensionGUID.Guid)"
-$amlWITypeScoreSRClassExtensionName = "$($smexcoSettingsMP.AMLServiceRequestConfidenceClassExtensionGUID.Guid)"
-$amlWIClassificationIRScoreClassExtensionName = "$($smexcoSettingsMP.AMLIncidentClassificationConfidenceClassExtensionGUID.Guid)"
-$amlWIClassificationSRScoreClassExtensionName = "$($smexcoSettingsMP.AMLServiceRequestClassificationConfidenceClassExtensionGUID.Guid)"
-$amlWISupportGroupIRClassExtensionName = "$($smexcoSettingsMP.AMLIncidentSupportGroupConfidenceClassExtensionGUID.Guid)"
-$amlWISupportGroupSRClassExtensionName = "$($smexcoSettingsMP.AMLServiceRequestSupportGroupConfidenceClassExtensionGUID.Guid)"
+#aml*ClassificationScoreClassExtensionName = Optionally write the returned percent confidence value to a decimal class extension on Incidents or Service Requests
+#aml*ClassificationEnumPredictionExtName = Optionally write the returned enum value to an enum class extension bound to Classification/Area on Incidents or Service Requests
+$enableAzureMachineLearning = $false
+$amlAPIKey = ""
+$amlURL = ""
+$amlWorkItemTypeMinPercentConfidence = "95"
+$amlWorkItemClassificationMinPercentConfidence = "95"
+$amlWorkItemSupportGroupMinPercentConfidence = "95"
+$amlWITypeIncidentStringClassExtensionName = ""
+$amlWITypeServiceRequestStringClassExtensionName = ""
+$amlWITypeIncidentScoreClassExtensionName = ""
+$amlWITypeServiceRequestScoreClassExtensionName = ""
+$amlIncidentClassificationScoreClassExtensionName = ""
+$amlIncidentClassificationEnumPredictionExtName = ""
+$amlIncidentTierQueueScoreClassExtensionName = ""
+$amlIncidentTierQueueEnumPredictionExtName = ""
+$amlServiceRequestAreaScoreClassExtensionName = ""
+$amlServiceRequestAreaEnumPredictionExtName = ""
+$amlServiceRequestSupportGroupScoreClassExtensionName = ""
+$amlServiceRequestSupportGroupEnumPredictionExtName = ""
+
+#optional, enable Language Translation through Azure Cognitive Services
+#Use Translation services from Azure in order to create New Work Items that feature a translated Description as the First Comment in the
+#Action Log. This Comment is a Public End User Comment that will be Entered By "Azure Translate/AUDISPLAYNAME" where AUDISPLAYNAME is
+#the Affected User's Display Name
+#defaultAzureTranslateLanguage = Pick the language code to which all New Work Items should be translated into. If the IR/SR is that language
+#already, then significantly less will be consumed in Azure spend. A list of support languages and their codes can be found here
+#https://docs.microsoft.com/en-us/azure/cognitive-services/translator/language-support
+#pricing details can be found here: https://azure.microsoft.com/en-ca/pricing/details/cognitive-services/translator-text-api/
+#azureCogSvcTranslateAPIKey = The API key for your deployed Azure Translation service
+$enableAzureTranslateForNewWI = $false
+$defaultAzureTranslateLanguage = "en"
+$azureCogSvcTranslateAPIKey = ""
 
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
@@ -765,6 +788,41 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                     }
 
+                    #Translate the Description and enter as an Action Log entry if Azure Translate is used
+                    #Since this function kicks off before Dynamic Analyst assignment, we'll prevent unnecesary notifications
+                    #AdhocAdam Advanced Action Log Notifier won't engage on Comments Entered By -like "Azure Translate"
+                    if ($enableAzureTranslateForNewWI -eq $true)
+                    {
+                        $descriptionSentence = $description.IndexOf(".")
+                        $sampleDescription = $description.substring(0, $descriptionSentence)
+                        if ($sampleDescription.Length -gt 1)
+                        {
+                            $detectedLanguage = Get-AzureEmailLanguage -TextToEvaluate $sampleDescription
+                        }
+                        else 
+                        {
+                            $detectedLanguage = Get-AzureEmailLanguage -TextToEvaluate $description
+                        }
+                        
+                        if (($detectedLanguage.isTranslationSupported -eq $true) -and ($detectedLanguage.language -ne $defaultAzureTranslateLanguage))
+                        {
+                            $translatedDescription = Get-AzureEmailTranslation -TextToTranslate $description -SourceLanguage "$($detectedLanguage.language)" -TargetLanguage "$defaultAzureTranslateLanguage"
+                            Add-ActionLogEntry -WIObject $newWorkItem -Action "EndUserComment" -Comment $translatedDescription -EnteredBy "Azure Translate/$($affectedUser.DisplayName)"
+                        }
+
+                        #if the detected language scores identical to the top alternative, use source language that isn't the default target language
+                        $primaryAlternativeLang = $detectedLanguage.alternatives | select -first 1
+                        if (($detectedLanguage.score -eq $primaryAlternativeLang.score) -and ($detectedLanguage.isTranslationSupported -eq $true) -and ($primaryAlternativeLang.isTranslationSupported -eq $true))
+                        {
+                            if (($detectedLanguage.language -eq $defaultAzureTranslateLanguage) -and ($primaryAlternativeLang.language -ne $defaultAzureTranslateLanguage))
+                            {
+                                #translate with alternative
+                                $translatedDescription = Get-AzureEmailTranslation -TextToTranslate $description -SourceLanguage "$($primaryAlternativeLang.language)" -TargetLanguage "$defaultAzureTranslateLanguage"
+                                Add-ActionLogEntry -WIObject $newWorkItem -Action "EndUserComment" -Comment $translatedDescription -EnteredBy "Azure Translate/$($affectedUser.DisplayName)"
+                            }
+                        }
+                    }
+
                     #Set Urgency/Impact from ACS Sentiment Analysis. If it was previously defined use it, otherwise make the ACS call
                     if (($enableAzureCognitiveServicesForNewWI -eq $true) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
                     {
@@ -787,10 +845,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     #update the Support Group and Classification if Azure Machine Learning is being used
                     if ($enableAzureMachineLearning -eq $true)
                     {
-                        #write confidence scores into Work Item
-                        if ($amlWITypeScoreIRClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeScoreIRClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
-                        if ($amlWIClassificationIRScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWIClassificationIRScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
-                        if ($amlWISupportGroupIRClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWISupportGroupIRClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
+                        #write confidence scores and enum predictions into Work Item
+                        if ($amlWITypeIncidentStringClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeIncidentStringClassExtensionName" = $amlProbability.WorkItemType} @scsmMGMTParams}
+                        if ($amlWITypeIncidentScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeIncidentScoreClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
+                        if ($amlIncidentClassificationScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlIncidentClassificationScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
+                        if ($amlIncidentTierQueueScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlIncidentTierQueueScoreClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
+                        if ($amlIncidentTierQueueEnumPredictionExtName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlIncidentTierQueueEnumPredictionExtName" = $amlProbability.WorkItemSupportGroup} @scsmMGMTParams}
+                        if ($amlIncidentClassificationEnumPredictionExtName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlIncidentClassificationEnumPredictionExtName" = $amlProbability.WorkItemClassification} @scsmMGMTParams}
 
                         #when scores exceed thresholds, further define Work Item
                         if ($amlProbability.WorkItemSupportGroupConfidence -ge $amlWorkItemSupportGroupMinPercentConfidence)
@@ -865,6 +926,41 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         }
                     }
 
+                    #Translate the Description and enter as an Action Log entry if Azure Translate is used
+                    #Since this function kicks off before Dynamic Analyst assignment, we'll prevent unnecesary notifications
+                    #AdhocAdam Advanced Action Log Notifier won't engage on Comments Entered By -like "Azure Translate"
+                    if ($enableAzureTranslateForNewWI -eq $true)
+                    {
+                        $descriptionSentence = $description.IndexOf(".")
+                        $sampleDescription = $description.substring(0, $descriptionSentence)
+                        if ($sampleDescription.Length -gt 1)
+                        {
+                            $detectedLanguage = Get-AzureEmailLanguage -TextToEvaluate $sampleDescription
+                        }
+                        else 
+                        {
+                            $detectedLanguage = Get-AzureEmailLanguage -TextToEvaluate $description
+                        }
+                        
+                        if (($detectedLanguage.isTranslationSupported -eq $true) -and ($detectedLanguage.language -ne $defaultAzureTranslateLanguage))
+                        {
+                            $translatedDescription = Get-AzureEmailTranslation -TextToTranslate $description -SourceLanguage "$($detectedLanguage.language)" -TargetLanguage "$defaultAzureTranslateLanguage"
+                            Add-ActionLogEntry -WIObject $newWorkItem -Action "EndUserComment" -Comment $translatedDescription -EnteredBy "Azure Translate/$($affectedUser.DisplayName)"
+                        }
+
+                        #if the detected language scores identical to the top alternative, use source language that isn't the default target language
+                        $primaryAlternativeLang = $detectedLanguage.alternatives | select -first 1
+                        if (($detectedLanguage.score -eq $primaryAlternativeLang.score) -and ($detectedLanguage.isTranslationSupported -eq $true) -and ($primaryAlternativeLang.isTranslationSupported -eq $true))
+                        {
+                            if (($detectedLanguage.language -eq $defaultAzureTranslateLanguage) -and ($primaryAlternativeLang.language -ne $defaultAzureTranslateLanguage))
+                            {
+                                #translate with alternative
+                                $translatedDescription = Get-AzureEmailTranslation -TextToTranslate $description -SourceLanguage "$($primaryAlternativeLang.language)" -TargetLanguage "$defaultAzureTranslateLanguage"
+                                Add-ActionLogEntry -WIObject $newWorkItem -Action "EndUserComment" -Comment $translatedDescription -EnteredBy "Azure Translate/$($affectedUser.DisplayName)"
+                            }
+                        }
+                    }
+
                     #Set Urgency/Priority from ACS Sentiment Analysis. If it was previously defined use it, otherwise make the ACS call
                     if (($enableAzureCognitiveServicesForNewWI -eq $true) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
                     {
@@ -888,9 +984,13 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($enableAzureMachineLearning -eq $true)
                     {
                         #write confidence scores into Work Item
-                        if ($amlWITypeScoreSRClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeScoreSRClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
-                        if ($amlWIClassificationSRScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWIClassificationSRScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
-                        if ($amlWISupportGroupSRClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWISupportGroupSRClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
+                        if ($amlWITypeServiceRequestStringClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeServiceRequestStringClassExtensionName" = $amlProbability.WorkItemType} @scsmMGMTParams}
+                        if ($amlWITypeServiceRequestScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeServiceRequestScoreClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams}
+                        if ($amlServiceRequestAreaScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestAreaScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams}
+                        if ($amlServiceRequestSupportGroupScoreClassExtensionName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestSupportGroupScoreClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams}
+                        if ($amlServiceRequestSupportGroupEnumPredictionExtName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestSupportGroupEnumPredictionExtName" = $amlProbability.WorkItemSupportGroup} @scsmMGMTParams}
+                        if ($amlServiceRequestAreaEnumPredictionExtName) {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestAreaEnumPredictionExtName" = $amlProbability.WorkItemClassification} @scsmMGMTParams}
+
 
                         #when scores exceed thresholds, further define Work Item
                         if ($amlProbability.WorkItemSupportGroupConfidence -ge $amlWorkItemSupportGroupMinPercentConfidence)
@@ -1790,7 +1890,7 @@ function Get-TierMembers ($TierEnumId)
     $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping"
 
     #pull the group based on support tier mapping
-    $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierEnumId.Guid }
+    $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierEnumId }
     $groupId = $mapping.AdGroupId
 
     #get the AD group object name
@@ -1826,23 +1926,36 @@ function Get-AssignedToWorkItemVolume ($SCSMUser)
 function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
 {
     #get the template's support group members
-    $supportGroupMembers = Get-TierMembers -TierEnumID $templateSupportGroupID
+    $supportGroupMembers = Get-TierMembers -TierEnumID $SupportGroupID
 
-    #based on how Dynamic Work Item assignment was configured, set the Assigned To User
-    switch ($DynamicWorkItemAssignment)
-    {
-        "volume" {$supportGroupMembers | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object -first 1 | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
-        "OOOvolume" {$supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object -first 1 | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
-        "random" {$supportGroupMembers | Get-Random | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
-        "OOOrandom" {$supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | Get-Random | New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $_ -Bulk @scsmMGMTParams}
-        default {<#the config variable has a value that wasn't part of the set#>}
-    }
-
-    #Set the First Assigned Date
-    if (($DynamicWorkItemAssignment -eq "volume") -or ($DynamicWorkItemAssignment -eq "OOOvolume") -or ($DynamicWorkItemAssignment -eq "random") -or ($DynamicWorkItemAssignment -eq "OOOrandom"))
-    {
-        Set-SCSMObject -SMObject $WorkItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams
-    }
+        #based on how Dynamic Work Item assignment was configured, set the Assigned To User
+        if ($DynamicWorkItemAssignment -eq "volume")
+        {
+            $userToAssign = $supportGroupMembers | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1 
+        }
+        elseif ($DynamicWorkItemAssignment -eq "OOOvolume")
+        {
+            $userToAssign = $supportGroupMembers | Where-Object {$supportGroupMembers.OutOfOffice -ne $true} | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1
+        }
+        elseif ($DynamicWorkItemAssignment -eq "random")
+        {
+            $userToAssign = $supportGroupMembers | Get-Random
+        }
+        elseif ($DynamicWorkItemAssignment -eq "OOOrandom")
+        {
+            $userToAssign = $supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | Get-Random
+        }
+        else
+        {
+            <#the config variable has a value that wasn't part of the set#>
+        }
+    
+        #assign the work item to the selected user and set the first assigned date
+        if ($userToAssign)
+        {
+            New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $userToAssign -Bulk @scsmMGMTParams
+            Set-SCSMObject -SMObject $WorkItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams
+        }
 }
 
 #courtesy of Leigh Kilday. Modified.
@@ -2010,10 +2123,10 @@ function Add-ActionLogEntry {
     #create the projection based on the work item class
     switch ($WIObject.ClassName)
     {
-        "System.WorkItem.Incident" {New-SCSMObjectProjection -Type "System.WorkItem.IncidentPortalProjection" -Projection $Projection @scsmMGMTParams}
-        "System.WorkItem.ServiceRequest" {New-SCSMObjectProjection -Type "System.WorkItem.ServiceRequestProjection" -Projection $Projection @scsmMGMTParams}
-        "System.WorkItem.Problem" {New-SCSMObjectProjection -Type "System.WorkItem.Problem.ProjectionType" -Projection $Projection @scsmMGMTParams}
-        "System.WorkItem.ChangeRequest" {New-SCSMObjectProjection -Type "Cireson.ChangeRequest.ViewModel" -Projection $Projection @scsmMGMTParams}
+        "System.WorkItem.Incident" {New-SCSMObjectProjection -Type "System.WorkItem.IncidentPortalProjection$" -Projection $Projection @scsmMGMTParams}
+        "System.WorkItem.ServiceRequest" {New-SCSMObjectProjection -Type "System.WorkItem.ServiceRequestProjection$" -Projection $Projection @scsmMGMTParams}
+        "System.WorkItem.Problem" {New-SCSMObjectProjection -Type "System.WorkItem.Problem.ProjectionType$" -Projection $Projection @scsmMGMTParams}
+        "System.WorkItem.ChangeRequest" {New-SCSMObjectProjection -Type "Cireson.ChangeRequest.ViewModel$" -Projection $Projection @scsmMGMTParams}
     }
 }
 
@@ -2782,6 +2895,51 @@ function Get-AzureEmailSentiment ($messageToEvaluate)
     #return the percent score
     return ($sentimentResult.documents.score * 100)
 }
+
+#determine the language being used before converting it
+function Get-AzureEmailLanguage ($TextToEvaluate)
+{  
+    #build the request
+    $translationServiceURI = "https://api.cognitive.microsofttranslator.com/detect?api-version=3.0"
+    $RecoRequestHeader = @{
+      'Ocp-Apim-Subscription-Key' = "$azureCogSvcTranslateAPIKey";
+      'Content-Type' = "application/json; charset=utf-8"
+    }
+
+    #prepare the body of the request
+    $TextToEvaluate = @{'Text' = $($TextToEvaluate)} | ConvertTo-Json
+    $originalBytes = [Text.Encoding]::Default.GetBytes($TextToEvaluate)
+    $TextToEvaluate = [Text.Encoding]::Utf8.GetString($originalBytes)
+
+    #Send text to Azure for translation
+    $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToEvaluate)]"
+
+    #Return the language with the highest match score
+    return $RecoResponse | sort-object score | select-object -first 1
+}
+
+#translate the language
+function Get-AzureEmailTranslation ($TextToTranslate, $SourceLanguage, $TargetLanguage)
+{  
+    #build the request
+    $translationServiceURI = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=$($SourceLanguage)&to=$($TargetLanguage)"
+    $RecoRequestHeader = @{
+      'Ocp-Apim-Subscription-Key' = "$azureCogSvcTranslateAPIKey";
+      'Content-Type' = "application/json; charset=utf-8"
+    }
+
+    #prepare the body of the request
+    $TextToTranslate = @{'Text' = $($TextToTranslate)} | ConvertTo-Json
+    $originalBytes = [Text.Encoding]::Default.GetBytes($TextToTranslate)
+    $TextToTranslate = [Text.Encoding]::Utf8.GetString($originalBytes)
+
+    #Send text to Azure for translation
+    $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToTranslate)]"
+
+    #Return the converted text
+    return $($RecoResponse.translations[0].text)
+}
+
 function Get-ACSWorkItemPriority ($score, $wiClass)
 {  
     $wiClass = $wiClass.Replace("System.WorkItem.Incident", "IR").Replace("System.WorkItem.ServiceRequest", "SR")
