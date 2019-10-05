@@ -394,24 +394,30 @@ $workItemOverrideType = "$($smexcoSettingsMP.KeywordMatchWorkItemType)"
 #amlWorkItemSupportGroupMinPercentConfidence = The minimum percentage AML must return in order set the Support Group on the New Work Item
 #aml*ClassificationScoreClassExtensionName = Optionally write the returned percent confidence value to a decimal class extension on Incidents or Service Requests
 #aml*ClassificationEnumPredictionExtName = Optionally write the returned enum value to an enum class extension bound to Classification/Area on Incidents or Service Requests
-$enableAzureMachineLearning = $false
-$amlAPIKey = ""
-$amlURL = ""
-$amlWorkItemTypeMinPercentConfidence = "95"
-$amlWorkItemClassificationMinPercentConfidence = "95"
-$amlWorkItemSupportGroupMinPercentConfidence = "95"
+$enableAzureMachineLearning = $smexcoSettingsMP.EnableAML
+$amlAPIKey = "$($smexcoSettingsMP.AMLAPIKey)"
+$amlURL = "$($smexcoSettingsMP.AMLurl)"
+#minimum confidence scores before AML engages
+$amlWorkItemTypeMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemType)"
+$amlWorkItemClassificationMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemClassification)"
+$amlWorkItemSupportGroupMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemSupportGroup)"
+#class extension, work item type prediction (str) and work item type prediction score (dec)
 $amlWITypeIncidentStringClassExtensionName = ""
+$amlWITypeIncidentScoreClassExtensionName = "$($smexcoSettingsMP.AMLIncidentConfidenceClassExtensionGUID)"
 $amlWITypeServiceRequestStringClassExtensionName = ""
-$amlWITypeIncidentScoreClassExtensionName = ""
-$amlWITypeServiceRequestScoreClassExtensionName = ""
-$amlIncidentClassificationScoreClassExtensionName = ""
-$amlIncidentClassificationEnumPredictionExtName = ""
-$amlIncidentTierQueueScoreClassExtensionName = ""
-$amlIncidentTierQueueEnumPredictionExtName = ""
-$amlServiceRequestAreaScoreClassExtensionName = ""
-$amlServiceRequestAreaEnumPredictionExtName = ""
-$amlServiceRequestSupportGroupScoreClassExtensionName = ""
-$amlServiceRequestSupportGroupEnumPredictionExtName = ""
+$amlWITypeServiceRequestScoreClassExtensionName = "$($smexcoSettingsMP.AMLServiceRequestConfidenceClassExtensionGUID)"
+#class extension, incident classification score (dec) and classification prediction (enum)
+$amlIncidentClassificationScoreClassExtensionName = "$($smexcoSettingsMP.AMLIncidentClassificationConfidenceClassExtensionGUID)"
+$amlIncidentClassificationEnumPredictionExtName = "$($smexcoSettingsMP.AMLIncidentClassificationPredictionClassExtensionGUID)"
+#class extension, incident tier queue score (dec) and tier queue prediction (enum)
+$amlIncidentTierQueueScoreClassExtensionName = "$($smexcoSettingsMP.AMLIncidentSupportGroupConfidenceClassExtensionGUID)"
+$amlIncidentTierQueueEnumPredictionExtName = "$($smexcoSettingsMP.AMLIncidentSupportGroupPredictionClassExtensionGUID)"
+#class extension, service request area score (dec) and area prediction (enum)
+$amlServiceRequestAreaScoreClassExtensionName = "$($smexcoSettingsMP.AMLServiceRequestClassificationConfidenceClassExtensionGUID)"
+$amlServiceRequestAreaEnumPredictionExtName = "$($smexcoSettingsMP.AMLServiceRequestClassificationPredictionClassExtensionGUID)"
+#class extension, service request support group score (dec) and support group prediction (enum)
+$amlServiceRequestSupportGroupScoreClassExtensionName = "$($smexcoSettingsMP.AMLServiceRequestSupportGroupConfidenceClassExtensionGUID)"
+$amlServiceRequestSupportGroupEnumPredictionExtName = "$($smexcoSettingsMP.AMLServiceRequestSupportGroupPredictionClassExtensionGUID)"
 
 #optional, enable Language Translation through Azure Cognitive Services
 #Use Translation services from Azure in order to create New Work Items that feature a translated Description as the First Comment in the
@@ -422,8 +428,8 @@ $amlServiceRequestSupportGroupEnumPredictionExtName = ""
 #https://docs.microsoft.com/en-us/azure/cognitive-services/translator/language-support
 #pricing details can be found here: https://azure.microsoft.com/en-ca/pricing/details/cognitive-services/translator-text-api/
 #azureCogSvcTranslateAPIKey = The API key for your deployed Azure Translation service
-$enableAzureTranslateForNewWI = $false
-$defaultAzureTranslateLanguage = "en"
+$enableAzureTranslateForNewWI = ""
+$defaultAzureTranslateLanguage = ""
 $azureCogSvcTranslateAPIKey = ""
 
 #optional, enable SCOM functionality
