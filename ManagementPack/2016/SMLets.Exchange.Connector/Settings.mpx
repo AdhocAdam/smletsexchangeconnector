@@ -982,6 +982,30 @@
               MinLength="0"
               Required="false"
               Scale="0" />
+
+        <!--Azure Translate-->
+        <Property ID="EnableACSTranslate"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+        <Property ID="ACSTranslateAPIKey"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+        
+        <Property ID="ACSTranslateDefaultLanguageCode"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
           
         </ClassType>
         
