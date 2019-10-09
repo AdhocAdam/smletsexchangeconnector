@@ -428,9 +428,9 @@ $amlServiceRequestSupportGroupEnumPredictionExtName = "$($smexcoSettingsMP.AMLSe
 #https://docs.microsoft.com/en-us/azure/cognitive-services/translator/language-support
 #pricing details can be found here: https://azure.microsoft.com/en-ca/pricing/details/cognitive-services/translator-text-api/
 #azureCogSvcTranslateAPIKey = The API key for your deployed Azure Translation service
-$enableAzureTranslateForNewWI = ""
-$defaultAzureTranslateLanguage = ""
-$azureCogSvcTranslateAPIKey = ""
+$enableAzureTranslateForNewWI = $smexcoSettingsMP.EnableACSTranslate
+$defaultAzureTranslateLanguage = $smexcoSettingsMP.ACSTranslateDefaultLanguageCode
+$azureCogSvcTranslateAPIKey = $smexcoSettingsMP.ACSTranslateAPIKey
 
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
