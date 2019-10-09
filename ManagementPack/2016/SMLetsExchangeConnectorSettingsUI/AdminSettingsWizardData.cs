@@ -187,6 +187,11 @@ namespace SMLetsExchangeConnectorSettingsUI
             ManagementPackProperty serviceRequestAMLClassificationPredictionExtensionEnum;
             ManagementPackProperty serviceRequestAMLSupportGroupPredictionExtensionEnum;
 
+        //azure translate
+        private Boolean boolEnableAzureTranslate = false;
+        private String strAzureTranslateAPIKey = String.Empty;
+        private String strAzureTranslateDefaultLanguageCode = String.Empty;
+
         //management pack guid
         private Guid guidEnterpriseManagementObjectID = Guid.Empty;
         #endregion
@@ -2041,6 +2046,53 @@ namespace SMLetsExchangeConnectorSettingsUI
             }
         }
 
+        //azure translate
+        public Boolean IsAzureTranslationEnabled
+        {
+            get
+            {
+                return this.boolEnableAzureTranslate;
+            }
+            set
+            {
+                if (this.boolEnableAzureTranslate != value)
+                {
+                    this.boolEnableAzureTranslate = value;
+                }
+            }
+        }
+
+        public String AzureTranslateAPIKey
+        {
+            get
+            {
+                return this.strAzureTranslateAPIKey;
+            }
+            set
+            {
+                if (this.strAzureTranslateAPIKey != value)
+                {
+                    this.strAzureTranslateAPIKey = value;
+                }
+            }
+        }
+
+        public String AzureTranslateDefaultLanguageCode
+        {
+            get
+            {
+                return this.strAzureTranslateDefaultLanguageCode;
+            }
+            set
+            {
+                if (this.strAzureTranslateDefaultLanguageCode != value)
+                {
+                    this.strAzureTranslateDefaultLanguageCode = value;
+                }
+            }
+        }
+
+
         //management pack guid
         public Guid EnterpriseManagementObjectID
         {
@@ -2691,6 +2743,12 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.ServiceRequestEnumExtensions = srTempEnumPropertyList.ToList();
             this.ServiceRequestEnumExtensions = srTempEnumPropertyList.OrderBy(srextensions => srextensions.DisplayName).ToList();
 
+            //azure translate
+            try { this.IsAzureTranslationEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableACSTranslate"].ToString()); }
+            catch { this.IsAzureTranslationEnabled = false; }
+            this.AzureTranslateAPIKey = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTranslateAPIKey"].ToString();
+            this.AzureTranslateDefaultLanguageCode = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTranslateDefaultLanguageCode"].ToString();
+
             //load the MP
             this.EnterpriseManagementObjectID = emoAdminSetting.Id;
         }
@@ -2968,6 +3026,11 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { }
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLServiceRequestSupportGroupPredictionClassExtensionGUID"].Value = this.AMLServiceRequestSupportGroupPredictionEnumExtension.Id; }
             catch { }
+
+            //azure translate
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableACSTranslate"].Value = this.IsAzureTranslationEnabled;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTranslateAPIKey"].Value = this.AzureTranslateAPIKey;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTranslateDefaultLanguageCode"].Value = this.AzureTranslateDefaultLanguageCode;
 
             //Update the MP
             emoAdminSetting.Commit();
