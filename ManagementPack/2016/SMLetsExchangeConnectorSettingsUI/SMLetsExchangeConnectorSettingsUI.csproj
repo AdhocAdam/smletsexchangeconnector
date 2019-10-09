@@ -86,6 +86,9 @@
     <Compile Include="Forms\ArtificialIntelligence.xaml.cs">
       <DependentUpon>ArtificialIntelligence.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Forms\AzureTranslate.xaml.cs">
+      <DependentUpon>AzureTranslate.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Forms\CiresonIntegrationForm.xaml.cs">
       <DependentUpon>CiresonIntegrationForm.xaml</DependentUpon>
     </Compile>
@@ -144,6 +147,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Forms\AzureTranslate.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Forms\CiresonIntegrationForm.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -186,6 +193,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="16x16.png" />
+    <Resource Include="AssemblyImages\translate.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
