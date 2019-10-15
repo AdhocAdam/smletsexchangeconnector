@@ -57,7 +57,7 @@
                             <Binding Path="ACSRegion" Mode="TwoWay" FallbackValue=""/>
                         </TextBox.Text>
                     </TextBox>
-                    
+
                     <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblMinPercentForSR" Content="Minimum Percent at which to Create Service Requests"/>
                     <TextBox Height="25" Margin="0,-8,0,10" Name="txtAzureCogSvcAnalyticsMinPercent" >
                         <TextBox.Text>
@@ -228,7 +228,7 @@
                     </TextBox>
 
                     <TextBlock Text="(optional) Record Azure Machine Learning Scores and Predictions into New Work Items regardless of decisioning outcome through custom Decimal and Enum Class Extensions" TextWrapping="Wrap" FontWeight="Bold" />
-                    <StackPanel Orientation="Horizontal" Margin="10,0,-150,0" Height="285">
+                    <StackPanel Orientation="Horizontal" Margin="10,0,-150,0" Height="379">
                         <StackPanel Orientation="Vertical" Margin="0,0,50,0" Width="200">
                             <TextBlock Text="Incident" FontStyle="Italic" HorizontalAlignment="Center" />
                             <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLIRClassExtensionWorkItem" Content="Work Item confidence"/>
@@ -239,6 +239,9 @@
 
                             <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLIRClassExtensionSG" Content="Support Group confidence"/>
                             <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=IncidentDecExtensions}" SelectedItem="{Binding Path=AMLIncidentSupportGroupConfidenceDecExtension}" DisplayMemberPath="DisplayName" />
+
+                            <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLIRPredictionStr" Content="Work Item Type prediction string"/>
+                            <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=IncidentStringExtensions}" SelectedItem="{Binding Path=AMLIncidentWIPredictionExtension}" DisplayMemberPath="DisplayName"  />
 
                             <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLIRClassExtensionPredictionEnum" Content="Classification prediction enum"/>
                             <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=IncidentEnumExtensions}" SelectedItem="{Binding Path=AMLIncidentClassificationPredictionEnumExtension}" DisplayMemberPath="DisplayName"  />
@@ -257,6 +260,9 @@
 
                             <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLSRClassExtensionSG" Content="Support Group confidence"/>
                             <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=ServiceRequestDecExtensions}" SelectedItem="{Binding Path=AMLServiceRequestSupportGroupConfidenceDecExtension}" DisplayMemberPath="DisplayName"  />
+
+                            <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLSRPredictionStr" Content="Work Item Type prediction string"/>
+                            <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=ServiceRequestStringExtensions}" SelectedItem="{Binding Path=AMLServiceRequestWIPredictionExtension}" DisplayMemberPath="DisplayName" />
 
                             <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLSRClassExtensionPredictionEnum" Content="Classification prediction enum"/>
                             <ComboBox Height="25" Margin="0,-8,0,10" ItemsSource="{Binding Path=ServiceRequestEnumExtensions}" SelectedItem="{Binding Path=AMLServiceRequestClassificationPredictionEnumExtension}" DisplayMemberPath="DisplayName" />
@@ -294,7 +300,7 @@
                     <CheckBox IsChecked="{Binding Path=IsACSForPriorityScoringEnabled, Mode=TwoWay}">
                         <TextBlock Text="Use Sentiment Score to dynamically score Urgency/Priority/Impact on the Default Work Item type" TextWrapping="Wrap"/>
                     </CheckBox>
-                    
+
                     <TextBlock Text="(optional) Record Azure Sentiment Scores into New Work Items through custom Decimal Class Extensions" TextWrapping="Wrap" Margin="0,10,0,0" FontWeight="Bold" />
                     <StackPanel Margin="10,0,-90,0">
                         <StackPanel Orientation="Horizontal" Margin="0,0,-60,0">
