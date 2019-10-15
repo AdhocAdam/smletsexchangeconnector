@@ -175,6 +175,7 @@ namespace SMLetsExchangeConnectorSettingsUI
 
             //AML incident custom decimal extensions
             ManagementPackProperty incidentAMLWIConfidenceExtensionDec;
+            ManagementPackProperty incidentAMLWITypePredictionExtensionGUID;
             ManagementPackProperty incidentAMLClassifcationConfidenceExtensionDec;
             ManagementPackProperty incidentAMLSupportGroupIConfidenceExtensionDec;
             ManagementPackProperty incidentAMLClassificationPredictionExtensionEnum;
@@ -182,6 +183,7 @@ namespace SMLetsExchangeConnectorSettingsUI
 
             //AML service request custom decimal extensions
             ManagementPackProperty serviceRequestAMLWIConfidenceExtensionDec;
+            ManagementPackProperty serviceRequestAMLWITypePredictionExtensionGUID;
             ManagementPackProperty serviceRequestAMLClassifcationConfidenceExtensionDec;
             ManagementPackProperty serviceRequestAMLSupportGroupIConfidenceExtensionDec;
             ManagementPackProperty serviceRequestAMLClassificationPredictionExtensionEnum;
@@ -1857,8 +1859,10 @@ namespace SMLetsExchangeConnectorSettingsUI
 
         public IList<ManagementPackProperty> IncidentDecExtensions { get; set; }
         public IList<ManagementPackProperty> IncidentEnumExtensions { get; set; }
+        public IList<ManagementPackProperty> IncidentStringExtensions { get; set; }
         public IList<ManagementPackProperty> ServiceRequestDecExtensions { get; set; }
         public IList<ManagementPackProperty> ServiceRequestEnumExtensions { get; set; }
+        public IList<ManagementPackProperty> ServiceRequestStringExtensions { get; set; }
         public ManagementPackProperty AMLIncidentConfidenceDecExtension
         {
             get
@@ -1870,6 +1874,34 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.incidentAMLWIConfidenceExtensionDec != value)
                 {
                     incidentAMLWIConfidenceExtensionDec = value;
+                }
+            }
+        }
+        public ManagementPackProperty AMLIncidentWIPredictionExtension
+        {
+            get
+            {
+                return incidentAMLWITypePredictionExtensionGUID;
+            }
+            set
+            {
+                if (this.incidentAMLWITypePredictionExtensionGUID != value)
+                {
+                    incidentAMLWITypePredictionExtensionGUID = value;
+                }
+            }
+        }
+        public ManagementPackProperty AMLServiceRequestWIPredictionExtension
+        {
+            get
+            {
+                return serviceRequestAMLWITypePredictionExtensionGUID;
+            }
+            set
+            {
+                if (this.serviceRequestAMLWITypePredictionExtensionGUID != value)
+                {
+                    serviceRequestAMLWITypePredictionExtensionGUID = value;
                 }
             }
         }
@@ -2588,6 +2620,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             List<ManagementPackProperty> srTempPropertyList = new List<ManagementPackProperty>();
             List<ManagementPackProperty> irTempEnumPropertyList = new List<ManagementPackProperty>();
             List<ManagementPackProperty> srTempEnumPropertyList = new List<ManagementPackProperty>();
+            List<ManagementPackProperty> irTempStringPropertyList = new List<ManagementPackProperty>();
+            List<ManagementPackProperty> srTempStringPropertyList = new List<ManagementPackProperty>();
             
             //Load the Class Extension lists into temporary lists as long as the Property type is an dec/enum and does not come from the stock Class
             //Load the Drop Down's currently Selected Item in the list if the stored GUID matches a property's respective id
@@ -2662,6 +2696,22 @@ namespace SMLetsExchangeConnectorSettingsUI
                     }
                     catch { }
                 }
+
+                //load all of the string properties that aren't from the Microsoft MP into a list
+                if ((irproperty.Type.ToString() == "string") && (!(irproperty.Identifier.ToString().Contains("System.WorkItem.Incident"))))
+                {
+                    irTempStringPropertyList.Add(irproperty);
+
+                    //if the string property is the same guid as the one saved, make it the current selection in the list
+                    try
+                    {
+                        if (irproperty.Id == (Guid)emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLIRWorkItemTypePredictionClassExtensionGUID"].Value)
+                        {
+                            this.AMLIncidentWIPredictionExtension = irproperty;
+                        }
+                    }
+                    catch { }
+                }
             }
 
             //Load the Class Extension lists into temporary lists as long as the Property type is an dec/enum and does not come from the stock Class
@@ -2732,6 +2782,22 @@ namespace SMLetsExchangeConnectorSettingsUI
                     }
                     catch { }
                 }
+                
+                //load all of the string properties that aren't from the Microsoft MP into a list
+                if ((srproperty.Type.ToString() == "string") && (!(srproperty.Identifier.ToString().Contains("System.WorkItem.ServiceRequest"))))
+                {
+                    srTempEnumPropertyList.Add(srproperty);
+
+                    //if the string property is the same guid as the one saved, make it the current selection in the list
+                    try
+                    {
+                        if (srproperty.Id == (Guid)emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLSRWorkItemTypePredictionClassExtensionGUID"].Value)
+                        {
+                            this.AMLServiceRequestWIPredictionExtension = srproperty;
+                        }
+                    }
+                    catch { }
+                }
             }
             //Processing Logic - load the Class Extension Lists from the temporary lists
             this.IncidentDecExtensions = irTempPropertyList.ToList();
@@ -2739,9 +2805,13 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.IncidentEnumExtensions = irTempEnumPropertyList.ToList();
             this.IncidentEnumExtensions = irTempEnumPropertyList.OrderBy(irextensions => irextensions.DisplayName).ToList();
             this.ServiceRequestDecExtensions = srTempPropertyList.ToList();
+            this.IncidentStringExtensions = irTempStringPropertyList.OrderBy(irextensions => irextensions.DisplayName).ToList();
+            this.IncidentStringExtensions = irTempStringPropertyList.ToList();
             this.ServiceRequestDecExtensions = srTempPropertyList.OrderBy(srextensions => srextensions.DisplayName).ToList();
             this.ServiceRequestEnumExtensions = srTempEnumPropertyList.ToList();
             this.ServiceRequestEnumExtensions = srTempEnumPropertyList.OrderBy(srextensions => srextensions.DisplayName).ToList();
+            this.ServiceRequestStringExtensions = srTempStringPropertyList.ToList();
+            this.ServiceRequestStringExtensions = srTempStringPropertyList.OrderBy(srextensions => srextensions.DisplayName).ToList();
 
             //azure translate
             try { this.IsAzureTranslationEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableACSTranslate"].ToString()); }
