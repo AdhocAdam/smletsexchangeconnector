@@ -863,6 +863,26 @@
               Required="false"
               Scale="2" />
 
+         <Property ID="AMLIRWorkItemTypePredictionClassExtensionGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0" />
+
+         <Property ID="AMLSRWorkItemTypePredictionClassExtensionGUID"
+              Type="guid"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false"
+              Scale="0" />
+
           <Property ID="AMLMinConfidenceWorkItemClassification"
               Type="decimal"
               AutoIncrement="false"
