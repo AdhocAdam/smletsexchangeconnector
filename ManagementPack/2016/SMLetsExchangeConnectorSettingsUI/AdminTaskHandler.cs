@@ -57,7 +57,7 @@ namespace SMLetsExchangeConnectorSettingsUI
 
             //Create a new "wizard" (also used for property dialogs as in this case), set the title bar, create the data, and add the pages 
             WizardStory wizard = new WizardStory();
-            wizard.WizardWindowTitle = "SMLets Exchange Connector Settings v2.0 RC1";
+            wizard.WizardWindowTitle = "SMLets Exchange Connector Settings v2.0 RC2";
             WizardData data = new AdminSettingWizardData(emoAdminSetting);
             wizard.WizardData = data;
             wizard.AddLast(new WizardStep("General", typeof(GeneralSettingsForm), wizard.WizardData));
@@ -71,6 +71,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             wizard.AddLast(new WizardStep("Announcements", typeof(AnnouncementsForm), wizard.WizardData));
             wizard.AddLast(new WizardStep("SCOM", typeof(SCOMIntegrationForm), wizard.WizardData));
             wizard.AddLast(new WizardStep("A.I.", typeof(ArtificialIntelligence), wizard.WizardData));
+            wizard.AddLast(new WizardStep("Translation", typeof(AzureTranslate), wizard.WizardData));
             wizard.AddLast(new WizardStep("About", typeof(AboutForm), wizard.WizardData));
 
             //Show the property page 
