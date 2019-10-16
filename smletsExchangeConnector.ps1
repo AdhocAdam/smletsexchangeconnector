@@ -402,9 +402,9 @@ $amlWorkItemTypeMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWork
 $amlWorkItemClassificationMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemClassification)"
 $amlWorkItemSupportGroupMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemSupportGroup)"
 #class extension, work item type prediction (str) and work item type prediction score (dec)
-$amlWITypeIncidentStringClassExtensionName = ""
+$amlWITypeIncidentStringClassExtensionName = "$($smexcoSettingsMP.AMLIRWorkItemTypePredictionClassExtensionGUID)"
 $amlWITypeIncidentScoreClassExtensionName = "$($smexcoSettingsMP.AMLIncidentConfidenceClassExtensionGUID)"
-$amlWITypeServiceRequestStringClassExtensionName = ""
+$amlWITypeServiceRequestStringClassExtensionName = "$($smexcoSettingsMP.AMLSRWorkItemTypePredictionClassExtensionGUID)"
 $amlWITypeServiceRequestScoreClassExtensionName = "$($smexcoSettingsMP.AMLServiceRequestConfidenceClassExtensionGUID)"
 #class extension, incident classification score (dec) and classification prediction (enum)
 $amlIncidentClassificationScoreClassExtensionName = "$($smexcoSettingsMP.AMLIncidentClassificationConfidenceClassExtensionGUID)"
@@ -589,6 +589,7 @@ if ($acsSentimentScoreSRClassExtensionName)
     $acsSentimentScoreSRClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$acsSentimentScoreSRClassExtensionName*")}).Name
 }
 #azure machine learning
+#azure machine learning, work item type
 if ($amlWITypeScoreIRClassExtensionName)
 {
     $amlWITypeScoreIRClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWITypeScoreIRClassExtensionName*")}).Name
@@ -597,6 +598,7 @@ if ($amlWITypeScoreSRClassExtensionName)
 {
     $amlWITypeScoreSRClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWITypeScoreSRClassExtensionName*")}).Name
 }
+#azure machine learning, classifications
 if ($amlWIClassificationIRScoreClassExtensionName)
 {
     $amlWIClassificationIRScoreClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWIClassificationIRScoreClassExtensionName*")}).Name
@@ -605,6 +607,7 @@ if ($amlWIClassificationSRScoreClassExtensionName)
 {
     $amlWIClassificationSRScoreClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWIClassificationSRScoreClassExtensionName*")}).Name
 }
+#azure machine learning, support groups
 if ($amlWISupportGroupIRClassExtensionName)
 {
     $amlWISupportGroupIRClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWISupportGroupIRClassExtensionName*")}).Name
