@@ -2344,7 +2344,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { this.UseMailboxRedirection = false; }
 
             //File Attachments
-            if (this.MinFileAttachmentSize != null) { emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinimumFileAttachmentSize"].ToString(); }
+            if (this.MinFileAttachmentSize != null) { this.MinFileAttachmentSize = emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinimumFileAttachmentSize"].ToString(); }
             else { this.MinFileAttachmentSize = strMinFileSize; }
 
             try { this.IsMaxFileSizeAttachmentsEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnforceFileAttachmentSettings"].ToString()); }
@@ -2515,13 +2515,13 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.MediumPriorityAnnouncementKeyword = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementKeywordMedium"].ToString();
             this.HighPriorityAnnouncementKeyword = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementKeywordHigh"].ToString();
 
-            if (this.LowPriorityExpiresInHours != null) { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityLowExpirationInHours"].ToString(); }
+            if (this.LowPriorityExpiresInHours != null) { this.LowPriorityExpiresInHours = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityLowExpirationInHours"].ToString(); }
             else { this.LowPriorityExpiresInHours = strLowPriorityExpInHours; }
 
-            if (this.MediumPriorityExpiresInHours != null) { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityNormalExpirationInHours"].ToString(); }
+            if (this.MediumPriorityExpiresInHours != null) { this.MediumPriorityExpiresInHours = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityNormalExpirationInHours"].ToString(); }
             else { this.MediumPriorityExpiresInHours = strMedPriorityExpInHours; }
 
-            if (this.HighPriorityExpiresInHours != null) { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityCriticalExpirationInHours"].ToString(); }
+            if (this.HighPriorityExpiresInHours != null) { this.HighPriorityExpiresInHours = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityCriticalExpirationInHours"].ToString(); }
             else { this.HighPriorityExpiresInHours = strHighPriorityExpInHours; }
 
             try { this.IsAnnouncementIntegrationEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableAnnouncements"].ToString()); }
@@ -2572,7 +2572,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.ACSRegion = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTextAnalyticsRegion"].ToString();
             this.AzureCognitiveServicesAPIKey = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTextAnalyticsAPIKey"].ToString();
             this.AzureCognitiveServicesBoundaries = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSPriorityScoringBoundaries"].ToString();
-            if (this.MinimumPercentToCreateServiceRequest != null) { emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinACSSentimentToCreateSR"].ToString(); }
+            if (this.MinimumPercentToCreateServiceRequest != null) { this.MinimumPercentToCreateServiceRequest = emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinACSSentimentToCreateSR"].ToString(); }
             else { this.MinimumPercentToCreateServiceRequest = strMinimumPercentToCreateServiceRequest; }
 
             try { this.IsAzureCognitiveServicesEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableACSForNewWorkItem"].ToString()); }
@@ -2605,11 +2605,11 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { this.IsAzureMachineLearningEnabled = false; }
             this.AzureMachineLearningAPIKey = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLAPIKey"].ToString();
             this.AzureMachineLearningURL = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLurl"].ToString();
-            if (this.AzureMachineLearningWIConfidence != null) { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemType"].ToString(); }
+            if (this.AzureMachineLearningWIConfidence != null) { this.AzureMachineLearningWIConfidence = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemType"].ToString(); }
             else { this.AzureMachineLearningWIConfidence = decAMLWIMinConfidence; }
-            if (this.AzureMachineLearningClassificationConfidence != null) { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemClassification"].ToString(); }
+            if (this.AzureMachineLearningClassificationConfidence != null) { this.AzureMachineLearningClassificationConfidence = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemClassification"].ToString(); }
             else { this.AzureMachineLearningClassificationConfidence = decAMLClassificationMinConfidence; }
-            if (this.AzureMachineLearningSupportGroupConfidence != null) { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].ToString(); }
+            if (this.AzureMachineLearningSupportGroupConfidence != null) { this.AzureMachineLearningSupportGroupConfidence = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].ToString(); }
             else { this.AzureMachineLearningSupportGroupConfidence = decAMLSupportGroupMinConfidence; }
 
             ManagementPackClass incidentClass = emg.EntityTypes.GetClass(new Guid("a604b942-4c7b-2fb2-28dc-61dc6f465c68"));
@@ -2782,11 +2782,11 @@ namespace SMLetsExchangeConnectorSettingsUI
                     }
                     catch { }
                 }
-                
+
                 //load all of the string properties that aren't from the Microsoft MP into a list
                 if ((srproperty.Type.ToString() == "string") && (!(srproperty.Identifier.ToString().Contains("System.WorkItem.ServiceRequest"))))
                 {
-                    srTempEnumPropertyList.Add(srproperty);
+                    srTempStringPropertyList.Add(srproperty);
 
                     //if the string property is the same guid as the one saved, make it the current selection in the list
                     try
@@ -3028,9 +3028,12 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementKeywordLow"].Value = this.LowPriorityAnnouncementKeyword;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementKeywordMedium"].Value = this.MediumPriorityAnnouncementKeyword;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementKeywordHigh"].Value = this.HighPriorityAnnouncementKeyword;
-            emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityLowExpirationInHours"].Value = this.LowPriorityExpiresInHours;
-            emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityNormalExpirationInHours"].Value = this.MediumPriorityExpiresInHours;
-            emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityCriticalExpirationInHours"].Value = this.HighPriorityExpiresInHours;
+            try { decimal.Parse(this.LowPriorityExpiresInHours); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityLowExpirationInHours"].Value = this.LowPriorityExpiresInHours; }
+            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityLowExpirationInHours"].Value = 0; }
+            try { decimal.Parse(this.MediumPriorityExpiresInHours); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityNormalExpirationInHours"].Value = this.MediumPriorityExpiresInHours; }
+            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityNormalExpirationInHours"].Value = 0; }
+            try { decimal.Parse(this.HighPriorityExpiresInHours); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityCriticalExpirationInHours"].Value = this.HighPriorityExpiresInHours; }
+            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityCriticalExpirationInHours"].Value = 0; }
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementUsers"].Value = this.SCSMApprovedAnnouncers;
             //if the Announcement group is set, don't null it
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementGroupGUID"].Value = this.SCSMApprovedAnnouncementGroup["Id"]; }
@@ -3053,7 +3056,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTextAnalyticsRegion"].Value = this.ACSRegion;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTextAnalyticsAPIKey"].Value = this.AzureCognitiveServicesAPIKey;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSPriorityScoringBoundaries"].Value = this.AzureCognitiveServicesBoundaries.ToString();
-            emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinACSSentimentToCreateSR"].Value = this.MinimumPercentToCreateServiceRequest;
+            try { decimal.Parse(this.MinimumPercentToCreateServiceRequest); emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinACSSentimentToCreateSR"].Value = this.MinimumPercentToCreateServiceRequest; }
+            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinACSSentimentToCreateSR"].Value = 95; }
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSentimentScoreIncidentClassExtensionGUID"].Value = this.ACSIncidentSentimentDecExtension.Id; }
             catch { }
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSentimentScoreServiceRequestClassExtensionGUID"].Value = this.ACSServiceRequestSentimentDecExtension.Id; }
@@ -3071,11 +3075,16 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableAML"].Value = this.IsAzureMachineLearningEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLAPIKey"].Value = this.AzureMachineLearningAPIKey;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLurl"].Value = this.AzureMachineLearningURL;
-            emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemType"].Value = this.AzureMachineLearningWIConfidence;
-            emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemClassification"].Value = this.AzureMachineLearningClassificationConfidence;
-            emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].Value = this.AzureMachineLearningSupportGroupConfidence;
+            try { decimal.Parse(this.AzureMachineLearningWIConfidence); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemType"].Value = this.AzureMachineLearningWIConfidence; }
+            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemType"].Value = 95; }
+            try { decimal.Parse(this.AzureMachineLearningClassificationConfidence); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemClassification"].Value = this.AzureMachineLearningClassificationConfidence; }
+            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemClassification"].Value = 95; }
+            try { decimal.Parse(this.AzureMachineLearningSupportGroupConfidence); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].Value = this.AzureMachineLearningSupportGroupConfidence; }
+            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].Value = 95; }
 
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLIncidentConfidenceClassExtensionGUID"].Value = this.AMLIncidentConfidenceDecExtension.Id; }
+            catch { }
+            try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLIRWorkItemTypePredictionClassExtensionGUID"].Value = this.AMLIncidentWIPredictionExtension.Id; }
             catch { }
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLIncidentClassificationConfidenceClassExtensionGUID"].Value = this.AMLIncidentClassificationConfidenceDecExtension.Id; }
             catch { }
@@ -3087,6 +3096,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { }
 
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLServiceRequestConfidenceClassExtensionGUID"].Value = this.AMLServiceRequestConfidenceDecExtension.Id; }
+            catch { }
+            try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLSRWorkItemTypePredictionClassExtensionGUID"].Value = this.AMLServiceRequestWIPredictionExtension.Id; }
             catch { }
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLServiceRequestClassificationConfidenceClassExtensionGUID"].Value = this.AMLServiceRequestClassificationConfidenceDecExtension.Id; }
             catch { }
