@@ -589,32 +589,59 @@ if ($acsSentimentScoreSRClassExtensionName)
     $acsSentimentScoreSRClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$acsSentimentScoreSRClassExtensionName*")}).Name
 }
 #azure machine learning
-#azure machine learning, work item type
-if ($amlWITypeScoreIRClassExtensionName)
+#azure machine learning, work item type confidence % (IR/SR)
+if ($amlWITypeIncidentScoreClassExtensionName)
 {
-    $amlWITypeScoreIRClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWITypeScoreIRClassExtensionName*")}).Name
+    $amlWITypeIncidentScoreClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWITypeIncidentScoreClassExtensionName*")}).Name
 }
-if ($amlWITypeScoreSRClassExtensionName)
+if ($amlWITypeServiceRequestScoreClassExtensionName)
 {
-    $amlWITypeScoreSRClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWITypeScoreSRClassExtensionName*")}).Name
+    $amlWITypeServiceRequestScoreClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWITypeServiceRequestScoreClassExtensionName*")}).Name
 }
-#azure machine learning, classifications
-if ($amlWIClassificationIRScoreClassExtensionName)
+#azure machine learning, work item type prediction enum (IR/SR)
+if ($amlWITypeIncidentStringClassExtensionName)
 {
-    $amlWIClassificationIRScoreClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWIClassificationIRScoreClassExtensionName*")}).Name
+    $amlWITypeIncidentStringClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "String") -and ($_.Id -like "*$amlWITypeIncidentStringClassExtensionName*")}).Name
 }
-if ($amlWIClassificationSRScoreClassExtensionName)
+if ($amlWITypeServiceRequestStringClassExtensionName)
 {
-    $amlWIClassificationSRScoreClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWIClassificationSRScoreClassExtensionName*")}).Name
+    $amlWITypeServiceRequestStringClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "String") -and ($_.Id -like "*$amlWITypeServiceRequestStringClassExtensionName*")}).Name
 }
-#azure machine learning, support groups
-if ($amlWISupportGroupIRClassExtensionName)
+#azure machine learning, classification confidence % (Classification/Area)
+if ($amlIncidentClassificationScoreClassExtensionName)
 {
-    $amlWISupportGroupIRClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWISupportGroupIRClassExtensionName*")}).Name
+    $amlIncidentClassificationScoreClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlIncidentClassificationScoreClassExtensionName*")}).Name
 }
-if ($amlWISupportGroupSRClassExtensionName)
+if ($amlServiceRequestAreaScoreClassExtensionName)
 {
-    $amlWISupportGroupSRClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWISupportGroupSRClassExtensionName*")}).Name
+    $amlServiceRequestAreaScoreClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlServiceRequestAreaScoreClassExtensionName*")}).Name
+}
+#azure machine learning, classification prediction enum (Classification/Area)
+if ($amlIncidentClassificationEnumPredictionExtName)
+{
+    $amlIncidentClassificationEnumPredictionExtName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.Id -like "*$amlIncidentClassificationEnumPredictionExtName*")}).Name
+}
+if ($amlServiceRequestAreaEnumPredictionExtName)
+{
+    $amlServiceRequestAreaEnumPredictionExtName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.Id -like "*$amlServiceRequestAreaEnumPredictionExtName*")}).Name
+}
+#azure machine learning, support group confidence % (Tier Queue/Support Group)
+if ($amlIncidentTierQueueScoreClassExtensionName)
+{
+    $amlIncidentTierQueueScoreClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlIncidentTierQueueScoreClassExtensionName*")}).Name
+}
+if ($amlServiceRequestSupportGroupScoreClassExtensionName)
+{
+    $amlServiceRequestSupportGroupScoreClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlServiceRequestSupportGroupScoreClassExtensionName*")}).Name
+}
+#azure machine learning, support group prediction enum (Tier Queue/Support Group)
+if ($amlIncidentTierQueueEnumPredictionExtName)
+{
+    $amlIncidentTierQueueEnumPredictionExtName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.Id -like "*$amlIncidentTierQueueEnumPredictionExtName*")}).Name
+}
+if ($amlServiceRequestSupportGroupEnumPredictionExtName)
+{
+    $amlServiceRequestSupportGroupEnumPredictionExtName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.Id -like "*$amlServiceRequestSupportGroupEnumPredictionExtName*")}).Name
 }
 #endregion
 
