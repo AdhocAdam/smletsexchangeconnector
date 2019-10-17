@@ -2250,7 +2250,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             //Load the Drop Down's currently Selected Item in the list if the stored GUID matches a property's respective id
             foreach (ManagementPackProperty crproperty in crPropertyList)
             {
-                if ((crproperty.Type.ToString() == "enum") && (!(crproperty.Identifier.ToString().Contains("System.WorkItem.ChangeRequest"))))
+                if ((crproperty.Type.ToString() == "enum") && ((crproperty.GetManagementPack().Name != "System.WorkItem.ChangeRequest.Library")))
                 {
                     crTempPropertyList.Add(crproperty);
                 }
@@ -2280,7 +2280,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             }
             foreach (ManagementPackProperty prproperty in prPropertyList)
             {
-                if ((prproperty.Type.ToString() == "enum") && (!(prproperty.Identifier.ToString().Contains("System.WorkItem.Problem"))) && (!(prproperty.Identifier.ToString().Contains("Trouble"))))
+                if ((prproperty.Type.ToString() == "enum") && ((prproperty.GetManagementPack().Name != "System.WorkItem.Problem.Library")) && ((prproperty.GetManagementPack().Name != "System.WorkItem.Library")))
                 {
                     prTempPropertyList.Add(prproperty);
                 }
@@ -2628,13 +2628,13 @@ namespace SMLetsExchangeConnectorSettingsUI
             foreach (ManagementPackProperty irproperty in irPropertyList)
             {
                 //load all of the decimal properties that aren't from the Microsoft MP into a list
-                if ((irproperty.Type.ToString() == "decimal") && (!(irproperty.Identifier.ToString().Contains("System.WorkItem.Incident"))))
+                if ((irproperty.Type.ToString() == "decimal") && ((irproperty.GetManagementPack().Name != "System.WorkItem.Incident.Library")))
                 {
                     irTempPropertyList.Add(irproperty);
                 }
 
                 //of the decimal items being loaded, if they are the ones currently written to the MP set them as the selected item in the drop down
-                if ((irproperty.Type.ToString() == "decimal") && (!(irproperty.Identifier.ToString().Contains("System.WorkItem.Incident"))))
+                if ((irproperty.Type.ToString() == "decimal") && ((irproperty.GetManagementPack().Name != "System.WorkItem.Incident.Library")))
                 {
                     try
                     {
@@ -2672,7 +2672,7 @@ namespace SMLetsExchangeConnectorSettingsUI
                 }
 
                 //load all of the enum properties that aren't from the Microsoft MP into a list
-                if ((irproperty.Type.ToString() == "enum") && (!(irproperty.Identifier.ToString().Contains("System.WorkItem.Incident"))) && (!(irproperty.Identifier.ToString().Contains("Trouble"))))
+                if ((irproperty.Type.ToString() == "enum") && ((irproperty.GetManagementPack().Name != "System.WorkItem.Incident.Library")) && ((irproperty.GetManagementPack().Name != "System.WorkItem.Library")))
                 {
                     irTempEnumPropertyList.Add(irproperty);
 
@@ -2698,7 +2698,7 @@ namespace SMLetsExchangeConnectorSettingsUI
                 }
 
                 //load all of the string properties that aren't from the Microsoft MP into a list
-                if ((irproperty.Type.ToString() == "string") && (!(irproperty.Identifier.ToString().Contains("System.WorkItem.Incident"))))
+                if ((irproperty.Type.ToString() == "string") && ((irproperty.GetManagementPack().Name != "System.WorkItem.Incident.Library")) && ((irproperty.GetManagementPack().Name != "System.WorkItem.Library")) && ((irproperty.GetManagementPack().Name != "System.Library")))
                 {
                     irTempStringPropertyList.Add(irproperty);
 
@@ -2718,7 +2718,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             //Load the Drop Down's currently Selected Item in the list if the stored GUID matches a property's respective id
             foreach (ManagementPackProperty srproperty in srPropertyList)
             {                
-                if ((srproperty.Type.ToString() == "decimal") && (!(srproperty.Identifier.ToString().Contains("System.WorkItem.ServiceRequest"))))
+                if ((srproperty.Type.ToString() == "decimal") && ((srproperty.GetManagementPack().Name != "System.WorkItem.ServiceRequest.Library")))
                 {
                     srTempPropertyList.Add(srproperty);
 
@@ -2758,7 +2758,7 @@ namespace SMLetsExchangeConnectorSettingsUI
                 }
 
                 //load all of the enum properties that aren't from the Microsoft MP into a list
-                if ((srproperty.Type.ToString() == "enum") && (!(srproperty.Identifier.ToString().Contains("System.WorkItem.ServiceRequest"))))
+                if ((srproperty.Type.ToString() == "enum") && ((srproperty.GetManagementPack().Name != "System.WorkItem.ServiceRequest.Library")))
                 {
                     srTempEnumPropertyList.Add(srproperty);
 
@@ -2784,7 +2784,7 @@ namespace SMLetsExchangeConnectorSettingsUI
                 }
 
                 //load all of the string properties that aren't from the Microsoft MP into a list
-                if ((srproperty.Type.ToString() == "string") && (!(srproperty.Identifier.ToString().Contains("System.WorkItem.ServiceRequest"))))
+                if ((srproperty.Type.ToString() == "string") && ((srproperty.GetManagementPack().Name != "System.WorkItem.ServiceRequest.Library")) && ((srproperty.GetManagementPack().Name != "System.WorkItem.Library")) && ((srproperty.GetManagementPack().Name != "System.Library")))
                 {
                     srTempStringPropertyList.Add(srproperty);
 
