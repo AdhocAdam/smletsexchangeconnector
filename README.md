@@ -18,8 +18,8 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>Settings Management Pack (v2.0)</i></td>
   </tr>
   <tr>
-    <td width="200">picture goes here</td>
-    <td width="auto">stuff goes here</td>
+    <td width="50%"><img src ="/docs/images/CreateACustomMPSettingsPane/headerGraphicThumbnail.png" /></td>
+    <td width="auto">The SMLets Exchange Connector features over 120+ configuration possibilities. With a brand new management pack, upgrades just easier! This new MP moves the configuration from the PowerShell script into a dedicated MP whose settings are preserved through upgrades. Interested to see how it was built? Check out the blog here on the repo. <a href="https://adhocadam.github.io/smletsexchangeconnector/Building-a-Custom-Settings-UI-for-Service-Manager-(part-1)/">Part 1</a> and <a href="https://adhocadam.github.io/smletsexchangeconnector/Building-a-Custom-Settings-UI-for-Service-Manager-(part-2)/">Part 2 </a></td>
   </tr>
 </table>
 
