@@ -62,7 +62,7 @@ namespace SMLetsExchangeConnectorSettingsUI
         public override void SaveState(SavePageEventArgs e)
         {
             settings.ExternalIRCommentType = CBExternalIRCommentType.SelectedItem.ToString();
-            settings.ExternalIRCommentType = CBExternalIRCommentType.SelectedItem.ToString();
+            settings.ExternalSRCommentType = CBExternalSRCommentType.SelectedItem.ToString();
             settings.ExternalIRCommentPrivate = CBExternalIRCommentTypePrivate.SelectedItem.ToString();
             settings.ExternalSRCommentPrivate = CBExternalSRCommentTypePrivate.SelectedItem.ToString();
 
