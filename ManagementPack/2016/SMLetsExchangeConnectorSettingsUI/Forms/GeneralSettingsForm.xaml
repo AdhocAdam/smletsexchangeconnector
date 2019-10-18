@@ -20,12 +20,11 @@
                 <TextBlock Margin="10,0,0,0" x:Name="lblWFEmailAddress" TextWrapping="Wrap" Text="Workflow Email Address" />
                 <TextBox Height="25" Margin="10,0,10,10" x:Name="txtWFEmailAddress" Text="{Binding WorkflowEmailAddress, Mode=TwoWay}" Custom:Validation.RegexPattern="^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$"/>
                 <CheckBox Name="chkUseAutoDiscover" FlowDirection="LeftToRight" IsChecked="{Binding Path=IsAutodiscoverEnabled, Mode=TwoWay}" >
-                    <TextBlock FlowDirection="LeftToRight" Text="Don't Use Autodiscover" />
+                    <TextBlock FlowDirection="LeftToRight" Text="Use Autodiscover" />
                 </CheckBox>
 
                 <Label Height="25" Padding="0" Margin="0,10,0,0" x:Name="lblAutodiscoverURL" Content="Autodiscover URL"/>
-                <TextBox Height="25" Margin="10,0,10,10" x:Name="txtAutodiscoverURL" Text="{Binding ExchangeAutodiscoverURL, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkUseAutoDiscover, Path=IsChecked}" />
-            </StackPanel>
+                <TextBox Height="25" Margin="10,0,10,10" x:Name="txtAutodiscoverURL" Text="{Binding ExchangeAutodiscoverURL, FallbackValue='', Mode=TwoWay}" />            </StackPanel>
         </ScrollViewer>
     </Grid>
 </wpfwiz:WizardRegularPageBase> 
