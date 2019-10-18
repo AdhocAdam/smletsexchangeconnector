@@ -446,7 +446,7 @@ $azureCogSvcTranslateAPIKey = $smexcoSettingsMP.ACSTranslateAPIKey
 $enableSCOMIntegration = $smexcoSettingsMP.EnableSCOMIntegration
 $scomMGMTServer = "$($smexcoSettingsMP.SCOMmgmtServer)"
 $approvedMemberTypeForSCOM = "$($smexcoSettingsMP.SCOMApprovedMemberType)"
-$approvedADGroupForSCOM = Get-SCSMObject -id ($smexcoSettingsMP.SCOMApprovedGroupGUID.Guid) | select-object username -ExpandProperty username
+$approvedADGroupForSCOM = if ($smexcoSettingsMP.SCOMApprovedGroupGUID) {Get-SCSMObject -id ($smexcoSettingsMP.SCOMApprovedGroupGUID.Guid) | select-object username -ExpandProperty username}
 $approvedUsersForSCOM = "$($smexcoSettingsMP.SCOMApprovedUsers)"
 $distributedApplicationHealthKeyword = "$($smexcoSettingsMP.SCOMKeywordHealth)"
 
