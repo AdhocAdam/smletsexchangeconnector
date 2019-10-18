@@ -69,6 +69,12 @@ namespace SMLetsExchangeConnectorSettingsUI
             //ensure that there wasn't an attempt intentional/accidental to control an End User Comment's privacy as it doesn't exist
             if (CBExternalIRCommentType.SelectedItem.ToString() == "EndUserComment") { CBExternalIRCommentTypePrivate.SelectedItem = "null"; }
             if (CBExternalSRCommentType.SelectedItem.ToString() == "EndUserComment") { CBExternalSRCommentTypePrivate.SelectedItem = "null"; }
+        
+            //validate dynamic analyst assignment
+            if (cbDynamicAssignment.SelectedItem == null)
+            {
+                settings.DynamicAnalystAssignment = null;
+            }
         }
         
         //delete key clears depending on what dropdown list you are working with
