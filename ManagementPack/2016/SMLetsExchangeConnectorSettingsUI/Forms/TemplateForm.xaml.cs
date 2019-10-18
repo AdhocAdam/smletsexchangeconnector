@@ -43,7 +43,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.adminSettingWizardData = this.DataContext as TemplateForm;
 
             //set default values within the statically defined drop downs within the WPF form
-            if (settings.DefaultWorkItem == "(null)") { cbDefaultWorkItemType.SelectedIndex = 0; }
+            if (settings.DefaultWorkItem == "(null)") { cbDefaultWorkItemType.SelectedIndex = 3; }
         }
 
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
