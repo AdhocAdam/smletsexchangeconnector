@@ -482,7 +482,7 @@ $htmlSuggestionTemplatePath = "$($smexcoSettingsMP.FilePathHTMLSuggestionTemplat
     # if using this feature, DO NOT USE QUOTES.  Start with a period/dot and then add the path to the script/runbook.
     # If running in SMA OR as a scheduled task with the custom events script in the same folder, use this format: . .\smletsExchangeConnector_CustomEvents.ps1
     # If running as a scheduled task and you have stored the events script in another folder, use this format: . C:\otherFolder\smletsExchangeConnector_CustomEvents.ps1'
-$ceScripts = Invoke-Expression $smexcoSettingsMP.FilePathCustomEvents
+$ceScripts = try {Invoke-Expression $smexcoSettingsMP.FilePathCustomEvents} catch {Write-Output "Custom Events could not be loaded."}
 #endregion #### Configuration ####
 
 #region #### Process User Configs and Prep SMLets ####
