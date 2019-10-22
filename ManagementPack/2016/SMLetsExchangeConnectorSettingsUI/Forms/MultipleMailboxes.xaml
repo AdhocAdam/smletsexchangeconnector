@@ -1,0 +1,119 @@
+﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.MultipleMailboxes" 
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:sys="clr-namespace:System;assembly=mscorlib"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
+            xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
+            xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="906.667" Height="540.434"
+            xmlns:local="clr-namespace:SMLetsExchangeConnectorSettingsUI.Validation" >
+
+    <Grid Name="ConfigurationGrid" Margin="10,25,10,10">
+        <!-- header -->
+        <Label Content="Multiple Mailbox Configuration" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
+        <TextBlock Margin="10,58,10,0" VerticalAlignment="Top" Height="32" FontWeight="Light" FontSize="14" TextWrapping="Wrap">
+            <Run Text="Process multiple mailboxes as though they were one with distinct templates."/>
+            <InlineUIContainer>
+        		<TextBlock>
+                    <Hyperlink RequestNavigate="Hyperlink_RequestNavigate" NavigateUri="https://github.com/AdhocAdam/smletsexchangeconnector/wiki/Configuring-for-Multiple-Inboxes-(Email-Redirection,-not-Forwarding)">Help me configure this.</Hyperlink>
+                </TextBlock>
+        	</InlineUIContainer>
+        </TextBlock>
+        
+        <!-- configuration -->
+        <StackPanel Name="stackPanel" Orientation="Vertical" Height="400" VerticalAlignment="Top" Margin="0,95,10,0">
+            <CheckBox Name="chkMultipleMailboxConfig" FlowDirection="LeftToRight" IsChecked="{Binding Path=UseMailboxRedirection, Mode=TwoWay}" Margin="10,0,0,0" >
+                <TextBlock FlowDirection="LeftToRight" Text="Process Multiple Inboxes" Width="265.667" />
+            </CheckBox>
+            <Button Content="Add Mailbox" Width="120" Height="25" Margin="0,0,175,0" IsEnabled="{Binding IsChecked, ElementName=chkMultipleMailboxConfig}" Click="AddMailbox_Click" HorizontalAlignment="Right" />
+            <Button Content="Remove Mailbox" Width="120" Height="25" HorizontalAlignment="Right" Margin="0,-25,25,0" IsEnabled="{Binding IsChecked, ElementName=chkMultipleMailboxConfig}" Click="RemoveMailbox_Click" />
+        </StackPanel>
+
+        <!-- Mailbox configuration rows & columns -->
+        <ListView x:Name="MailboxListViewControl" Margin="10,141,10,10" IsEnabled="{Binding ElementName=chkMultipleMailboxConfig, Path=IsChecked}" >
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Email Address" Width="200">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding MailboxAddress}" Custom:Validation.RegexPattern="^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Work Item Type" Width="140">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox SelectedItem="{Binding MailboxWorkItemType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" >
+                                    <sys:String>IR</sys:String>
+                                    <sys:String>SR</sys:String>
+                                    <sys:String>CR</sys:String>
+                                    <sys:String>PR</sys:String>
+                                </ComboBox>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="IR Template" Width="200">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox x:Name="cbMMIRTemplateName" ItemsSource="{Binding Path=MailboxIRTemplates}" DisplayMemberPath="DisplayName" >
+                                    <ComboBox.SelectedItem>
+                                        <Binding Path="MailboxIRTemplate">
+                                            <Binding.ValidationRules>
+                                                <local:SelectionValidationRule ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </ComboBox.SelectedItem>
+                                </ComboBox>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="SR Template" Width="200">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox x:Name="cbMMSRTemplateName" ItemsSource="{Binding Path=MailboxSRTemplates}" DisplayMemberPath="DisplayName" >
+                                    <ComboBox.SelectedItem>
+                                        <Binding Path="MailboxSRTemplate">
+                                            <Binding.ValidationRules>
+                                                <local:SelectionValidationRule ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </ComboBox.SelectedItem>
+                                </ComboBox>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="CR Template" Width="200">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox x:Name="cbMMCRTemplateName" ItemsSource="{Binding Path=MailboxCRTemplates}" DisplayMemberPath="DisplayName" >
+                                    <ComboBox.SelectedItem>
+                                        <Binding Path="MailboxCRTemplate">
+                                            <Binding.ValidationRules>
+                                                <local:SelectionValidationRule ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </ComboBox.SelectedItem>
+                                </ComboBox>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="PR Template" Width="200">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox x:Name="cbMMPRTemplateName" ItemsSource="{Binding Path=MailboxPRTemplates}" DisplayMemberPath="DisplayName" >
+                                    <ComboBox.SelectedItem>
+                                        <Binding Path="MailboxPRTemplate">
+                                            <Binding.ValidationRules>
+                                                <local:SelectionValidationRule ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </ComboBox.SelectedItem>
+                                </ComboBox>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </Grid>
+</wpfwiz:WizardRegularPageBase> 

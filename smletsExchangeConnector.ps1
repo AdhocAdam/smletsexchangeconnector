@@ -20,6 +20,7 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 2.0.0 = #49 - Enhancement, Introduce a Settings MP
 Version: 1.6.0 = #135 = Bug, Dynamic Analyst Assignment not working
                 #140 = Feature, Language Translation via Azure Translate
                 #127 = Enhancement, Extended Support for AML returned values
@@ -128,8 +129,12 @@ Version: 1.1 = GitHub issue raised on updating work items. Per discussion was pi
 #>
 
 #region #### Configuration ####
+#retrieve the SMLets Exchange Connector MP to define configuration
+$smexcoSettingsMP = ((Get-SCSMObject -Class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings$")))
+$smexcoSettingsMPMailboxes = ((Get-SCSMObject -Class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings.AdditionalMailbox$")))
+
 #define the SCSM management server, this could be a remote name or localhost
-$scsmMGMTServer = "localhost"
+$scsmMGMTServer = "$($smexcoSettingsMP.SCSMmgmtServer)"
 #if you are running this script in SMA or Orchestrator, you may need/want to present a credential object to the management server.  Leave empty, otherwise.
 $scsmMGMTCreds = $null
 
@@ -143,12 +148,12 @@ $scsmMGMTCreds = $null
 #UseAutoDiscover = Determines whether ($true) or not ($false) to connect to Exchange using autodiscover.  If $false, provide a URL for $ExchangeEndpoint
     #ExchangeEndpoint = A URL in the format of 'https://<yourservername.domain.tld>/EWS/Exchange.asmx' such as 'https://mail.contoso.com/EWS/Exchange.asmx'
 $exchangeAuthenticationType = "windows"
-$workflowEmailAddress = ""
+$workflowEmailAddress = "$($smexcoSettingsMP.WorkflowEmailAddress)"
 $username = ""
 $password = ""
 $domain = ""
-$UseAutodiscover = $true
-$ExchangeEndpoint = ""
+$UseAutodiscover = $smexcoSettingsMP.UseAutoDiscover
+$ExchangeEndpoint = "$($smexcoSettingsMP.ExchangeAutodiscoverURL)"
 
 #defaultNewWorkItem = set to either "ir", "sr", "pr", or "cr"
 #default*RTemplate = define the displayname of the template you'll be using based on what you've set for $defaultNewWorkItem
@@ -207,39 +212,38 @@ $ExchangeEndpoint = ""
     #Comments can continue to be left as "AnalystComment" (stock connector behavior) or changed to "EndUserComment". Please be mindful modifying this setting in
     #conjuction with the above ExternalPartyCommentPrivacy*R. This can impact any custom Action Log notifiers you've configured and potentially expose/hide
     #information from one party (Assigned To/Affected User).
-$defaultNewWorkItem = "ir"
-$defaultIRTemplateName = "IR Template Name Goes Here"
-$defaultSRTemplateName = "SR Template Name Goes Here"
-$defaultPRTemplateName = "PR Template Name Goes Here"
-$defaultCRTemplateName = "CR Template Name Goes Here"
-$defaultIncidentResolutionCategory = ""
-$defaultProblemResolutionCategory = ""
-$defaultServiceRequestImplementationCategory = ""
-$checkAttachmentSettings = $false
-$minFileSizeInKB = "25"
-$createUsersNotInCMDB = $true
-$includeWholeEmail = $false
-$attachEmailToWorkItem = $false
-$voteOnBehalfOfGroups = $false
-$fromKeyword = "From"
-$UseMailboxRedirection = $false
-$Mailboxes = @{
-    "MyOtherMailbox@company.com" = @{"DefaultWiType"="SR";"IRTemplate"="My IR Template";"SRTemplate"="My SR Template";"PRTemplate"="My PR Template";"CRTemplate"="My CR Template"};
-}
-$CreateNewWorkItemWhenClosed = $false
-$takeRequiresGroupMembership = $false
-$crSupportGroupEnumGUID = ""
-$maSupportGroupEnumGUID = ""
-$redactPiiFromMessage = $false
-$changeIncidentStatusOnReply = $false
-$changeIncidentStatusOnReplyAffectedUser = "IncidentStatusEnum.Active$"
-$changeIncidentStatusOnReplyAssignedTo = "IncidentStatusEnum.Active.Pending$"
-$changeIncidentStatusOnReplyRelatedUser = "IncidentStatusEnum.Active$"
-$DynamicWorkItemAssignment = ""
-$ExternalPartyCommentPrivacyIR = $null
-$ExternalPartyCommentPrivacySR = $null
-$ExternalPartyCommentTypeIR = "AnalystComment"
-$ExternalPartyCommentTypeSR = "AnalystComment"
+$defaultNewWorkItem = "$($smexcoSettingsMP.DefaultWorkItemType)"
+$defaultIRTemplateGuid = "$($smexcoSettingsMP.DefaultIncidentTemplateGUID.Guid)"
+$defaultSRTemplateGuid = "$($smexcoSettingsMP.DefaultServiceRequestTemplateGUID.Guid)"
+$defaultPRTemplateGuid = "$($smexcoSettingsMP.DefaultProblemTemplateGUID.Guid)"
+$defaultCRTemplateGuid = "$($smexcoSettingsMP.DefaultChangeRequestTemplateGUID.Guid)"
+$defaultIncidentResolutionCategory = "$($smexcoSettingsMP.IncidentResolutionCategory.Name + "$")"
+$defaultProblemResolutionCategory = "$($smexcoSettingsMP.ProblemResolutionCategory.Name + "$")"
+$defaultServiceRequestImplementationCategory = "$($smexcoSettingsMP.ServiceRequestImplementationCategory.Name + "$")"
+$checkAttachmentSettings = $smexcoSettingsMP.EnforceFileAttachmentSettings
+$minFileSizeInKB = "$($smexcoSettingsMP.MinimumFileAttachmentSize)"
+$createUsersNotInCMDB = $smexcoSettingsMP.CreateUsersNotInCMDB
+$includeWholeEmail = $smexcoSettingsMP.IncludeWholeEmail
+$attachEmailToWorkItem = $smexcoSettingsMP.AttachEmailToWorkItem
+$voteOnBehalfOfGroups = $smexcoSettingsMP.VoteOnBehalfOfADGroup
+$fromKeyword = "$($smexcoSettingsMP.SCSMKeywordFrom)"
+$UseMailboxRedirection = $smexcoSettingsMP.UseMailboxRedirection
+if ($smexcoSettingsMPMailboxes) {$Mailboxes += $smexcoSettingsMPMailboxes | foreach-object {@{$_.MailboxAddress = @{"DefaultWiType"="$($_.MailboxTemplateWorkItemType)";"IRTemplate"="$($_.MailboxIRTemplateGUID)";"SRTemplate"="$($_.MailboxSRTemplateGUID)";"PRTemplate"="$($_.MailboxPRTemplateGUID)";"CRTemplate"="$($_.MailboxCRTemplateGUID)"};}}}
+$CreateNewWorkItemWhenClosed = $smexcoSettingsMP.CreateNewWorkItemIfWorkItemClosed
+$takeRequiresGroupMembership = $smexcoSettingsMP.TakeRequiresSupportGroupMembership
+$crSupportGroupEnumGUID = "$($smexcoSettingsMP.CRSupportGroupGUID.Guid)"
+$maSupportGroupEnumGUID = "$($smexcoSettingsMP.MASupportGroupGUID.Guid)"
+$prSupportGroupEnumGUID = "$($smexcoSettingsMP.PRSupportGroupGUID.Guid)"
+$redactPiiFromMessage = $smexcoSettingsMP.RemovePII
+$changeIncidentStatusOnReply = $smexcoSettingsMP.ChangeIncidentStatusOnReply
+$changeIncidentStatusOnReplyAffectedUser = "$($smexcoSettingsMP.IncidentStatusOnAffectedUserReply.Name + "$")"
+$changeIncidentStatusOnReplyAssignedTo = "$($smexcoSettingsMP.IncidentStatusOnAssignedToReply.Name + "$")"
+$changeIncidentStatusOnReplyRelatedUser = "$($smexcoSettingsMP.IncidentStatusOnRelatedUserReply.Name + "$")"
+$DynamicWorkItemAssignment = $smexcoSettingsMP.DynamicAnalystAssignmentType
+$ExternalPartyCommentPrivacyIR = Get-Variable -Name $smexcoSettingsMP.ExternalPartyCommentPrivacyIR -ValueOnly
+$ExternalPartyCommentPrivacySR = Get-Variable -Name $smexcoSettingsMP.ExternalPartyCommentPrivacySR -ValueOnly
+$ExternalPartyCommentTypeIR = "$($smexcoSettingsMP.ExternalPartyCommentTypeIR)"
+$ExternalPartyCommentTypeSR = "$($smexcoSettingsMP.ExternalPartyCommentTypeSR)"
 
 #processCalendarAppointment = If $true, scheduling appointments with the Workflow Inbox where a [WorkItemID] is in the Subject will
     #set the Scheduled Start and End Dates on the Work Item per the Start/End Times of the calendar appointment
@@ -252,11 +256,11 @@ $ExternalPartyCommentTypeSR = "AnalystComment"
     #of either "user" or "machine"
 #mergeReplies = If $true, emails that are Replies (signified by RE: in the subject) will attempt to be matched to a Work Item in SCSM by their
     #Exchange Conversation ID and will also override $attachEmailToWorkItem to be $true if set to $false
-$processCalendarAppointment = $false
-$processDigitallySignedMessages = $false
-$processEncryptedMessages = $false
-$certStore = "user"
-$mergeReplies = $false
+$processCalendarAppointment = $smexcoSettingsMP.ProcessCalendarAppointments
+$processDigitallySignedMessages = $smexcoSettingsMP.ProcessDigitallySignedMessages
+$processEncryptedMessages = $smexcoSettingsMP.ProcessDigitallyEncryptedMessages
+$certStore = "$($smexcoSettingsMP.CertificateStore)"
+$mergeReplies = $smexcoSettingsMP.MergeReplies
 
 #optional, enable integration with Cireson Knowledge Base/Service Catalog
 #this uses the now depricated Cireson KB API Search by Text, it works as of v7.x but should be noted it could be entirely removed in future portals
@@ -272,12 +276,12 @@ $mergeReplies = $false
 #$ciresonPortalWindowsAuth = how invoke-restmethod should attempt to authenticate to your portal server.
     #Leave true if your portal uses Windows Auth, change to False for Forms authentication.
     #If using forms, you'll need to set the ciresonPortalUsername and Password variables. For ease, you could set this equal to the username/password defined above
-$searchCiresonHTMLKB = $false
-$numberOfWordsToMatchFromEmailToRO = 1
-$numberOfWordsToMatchFromEmailToKA = 1
-$searchAvailableCiresonPortalOfferings = $false
-$enableSetFirstResponseDateOnSuggestions = $false
-$ciresonPortalServer = "https://portalserver.domain.tld/"
+$searchCiresonHTMLKB = $smexcoSettingsMP.CiresonSearchKnowledgeBase
+$numberOfWordsToMatchFromEmailToRO = $smexcoSettingsMP.NumberOfWordsToMatchFromEmailToCiresonRequestOffering
+$numberOfWordsToMatchFromEmailToKA = $smexcoSettingsMP.NumberOfWordsToMatchFromEmailToCiresonKnowledgeArticle
+$searchAvailableCiresonPortalOfferings = $smexcoSettingsMP.CiresonSearchRequestOfferings
+$enableSetFirstResponseDateOnSuggestions = $smexcoSettingsMP.EnableSetFirstResponseDateOnSuggestions
+$ciresonPortalServer = "$($smexcoSettingsMP.CiresonPortalURL)"
 $ciresonPortalWindowsAuth = $true
 $ciresonPortalUsername = ""
 $ciresonPortalPassword = ""
@@ -293,17 +297,17 @@ $ciresonPortalPassword = ""
 #priorityExpirationInHours: Since both SCSM and the Cireson require an announcement expiration date, when announcements are created
     #this is the number of hours added to the current time to set the announcement to expire. If you send Calendar Meetings which by definition
     #have a start and end time, these expirationInHours style variables are ignored
-$enableSCSMAnnouncements = $false
-$enableCiresonPortalAnnouncements = $false
-$announcementKeyword = "announcement"
-$approvedADGroupForSCSMAnnouncements = "my custom AD SCSM Authorized Announcers Users group"
-$approvedUsersForSCSMAnnouncements = "myfirst.email@domain.com", "mysecond.address@domain.com"
-$approvedMemberTypeForSCSMAnnouncer = "group"
-$lowAnnouncemnentPriorityKeyword = "low"
-$criticalAnnouncemnentPriorityKeyword = "high"
-$lowAnnouncemnentExpirationInHours = 7
-$normalAnnouncemnentExpirationInHours = 3
-$criticalAnnouncemnentExpirationInHours = 1
+$enableSCSMAnnouncements = $smexcoSettingsMP.EnableSCSMAnnouncements
+$enableCiresonPortalAnnouncements = $smexcoSettingsMP.EnableCiresonSCSMAnnouncements
+$announcementKeyword = $smexcoSettingsMP.SCSMKeywordAnnouncement
+$approvedADGroupForSCSMAnnouncements = "$($smexcoSettingsMP.SCSMApprovedAnnouncementGroupDisplayName)"
+$approvedUsersForSCSMAnnouncements = "$($smexcoSettingsMP.SCSMApprovedAnnouncementUsers)"
+$approvedMemberTypeForSCSMAnnouncer = "$($smexcoSettingsMP.SCSMAnnouncementApprovedMemberType)"
+$lowAnnouncemnentPriorityKeyword = $smexcoSettingsMP.AnnouncementKeywordLow
+$criticalAnnouncemnentPriorityKeyword = $smexcoSettingsMP.AnnouncementKeywordHigh
+$lowAnnouncemnentExpirationInHours = $smexcoSettingsMP.AnnouncementPriorityLowExpirationInHours
+$normalAnnouncemnentExpirationInHours = $smexcoSettingsMP.AnnouncementPriorityNormalExpirationInHours
+$criticalAnnouncemnentExpirationInHours = $smexcoSettingsMP.AnnouncementPriorityCriticalExpirationInHours
 
 <#ARTIFICIAL INTELLIGENCE OPTION 1, enable AI through Azure Cognitive Services
 #PLEASE NOTE: HIGHLY EXPERIMENTAL!
@@ -336,21 +340,22 @@ cost to your organization before enabling this feature.#>
 #enableAzureCognitiveServicesPriorityScoring = If enabled, the Sentiment Score will be used
     #to set the Impact & Urgency and/or Urgency $ Priority on Incidents or Service Requests. Bounds can be edited within
     #the Get-ACSWorkItemPriority function. This feature can also be used even when using AI Option #3 described below.
-#acsSentimentScoreClassExtensionName = You can choose to write the returned Sentiment Score into the New Work Item.
+#acsSentimentScore*RClassExtensionName = You can choose to write the returned Sentiment Score into the New Work Item.
     #This requires you to have extended the Incident AND Service Request classes with a custom Decimal value and then
     #enter the name of that property here.
 #azureRegion = where Cognitive Services is deployed as seen in it's respective settings pane,
     #i.e. ukwest, eastus2, westus, northcentralus
 #azureCogSvcTextAnalyticsAPIKey = API key for your cognitive services text analytics deployment. This is found in the settings pane for Cognitive Services in https://portal.azure.com
 #minPercentToCreateServiceRequest = The minimum sentiment rating required to create a Service Request, a number less than this will create an Incident
-$enableAzureCognitiveServicesForNewWI = $false
-$minPercentToCreateServiceRequest = "95"
-$enableAzureCognitiveServicesForKA = $false
-$enableAzureCognitiveServicesForRO = $false
-$enableAzureCognitiveServicesPriorityScoring = $false
-$acsSentimentScoreClassExtensionName = ""
-$azureRegion = ""
-$azureCogSvcTextAnalyticsAPIKey = ""
+$enableAzureCognitiveServicesForNewWI = $smexcoSettingsMP.EnableACSForNewWorkItem
+$minPercentToCreateServiceRequest = "$($smexcoSettingsMP.MinACSSentimentToCreateSR)"
+$enableAzureCognitiveServicesForKA = $smexcoSettingsMP.EnableACSForCiresonKASuggestion
+$enableAzureCognitiveServicesForRO = $smexcoSettingsMP.EnableACSForCiresonROSuggestion
+$enableAzureCognitiveServicesPriorityScoring = $smexcoSettingsMP.EnableACSPriorityScoring
+$acsSentimentScoreIRClassExtensionName = "$($smexcoSettingsMP.ACSSentimentScoreIncidentClassExtensionGUID.Guid)"
+$acsSentimentScoreSRClassExtensionName = "$($smexcoSettingsMP.ACSSentimentScoreServiceRequestClassExtensionGUID.Guid)"
+$azureRegion = "$($smexcoSettingsMP.ACSTextAnalyticsRegion)"
+$azureCogSvcTextAnalyticsAPIKey = "$($smexcoSettingsMP.ACSTextAnalyticsAPIKey)"
 
 #ARTIFICIAL INTELLIGENCE OPTION 2, enable AI through pre-defined keywords
 #If Azure Cognitive Services isn't an option for you can alternatively enable this more controlled mechanism
@@ -365,9 +370,9 @@ $azureCogSvcTextAnalyticsAPIKey = ""
     #     $workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjammed\b|\bjamming\b|broke|froze|issue|unable"
     #     "i have a problem with my computer" -match $workItemTypeOverrideKeywords
 #workItemOverrideType = The type of work item to create if key words are found in the message.
-$enableKeywordMatchForNewWI = $false
-$workItemTypeOverrideKeywords = "(?<!in )error|problem|fail|crash|\bjam\b|\bjammed\b|\bjamming\b|broke|froze|issue|unable"
-$workItemOverrideType = "ir"
+$enableKeywordMatchForNewWI = "$($smexcoSettingsMP.EnableKeywordMatchForNewWorkItem)"
+$workItemTypeOverrideKeywords = "$($smexcoSettingsMP.KeywordMatchRegexForNewWorkItem)"
+$workItemOverrideType = "$($smexcoSettingsMP.KeywordMatchWorkItemType)"
 
 #ARTIFICIAL INTELLIGENCE OPTION 3, enable AI through Azure Machine Learning
 #PLEASE NOTE: HIGHLY EXPERIMENTAL!
@@ -390,24 +395,30 @@ $workItemOverrideType = "ir"
 #amlWorkItemSupportGroupMinPercentConfidence = The minimum percentage AML must return in order set the Support Group on the New Work Item
 #aml*ClassificationScoreClassExtensionName = Optionally write the returned percent confidence value to a decimal class extension on Incidents or Service Requests
 #aml*ClassificationEnumPredictionExtName = Optionally write the returned enum value to an enum class extension bound to Classification/Area on Incidents or Service Requests
-$enableAzureMachineLearning = $false
-$amlAPIKey = ""
-$amlURL = ""
-$amlWorkItemTypeMinPercentConfidence = "95"
-$amlWorkItemClassificationMinPercentConfidence = "95"
-$amlWorkItemSupportGroupMinPercentConfidence = "95"
-$amlWITypeIncidentStringClassExtensionName = ""
-$amlWITypeServiceRequestStringClassExtensionName = ""
-$amlWITypeIncidentScoreClassExtensionName = ""
-$amlWITypeServiceRequestScoreClassExtensionName = ""
-$amlIncidentClassificationScoreClassExtensionName = ""
-$amlIncidentClassificationEnumPredictionExtName = ""
-$amlIncidentTierQueueScoreClassExtensionName = ""
-$amlIncidentTierQueueEnumPredictionExtName = ""
-$amlServiceRequestAreaScoreClassExtensionName = ""
-$amlServiceRequestAreaEnumPredictionExtName = ""
-$amlServiceRequestSupportGroupScoreClassExtensionName = ""
-$amlServiceRequestSupportGroupEnumPredictionExtName = ""
+$enableAzureMachineLearning = $smexcoSettingsMP.EnableAML
+$amlAPIKey = "$($smexcoSettingsMP.AMLAPIKey)"
+$amlURL = "$($smexcoSettingsMP.AMLurl)"
+#minimum confidence scores before AML engages
+$amlWorkItemTypeMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemType)"
+$amlWorkItemClassificationMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemClassification)"
+$amlWorkItemSupportGroupMinPercentConfidence = "$($smexcoSettingsMP.AMLMinConfidenceWorkItemSupportGroup)"
+#class extension, work item type prediction (str) and work item type prediction score (dec)
+$amlWITypeIncidentStringClassExtensionName = "$($smexcoSettingsMP.AMLIRWorkItemTypePredictionClassExtensionGUID)"
+$amlWITypeIncidentScoreClassExtensionName = "$($smexcoSettingsMP.AMLIncidentConfidenceClassExtensionGUID)"
+$amlWITypeServiceRequestStringClassExtensionName = "$($smexcoSettingsMP.AMLSRWorkItemTypePredictionClassExtensionGUID)"
+$amlWITypeServiceRequestScoreClassExtensionName = "$($smexcoSettingsMP.AMLServiceRequestConfidenceClassExtensionGUID)"
+#class extension, incident classification score (dec) and classification prediction (enum)
+$amlIncidentClassificationScoreClassExtensionName = "$($smexcoSettingsMP.AMLIncidentClassificationConfidenceClassExtensionGUID)"
+$amlIncidentClassificationEnumPredictionExtName = "$($smexcoSettingsMP.AMLIncidentClassificationPredictionClassExtensionGUID)"
+#class extension, incident tier queue score (dec) and tier queue prediction (enum)
+$amlIncidentTierQueueScoreClassExtensionName = "$($smexcoSettingsMP.AMLIncidentSupportGroupConfidenceClassExtensionGUID)"
+$amlIncidentTierQueueEnumPredictionExtName = "$($smexcoSettingsMP.AMLIncidentSupportGroupPredictionClassExtensionGUID)"
+#class extension, service request area score (dec) and area prediction (enum)
+$amlServiceRequestAreaScoreClassExtensionName = "$($smexcoSettingsMP.AMLServiceRequestClassificationConfidenceClassExtensionGUID)"
+$amlServiceRequestAreaEnumPredictionExtName = "$($smexcoSettingsMP.AMLServiceRequestClassificationPredictionClassExtensionGUID)"
+#class extension, service request support group score (dec) and support group prediction (enum)
+$amlServiceRequestSupportGroupScoreClassExtensionName = "$($smexcoSettingsMP.AMLServiceRequestSupportGroupConfidenceClassExtensionGUID)"
+$amlServiceRequestSupportGroupEnumPredictionExtName = "$($smexcoSettingsMP.AMLServiceRequestSupportGroupPredictionClassExtensionGUID)"
 
 #optional, enable Language Translation through Azure Cognitive Services
 #Use Translation services from Azure in order to create New Work Items that feature a translated Description as the First Comment in the
@@ -418,9 +429,9 @@ $amlServiceRequestSupportGroupEnumPredictionExtName = ""
 #https://docs.microsoft.com/en-us/azure/cognitive-services/translator/language-support
 #pricing details can be found here: https://azure.microsoft.com/en-ca/pricing/details/cognitive-services/translator-text-api/
 #azureCogSvcTranslateAPIKey = The API key for your deployed Azure Translation service
-$enableAzureTranslateForNewWI = $false
-$defaultAzureTranslateLanguage = "en"
-$azureCogSvcTranslateAPIKey = ""
+$enableAzureTranslateForNewWI = $smexcoSettingsMP.EnableACSTranslate
+$defaultAzureTranslateLanguage = $smexcoSettingsMP.ACSTranslateDefaultLanguageCode
+$azureCogSvcTranslateAPIKey = $smexcoSettingsMP.ACSTranslateAPIKey
 
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
@@ -433,34 +444,34 @@ $azureCogSvcTranslateAPIKey = ""
 #approvedUsersForSCOM = if approvedUsersForSCOM = users, set this to a comma seperated list of email addresses that are allowed to make SCOM email requests
     #this approach allows you to control through this script
 #distributedApplicationHealthKeyword = the keyword to use in the subject for the connector to request DA status from SCOM
-$enableSCOMIntegration = $false
-$scomMGMTServer = ""
-$approvedMemberTypeForSCOM = "group"
-$approvedADGroupForSCOM = "my custom AD SCOM Authorized Users group"
-$approvedUsersForSCOM = "myfirst.email@domain.com", "mysecond.address@domain.com"
-$distributedApplicationHealthKeyword = "health"
+$enableSCOMIntegration = $smexcoSettingsMP.EnableSCOMIntegration
+$scomMGMTServer = "$($smexcoSettingsMP.SCOMmgmtServer)"
+$approvedMemberTypeForSCOM = "$($smexcoSettingsMP.SCOMApprovedMemberType)"
+$approvedADGroupForSCOM = if ($smexcoSettingsMP.SCOMApprovedGroupGUID) {Get-SCSMObject -id ($smexcoSettingsMP.SCOMApprovedGroupGUID.Guid) | select-object username -ExpandProperty username}
+$approvedUsersForSCOM = "$($smexcoSettingsMP.SCOMApprovedUsers)"
+$distributedApplicationHealthKeyword = "$($smexcoSettingsMP.SCOMKeywordHealth)"
 
 #define SCSM Work Item keywords to be used
-$acknowledgedKeyword = "acknowledge"
-$reactivateKeyword = "reactivate"
-$resolvedKeyword = "resolved"
-$closedKeyword = "closed"
-$holdKeyword = "hold"
-$cancelledKeyword = "cancelled"
-$takeKeyword = "take"
-$completedKeyword = "completed"
-$skipKeyword = "skipped"
-$approvedKeyword = "approved"
-$rejectedKeyword = "rejected"
-$privateCommentKeyword = "private"
+$acknowledgedKeyword = "$($smexcoSettingsMP.SCSMKeywordAcknowledge)"
+$reactivateKeyword = "$($smexcoSettingsMP.SCSMKeywordReactivate)"
+$resolvedKeyword = "$($smexcoSettingsMP.SCSMKeywordResolved)"
+$closedKeyword = "$($smexcoSettingsMP.SCSMKeywordClosed)"
+$holdKeyword = "$($smexcoSettingsMP.SCSMKeywordHold)"
+$cancelledKeyword = "$($smexcoSettingsMP.SCSMKeywordCancelled)"
+$takeKeyword = "$($smexcoSettingsMP.SCSMKeywordTake)"
+$completedKeyword = "$($smexcoSettingsMP.SCSMKeywordCompleted)"
+$skipKeyword = "$($smexcoSettingsMP.SCSMKeywordSkipped)"
+$approvedKeyword = "$($smexcoSettingsMP.SCSMKeywordApprove)"
+$rejectedKeyword = "$($smexcoSettingsMP.SCSMKeywordReject)"
+$privateCommentKeyword = "$($smexcoSettingsMP.SCSMKeywordPrivate)"
 
 #define the path to the Exchange Web Services API and MimeKit
 #the PII regex file and HTML Suggestion Template paths will only be leveraged if these features are enabled above.
 #$htmlSuggestionTemplatePath must end with a "\"
-$exchangeEWSAPIPath = "C:\Program Files\Microsoft\Exchange\Web Services\1.2\Microsoft.Exchange.WebServices.dll"
-$mimeKitDLLPath = "C:\smletsExchangeConnector\mimekit.dll"
-$piiRegexPath = "C:\smletsExchangeConnector\pii_regex.txt"
-$htmlSuggestionTemplatePath = "c:\smletsexchangeconnector\htmlEmailTemplates\"
+$exchangeEWSAPIPath = "$($smexcoSettingsMP.FilePathEWSDLL)"
+$mimeKitDLLPath = "$($smexcoSettingsMP.FilePathMimeKitDLL)"
+$piiRegexPath = "$($smexcoSettingsMP.FilePathPIIRegex)"
+$htmlSuggestionTemplatePath = "$($smexcoSettingsMP.FilePathHTMLSuggestionTemplates)"
 
 #enable logging per standard Exchange Connector registry keys
 #valid options on that registry key are 1 to 7 where 7 is the most verbose
@@ -472,7 +483,7 @@ $htmlSuggestionTemplatePath = "c:\smletsexchangeconnector\htmlEmailTemplates\"
     # if using this feature, DO NOT USE QUOTES.  Start with a period/dot and then add the path to the script/runbook.
     # If running in SMA OR as a scheduled task with the custom events script in the same folder, use this format: . .\smletsExchangeConnector_CustomEvents.ps1
     # If running as a scheduled task and you have stored the events script in another folder, use this format: . C:\otherFolder\smletsExchangeConnector_CustomEvents.ps1'
-$ceScripts = . .\smletsExchangeConnector_CustomEvents.ps1
+$ceScripts =  if($smexcoSettingsMP.FilePathCustomEvents.EndsWith(".ps1")) { Invoke-Expression $smexcoSettingsMP.FilePathCustomEvents}
 #endregion #### Configuration ####
 
 #region #### Process User Configs and Prep SMLets ####
@@ -500,13 +511,13 @@ else {
 
 # Set default templates and mailbox settings
 if ($UseMailboxRedirection -eq $true) {
-    $Mailboxes.add("$($workflowEmailAddress)", @{"DefaultWiType"=$defaultNewWorkItem;"IRTemplate"=$DefaultIRTemplateName;"SRTemplate"=$DefaultSRTemplateName;"PRTemplate"=$DefaultPRTemplateName;"CRTemplate"=$DefaultCRTemplateName})
+    $Mailboxes.add("$($workflowEmailAddress)", @{"DefaultWiType"=$defaultNewWorkItem;"IRTemplate"=$DefaultIRTemplateGuid;"SRTemplate"=$DefaultSRTemplateGuid;"PRTemplate"=$DefaultPRTemplateGuid;"CRTemplate"=$DefaultCRTemplateGuid})
 }
 else {
-    $defaultIRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultIRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultIRTemplateName"}
-    $defaultSRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultSRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultSRTemplateName"}
-    $defaultPRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultPRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultPRTemplateName"}
-    $defaultCRTemplate = Get-SCSMObjectTemplate -DisplayName $DefaultCRTemplateName @scsmMGMTParams | where-object {$_.displayname -eq "$DefaultCRTemplateName"}
+    $defaultIRTemplate = Get-SCSMObjectTemplate -Id $DefaultIRTemplateGuid @scsmMGMTParams
+    $defaultSRTemplate = Get-SCSMObjectTemplate -Id $DefaultSRTemplateGuid @scsmMGMTParams
+    $defaultPRTemplate = Get-SCSMObjectTemplate -Id $DefaultPRTemplateGuid @scsmMGMTParams
+    $defaultCRTemplate = Get-SCSMObjectTemplate -Id $DefaultCRTemplateGuid @scsmMGMTParams
 }
 #endregion
 
@@ -556,7 +567,7 @@ $crTypeProjection = Get-SCSMTypeProjection -Name "system.workitem.changerequestp
 
 $userHasPrefProjection = Get-SCSMTypeProjection -name "System.User.Preferences.Projection$" @scsmMGMTParams
 
-# Retrieve Support Group Class Extensions on CR/MA if defined
+# Retrieve Class Extensions on IR/SR/CR/MA if defined
 if ($maSupportGroupEnumGUID)
 {
     $maSupportGroupPropertyName = ($maClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.EnumType -like "*$maSupportGroupEnumGUID*")}).Name
@@ -564,6 +575,74 @@ if ($maSupportGroupEnumGUID)
 if ($crSupportGroupEnumGUID)
 {
     $crSupportGroupPropertyName = ($crClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.EnumType -like "*$crSupportGroupEnumGUID*")}).Name
+}
+if ($prSupportGroupEnumGUID)
+{
+    $prSupportGroupPropertyName = ($prClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.EnumType -like "*$prSupportGroupEnumGUID*")}).Name
+}
+#azure cognitive services
+if ($acsSentimentScoreIRClassExtensionName)
+{
+    $acsSentimentScoreIRClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$acsSentimentScoreIRClassExtensionName*")}).Name
+}
+if ($acsSentimentScoreSRClassExtensionName)
+{
+    $acsSentimentScoreSRClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$acsSentimentScoreSRClassExtensionName*")}).Name
+}
+#azure machine learning
+#azure machine learning, work item type confidence % (IR/SR)
+if ($amlWITypeIncidentScoreClassExtensionName)
+{
+    $amlWITypeIncidentScoreClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWITypeIncidentScoreClassExtensionName*")}).Name
+}
+if ($amlWITypeServiceRequestScoreClassExtensionName)
+{
+    $amlWITypeServiceRequestScoreClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlWITypeServiceRequestScoreClassExtensionName*")}).Name
+}
+#azure machine learning, work item type prediction enum (IR/SR)
+if ($amlWITypeIncidentStringClassExtensionName)
+{
+    $amlWITypeIncidentStringClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "String") -and ($_.Id -like "*$amlWITypeIncidentStringClassExtensionName*")}).Name
+}
+if ($amlWITypeServiceRequestStringClassExtensionName)
+{
+    $amlWITypeServiceRequestStringClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "String") -and ($_.Id -like "*$amlWITypeServiceRequestStringClassExtensionName*")}).Name
+}
+#azure machine learning, classification confidence % (Classification/Area)
+if ($amlIncidentClassificationScoreClassExtensionName)
+{
+    $amlIncidentClassificationScoreClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlIncidentClassificationScoreClassExtensionName*")}).Name
+}
+if ($amlServiceRequestAreaScoreClassExtensionName)
+{
+    $amlServiceRequestAreaScoreClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlServiceRequestAreaScoreClassExtensionName*")}).Name
+}
+#azure machine learning, classification prediction enum (Classification/Area)
+if ($amlIncidentClassificationEnumPredictionExtName)
+{
+    $amlIncidentClassificationEnumPredictionExtName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.Id -like "*$amlIncidentClassificationEnumPredictionExtName*")}).Name
+}
+if ($amlServiceRequestAreaEnumPredictionExtName)
+{
+    $amlServiceRequestAreaEnumPredictionExtName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.Id -like "*$amlServiceRequestAreaEnumPredictionExtName*")}).Name
+}
+#azure machine learning, support group confidence % (Tier Queue/Support Group)
+if ($amlIncidentTierQueueScoreClassExtensionName)
+{
+    $amlIncidentTierQueueScoreClassExtensionName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlIncidentTierQueueScoreClassExtensionName*")}).Name
+}
+if ($amlServiceRequestSupportGroupScoreClassExtensionName)
+{
+    $amlServiceRequestSupportGroupScoreClassExtensionName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Decimal") -and ($_.Id -like "*$amlServiceRequestSupportGroupScoreClassExtensionName*")}).Name
+}
+#azure machine learning, support group prediction enum (Tier Queue/Support Group)
+if ($amlIncidentTierQueueEnumPredictionExtName)
+{
+    $amlIncidentTierQueueEnumPredictionExtName = ($irClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.Id -like "*$amlIncidentTierQueueEnumPredictionExtName*")}).Name
+}
+if ($amlServiceRequestSupportGroupEnumPredictionExtName)
+{
+    $amlServiceRequestSupportGroupEnumPredictionExtName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.Id -like "*$amlServiceRequestSupportGroupEnumPredictionExtName*")}).Name
 }
 #endregion
 
@@ -721,7 +800,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     {
         "ir" {
                     if ($UseMailboxRedirection -eq $true -And $TemplatesForThisMessage.Count -gt 0) {
-                        $IRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["IRTemplate"]) @scsmMGMTParams
+                        $IRTemplate = Get-ScsmObjectTemplate -Id $($TemplatesForThisMessage["IRTemplate"]) @scsmMGMTParams
                     }
                     else {
                         $IRTemplate = $defaultIRTemplate
@@ -795,9 +874,9 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     }
 
                     #write the sentiment score into the custom Work Item extension
-                    if ($acsSentimentScoreClassExtensionName)
+                    if ($acsSentimentScoreIRClassExtensionName)
                     {
-                        Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreClassExtensionName -value $sentimentScore @scsmMGMTParams
+                        Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreIRClassExtensionName -value $sentimentScore @scsmMGMTParams
                     }
 
                     #update the Support Group and Classification if Azure Machine Learning is being used
@@ -835,22 +914,20 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
                     $ciresonSuggestionURLs = Get-CiresonSuggestionURL -SuggestKA:$searchCiresonHTMLKB -AzureKA:$enableAzureCognitiveServicesForKA -SuggestRO:$searchAvailableCiresonPortalOfferings -AzureRO:$enableAzureCognitiveServicesForRO -WorkItem $newWorkItem -AffectedUser $affectedUser
-                    if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
+                    if ($ciresonSuggestionURLs -ne $null)
                     {
-                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
-                    }
-                    elseif ($ciresonSuggestionURLs[0])
-                    {
-                        Send-CiresonSuggestionEmail -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
-                    }
-                    elseif ($ciresonSuggestionURLs[1])
-                    {
-                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -Workitem $newWorkItem -AffectedUserEmailAddress $from
-                    }
-                    else
-                    {
-                        #both options are set to $false
-                        #don't suggest anything to the Affected User based on their recently created Default Work Item
+                        if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
+                        {
+                            Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
+                        }
+                        elseif ($ciresonSuggestionURLs[0])
+                        {
+                            Send-CiresonSuggestionEmail -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
+                        }
+                        elseif ($ciresonSuggestionURLs[1])
+                        {
+                            Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -Workitem $newWorkItem -AffectedUserEmailAddress $from
+                        }
                     }
 
                     # Custom Event Handler
@@ -859,7 +936,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                 }
         "sr" {
                     if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage.Count -gt 0) {
-                        $SRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["SRTemplate"]) @scsmMGMTParams
+                        $SRTemplate = Get-ScsmObjectTemplate -Id $($TemplatesForThisMessage["SRTemplate"]) @scsmMGMTParams
                     }
                     else {
                         $SRTemplate = $defaultSRTemplate
@@ -933,9 +1010,9 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     }
 
                     #write the sentiment score into the custom Work Item extension
-                    if ($acsSentimentScoreClassExtensionName)
+                    if ($acsSentimentScoreSRClassExtensionName)
                     {
-                        Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreClassExtensionName -value $sentimentScore @scsmMGMTParams
+                        Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreSRClassExtensionName -value $sentimentScore @scsmMGMTParams
                     }
 
                     #update the Support Group and Classification if Azure Machine Learning is being used
@@ -974,22 +1051,20 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
                     $ciresonSuggestionURLs = Get-CiresonSuggestionURL -SuggestKA:$searchCiresonHTMLKB -AzureKA:$enableAzureCognitiveServicesForKA -SuggestRO:$searchAvailableCiresonPortalOfferings -AzureRO:$enableAzureCognitiveServicesForRO -WorkItem $newWorkItem -AffectedUser $affectedUser
-                    if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
+                    if ($ciresonSuggestionURLs -ne $null)
                     {
-                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
-                    }
-                    elseif ($ciresonSuggestionURLs[0])
-                    {
-                        Send-CiresonSuggestionEmail -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
-                    }
-                    elseif ($ciresonSuggestionURLs[1])
-                    {
-                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -Workitem $newWorkItem -AffectedUserEmailAddress $from
-                    }
-                    else
-                    {
-                        #both options are set to $false
-                        #don't suggest anything to the Affected User based on their recently created Default Work Item
+                        if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
+                        {
+                            Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
+                        }
+                        elseif ($ciresonSuggestionURLs[0])
+                        {
+                            Send-CiresonSuggestionEmail -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
+                        }
+                        elseif ($ciresonSuggestionURLs[1])
+                        {
+                            Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -Workitem $newWorkItem -AffectedUserEmailAddress $from
+                        }
                     }
                     
                     # Custom Event Handler
@@ -997,7 +1072,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                 }
         "pr" {
                     if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage.Count -gt 0) {
-                        $PRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["PRTemplate"]) @scsmMGMTParams
+                        $PRTemplate = Get-ScsmObjectTemplate -Id $($TemplatesForThisMessage["PRTemplate"]) @scsmMGMTParams
                     }
                     else {
                         $PRTemplate = $defaultPRTemplate
@@ -1026,7 +1101,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                 }
         "cr" {
                     if ($UseMailboxRedirection -eq $true -and $TemplatesForThisMessage.Count -gt 0) {
-                        $CRTemplate = Get-ScsmObjectTemplate -DisplayName $($TemplatesForThisMessage["CRTemplate"]) @scsmMGMTParams
+                        $CRTemplate = Get-ScsmObjectTemplate -Id $($TemplatesForThisMessage["CRTemplate"]) @scsmMGMTParams
                     }
                     else {
                         $CRTemplate = $defaultCRTemplate
@@ -1367,10 +1442,17 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             {
                                 "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ResolvedDate" = (Get-Date).ToUniversalTime(); "Status" = "ProblemStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Resolved" -IsPrivate $false; if ($defaultProblemResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property Resolution -Value $defaultProblemResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}
                                 "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ClosedDate" = (Get-Date).ToUniversalTime(); "Status" = "ProblemStatusEnum.Closed$"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}
-                                "\[$takeKeyword]" {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;
-                                    Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false;
-                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
-                                    if ($ceScripts){ Invoke-AfterTake }}
+                                "\[$takeKeyword]" { $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.$prSupportGroupPropertyName.Id
+                                    if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
+                                        New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;
+                                        Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false;
+                                        if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                        if ($ceScripts){ Invoke-AfterTake }
+                                    }
+                                    else {
+                                        #TODO: Send an email to let them know it failed?
+                                    }
+                                }
                                 "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "ProblemStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Active$" @scsmMGMTParams}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}
                                 {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false}
                                 default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false}
@@ -1381,10 +1463,17 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             {
                                 "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ResolvedDate" = (Get-Date).ToUniversalTime(); "Status" = "ProblemStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Resolved" -IsPrivate $false; if ($defaultProblemResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property Resolution -Value $defaultProblemResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}
                                 "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ClosedDate" = (Get-Date).ToUniversalTime(); "Status" = "ProblemStatusEnum.Closed$"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}
-                                "\[$takeKeyword]" {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;
-                                    Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false;
-                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
-                                    if ($ceScripts) { Invoke-AfterTake }}
+                                "\[$takeKeyword]" { $memberOfSelectedTier = Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.$prSupportGroupPropertyName.Id
+                                    if ($takeRequiresGroupMembership -eq $false -or $memberOfSelectedTier -eq $true) {
+                                        New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;
+                                        Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false;
+                                        if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                        if ($ceScripts){ Invoke-AfterTake }
+                                    }
+                                    else {
+                                        #TODO: Send an email to let them know it failed?
+                                    }
+                                }
                                 "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "ProblemStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Active$" @scsmMGMTParams}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}
                                 {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false}
                                 default {Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false}
@@ -2222,6 +2311,12 @@ function Get-CiresonSuggestionURL
         [Parameter()]
         [object]$AffectedUser
     )
+
+    #if Suggestions are both false, just exit this function call
+    if (($SuggestKA -eq $false) -and ($SuggestRO -eq $false))
+    {
+        return $null
+    }
     
     #retrieve the cireson portal user
     $portalUser = Get-CiresonPortalUser -username $AffectedUser.UserName -domain $AffectedUser.Domain
@@ -2886,45 +2981,11 @@ function Get-AzureEmailTranslation ($TextToTranslate, $SourceLanguage, $TargetLa
 
 function Get-ACSWorkItemPriority ($score, $wiClass)
 {  
-    #change boundaries as neccesary
-    switch ($wiClass)
-    {
-        #impact/urgency
-        "System.WorkItem.Incident" {
-            switch ($score)
-            {
-                {$_ -ge 0 -and $_ -le 20} {$priorityCombo = "hi/hi"}
-                {$_ -ge 20 -and $_ -le 60} {$priorityCombo = "med/med"}
-                {$_ -ge 60 -and $_ -le 80} {$priorityCombo = "med/low"}
-                {$_ -ge 80 -and $_ -le 90} {$priorityCombo = "low/med"}
-                {$_ -ge 90 -and $_ -le 100} {$priorityCombo = "low/low"}
-            }
-        }
-        #urgency/priority
-        "System.WorkItem.ServiceRequest" {
-            switch ($score)
-            {
-                {$_ -ge 0 -and $_ -le 20} {$priorityCombo = "imm/imm"}
-                {$_ -ge 20 -and $_ -le 60} {$priorityCombo = "hi/med"}
-                {$_ -ge 60 -and $_ -le 80} {$priorityCombo = "med/low"}
-                {$_ -ge 80 -and $_ -le 90} {$priorityCombo = "med/med"}
-                {$_ -ge 90 -and $_ -le 100} {$priorityCombo = "low/low"}
-            }
-        }
-    }
-
-    $priorityCalc = @()
-    switch ($wiClass)
-    {
-        "System.WorkItem.Incident" {
-            $priorityCalc + $priorityCombo.Split("/")[0].Replace("hi", "System.WorkItem.TroubleTicket.ImpactEnum.High$").Replace("med", "System.WorkItem.TroubleTicket.ImpactEnum.Medium$").Replace("low", "System.WorkItem.TroubleTicket.ImpactEnum.Low$");
-            $priorityCalc + $priorityCombo.Split("/")[1].Replace("hi", "System.WorkItem.TroubleTicket.UrgencyEnum.High$").Replace("med", "System.WorkItem.TroubleTicket.UrgencyEnum.Medium$").Replace("low", "System.WorkItem.TroubleTicket.UrgencyEnum.Low$");
-        }
-        "System.WorkItem.ServiceRequest" {
-            $priorityCalc + $priorityCombo.Split("/")[0].Replace("imm", "ServiceRequestUrgencyEnum.Immediate$").Replace("hi", "ServiceRequestUrgencyEnum.High$").Replace("med", "ServiceRequestUrgencyEnum.Medium$").Replace("low", "ServiceRequestUrgencyEnum.Low$");
-            $priorityCalc + $priorityCombo.Split("/")[1].Replace("imm", "ServiceRequestPriorityEnum.Immediate$").Replace("hi", "ServiceRequestPriorityEnum.High$").Replace("med", "ServiceRequestPriorityEnum.Medium$").Replace("low", "ServiceRequestPriorityEnum.Low$");
-        }
-    }
+    $wiClass = $wiClass.Replace("System.WorkItem.Incident", "IR").Replace("System.WorkItem.ServiceRequest", "SR")
+    [xml]$acsXMLBoundaries = $smexcoSettingsMP.ACSPriorityScoringBoundaries
+    $priorityCalc = $acsXMLBoundaries.ACSPriorityBoundaries.ACSPriorityBoundary | foreach-object {if (($score -ge $_.Min) -and ($score -le $_.Max) -and ($wiClass -eq $_.WorkItemType)) {$_.IRImpactSRUrgencyEnum, $_.IRUrgencySRPriorityEnum}}
+    $priorityCalc = $priorityCalc | foreach-object {Get-SCSMEnumeration -id $_ | select-object name -ExpandProperty name } | foreach-object {$_ + "$"}
+        
     return $priorityCalc
 }
 function Get-AzureEmailKeywords ($messageToEvaluate)
@@ -3073,7 +3134,7 @@ function Get-SCOMAuthorizedRequester ($sender)
                         return $false
                     }        
                 }
-        "group" {$group = Get-ADGroup @adParams -Identity $approvedADGroupForSCOM
+        "group" {$group = Get-ADGroup @adParams -Identity "$approvedADGroupForSCOM"
                     $adUser = Get-ADUser @adParams -Filter "EmailAddress -eq '$sender'"
                     if ($adUser)
                     {

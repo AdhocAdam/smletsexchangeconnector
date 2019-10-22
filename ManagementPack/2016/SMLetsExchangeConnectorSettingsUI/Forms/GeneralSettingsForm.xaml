@@ -1,0 +1,30 @@
+﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.GeneralSettingsForm" 
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
+            xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
+            xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="551" Height="362">
+
+    <Grid Name="ConfigurationGrid" Margin="15,25,15,10" >
+        <!-- header -->
+        <Image Margin="344,93.05,0,0" Height="146" VerticalAlignment="Top" Source="/SMLetsExchangeConnectorSettingsUI;component/AssemblyImages/psExchangeIcon164x146.png" HorizontalAlignment="Right" Width="167"/>
+        <Label Content="SMLets Exchange Connector Settings" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
+        <TextBlock Margin="10,43,0,0" VerticalAlignment="Top" Height="24" FontWeight="Light" FontSize="14" TextWrapping="Wrap" Text="Configure basic settings for the script/runbook to query against" />
+
+        <!-- configuration -->
+        <ScrollViewer Name="scrollViewer" Margin="10,75,0,10" CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Width="323">
+            <StackPanel Name="stackPanel" Orientation="Vertical" Height="232" VerticalAlignment="Top" HorizontalAlignment="Left" Width="313">
+                <TextBlock Margin="10,0" x:Name="lblMGMTServer" TextWrapping="Wrap" Text="Management Server name (set to 'localhost' if running script on a management server) otherwise use the hostname of a remote management server" />
+                <TextBox Height="25" Margin="10,0,10,10" x:Name="txtSCSMmgmtServer" Text="{Binding SCSMmanagementServer, Mode=TwoWay}" />
+                <TextBlock Margin="10,0,0,0" x:Name="lblWFEmailAddress" TextWrapping="Wrap" Text="Workflow Email Address" />
+                <TextBox Height="25" Margin="10,0,10,10" x:Name="txtWFEmailAddress" Text="{Binding WorkflowEmailAddress, Mode=TwoWay}" Custom:Validation.RegexPattern="^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$"/>
+                <CheckBox Name="chkUseAutoDiscover" FlowDirection="LeftToRight" IsChecked="{Binding Path=IsAutodiscoverEnabled, Mode=TwoWay}" >
+                    <TextBlock FlowDirection="LeftToRight" Text="Use Autodiscover" />
+                </CheckBox>
+
+                <Label Height="25" Padding="0" Margin="0,10,0,0" x:Name="lblAutodiscoverURL" Content="Autodiscover URL"/>
+                <TextBox Height="25" Margin="10,0,10,10" x:Name="txtAutodiscoverURL" Text="{Binding ExchangeAutodiscoverURL, FallbackValue='', Mode=TwoWay}" />            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</wpfwiz:WizardRegularPageBase> 

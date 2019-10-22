@@ -3,16 +3,26 @@
 </p>
 
 # SCSM Exchange Connector via SMlets
-This PowerShell script leverages the [SMlets module](https://www.powershellgallery.com/packages/smlets/0.5.0.1) to build an open and flexible Exchange Connector for controlling Microsoft System Center Service Manager 2012+
+This PowerShell script leverages the [SMlets module](https://www.powershellgallery.com/packages/smlets/0.5.0.1) to build an open and flexible Exchange Connector for controlling Microsoft System Center Service Manager 2016+
 
 
 ## So what is this for?
-The stock Exchange Connector is a seperate download for SCSM 2012+ that enables SCSM deployments to leverage an Exchange mailbox to process updates to work items. While incredibly useful, some feel limited by its inability to be customized given its nature as a sealed management pack. This PowerShell script replicates all functionality of [Exchange Connector 3.1](https://www.microsoft.com/en-ca/download/details.aspx?id=45291), introduces several new features, and most importantly enables SCSM Administrators to customize the solution to their needs.
+The stock Exchange Connector is a seperate download that enables SCSM deployments to leverage an Exchange mailbox to process updates to work items. While incredibly useful, some feel limited by its inability to be customized given its nature as a sealed management pack. This PowerShell script replicates all functionality of [Exchange Connector 3.1](https://www.microsoft.com/en-ca/download/details.aspx?id=45291), introduces a host of new features, and most importantly enables SCSM Administrators to customize the solution to their needs.
 
 ## Who is this for?
 This is aimed at SCSM administrators looking to further push the automation limits of what their SCSM deployment can do with inbound email processing. As such, you should be comfortable with PowerShell and navigating SCSM via SMlets.
 
 ## What new things can it do?
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Settings Management Pack (v2.0)</i></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src ="/docs/images/CreateACustomMPSettingsPane/headerGraphicThumbnail.png" /></td>
+    <td width="auto">The SMLets Exchange Connector features over 120+ configuration possibilities. With a brand new management pack, upgrades just easier! This new MP moves the configuration from the PowerShell script into a dedicated MP whose settings are preserved through upgrades. Interested to see how it was built? Check out the blog here on the repo. <a href="https://adhocadam.github.io/smletsexchangeconnector/Building-a-Custom-Settings-UI-for-Service-Manager-(part-1)/">Part 1</a> and <a href="https://adhocadam.github.io/smletsexchangeconnector/Building-a-Custom-Settings-UI-for-Service-Manager-(part-2)/">Part 2 </a></td>
+  </tr>
+</table>
+
 <table border="0">
   <tr>
     <td colspan="3"><i>Language Translation for New Work Items with Azure Translation (v1.6)</i></td>
