@@ -42,5 +42,17 @@ app.custom.formTasks.add('Incident', "Send Outlook Meeting", function (formObj, 
 	}
 	
 	//Open the the ICS file
-	window.open( "data:text/calendar;charset=utf8," + escape(icsMSG));
+	//ie/edge
+	var isIE = /*@cc_on!@*/false || !!document.documentMode;
+	var isEdge = !isIE && !!window.StyleMedia;
+	if ((isIE) || (isEdge))
+	{
+	    var blob = new Blob([icsMSG], { type: 'text/calendar;charset=utf-8' });
+	    window.navigator.msSaveOrOpenBlob(blob, 'download.ics');
+	}
+	else
+	{
+	    //every other browser
+	    window.open( "data:text/calendar;charset=utf8," + escape(icsMSG));
+	}
 });
