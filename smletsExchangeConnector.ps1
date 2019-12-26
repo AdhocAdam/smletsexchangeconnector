@@ -835,22 +835,20 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
                     $ciresonSuggestionURLs = Get-CiresonSuggestionURL -SuggestKA:$searchCiresonHTMLKB -AzureKA:$enableAzureCognitiveServicesForKA -SuggestRO:$searchAvailableCiresonPortalOfferings -AzureRO:$enableAzureCognitiveServicesForRO -WorkItem $newWorkItem -AffectedUser $affectedUser
-                    if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
+                    if ($ciresonSuggestionURLs -ne $null)
                     {
-                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
-                    }
-                    elseif ($ciresonSuggestionURLs[0])
-                    {
-                        Send-CiresonSuggestionEmail -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
-                    }
-                    elseif ($ciresonSuggestionURLs[1])
-                    {
-                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -Workitem $newWorkItem -AffectedUserEmailAddress $from
-                    }
-                    else
-                    {
-                        #both options are set to $false
-                        #don't suggest anything to the Affected User based on their recently created Default Work Item
+                        if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
+                        {
+                            Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
+                        }
+                        elseif ($ciresonSuggestionURLs[0])
+                        {
+                            Send-CiresonSuggestionEmail -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
+                        }
+                        elseif ($ciresonSuggestionURLs[1])
+                        {
+                            Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -Workitem $newWorkItem -AffectedUserEmailAddress $from
+                        }
                     }
 
                     # Custom Event Handler
@@ -974,22 +972,20 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
                     $ciresonSuggestionURLs = Get-CiresonSuggestionURL -SuggestKA:$searchCiresonHTMLKB -AzureKA:$enableAzureCognitiveServicesForKA -SuggestRO:$searchAvailableCiresonPortalOfferings -AzureRO:$enableAzureCognitiveServicesForRO -WorkItem $newWorkItem -AffectedUser $affectedUser
-                    if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
+                    if ($ciresonSuggestionURLs -ne $null)
                     {
-                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
-                    }
-                    elseif ($ciresonSuggestionURLs[0])
-                    {
-                        Send-CiresonSuggestionEmail -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
-                    }
-                    elseif ($ciresonSuggestionURLs[1])
-                    {
-                        Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -Workitem $newWorkItem -AffectedUserEmailAddress $from
-                    }
-                    else
-                    {
-                        #both options are set to $false
-                        #don't suggest anything to the Affected User based on their recently created Default Work Item
+                        if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
+                        {
+                            Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
+                        }
+                        elseif ($ciresonSuggestionURLs[0])
+                        {
+                            Send-CiresonSuggestionEmail -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
+                        }
+                        elseif ($ciresonSuggestionURLs[1])
+                        {
+                            Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -Workitem $newWorkItem -AffectedUserEmailAddress $from
+                        }
                     }
                     
                     # Custom Event Handler
@@ -2272,6 +2268,12 @@ function Get-CiresonSuggestionURL
         [Parameter()]
         [object]$AffectedUser
     )
+
+    #if Suggestions are both false, just exit this function call
+    if (($SuggestKA -eq $false) -and ($SuggestRO -eq $false))
+    {
+        return $null
+    }
     
     #retrieve the cireson portal user
     $portalUser = Get-CiresonPortalUser -username $AffectedUser.UserName -domain $AffectedUser.Domain
