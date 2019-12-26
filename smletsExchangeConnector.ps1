@@ -570,15 +570,15 @@ $userHasPrefProjection = Get-SCSMTypeProjection -name "System.User.Preferences.P
 # Retrieve Class Extensions on IR/SR/CR/MA if defined
 if ($maSupportGroupEnumGUID)
 {
-    $maSupportGroupPropertyName = ($maClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.EnumType -like "*$maSupportGroupEnumGUID*")}).Name
+    $maSupportGroupPropertyName = ($maClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.Id -like "*$maSupportGroupEnumGUID*")}).Name
 }
 if ($crSupportGroupEnumGUID)
 {
-    $crSupportGroupPropertyName = ($crClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.EnumType -like "*$crSupportGroupEnumGUID*")}).Name
+    $crSupportGroupPropertyName = ($crClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.Id -like "*$crSupportGroupEnumGUID*")}).Name
 }
 if ($prSupportGroupEnumGUID)
 {
-    $prSupportGroupPropertyName = ($prClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.EnumType -like "*$prSupportGroupEnumGUID*")}).Name
+    $prSupportGroupPropertyName = ($prClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.Id -like "*$prSupportGroupEnumGUID*")}).Name
 }
 #azure cognitive services
 if ($acsSentimentScoreIRClassExtensionName)
