@@ -1712,56 +1712,55 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                     $workItem = get-scsmobject -class $maClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
                     try {$activityImplementer = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
                     if ($activityImplementer){$activityImplementerSMTP = Get-SCSMRelatedObject -SMObject $activityImplementer @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
-                    
-                    #take
-                    switch -Regex ($commentToAdd)
+                    switch ($message.From)
                     {
-                        "\[$takeKeyword]" { 
-                            if ($takeRequiresGroupMembership -eq $false) {
-                                New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
-                                # Custom Event Handler
-                                if ($ceScripts) { Invoke-AfterTake }
-                            }
-                            elseif (($takeRequiresGroupMembership -eq $true) -and (Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.$maSupportGroupPropertyName.Id)) {
-                                New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
-                                # Custom Event Handler
-                                if ($ceScripts) { Invoke-AfterTake }
-                            }
-                            else {
-                                #TODO: Send an email to let them know it failed?
+                        $activityImplementerSMTP.TargetAddress {
+                            switch -Regex ($commentToAdd)
+                            {
+                                "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "ActivityStatusEnum.Completed$"; "ActualEndDate" = (get-date).ToUniversalTime(); "Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams; if ($ceScripts) { Invoke-AfterCompleted }}
+                                "\[$skipKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "ActivityStatusEnum.Skipped$"; "Skip" = $true; "ActualEndDate" = (get-date).ToUniversalTime(); "Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams; if ($ceScripts) { Invoke-AfterSkipped }}
+                                default {
+                                    $parentWorkItem = Get-SCSMWorkItemParent $workItem.Get_Id().Guid
+                                    switch ($parentWorkItem.Classname)
+                                    {
+                                        "System.WorkItem.ChangeRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
+                                        "System.WorkItem.ServiceRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
+                                        "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
+                                    }
+                                }
                             }
                         }
-                    }
-                    #completed
-                    if (($activityImplementerSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$completedKeyword]"))
-                    {
-                        Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "ActivityStatusEnum.Completed$"; "ActualEndDate" = (get-date).ToUniversalTime(); "Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams
-                        # Custom Event Handler
-                        if ($ceScripts) { Invoke-AfterCompleted }
-                    }
-                    #skipped
-                    elseif (($activityImplementerSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$skipKeyword]"))
-                    {
-                        Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "ActivityStatusEnum.Skipped$"; "Skip" = $true; "ActualEndDate" = (get-date).ToUniversalTime(); "Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams
-                        # Custom Event Handler
-                        if ($ceScripts) { Invoke-AfterSkipped }
-                    }
-                    #not from the Activity Implementer, add to the MA Notes
-                    elseif (($activityImplementerSMTP.TargetAddress -ne $message.From))
-                    {
-                        Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams
-                    }
-                    #no keywords, add to the Parent Work Item
-                    elseif (($activityImplementerSMTP.TargetAddress -eq $message.From) -and (($commentToAdd -notmatch "\[$completedKeyword]") -or ($commentToAdd -notmatch "\[$skipKeyword]")))
-                    {
-                        $parentWorkItem = Get-SCSMWorkItemParent $workItem.Get_Id().Guid
-                        switch ($parentWorkItem.Classname)
-                        {
-                            "System.WorkItem.ChangeRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
-                            "System.WorkItem.ServiceRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
-                            "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
+                        default {
+                            switch -Regex ($commentToAdd)
+                            {
+                                "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "ActivityStatusEnum.Completed$"; "ActualEndDate" = (get-date).ToUniversalTime(); "Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams; if ($ceScripts) { Invoke-AfterCompleted }}
+                                "\[$skipKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "ActivityStatusEnum.Skipped$"; "Skip" = $true; "ActualEndDate" = (get-date).ToUniversalTime(); "Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams; if ($ceScripts) { Invoke-AfterSkipped }}
+                                "\[$takeKeyword]" { 
+                                    if ($takeRequiresGroupMembership -eq $false) {
+                                        New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                                        # Custom Event Handler
+                                        if ($ceScripts) { Invoke-AfterTake }
+                                    }
+                                    elseif (($takeRequiresGroupMembership -eq $true) -and (Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.$maSupportGroupPropertyName.Id)) {
+                                        New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
+                                        # Custom Event Handler
+                                        if ($ceScripts) { Invoke-AfterTake }
+                                    }
+                                    else {
+                                        #TODO: Send an email to let them know it failed?
+                                    }
+                                }
+                                default {
+                                    $parentWorkItem = Get-SCSMWorkItemParent $workItem.Get_Id().Guid
+                                    switch ($parentWorkItem.Classname)
+                                    {
+                                        "System.WorkItem.ChangeRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
+                                        "System.WorkItem.ServiceRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
+                                        "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
+                                    }
+                                }
+                            } 
                         }
-                            
                     }
                     
                     # Custom Event Handler
