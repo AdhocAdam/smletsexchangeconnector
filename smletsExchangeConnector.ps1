@@ -1618,21 +1618,6 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             {
                                 "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "ActivityStatusEnum.Completed$"; "ActualEndDate" = (get-date).ToUniversalTime(); "Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams; if ($ceScripts) { Invoke-AfterCompleted }}
                                 "\[$skipKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "ActivityStatusEnum.Skipped$"; "Skip" = $true; "ActualEndDate" = (get-date).ToUniversalTime(); "Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams; if ($ceScripts) { Invoke-AfterSkipped }}
-                                "\[$takeKeyword]" { 
-                                    if ($takeRequiresGroupMembership -eq $false) {
-                                        New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
-                                        # Custom Event Handler
-                                        if ($ceScripts) { Invoke-AfterTake }
-                                    }
-                                    elseif (($takeRequiresGroupMembership -eq $true) -and (Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.$maSupportGroupPropertyName.Id)) {
-                                        New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk
-                                        # Custom Event Handler
-                                        if ($ceScripts) { Invoke-AfterTake }
-                                    }
-                                    else {
-                                        #TODO: Send an email to let them know it failed?
-                                    }
-                                }
                                 default {
                                     $parentWorkItem = Get-SCSMWorkItemParent $workItem.Get_Id().Guid
                                     switch ($parentWorkItem.Classname)
