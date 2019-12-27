@@ -1654,16 +1654,15 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                         "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
                                     }
                                 }
-                            } 
+                            }
                         }
-
-                        # Custom Event Handler
-                        if ($ceScripts) { Invoke-AfterUpdateMA }
-                }
-    } 
-    
-    # Custom Event Handler
-    if ($ceScripts) { Invoke-AfterUpdateAnyWorkItem }
+                    }
+                    # Custom Event Handler
+                    if ($ceScripts) { Invoke-AfterUpdateMA }
+            }
+        }
+        # Custom Event Handler
+        if ($ceScripts) { Invoke-AfterUpdateAnyWorkItem }
 }
 
 function Attach-EmailToWorkItem ($message, $workItemID)
