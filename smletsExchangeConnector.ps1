@@ -1646,7 +1646,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                     }
                                 }
                                 default {
-                                    Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams
+                                    Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Notes" = "$($workItem.Notes)$($commentLeftBy.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams
                                 }
                             }
                         }
