@@ -1751,13 +1751,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                     }
                                 }
                                 default {
-                                    $parentWorkItem = Get-SCSMWorkItemParent $workItem.Get_Id().Guid
-                                    switch ($parentWorkItem.Classname)
-                                    {
-                                        "System.WorkItem.ChangeRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
-                                        "System.WorkItem.ServiceRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
-                                        "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
-                                    }
+                                    Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams
                                 }
                             } 
                         }
