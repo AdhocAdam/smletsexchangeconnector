@@ -23,7 +23,7 @@ Misc: The Release Record functionality does not exist in this as no out of box (
 Version: 1.6.1 = #142 = Bug, Schedule Outlook Meeting Task doesn't work in IE/Edge
                 #44 = Enhancement, Refactor group membership check for take keyword
                 #145 = Enhancement, Improve Manual Activity Actions
-                #160 = KA/RO suggestions attempt to send even when disabled
+                #160 = Bug, KA/RO suggestions attempt to send even when disabled
 Version: 1.6.0 = #135 = Bug, Dynamic Analyst Assignment not working
                 #140 = Feature, Language Translation via Azure Translate
                 #127 = Enhancement, Extended Support for AML returned values
