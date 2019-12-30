@@ -1720,7 +1720,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                 "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "ActivityStatusEnum.Completed$"; "ActualEndDate" = (get-date).ToUniversalTime(); "Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams; if ($ceScripts) { Invoke-AfterCompleted }}
                                 "\[$skipKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Status" = "ActivityStatusEnum.Skipped$"; "Skip" = $true; "ActualEndDate" = (get-date).ToUniversalTime(); "Notes" = "$($workItem.Notes)$($activityImplementer.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams; if ($ceScripts) { Invoke-AfterSkipped }}
                                 default {
-                                    $parentWorkItem = Get-SCSMWorkItemParent $workItem.Get_Id().Guid
+                                    $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Get_Id().Guid
                                     switch ($parentWorkItem.Classname)
                                     {
                                         "System.WorkItem.ChangeRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
