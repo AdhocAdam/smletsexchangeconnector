@@ -290,6 +290,8 @@ $ciresonPortalServer = "$($smexcoSettingsMP.CiresonPortalURL)"
 $ciresonPortalWindowsAuth = $true
 $ciresonPortalUsername = ""
 $ciresonPortalPassword = ""
+$addWatchlistKeyword = "watch"
+$removeWatchlistKeyword = "stopwatch"
 
 #optional, enable Announcement control in SCSM/Cireson portal from email
 #enableSCSMAnnouncements/enableCiresonPortalAnnouncements: You can create/update announcements
@@ -2455,6 +2457,33 @@ function Send-CiresonSuggestionEmail
     
     #if enabled, as part of the Suggested KA or RO process set the First Response Date on the Work Item
     if ($enableSetFirstResponseDateOnSuggestions) {Set-SCSMObject -SMObject $WorkItem -Property FirstResponseDate -Value (get-date).ToUniversalTime() @scsmMGMTParams}
+}
+
+function Add-CiresonWatchListUser ($userguid, $workitemguid)
+{
+    $addToWatchlistAPIurl = "api/V3/WorkItem/AddToWatchlist?workitemId=$workitemguid&userId=$userguid"
+    if ($ciresonPortalWindowsAuth -eq $true)
+    {
+        $addToWatchlistResult = Invoke-RestMethod -Uri ($ciresonPortalServer+$addToWatchlistAPIurl) -UseDefaultCredentials -Method post
+    }
+    else
+    {
+        $addToWatchlistResult = Invoke-RestMethod -Uri ($ciresonPortalServer+$addToWatchlistAPIurl) -Method post -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
+    }
+    return $addToWatchlistResult
+}
+function Remove-CiresonWatchListUser ($userguid, $workitemguid)
+{
+    $removeFromWatchlistAPIurl = "api/V3/WorkItem/DeleteFromWatchlist?workitemId=$workitemguid&userId=$userguid"
+    if ($ciresonPortalWindowsAuth -eq $true)
+    { 
+        $removeFromWatchlistResult = Invoke-RestMethod -Uri ($ciresonPortalServer+$removeFromWatchlistAPIurl) -UseDefaultCredentials -Method DELETE
+    }
+    else
+    {
+        $removeFromWatchlistResult = Invoke-RestMethod -Uri ($ciresonPortalServer+$removeFromWatchlistAPIurl) -Method DELETE -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
+    }
+    return $removeFromWatchlistResult
 }
 
 #send an email from the SCSM Workflow Account
