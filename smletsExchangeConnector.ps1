@@ -925,11 +925,11 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         {
                             Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                         }
-                        elseif ($ciresonSuggestionURLs[0])
+                        elseif ($ciresonSuggestionURLs[1])
                         {
                             Send-CiresonSuggestionEmail -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                         }
-                        elseif ($ciresonSuggestionURLs[1])
+                        elseif ($ciresonSuggestionURLs[0])
                         {
                             Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                         }
@@ -2464,6 +2464,7 @@ function Send-EmailFromWorkflowAccount ($subject, $body, $bodyType, $toRecipient
     $emailToSendOut.Subject = $subject
     $emailToSendOut.Body = $body
     $emailToSendOut.ToRecipients.Add($toRecipients)
+    $emailToSendOut.Body = New-Object Microsoft.Exchange.WebServices.Data.MessageBody
     $emailToSendOut.Body.BodyType = $bodyType
     $emailToSendOut.Send()
 }
