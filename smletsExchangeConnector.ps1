@@ -2462,9 +2462,9 @@ function Send-EmailFromWorkflowAccount ($subject, $body, $bodyType, $toRecipient
 {
     $emailToSendOut = New-Object Microsoft.Exchange.WebServices.Data.EmailMessage -ArgumentList $exchangeService
     $emailToSendOut.Subject = $subject
+    $emailToSendOut.Body = New-Object Microsoft.Exchange.WebServices.Data.MessageBody
     $emailToSendOut.Body = $body
     $emailToSendOut.ToRecipients.Add($toRecipients)
-    $emailToSendOut.Body = New-Object Microsoft.Exchange.WebServices.Data.MessageBody
     $emailToSendOut.Body.BodyType = $bodyType
     $emailToSendOut.Send()
 }
