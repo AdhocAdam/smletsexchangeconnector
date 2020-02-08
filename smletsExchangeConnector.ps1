@@ -2466,7 +2466,6 @@ function Send-EmailFromWorkflowAccount ($subject, $body, $bodyType, $toRecipient
     $emailToSendOut.Body.Text = $body
     $emailToSendOut.Body.BodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::$bodyType
     $emailToSendOut.ToRecipients.Add($toRecipients)
-
     $emailToSendOut.Send()
 }
 
