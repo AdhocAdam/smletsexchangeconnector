@@ -10,7 +10,7 @@ enabling other organizational level processes via email
 
 .NOTES
 Author: Adam Dzyacky
-Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2, Justin Workman
+Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2, Justin Workman, Brad Zima
 Reviewers: Tom Hendricks, Brian Weist
 Inspiration: The Cireson Community, Anders Asp, Stefan Roth, and (of course) Travis Wright for SMlets examples
 Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installed on SCSM workflow server by virtue of stock Exchange Connector).
@@ -845,11 +845,11 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         {
                             Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                         }
-                        elseif ($ciresonSuggestionURLs[0])
+                        elseif ($ciresonSuggestionURLs[1])
                         {
                             Send-CiresonSuggestionEmail -RequestOfferingURLs $ciresonSuggestionURLs[1] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                         }
-                        elseif ($ciresonSuggestionURLs[1])
+                        elseif ($ciresonSuggestionURLs[0])
                         {
                             Send-CiresonSuggestionEmail -KnowledgeBaseURLs $ciresonSuggestionURLs[0] -Workitem $newWorkItem -AffectedUserEmailAddress $from
                         }
@@ -2354,9 +2354,10 @@ function Send-EmailFromWorkflowAccount ($subject, $body, $bodyType, $toRecipient
 {
     $emailToSendOut = New-Object Microsoft.Exchange.WebServices.Data.EmailMessage -ArgumentList $exchangeService
     $emailToSendOut.Subject = $subject
-    $emailToSendOut.Body = $body
+    $emailToSendOut.Body = New-Object Microsoft.Exchange.WebServices.Data.MessageBody
+    $emailToSendOut.Body.Text = $body
+    $emailToSendOut.Body.BodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::$bodyType
     $emailToSendOut.ToRecipients.Add($toRecipients)
-    $emailToSendOut.Body.BodyType = $bodyType
     $emailToSendOut.Send()
 }
 
