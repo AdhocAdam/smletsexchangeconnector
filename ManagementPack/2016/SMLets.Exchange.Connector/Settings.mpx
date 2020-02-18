@@ -565,6 +565,24 @@
                Key="false"
                Required="false" />
 
+          <Property ID="CiresonKeywordWatchlistAdd"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+          <Property ID="CiresonKeywordWatchlistRemove"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
           <!--Announcement Properties-->
           <Property ID="EnableAnnouncements"
                Type="bool"
