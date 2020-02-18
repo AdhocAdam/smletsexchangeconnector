@@ -4,7 +4,7 @@
             xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
             xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="567" Height="580">
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="567" Height="647.746">
 
     <Grid Name="ConfigurationGrid" Margin="10">
         <!-- header -->
@@ -14,7 +14,7 @@
 
         <!-- configuration -->
         <StackPanel Name="scrollViewer" HorizontalAlignment="Left" Width="240" Margin="0,117,0,10">
-            <StackPanel Name="stackPanelLeft" Orientation="Vertical" Height="437" VerticalAlignment="Top" >
+            <StackPanel Name="stackPanelLeft" Orientation="Vertical" Height="485" VerticalAlignment="Top" >
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblFromKeyword" Content="Email reply parsing keyword (e.g. From)"/>
                 <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtFromKW" Text="{Binding KeywordFrom, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAckKeyword" Content="[Acknowledge]"/>
@@ -31,10 +31,12 @@
                 <TextBox Height="25" Margin="0,-8,10,10" ToolTip="announcement" x:Name="txtBlkAnnouncementKeyword" Text="{Binding KeywordAnnouncement, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblPrivateKeyword" Content="#private"/>
                 <TextBox Height="25" Margin="0,-8,10,10" ToolTip="announcement" x:Name="txtBlkPrivateKeyword" Text="{Binding KeywordPrivate, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
+                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblRemoveWatchlistKeyword" Content="[stopwatch] - requires Cireson Portal"/>
+                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtBlkRemoveWatchlistKeyword" Text="{Binding KeywordRemoveWatchlist, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
             </StackPanel>
         </StackPanel>
         <StackPanel x:Name="scrollViewer_Copy" HorizontalAlignment="Left" Width="240" Margin="271,117,0,10">
-            <StackPanel Name="stackPanelRight" Orientation="Vertical" Height="437" VerticalAlignment="Top">
+            <StackPanel Name="stackPanelRight" Orientation="Vertical" Height="485" VerticalAlignment="Top">
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblCancelKeyword" Content="[Cancelled]"/>
                 <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtCancelledKW" Text="{Binding KeywordCancel, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblCompletedKeyword" Content="[Completed]"/>
@@ -49,6 +51,8 @@
                 <TextBox Height="25" Margin="0,-8,10,10" Name="txtTakeKW" Text="{Binding KeywordTake, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblHealthKeyword" Content="[SCOM Distributed App Health Status]"/>
                 <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtSCOMHealthKeyword" Text="{Binding KeywordHealth, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
+                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAddWatchlistKeyword" Content="[watch] - requires Cireson Portal"/>
+                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtAddWatchlistKeyword" Text="{Binding KeywordAddWatchlist, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
             </StackPanel>
         </StackPanel>
     </Grid>
