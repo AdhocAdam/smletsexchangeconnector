@@ -15,6 +15,15 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>Support for Cireson Watchlist (v1.7)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/watchlist.png" /></td>
+    <td width="auto">Cireson customers can now use the new configurable [watch] and [stopwatch] keywords to control the watchlist directly from email. You can configure HTML links within your own notifications so these keywords function similiar to Announcements, Take, Review Activities, and more. Looking for <a href="https://github.com/AdhocAdam/smletsexchangeconnector/wiki/HTML-Email-Keyword-Examples">examples</a>?</td>
+  </tr>
+</table>
+<table border="0">
+  <tr>
     <td colspan="3"><i>Language Translation for New Work Items with Azure Translation (v1.6)</i></td>
   </tr>
   <tr>
