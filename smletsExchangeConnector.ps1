@@ -20,7 +20,7 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
-Version: 2.1.0 = #34 - Feature, Intgrate with Cireson Watchlist feature
+Version: 2.1.0 = #34 - Feature, Integrate with Cireson Watchlist feature
                 #169 - Bug, Corrected the logic issue for determining CiresonSuggestionURLs. Added class instantiation for URL suggestion email to include the BodyType object.
 Version: 2.0.1 = #158 = Bug, Take Requires Group Membership fails on MA, CR, and PR in v2.x
 Version: 2.0.0 = #49 - Enhancement, Introduce a Settings MP
