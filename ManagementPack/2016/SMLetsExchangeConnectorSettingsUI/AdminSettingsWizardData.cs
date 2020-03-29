@@ -112,6 +112,8 @@ namespace SMLetsExchangeConnectorSettingsUI
         private String strCiresonPortalURL = String.Empty;
         private Int32 strMinWordsToMatchToSuggestRO = 0;
         private Int32 strMinWordCountToSuggestKA = 0;
+        private String strAddWatchlistKW = String.Empty;
+        private String strRemoveWatchlistKW = String.Empty;
         private Boolean boolEnableAnnouncementIntegration = false;
         private Boolean boolEnableSCSMAnnouncements = false;
         private Boolean boolEnableCiresonAnnouncements = false;
@@ -1148,6 +1150,36 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.boolCiresonMPExists != value)
                 {
                     this.boolCiresonMPExists = value;
+                }
+            }
+        }
+
+        public String KeywordAddWatchlist
+        {
+            get
+            {
+                return this.strAddWatchlistKW;
+            }
+            set
+            {
+                if (this.strAddWatchlistKW != value)
+                {
+                    this.strAddWatchlistKW = value;
+                }
+            }
+        }
+
+        public String KeywordRemoveWatchlist
+        {
+            get
+            {
+                return this.strRemoveWatchlistKW;
+            }
+            set
+            {
+                if (this.strRemoveWatchlistKW != value)
+                {
+                    this.strRemoveWatchlistKW = value;
                 }
             }
         }
@@ -2500,6 +2532,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { this.MinWordCountToSuggestRO = 1; }
             try { this.MinWordCountToSuggestKA = Int32.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "NumberOfWordsToMatchFromEmailToCiresonKnowledgeArticle"].ToString()); }
             catch { this.MinWordCountToSuggestKA = 1; }
+            this.KeywordAddWatchlist = emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonKeywordWatchlistAdd"].ToString();
+            this.KeywordRemoveWatchlist = emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonKeywordWatchlistRemove"].ToString();
             try { this.IsCiresonIntegrationEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableCiresonIntegration"].ToString()); }
             catch { this.IsCiresonIntegrationEnabled = false; }
             try { this.IsCiresonFirstResponseDateOnSuggestionsEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableSetFirstResponseDateOnSuggestions"].ToString()); }
@@ -3011,6 +3045,8 @@ namespace SMLetsExchangeConnectorSettingsUI
 
             //Cireson Integration
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableCiresonIntegration"].Value = this.IsCiresonIntegrationEnabled;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonKeywordWatchlistAdd"].Value = this.KeywordAddWatchlist;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonKeywordWatchlistRemove"].Value = this.KeywordRemoveWatchlist;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonSearchKnowledgeBase"].Value = this.IsCiresonKBSearchEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonSearchRequestOfferings"].Value = this.IsCiresonROSearchEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonPortalURL"].Value = this.CiresonPortalURL;
