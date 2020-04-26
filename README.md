@@ -221,6 +221,16 @@ This is aimed at SCSM administrators looking to further push the automation limi
 
 <table border="0">
   <tr>
+    <td colspan="3"><i>Service Request and Change Request</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/cancel.png" /></td>
+    <td width="auto">[Cancel] - Cancel the Service Request or Change Request when this keyword is featured in the body of the email</td>
+  </tr>
+</table>
+
+<table border="0">
+  <tr>
     <td colspan="3"><i>Incident</i></td>
   </tr>
   <tr>
@@ -236,10 +246,6 @@ This is aimed at SCSM administrators looking to further push the automation limi
   <tr>
     <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/hold.png" /></td>
     <td width="auto">[Hold] - Place the Change Request On-Hold when this keyword is featured in the body of the email</td>
-  </tr>
-  <tr>
-    <td width="200"><img src ="https://github.com/AdhocAdam/smletsExchangeConnector/blob/master/FeatureScreenshots/cancel.png" /></td>
-    <td width="auto">[Cancel] - Cancel the Change Request when this keyword is featured in the body of the email</td>
   </tr>
 </table>
 
