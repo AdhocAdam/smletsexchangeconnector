@@ -2576,19 +2576,27 @@ function Verify-WorkItem ($message, $returnWorkItem)
     if ($attachEmailToWorkItem -eq $true)
     {
         $emailAttachmentSearchObject = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | select-object -first 1 
-        $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $emailAttachmentSearchObject @scsmMGMTParams).sourceobject.id @scsmMGMTParams
-        if ($emailAttachmentSearchObject -and $relatedWorkItemFromAttachmentSearch)
+        if ($emailAttachmentSearchObject)
         {
-            switch ($relatedWorkItemFromAttachmentSearch.ClassName)
+            $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $emailAttachmentSearchObject @scsmMGMTParams).sourceobject.id @scsmMGMTParams
+            if ($relatedWorkItemFromAttachmentSearch)
             {
-                "System.WorkItem.Incident" {Update-WorkItem -message $message -wiType "ir" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
-                "System.WorkItem.ServiceRequest" {Update-WorkItem -message $message -wiType "sr" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
-                "System.WorkItem.ChangeRequest" {Update-WorkItem -message $message -wiType "cr" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
+                switch ($relatedWorkItemFromAttachmentSearch.ClassName)
+                {
+                    "System.WorkItem.Incident" {Update-WorkItem -message $message -wiType "ir" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
+                    "System.WorkItem.ServiceRequest" {Update-WorkItem -message $message -wiType "sr" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
+                    "System.WorkItem.ChangeRequest" {Update-WorkItem -message $message -wiType "cr" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
+                }
+            }
+            else
+            {
+                #the File Attachment (email) was found, but the related Work Item was not, Create a New Work Item
+                New-WorkItem $message $defaultNewWorkItem
             }
         }
         else
         {
-            #no match was found, Create a New Work Item
+            #the File Attachment (email) was not found, Create a New Work Item
             New-WorkItem $message $defaultNewWorkItem
         }
     }
