@@ -771,7 +771,10 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
         }
     }
     
-    $TemplatesForThisMessage = Get-TemplatesByMailbox $message
+    if (($smexcoSettingsMP.UseMailboxRedirection -eq $true) -and ($smexcoSettingsMPMailboxes.Count -ge 1))
+    {
+        $TemplatesForThisMessage = Get-TemplatesByMailbox $message
+    }
     
     # Use the global default work item type or, if mailbox redirection is used, use the default work item type for the
     # specific mailbox that the current message was sent to. If Azure Cognitive Services is enabled
