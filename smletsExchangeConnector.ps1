@@ -2671,7 +2671,7 @@ function Get-TemplatesByMailbox ($message)
             }
             else {
                 Write-Debug "No redirection from known mailbox.  Using Default templates"
-                return $Mailboxes[$ScsmEmail]
+                return $Mailboxes[$workflowEmailAddress]
             }
         }
     }
