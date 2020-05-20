@@ -920,6 +920,16 @@
               MinLength="0"
               Required="false"
               Scale="2" />       
+
+          <Property ID="AMLMinConfidenceImpactedConfigItem"
+              Type="decimal"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="38"
+              MinLength="0"
+              Required="false"
+              Scale="2" />
          
           <Property ID="AMLIncidentConfidenceClassExtensionGUID"
               Type="guid"
