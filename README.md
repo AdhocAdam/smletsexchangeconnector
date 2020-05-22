@@ -15,6 +15,23 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>Predict Impacted Configuration Items with Azure Machine Learning (v1.8)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/machineLearningConfigItem.png" /></td>
+    <td width="auto">Take Azure Machine Learning even further and enable the connector the ability to relate Impacted Configuration Items to a New Work Item in addition to Work Item Decisioning, Classification, and Routing. This feature is compatible with Configuration Items of <i>any</i> type whether it be:
+<br /><br />
+<ul>
+  <li>stock Service Manager classes</li>
+  <li>imported Operations Manager classes</li>
+  <li>ANY 3rd party management pack classes</li>
+  <li>or even your own custom in house developed classes</li>
+</ul>
+Ready to go? Get started over <a href="https://github.com/AdhocAdam/smletsexchangeconnector/wiki/Azure-Machine-Learning-setup">here</a>.</td>
+  </tr>
+</table>
+<table border="0">
+  <tr>
     <td colspan="3"><i>Support for Cireson Watchlist (v1.7)</i></td>
   </tr>
   <tr>
