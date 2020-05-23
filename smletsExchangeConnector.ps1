@@ -20,6 +20,9 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.8.0 = #12 - Feature, Predict Affected/Impacted Configuration Item(s)
+                #175 - Bug, Get-TemplatesByMailbox: incorrect variable name
+                #88 - Bug, Verify-WorkItem does not handle null search results
 Version: 1.7.0 = #34 - Feature, Intgrate with Cireson Watchlist feature
                 #169 - Bug, Corrected the logic issue for determining CiresonSuggestionURLs. Added class instantiation for URL suggestion email to include the BodyType object.
 Version: 1.6.1 = #142 = Bug, Schedule Outlook Meeting Task doesn't work in IE/Edge
@@ -388,7 +391,7 @@ $workItemOverrideType = "ir"
 #This is done by taking a subset of data from your SCSM DW, uploading to Azure Machine Learning, and then training ML on said dataset.
 #Details on setup/configuration can be found on the SMLets Exchange Connector Wiki.
 #Once trained, you can publish an AML web service the connector can consume in order to intelligently predict the
-#Work Item Type (Incident/Service Request), Work Item Support Group, and Work Item classification. Once enabled, you to set a minimum
+#Work Item Type (Incident/Service Request), Work Item Support Group, Work Item classification, and Impacted Configuration Items. Once enabled, you to set a minimum
 #percent threshold before these values are applied. In doing so, you can ensure high standards for incoming email classification so
 #AML only engages when met otherwise it will fallback to your Default Work Item template. Finally, AML can co-exist with the ACS
 #feature that defines Priority/Urgency/Impact based on Sentiment Analysis.
@@ -400,6 +403,7 @@ $workItemOverrideType = "ir"
 #amlWorkItemTypeMinPercentConfidence = The minimum percentage AML must return in order to decide should an Incident or Service Request be created
 #amlWorkItemClassificationMinPercentConfidence = The minimum percentage AML must return in order to set the Classification on the New Work Item
 #amlWorkItemSupportGroupMinPercentConfidence = The minimum percentage AML must return in order set the Support Group on the New Work Item
+#amlImpactedConfigItemMinPercentConfidence = The minimum percentage AML must return in order set the Impacted Config Items on the New Work Item
 #aml*ClassificationScoreClassExtensionName = Optionally write the returned percent confidence value to a decimal class extension on Incidents or Service Requests
 #aml*ClassificationEnumPredictionExtName = Optionally write the returned enum value to an enum class extension bound to Classification/Area on Incidents or Service Requests
 $enableAzureMachineLearning = $false
@@ -408,6 +412,7 @@ $amlURL = ""
 $amlWorkItemTypeMinPercentConfidence = "95"
 $amlWorkItemClassificationMinPercentConfidence = "95"
 $amlWorkItemSupportGroupMinPercentConfidence = "95"
+$amlImpactedConfigItemMinPercentConfidence = "95"
 $amlWITypeIncidentStringClassExtensionName = ""
 $amlWITypeServiceRequestStringClassExtensionName = ""
 $amlWITypeIncidentScoreClassExtensionName = ""
@@ -551,6 +556,7 @@ $affectedUserRelClass = get-scsmrelationshipclass -name "System.WorkItemAffected
 $assignedToUserRelClass  = Get-SCSMRelationshipClass -name "System.WorkItemAssignedToUser$" @scsmMGMTParams
 $createdByUserRelClass = Get-SCSMRelationshipClass -name "System.WorkItemCreatedByUser$" @scsmMGMTParams
 $workResolvedByUserRelClass = Get-SCSMRelationshipClass -name "System.WorkItem.TroubleTicketResolvedByUser$" @scsmMGMTParams
+$wiAboutCIRelClass = Get-SCSMRelationshipClass -name "System.WorkItemAboutConfigItem$" @scsmMGMTParams
 $wiRelatesToCIRelClass = Get-SCSMRelationshipClass -name "System.WorkItemRelatesToConfigItem$" @scsmMGMTParams
 $wiRelatesToWIRelClass = Get-SCSMRelationshipClass -name "System.WorkItemRelatesToWorkItem$" @scsmMGMTParams
 $wiContainsActivityRelClass = Get-SCSMRelationshipClass -name "System.WorkItemContainsActivity$" @scsmMGMTParams
@@ -691,7 +697,10 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
         }
     }
     
-    $TemplatesForThisMessage = Get-TemplatesByMailbox $message
+    if (($UseMailboxRedirection -eq $true) -and ($mailboxes.Count -ge 1))
+    {
+        $TemplatesForThisMessage = Get-TemplatesByMailbox $message
+    }
     
     # Use the global default work item type or, if mailbox redirection is used, use the default work item type for the
     # specific mailbox that the current message was sent to. If Azure Cognitive Services is enabled
@@ -832,6 +841,17 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         {
                             Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Classification" = $amlProbability.WorkItemClassification} @scsmMGMTParams
                         }
+                        if($amlProbability.AffectedConfigItemConfidence -ge $amlImpactedConfigItemMinPercentConfidence)
+                        {
+                            if($amlProbability.AffectedConfigItem.IndexOf(",") -gt 1) 
+                            {
+                                $amlProbability.AffectedConfigItem.Split(",") | %{New-SCSMRelationshipObject -Relationship $wiAboutCIRelClass -Source $newWorkItem -Target $_ -Bulk @scsmMGMTParams}
+                            }
+                            else
+                            {
+                                New-SCSMRelationshipObject -Relationship $wiAboutCIRelClass -Source $newWorkItem -Target $amlProbability.AffectedConfigItem -Bulk @scsmMGMTParams
+                            }  
+                        }
                     }
 
                     #Assign to an Analyst based on the Support Group that was set via Azure Machine Learning or just from the Template
@@ -968,6 +988,17 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                         if ($amlProbability.WorkItemClassificationConfidence -ge $amlWorkItemClassificationMinPercentConfidence)
                         {
                             Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Classification" = $amlProbability.WorkItemClassification} @scsmMGMTParams
+                        }
+                        if($amlProbability.AffectedConfigItemConfidence -ge $amlImpactedConfigItemMinPercentConfidence)
+                        {
+                            if($amlProbability.AffectedConfigItem.IndexOf(",") -gt 1) 
+                            {
+                                $amlProbability.AffectedConfigItem.Split(",") | %{New-SCSMRelationshipObject -Relationship $wiAboutCIRelClass -Source $newWorkItem -Target $_ -Bulk @scsmMGMTParams}
+                            }
+                            else
+                            {
+                                New-SCSMRelationshipObject -Relationship $wiAboutCIRelClass -Source $newWorkItem -Target $amlProbability.AffectedConfigItem -Bulk @scsmMGMTParams
+                            }  
                         }
                     }
 
@@ -2468,19 +2499,27 @@ function Verify-WorkItem ($message, $returnWorkItem)
     if ($attachEmailToWorkItem -eq $true)
     {
         $emailAttachmentSearchObject = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | select-object -first 1 
-        $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $emailAttachmentSearchObject @scsmMGMTParams).sourceobject.id @scsmMGMTParams
-        if ($emailAttachmentSearchObject -and $relatedWorkItemFromAttachmentSearch)
+        if ($emailAttachmentSearchObject)
         {
-            switch ($relatedWorkItemFromAttachmentSearch.ClassName)
+            $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $emailAttachmentSearchObject @scsmMGMTParams).sourceobject.id @scsmMGMTParams
+            if ($relatedWorkItemFromAttachmentSearch)
             {
-                "System.WorkItem.Incident" {Update-WorkItem -message $message -wiType "ir" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
-                "System.WorkItem.ServiceRequest" {Update-WorkItem -message $message -wiType "sr" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
-                "System.WorkItem.ChangeRequest" {Update-WorkItem -message $message -wiType "cr" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
+                switch ($relatedWorkItemFromAttachmentSearch.ClassName)
+                {
+                    "System.WorkItem.Incident" {Update-WorkItem -message $message -wiType "ir" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
+                    "System.WorkItem.ServiceRequest" {Update-WorkItem -message $message -wiType "sr" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
+                    "System.WorkItem.ChangeRequest" {Update-WorkItem -message $message -wiType "cr" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
+                }
+            }
+            else
+            {
+                #the File Attachment (email) was found, but the related Work Item was not, Create a New Work Item
+                New-WorkItem $message $defaultNewWorkItem
             }
         }
         else
         {
-            #no match was found, Create a New Work Item
+            #the File Attachment (email) was not found, Create a New Work Item
             New-WorkItem $message $defaultNewWorkItem
         }
     }
@@ -2552,7 +2591,7 @@ function Get-TemplatesByMailbox ($message)
             }
             else {
                 Write-Debug "No redirection from known mailbox.  Using Default templates"
-                return $Mailboxes[$ScsmEmail]
+                return $Mailboxes[$workflowEmailAddress]
             }
         }
     }
@@ -3086,6 +3125,8 @@ function Get-AMLWorkItemProbability ($EmailSubject, $EmailBody)
     $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassificationConfidence -Value (($probabilityResults[3] -as [decimal]) * 100)
     $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroup -Value $probabilityResults[4]
     $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroupConfidence -Value (($probabilityResults[5] -as [decimal]) * 100)
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name AffectedConfigItem -Value $probabilityResults[6]
+    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name AffectedConfigItemConfidence -Value (($probabilityResults[7] -as [decimal]) * 100)
 
     #return the percent score
     return ($probabilityMatrix)
