@@ -20,6 +20,9 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.8.0 = #12 - Feature, Predict Affected/Impacted Configuration Item(s)
+                #175 - Bug, Get-TemplatesByMailbox: incorrect variable name
+                #88 - Bug, Verify-WorkItem does not handle null search results
 Version: 1.7.0 = #34 - Feature, Intgrate with Cireson Watchlist feature
                 #169 - Bug, Corrected the logic issue for determining CiresonSuggestionURLs. Added class instantiation for URL suggestion email to include the BodyType object.
 Version: 1.6.1 = #142 = Bug, Schedule Outlook Meeting Task doesn't work in IE/Edge
