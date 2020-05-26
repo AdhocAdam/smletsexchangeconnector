@@ -174,6 +174,7 @@ namespace SMLetsExchangeConnectorSettingsUI
         private String decAMLWIMinConfidence = "0";
         private String decAMLClassificationMinConfidence = "0";
         private String decAMLSupportGroupMinConfidence = "0";
+        private String decAMLConfigItemMinConfidence = "0";
 
             //AML incident custom decimal extensions
             ManagementPackProperty incidentAMLWIConfidenceExtensionDec;
@@ -2110,6 +2111,21 @@ namespace SMLetsExchangeConnectorSettingsUI
             }
         }
 
+        public String AzureMachineLearningAffectedConfigItemConfidence
+        {
+            get
+            {
+                return this.decAMLConfigItemMinConfidence;
+            }
+            set
+            {
+                if (this.decAMLConfigItemMinConfidence != value)
+                {
+                    this.decAMLConfigItemMinConfidence = value;
+                }
+            }
+        }
+
         //azure translate
         public Boolean IsAzureTranslationEnabled
         {
@@ -2645,6 +2661,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             else { this.AzureMachineLearningClassificationConfidence = decAMLClassificationMinConfidence; }
             if (this.AzureMachineLearningSupportGroupConfidence != null) { this.AzureMachineLearningSupportGroupConfidence = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].ToString(); }
             else { this.AzureMachineLearningSupportGroupConfidence = decAMLSupportGroupMinConfidence; }
+            if (this.AzureMachineLearningAffectedConfigItemConfidence != null) { this.AzureMachineLearningAffectedConfigItemConfidence = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceImpactedConfigItem"].ToString(); }
+            else { this.AzureMachineLearningAffectedConfigItemConfidence = decAMLConfigItemMinConfidence; }
 
             ManagementPackClass incidentClass = emg.EntityTypes.GetClass(new Guid("a604b942-4c7b-2fb2-28dc-61dc6f465c68"));
             ManagementPackClass serviceRequestClass = emg.EntityTypes.GetClass(new Guid("04b69835-6343-4de2-4b19-6be08c612989"));
@@ -3117,6 +3135,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemClassification"].Value = 95; }
             try { decimal.Parse(this.AzureMachineLearningSupportGroupConfidence); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].Value = this.AzureMachineLearningSupportGroupConfidence; }
             catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].Value = 95; }
+            try { decimal.Parse(this.AzureMachineLearningAffectedConfigItemConfidence); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceImpactedConfigItem"].Value = this.AzureMachineLearningAffectedConfigItemConfidence; }
+            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceImpactedConfigItem"].Value = 95; }
 
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLIncidentConfidenceClassExtensionGUID"].Value = this.AMLIncidentConfidenceDecExtension.Id; }
             catch { }

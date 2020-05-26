@@ -227,6 +227,13 @@
                         </TextBox.Text>
                     </TextBox>
 
+                    <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAMLAffectedConfigItemMinConfidence" Content="Minimum Confidence to Decide Impacted Config Items"/>
+                    <TextBox Height="25" Margin="0,-8,0,10" Name="txtAMLAffectedConfigItemConfidence" >
+                        <TextBox.Text>
+                            <Binding Path="AzureMachineLearningAffectedConfigItemConfidence" Mode="TwoWay" FallbackValue=""/>
+                        </TextBox.Text>
+                    </TextBox>
+
                     <TextBlock Text="(optional) Record Azure Machine Learning Scores and Predictions into New Work Items regardless of decisioning outcome through custom Decimal and Enum Class Extensions" TextWrapping="Wrap" FontWeight="Bold" />
                     <StackPanel Orientation="Horizontal" Margin="10,0,-150,0" Height="379">
                         <StackPanel Orientation="Vertical" Margin="0,0,50,0" Width="200">
