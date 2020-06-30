@@ -3089,6 +3089,34 @@ function Get-AzureEmailKeywords ($messageToEvaluate)
     #return the keywords
     return $keywordResult.documents.keyPhrases
 }
+function Get-AzureEmailImageAnalysis ($imageToEvalute)
+{
+    #define cognitive services URLs
+    $imageAnalysisURI = "https://$azureRegion.api.cognitive.microsoft.com/vision/v3.0/analyze?visualFeatures=Tags"
+
+    #create the JSON request
+    $messagePayload = $(@{"url"=$imageToEvalute} | ConvertTo-Json)
+
+    #invoke the Cognitive Services Sentiment API
+    $imageAnalysis = Invoke-RestMethod -Method Post -Uri $imageAnalysisURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcVisionAPIKey } -Body $messagePayload -ContentType "application/json"
+
+    return $imageAnalysis
+}
+
+function Get-AzureEmailImageText ($imageToEvalute)
+{
+    #define cognitive services URLs
+    $imageTextURI = "https://$azureRegion.api.cognitive.microsoft.com/vision/v3.0/ocr?detectOrientation=true"
+
+    #create the JSON request
+    $messagePayload = $(@{"url"=$imageToEvalute} | ConvertTo-Json)
+
+    #invoke the Cognitive Services Sentiment API
+    $ocrResult = Invoke-RestMethod -Method Post -Uri $imageTextURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcVisionAPIKey } -Body $messagePayload -ContentType "application/json"
+
+    #words = $ocrResult.regions.lines.words
+    return $ocrResult
+}
 #endregion
 
 #region #### Modified version of Set-SCSMTemplateWithActivities from Morton Meisler seen here http://blog.ctglobalservices.com/service-manager-scsm/mme/set-scsmtemplatewithactivities-powershell-script/
