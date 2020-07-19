@@ -439,6 +439,17 @@ $enableAzureTranslateForNewWI = $false
 $defaultAzureTranslateLanguage = "en"
 $azureCogSvcTranslateAPIKey = ""
 
+#optional, enable Azure Vision through Azure Cognitive Services
+#use Vision services from Azure in order to populate the Description of images attached to Work Items from email. By enabling, the image is first sent to
+#the Image Analysis API to attempt to describe the top 5 categories or Tags of the image. In the event one of these Tags is the word "text"
+#another call to the Optical Character Recognition (OCR) API will be made and attempt to extract text/words from the image.
+#Given the maximum length of the File Attachment's Description property is 255 characters, Tags will always be present but the OCR result could be chopped off.
+#For example a screenshot of an Outlook error message attached to an email would have these 5 Tags and the associated Description in the file's Description property.
+#Tags:screenshot,abstract,text,design,graphic;Desc:Microsoft Outlook Cannot start Microsoft Outlook. Cannot open the Outlook window.
+#pricing details can be found here: https://azure.microsoft.com/en-ca/pricing/details/cognitive-services/computer-vision/
+$enableAzureVision = $false
+$azureCogSvcVisionAPIKey = ""
+
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
 #scomMGMTServer = set equal to the name of your scom management server
@@ -1808,6 +1819,10 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.FileName
+                if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $attachment.Extension) -and ($enableAzureVision))
+                {
+                    $NewFile.Item($fileAttachmentClass, "Description").Value = Get-AzureEmailImageAnalysis -imageToEvalute $MemoryStream
+                }
                 #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
                 #$NewFile.Item($fileAttachmentClass, "Extension").Value =   $attachment.Extension
                 $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
@@ -1846,6 +1861,10 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name
+                if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $attachment.Extension) -and ($enableAzureVision))
+                {
+                    $NewFile.Item($fileAttachmentClass, "Description").Value = Get-AzureEmailImageAnalysis -imageToEvalute $MemoryStream
+                }
                 #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
                 #$NewFile.Item($fileAttachmentClass, "Extension").Value =   $attachment.Extension
                 $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
