@@ -1820,11 +1820,18 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.FileName
                 #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
-                    $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
-                $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
-                if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
+                try
                 {
-                    $NewFile.Item($fileAttachmentClass, "Description").Value = Get-AzureEmailImageAnalysis -imageToEvalute $MemoryStream
+                    $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
+                    $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
+                    if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
+                    {
+                        $NewFile.Item($fileAttachmentClass, "Description").Value = Get-AzureEmailImageAnalysis -imageToEvalute $MemoryStream
+                    }
+                }
+                catch
+                {
+                    #file doesn't have a parseable extension or the call to Azure Vision failed
                 }
                 $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
                 $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
@@ -1863,12 +1870,18 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name
                 #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
-                    $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
-                $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
-                if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
+                try
                 {
-                    $NewFile.Item($fileAttachmentClass, "Description").Value = Get-AzureEmailImageAnalysis -imageToEvalute $MemoryStream
-                } $NewFile.Item($fileAttachmentClass, "Description").Value = Get-AzureEmailImageAnalysis -imageToEvalute $MemoryStream
+                    $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
+                    $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
+                    if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
+                    {
+                        $NewFile.Item($fileAttachmentClass, "Description").Value = Get-AzureEmailImageAnalysis -imageToEvalute $MemoryStream
+                    }
+                }
+                catch
+                {
+                    #file doesn't have a parseable extension or the call to Azure Vision failed
                 }
                 $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
                 $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
