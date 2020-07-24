@@ -1826,7 +1826,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                     $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
                     if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
                     {
-                        $NewFile.Item($fileAttachmentClass, "Description").Value = Get-AzureEmailImageAnalysis -imageToEvalute $MemoryStream
+                        $NewFile.Item($fileAttachmentClass, "Description").Value = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
                     }
                 }
                 catch
@@ -1876,7 +1876,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                     $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
                     if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
                     {
-                        $NewFile.Item($fileAttachmentClass, "Description").Value = Get-AzureEmailImageAnalysis -imageToEvalute $MemoryStream
+                        $NewFile.Item($fileAttachmentClass, "Description").Value = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
                     }
                 }
                 catch
