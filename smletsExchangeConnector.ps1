@@ -2085,11 +2085,11 @@ function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
         #based on how Dynamic Work Item assignment was configured, set the Assigned To User
         if ($DynamicWorkItemAssignment -eq "volume")
         {
-            $userToAssign = $supportGroupMembers | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1 
+            $userToAssign = $supportGroupMembers | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1 
         }
         elseif ($DynamicWorkItemAssignment -eq "OOOvolume")
         {
-            $userToAssign = $supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1
+            $userToAssign = $supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1
         }
         elseif ($DynamicWorkItemAssignment -eq "random")
         {
