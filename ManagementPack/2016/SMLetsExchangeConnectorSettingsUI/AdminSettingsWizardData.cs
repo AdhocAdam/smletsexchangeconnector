@@ -202,6 +202,11 @@ namespace SMLetsExchangeConnectorSettingsUI
         private String strAzureVisionAPIKey = String.Empty;
         private String strAzureVisionRegion = String.Empty;
 
+        //azure speech
+        private Boolean boolEnableAzureSpeech = false;
+        private String strAzureSpeechAPIKey = String.Empty;
+        private String strAzureSpeechRegion = String.Empty;
+
         //management pack guid
         private Guid guidEnterpriseManagementObjectID = Guid.Empty;
         #endregion
@@ -2223,6 +2228,52 @@ namespace SMLetsExchangeConnectorSettingsUI
             }
         }
 
+        //azure speech
+        public Boolean IsAzureSpeechEnabled
+        {
+            get
+            {
+                return this.boolEnableAzureSpeech;
+            }
+            set
+            {
+                if (this.boolEnableAzureSpeech != value)
+                {
+                    this.boolEnableAzureSpeech = value;
+                }
+            }
+        }
+
+        public String AzureSpeechAPIKey
+        {
+            get
+            {
+                return this.strAzureSpeechAPIKey;
+            }
+            set
+            {
+                if (this.strAzureSpeechAPIKey != value)
+                {
+                    this.strAzureSpeechAPIKey = value;
+                }
+            }
+        }
+
+        public String AzureSpeechRegion
+        {
+            get
+            {
+                return this.strAzureSpeechRegion;
+            }
+            set
+            {
+                if (this.strAzureSpeechRegion != value)
+                {
+                    this.strAzureSpeechRegion = value;
+                }
+            }
+        }
+
         //management pack guid
         public Guid EnterpriseManagementObjectID
         {
@@ -2927,6 +2978,12 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.AzureVisionAPIKey = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSVisionAPIKey"].ToString();
             this.AzureVisionRegion = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSVisionRegion"].ToString();
 
+            //azure speech
+            try { this.IsAzureSpeechEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableACSSpeech"].ToString()); }
+            catch { this.IsAzureSpeechEnabled = false; }
+            this.AzureSpeechAPIKey = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSpeechAPIKey"].ToString();
+            this.AzureSpeechRegion = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSpeechRegion"].ToString();
+
             //load the MP
             this.EnterpriseManagementObjectID = emoAdminSetting.Id;
         }
@@ -3229,6 +3286,11 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableACSVision"].Value = this.IsAzureVisionEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSVisionAPIKey"].Value = this.AzureVisionAPIKey;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSVisionRegion"].Value = this.AzureVisionRegion;
+
+            //azure speech
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableACSSpeech"].Value = this.IsAzureSpeechEnabled;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSpeechAPIKey"].Value = this.AzureSpeechAPIKey;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSpeechRegion"].Value = this.AzureSpeechRegion;
 
             //Update the MP
             emoAdminSetting.Commit();
