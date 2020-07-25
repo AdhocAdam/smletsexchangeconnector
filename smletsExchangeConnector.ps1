@@ -463,6 +463,14 @@ $enableAzureVision = $smexcoSettingsMP.EnableACSVision
 $azureVisionRegion = $smexcoSettingsMP.ACSVisionRegion
 $azureCogSvcVisionAPIKey = $smexcoSettingsMP.ACSVisionAPIKey
 
+#optional, enable Azure Speech through Azure Cognitive Services
+#use Speech services from Azure in order to populate the Description of wav/ogg files attached to Work Items from email. By enabling, the audio file is first sent to
+#use the Speech to Text API in an attempt to convert the file to readable text.
+#pricing details can be found here: https://azure.microsoft.com/en-us/services/cognitive-services/speech-services/
+$enableAzureSpeech = $smexcoSettingsMP.EnableACSSpeech
+$azureSpeechRegion = $smexcoSettingsMP.ACSSpeechRegion
+$azureCogSvcSpeechAPIKey = $smexcoSettingsMP.ACSSpeechAPIKey
+
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
 #scomMGMTServer = set equal to the name of your scom management server
@@ -1928,7 +1936,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.FileName
-                #optional, use Azure Cognitive Services Vision and OCR to set the Description property on the file
+                #optional, use Azure Cognitive Services Vision, OCR, or Speech to set the Description property on the file
                 try
                 {
                     $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
@@ -1962,10 +1970,14 @@ function Attach-FileToWorkItem ($message, $workItemId)
                             $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
                         }
                     }
+                    if (((".wav", ".ogg") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureSpeech))
+                    {
+                        $NewFile.Item($fileAttachmentClass, "Description").Value = (Get-AzureSpeechEmailAudioText -audioFileToEvaluate $attachmentContent).DisplayText
+                    }
                 }
                 catch
                 {
-                    #file doesn't have a parseable extension or the call to Azure Vision failed
+                    #file doesn't have a parseable extension or the call to Azure Vision/Speech failed
                 }
                 $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
                 $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
@@ -2003,7 +2015,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name
-                #optional, use Azure Cognitive Services Vision and OCR to set the Description property on the file
+                #optional, use Azure Cognitive Services Vision, OCR, or Speech to set the Description property on the file
                 try
                 {
                     $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
@@ -2037,10 +2049,14 @@ function Attach-FileToWorkItem ($message, $workItemId)
                             $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
                         }
                     }
+                    if (((".wav", ".ogg") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureSpeech))
+                    {
+                        $NewFile.Item($fileAttachmentClass, "Description").Value = (Get-AzureSpeechEmailAudioText -audioFileToEvaluate $attachmentContent).DisplayText
+                    }
                 }
                 catch
                 {
-                    #file doesn't have a parseable extension or the call to Azure Vision failed
+                    #file doesn't have a parseable extension or the call to Azure Vision/Speech failed
                 }
                 $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
                 $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
@@ -3265,7 +3281,26 @@ function Get-AzureEmailImageAnalysis ($imageToEvalute)
 
     #return the Vision API analysis
     return $result
-} 
+}
+
+function Get-AzureSpeechEmailAudioText ($waveFileToEvaluate)
+{  
+    #build the request
+    $SpeechServiceURI = "https://$azureSpeechRegion.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=en-us"
+    $RecoRequestHeader = @{
+      'Ocp-Apim-Subscription-Key' = "$azureCogSvcSpeechAPIKey";
+      'Content-type' = "audio/wav; codecs=audio/pcm; samplerate=16000";
+      'Transfer-Encoding' = 'chunked'
+      'Except' = "100-continue"
+      'Accept' = "application/json"
+    }
+
+    #Pass the audio byte array into the body and submit the request
+    $RecoResponse = Invoke-RestMethod -Method POST -Uri $SpeechServiceURI -Headers $RecoRequestHeader -Body $waveFileToEvaluate
+
+    #return the result
+    return $RecoResponse
+}
 function Get-AzureEmailImageText ($imageToEvalute)
 {
     #azure cognitive services, vision URL
