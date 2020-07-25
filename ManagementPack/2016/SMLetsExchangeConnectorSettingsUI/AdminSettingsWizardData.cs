@@ -197,6 +197,11 @@ namespace SMLetsExchangeConnectorSettingsUI
         private String strAzureTranslateAPIKey = String.Empty;
         private String strAzureTranslateDefaultLanguageCode = String.Empty;
 
+        //azure vision
+        private Boolean boolEnableAzureVision = false;
+        private String strAzureVisionAPIKey = String.Empty;
+        private String strAzureVisionRegion = String.Empty;
+
         //management pack guid
         private Guid guidEnterpriseManagementObjectID = Guid.Empty;
         #endregion
@@ -2172,6 +2177,51 @@ namespace SMLetsExchangeConnectorSettingsUI
             }
         }
 
+        //azure vision
+        public Boolean IsAzureVisionEnabled
+        {
+            get
+            {
+                return this.boolEnableAzureVision;
+            }
+            set
+            {
+                if (this.boolEnableAzureVision != value)
+                {
+                    this.boolEnableAzureVision = value;
+                }
+            }
+        }
+
+        public String AzureVisionAPIKey
+        {
+            get
+            {
+                return this.strAzureVisionAPIKey;
+            }
+            set
+            {
+                if (this.strAzureVisionAPIKey != value)
+                {
+                    this.strAzureVisionAPIKey = value;
+                }
+            }
+        }
+
+        public String AzureVisionRegion
+        {
+            get
+            {
+                return this.strAzureVisionRegion;
+            }
+            set
+            {
+                if (this.strAzureVisionRegion != value)
+                {
+                    this.strAzureVisionRegion = value;
+                }
+            }
+        }
 
         //management pack guid
         public Guid EnterpriseManagementObjectID
@@ -2871,6 +2921,12 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.AzureTranslateAPIKey = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTranslateAPIKey"].ToString();
             this.AzureTranslateDefaultLanguageCode = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTranslateDefaultLanguageCode"].ToString();
 
+            //azure vision
+            try { this.IsAzureVisionEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableACSVision"].ToString()); }
+            catch { this.IsAzureVisionEnabled = false; }
+            this.AzureVisionAPIKey = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSVisionAPIKey"].ToString();
+            this.AzureVisionRegion = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSVisionRegion"].ToString();
+
             //load the MP
             this.EnterpriseManagementObjectID = emoAdminSetting.Id;
         }
@@ -3168,6 +3224,11 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableACSTranslate"].Value = this.IsAzureTranslationEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTranslateAPIKey"].Value = this.AzureTranslateAPIKey;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTranslateDefaultLanguageCode"].Value = this.AzureTranslateDefaultLanguageCode;
+
+            //azure vision
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableACSVision"].Value = this.IsAzureVisionEnabled;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSVisionAPIKey"].Value = this.AzureVisionAPIKey;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSVisionRegion"].Value = this.AzureVisionRegion;
 
             //Update the MP
             emoAdminSetting.Commit();
