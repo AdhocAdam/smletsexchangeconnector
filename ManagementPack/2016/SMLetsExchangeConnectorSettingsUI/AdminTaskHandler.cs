@@ -72,6 +72,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             wizard.AddLast(new WizardStep("SCOM", typeof(SCOMIntegrationForm), wizard.WizardData));
             wizard.AddLast(new WizardStep("A.I.", typeof(ArtificialIntelligence), wizard.WizardData));
             wizard.AddLast(new WizardStep("Translation", typeof(AzureTranslate), wizard.WizardData));
+            wizard.AddLast(new WizardStep("Vision", typeof(AzureVision), wizard.WizardData));
             wizard.AddLast(new WizardStep("About", typeof(AboutForm), wizard.WizardData));
 
             //Show the property page 
