@@ -1819,14 +1819,39 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.FileName
-                #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
+                #optional, use Azure Cognitive Services Vision and OCR to set the Description property on the file
                 try
                 {
                     $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
                     $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
                     if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
                     {
-                        $NewFile.Item($fileAttachmentClass, "Description").Value = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
+                        $azureVisionResult = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
+                        $azureVisionTags = $azureVisionResult.tags.name | select-object -first 5
+                        $azureVisionTags = $azureVisionTags -join ','
+                        #if one of the Tags is "text" then attempt to extract text from the image through OCR as long as the confidence is greater than 90
+                        if ($azureVisionTags.contains("text"))
+                        {
+                            $AzureOCRConfidence = [math]::round((($azureVisionTags.tags | select-object name, confidence | ?{$_.name -eq "text"} | select-object confidence -ExpandProperty confidence) * 100), 2)
+                            if ($AzureOCRConfidence -ge 90)
+                            {
+                                $azureImageText = Get-AzureEmailImageText -imageToEvalute $AttachmentContent
+                                $ocrResult = $azureImageText.regions.Lines.words.text -join " "
+                                if ($ocrResult.length -ge 256){$ocrResult = $ocrResult.Substring(0,255)}
+                                #set the Description on the File Attachment with the Tags + OCR result
+                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags);Desc:$ocrResult"
+                            }
+                            else
+                            {
+                                #The OCR confidence wasn't high enough to test
+                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
+                            }
+                        }
+                        else
+                        {
+                            #The returned Azure Vision Tags don't contain the word "text"
+                            $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
+                        }
                     }
                 }
                 catch
@@ -1869,14 +1894,39 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name
-                #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
+                #optional, use Azure Cognitive Services Vision and OCR to set the Description property on the file
                 try
                 {
                     $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
                     $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
                     if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
                     {
-                        $NewFile.Item($fileAttachmentClass, "Description").Value = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
+                        $azureVisionResult = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
+                        $azureVisionTags = $azureVisionResult.tags.name | select-object -first 5
+                        $azureVisionTags = $azureVisionTags -join ','
+                        #if one of the Tags is "text" then attempt to extract text from the image through OCR as long as the confidence is greater than 90
+                        if ($azureVisionTags.contains("text"))
+                        {
+                            $AzureOCRConfidence = [math]::round((($azureVisionTags.tags | select-object name, confidence | ?{$_.name -eq "text"} | select-object confidence -ExpandProperty confidence) * 100), 2)
+                            if ($AzureOCRConfidence -ge 90)
+                            {
+                                $azureImageText = Get-AzureEmailImageText -imageToEvalute $AttachmentContent
+                                $ocrResult = $azureImageText.regions.Lines.words.text -join " "
+                                if ($ocrResult.length -ge 256){$ocrResult = $ocrResult.Substring(0,255)}
+                                #set the Description on the File Attachment with the Tags + OCR result
+                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags);Desc:$ocrResult"
+                            }
+                            else
+                            {
+                                #The OCR confidence wasn't high enough to test
+                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
+                            }
+                        }
+                        else
+                        {
+                            #The returned Azure Vision Tags don't contain the word "text"
+                            $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
+                        }
                     }
                 }
                 catch
