@@ -1054,6 +1054,30 @@
               MaxLength="256"
               MinLength="0"
               Required="false" />
+
+        <!--Azure Vision-->
+        <Property ID="EnableACSVision"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+        <Property ID="ACSVisionAPIKey"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+        
+        <Property ID="ACSVisionRegion"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
           
         </ClassType>
         
