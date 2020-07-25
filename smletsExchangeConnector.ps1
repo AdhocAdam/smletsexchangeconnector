@@ -448,6 +448,7 @@ $azureCogSvcTranslateAPIKey = ""
 #Tags:screenshot,abstract,text,design,graphic;Desc:Microsoft Outlook Cannot start Microsoft Outlook. Cannot open the Outlook window.
 #pricing details can be found here: https://azure.microsoft.com/en-ca/pricing/details/cognitive-services/computer-vision/
 $enableAzureVision = $false
+$azureVisionRegion = ""
 $azureCogSvcVisionAPIKey = ""
 
 #optional, enable SCOM functionality
@@ -3176,31 +3177,37 @@ function Get-AzureEmailKeywords ($messageToEvaluate)
 }
 function Get-AzureEmailImageAnalysis ($imageToEvalute)
 {
-    #define cognitive services URLs
-    $imageAnalysisURI = "https://$azureRegion.api.cognitive.microsoft.com/vision/v3.0/analyze?visualFeatures=Tags"
+    #azure cognitive services, vision URL
+    $imageAnalysisURI = "https://$azureVisionRegion.api.cognitive.microsoft.com/vision/v3.0/analyze?visualFeatures=Tags"
 
-    #create the JSON request
-    $messagePayload = $(@{"url"=$imageToEvalute} | ConvertTo-Json)
+    #adapted from C# per: https://docs.microsoft.com/en-us/azure/cognitive-services/computer-vision/quickstarts/csharp-print-text
+    $httpClient = New-Object -TypeName "System.Net.Http.Httpclient"
+    $httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "$azureCogSvcVisionAPIKey")
+    $content = New-Object "System.Net.Http.ByteArrayContent" -ArgumentList @(,$imageToEvalute)
+    $content.Headers.ContentType = "application/octet-stream"
+    $request = $httpClient.PostAsync($imageAnalysisURI,$content)
+    $request.wait();
+    if($request.IsCompleted) {$result = $request.Result.Content.ReadAsStringAsync().Result | ConvertFrom-Json}
 
-    #invoke the Cognitive Services Sentiment API
-    $imageAnalysis = Invoke-RestMethod -Method Post -Uri $imageAnalysisURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcVisionAPIKey } -Body $messagePayload -ContentType "application/json"
-
-    return $imageAnalysis
-}
-
+    #return the Vision API analysis
+    return $result
+} 
 function Get-AzureEmailImageText ($imageToEvalute)
 {
-    #define cognitive services URLs
-    $imageTextURI = "https://$azureRegion.api.cognitive.microsoft.com/vision/v3.0/ocr?detectOrientation=true"
+    #azure cognitive services, vision URL
+    $imageTextURI = "https://$azureVisionRegion.api.cognitive.microsoft.com/vision/v3.0/ocr?detectOrientation=true"
 
-    #create the JSON request
-    $messagePayload = $(@{"url"=$imageToEvalute} | ConvertTo-Json)
+    #adapted from C# per: https://docs.microsoft.com/en-us/azure/cognitive-services/computer-vision/quickstarts/csharp-print-text
+    $httpClient = New-Object -TypeName "System.Net.Http.Httpclient"
+    $httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "$azureCogSvcVisionAPIKey")
+    $content = New-Object "System.Net.Http.ByteArrayContent" -ArgumentList @(,$imageToEvalute)
+    $content.Headers.ContentType = "application/octet-stream"
+    $request = $httpClient.PostAsync($imageTextURI,$content)
+    $request.wait();
+    if($request.IsCompleted) {$result = $request.Result.Content.ReadAsStringAsync().Result | ConvertFrom-Json}
 
-    #invoke the Cognitive Services Sentiment API
-    $ocrResult = Invoke-RestMethod -Method Post -Uri $imageTextURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcVisionAPIKey } -Body $messagePayload -ContentType "application/json"
-
-    #words = $ocrResult.regions.lines.words
-    return $ocrResult
+    #return the Vision API analysis
+    return $result
 }
 #endregion
 
