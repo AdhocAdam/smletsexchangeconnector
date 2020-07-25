@@ -459,9 +459,9 @@ $azureCogSvcTranslateAPIKey = $smexcoSettingsMP.ACSTranslateAPIKey
 #For example a screenshot of an Outlook error message attached to an email would have these 5 Tags and the associated Description in the file's Description property.
 #Tags:screenshot,abstract,text,design,graphic;Desc:Microsoft Outlook Cannot start Microsoft Outlook. Cannot open the Outlook window.
 #pricing details can be found here: https://azure.microsoft.com/en-ca/pricing/details/cognitive-services/computer-vision/
-$enableAzureVision = $false
-$azureVisionRegion = ""
-$azureCogSvcVisionAPIKey = ""
+$enableAzureVision = $smexcoSettingsMP.EnableACSVision
+$azureVisionRegion = $smexcoSettingsMP.ACSVisionRegion
+$azureCogSvcVisionAPIKey = $smexcoSettingsMP.ACSVisionAPIKey
 
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
