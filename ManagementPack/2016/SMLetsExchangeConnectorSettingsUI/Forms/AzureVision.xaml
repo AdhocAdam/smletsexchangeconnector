@@ -1,0 +1,31 @@
+<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.AzureVision" 
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
+            xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
+            xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="550" Height="463">
+
+    <Grid Name="ConfigurationGrid" Margin="15,25,15,10">
+        <!-- header -->
+        <Label Content="Azure Vision" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
+        <TextBlock Margin="10,51,10,0" FontWeight="Light" FontSize="14" TextWrapping="Wrap" Text="Describe the images attached to emails and perform OCR when text is detected" Height="55" VerticalAlignment="Top" />
+        <Image Margin="360,111,0,0" Height="150" VerticalAlignment="Top" Source="../AssemblyImages/ACSVision.png" HorizontalAlignment="Right" Width="150"/>
+
+        <!-- configuration -->
+        <ScrollViewer Name="scrollViewer" CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Width="365" Margin="0,111,0,0" Height="307" VerticalAlignment="Top">
+            <StackPanel Name="stackPanel" Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Top" Height="289" Width="355">
+                <CheckBox Name="chkAzureVision" FlowDirection="LeftToRight" IsChecked="{Binding Path=IsAzureVisionEnabled, Mode=TwoWay}" >
+                    <TextBlock FlowDirection="LeftToRight" Text="Enable Azure Vision on detected pictures" />
+                </CheckBox>
+                <Label />
+
+                <Label Height="25" Padding="0" Margin="0,0,0,0" Name="lblAzVisionAPIKey" Content="API Key"/>
+                <TextBox Height="25" Margin="0,-8,0,10" Name="txtAzVisionAPIKey" Text="{Binding AzureVisionAPIKey, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkAzureVision, Path=IsChecked}"/>
+
+                <Label Height="25" Padding="0" Margin="0,0,0,0" Name="lblAzVisionRegion" Content="Azure Vision Region"/>
+                <TextBox Height="25" Margin="0,-8,0,10" Name="txtAzVisionRegion" Text="{Binding AzureVisionRegion, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkAzureVision, Path=IsChecked}" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</wpfwiz:WizardRegularPageBase> 

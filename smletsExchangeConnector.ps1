@@ -451,6 +451,18 @@ $enableAzureTranslateForNewWI = $smexcoSettingsMP.EnableACSTranslate
 $defaultAzureTranslateLanguage = $smexcoSettingsMP.ACSTranslateDefaultLanguageCode
 $azureCogSvcTranslateAPIKey = $smexcoSettingsMP.ACSTranslateAPIKey
 
+#optional, enable Azure Vision through Azure Cognitive Services
+#use Vision services from Azure in order to populate the Description of images attached to Work Items from email. By enabling, the image is first sent to
+#the Image Analysis API to attempt to describe the top 5 categories or Tags of the image. In the event one of these Tags is the word "text"
+#another call to the Optical Character Recognition (OCR) API will be made and attempt to extract text/words from the image.
+#Given the maximum length of the File Attachment's Description property is 255 characters, Tags will always be present but the OCR result could be chopped off.
+#For example a screenshot of an Outlook error message attached to an email would have these 5 Tags and the associated Description in the file's Description property.
+#Tags:screenshot,abstract,text,design,graphic;Desc:Microsoft Outlook Cannot start Microsoft Outlook. Cannot open the Outlook window.
+#pricing details can be found here: https://azure.microsoft.com/en-ca/pricing/details/cognitive-services/computer-vision/
+$enableAzureVision = $smexcoSettingsMP.EnableACSVision
+$azureVisionRegion = $smexcoSettingsMP.ACSVisionRegion
+$azureCogSvcVisionAPIKey = $smexcoSettingsMP.ACSVisionAPIKey
+
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
 #scomMGMTServer = set equal to the name of your scom management server
@@ -1916,8 +1928,45 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.FileName
-                #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
-                #$NewFile.Item($fileAttachmentClass, "Extension").Value =   $attachment.Extension
+                #optional, use Azure Cognitive Services Vision and OCR to set the Description property on the file
+                try
+                {
+                    $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
+                    $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
+                    if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
+                    {
+                        $azureVisionResult = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
+                        $azureVisionTags = $azureVisionResult.tags.name | select-object -first 5
+                        $azureVisionTags = $azureVisionTags -join ','
+                        #if one of the Tags is "text" then attempt to extract text from the image through OCR as long as the confidence is greater than 90
+                        if ($azureVisionTags.contains("text"))
+                        {
+                            $AzureOCRConfidence = [math]::round((($azureVisionTags.tags | select-object name, confidence | ?{$_.name -eq "text"} | select-object confidence -ExpandProperty confidence) * 100), 2)
+                            if ($AzureOCRConfidence -ge 90)
+                            {
+                                $azureImageText = Get-AzureEmailImageText -imageToEvalute $AttachmentContent
+                                $ocrResult = $azureImageText.regions.Lines.words.text -join " "
+                                if ($ocrResult.length -ge 256){$ocrResult = $ocrResult.Substring(0,255)}
+                                #set the Description on the File Attachment with the Tags + OCR result
+                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags);Desc:$ocrResult"
+                            }
+                            else
+                            {
+                                #The OCR confidence wasn't high enough to test
+                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
+                            }
+                        }
+                        else
+                        {
+                            #The returned Azure Vision Tags don't contain the word "text"
+                            $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
+                        }
+                    }
+                }
+                catch
+                {
+                    #file doesn't have a parseable extension or the call to Azure Vision failed
+                }
                 $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
                 $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
                 $NewFile.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
@@ -1954,8 +2003,45 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name
-                #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
-                #$NewFile.Item($fileAttachmentClass, "Extension").Value =   $attachment.Extension
+                #optional, use Azure Cognitive Services Vision and OCR to set the Description property on the file
+                try
+                {
+                    $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
+                    $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
+                    if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
+                    {
+                        $azureVisionResult = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
+                        $azureVisionTags = $azureVisionResult.tags.name | select-object -first 5
+                        $azureVisionTags = $azureVisionTags -join ','
+                        #if one of the Tags is "text" then attempt to extract text from the image through OCR as long as the confidence is greater than 90
+                        if ($azureVisionTags.contains("text"))
+                        {
+                            $AzureOCRConfidence = [math]::round((($azureVisionTags.tags | select-object name, confidence | ?{$_.name -eq "text"} | select-object confidence -ExpandProperty confidence) * 100), 2)
+                            if ($AzureOCRConfidence -ge 90)
+                            {
+                                $azureImageText = Get-AzureEmailImageText -imageToEvalute $AttachmentContent
+                                $ocrResult = $azureImageText.regions.Lines.words.text -join " "
+                                if ($ocrResult.length -ge 256){$ocrResult = $ocrResult.Substring(0,255)}
+                                #set the Description on the File Attachment with the Tags + OCR result
+                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags);Desc:$ocrResult"
+                            }
+                            else
+                            {
+                                #The OCR confidence wasn't high enough to test
+                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
+                            }
+                        }
+                        else
+                        {
+                            #The returned Azure Vision Tags don't contain the word "text"
+                            $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
+                        }
+                    }
+                }
+                catch
+                {
+                    #file doesn't have a parseable extension or the call to Azure Vision failed
+                }
                 $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
                 $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
                 $NewFile.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
@@ -3162,6 +3248,40 @@ function Get-AzureEmailKeywords ($messageToEvaluate)
 
     #return the keywords
     return $keywordResult.documents.keyPhrases
+}
+function Get-AzureEmailImageAnalysis ($imageToEvalute)
+{
+    #azure cognitive services, vision URL
+    $imageAnalysisURI = "https://$azureVisionRegion.api.cognitive.microsoft.com/vision/v3.0/analyze?visualFeatures=Tags"
+
+    #adapted from C# per: https://docs.microsoft.com/en-us/azure/cognitive-services/computer-vision/quickstarts/csharp-print-text
+    $httpClient = New-Object -TypeName "System.Net.Http.Httpclient"
+    $httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "$azureCogSvcVisionAPIKey")
+    $content = New-Object "System.Net.Http.ByteArrayContent" -ArgumentList @(,$imageToEvalute)
+    $content.Headers.ContentType = "application/octet-stream"
+    $request = $httpClient.PostAsync($imageAnalysisURI,$content)
+    $request.wait();
+    if($request.IsCompleted) {$result = $request.Result.Content.ReadAsStringAsync().Result | ConvertFrom-Json}
+
+    #return the Vision API analysis
+    return $result
+} 
+function Get-AzureEmailImageText ($imageToEvalute)
+{
+    #azure cognitive services, vision URL
+    $imageTextURI = "https://$azureVisionRegion.api.cognitive.microsoft.com/vision/v3.0/ocr?detectOrientation=true"
+
+    #adapted from C# per: https://docs.microsoft.com/en-us/azure/cognitive-services/computer-vision/quickstarts/csharp-print-text
+    $httpClient = New-Object -TypeName "System.Net.Http.Httpclient"
+    $httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "$azureCogSvcVisionAPIKey")
+    $content = New-Object "System.Net.Http.ByteArrayContent" -ArgumentList @(,$imageToEvalute)
+    $content.Headers.ContentType = "application/octet-stream"
+    $request = $httpClient.PostAsync($imageTextURI,$content)
+    $request.wait();
+    if($request.IsCompleted) {$result = $request.Result.Content.ReadAsStringAsync().Result | ConvertFrom-Json}
+
+    #return the Vision API analysis
+    return $result
 }
 #endregion
 
