@@ -3091,8 +3091,6 @@ function Get-AzureEmailKeywords ($messageToEvaluate)
 }
 #endregion
 
-#region #### Modified version of Set-SCSMTemplateWithActivities from Morton Meisler seen here http://blog.ctglobalservices.com/service-manager-scsm/mme/set-scsmtemplatewithactivities-powershell-script/
-
 function Get-AMLWorkItemProbability ($EmailSubject, $EmailBody)
 {
     #create the header
@@ -3132,6 +3130,7 @@ function Get-AMLWorkItemProbability ($EmailSubject, $EmailBody)
     return ($probabilityMatrix)
 }
 
+#region #### Modified version of Set-SCSMTemplateWithActivities from Morton Meisler seen here http://blog.ctglobalservices.com/service-manager-scsm/mme/set-scsmtemplatewithactivities-powershell-script/
 function Update-SCSMPropertyCollection
 {
     Param ([Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateObject]$Object =$(throw "Please provide a valid template object")) 
@@ -3182,6 +3181,7 @@ function Apply-SCSMTemplate
     #Apply update template
     Set-SCSMObjectTemplate -Projection $Projection -Template $Template -ErrorAction Stop @scsmMGMTParams
 }
+#endregion
 
 function Remove-PII ($body)
 {
@@ -3202,8 +3202,6 @@ function Remove-PII ($body)
     }
     return $body
 }
-
-#endregion 
 
 #region #### SCOM Request Functions ####
 function Get-SCOMAuthorizedRequester ($sender)
