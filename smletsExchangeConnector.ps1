@@ -10,7 +10,7 @@ enabling other organizational level processes via email
 
 .NOTES
 Author: Adam Dzyacky
-Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2, Justin Workman, Brad Zima
+Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2, Justin Workman, Brad Zima, bennyguk
 Reviewers: Tom Hendricks, Brian Weist
 Inspiration: The Cireson Community, Anders Asp, Stefan Roth, and (of course) Travis Wright for SMlets examples
 Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installed on SCSM workflow server by virtue of stock Exchange Connector).
@@ -20,6 +20,10 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 1.9.0 = #55 - Feature, Image Analysis (support for png, jpg, jpeg, bmp, and gif)
+                #5 - Feature, Optical Character Recognition (support for png, jpg, jpeg, bmp, and gif)
+                #54 - Feature, Speech to Text for Audio Files (support for wav and ogg)
+                #188 - Bug, Dynamic work item assignment not functioning as expected
 Version: 1.8.0 = #12 - Feature, Predict Affected/Impacted Configuration Item(s)
                 #175 - Bug, Get-TemplatesByMailbox: incorrect variable name
                 #88 - Bug, Verify-WorkItem does not handle null search results
