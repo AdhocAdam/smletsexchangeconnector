@@ -3199,6 +3199,7 @@ function Get-AzureEmailImageAnalysis ($imageToEvalute)
     $imageAnalysisURI = "https://$azureVisionRegion.api.cognitive.microsoft.com/vision/v3.0/analyze?visualFeatures=Tags"
 
     #adapted from C# per: https://docs.microsoft.com/en-us/azure/cognitive-services/computer-vision/quickstarts/csharp-print-text
+    Add-Type -AssemblyName "System.Net.Http"
     $httpClient = New-Object -TypeName "System.Net.Http.Httpclient"
     $httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "$azureCogSvcVisionAPIKey")
     $content = New-Object "System.Net.Http.ByteArrayContent" -ArgumentList @(,$imageToEvalute)
@@ -3216,6 +3217,7 @@ function Get-AzureEmailImageText ($imageToEvalute)
     $imageTextURI = "https://$azureVisionRegion.api.cognitive.microsoft.com/vision/v3.0/ocr?detectOrientation=true"
 
     #adapted from C# per: https://docs.microsoft.com/en-us/azure/cognitive-services/computer-vision/quickstarts/csharp-print-text
+    Add-Type -AssemblyName "System.Net.Http"
     $httpClient = New-Object -TypeName "System.Net.Http.Httpclient"
     $httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "$azureCogSvcVisionAPIKey")
     $content = New-Object "System.Net.Http.ByteArrayContent" -ArgumentList @(,$imageToEvalute)
