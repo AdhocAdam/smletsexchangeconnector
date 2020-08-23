@@ -1054,6 +1054,54 @@
               MaxLength="256"
               MinLength="0"
               Required="false" />
+
+        <!--Azure Vision-->
+        <Property ID="EnableACSVision"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+        <Property ID="ACSVisionAPIKey"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+        
+        <Property ID="ACSVisionRegion"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+        <!--Azure Speech-->
+        <Property ID="EnableACSSpeech"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+        <Property ID="ACSSpeechAPIKey"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+        
+        <Property ID="ACSSpeechRegion"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
           
         </ClassType>
         

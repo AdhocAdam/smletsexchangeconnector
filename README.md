@@ -15,6 +15,26 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>Transcribe Audio Files to Text (v2.3)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/speech-api.png" /></td>
+    <td width="auto">Your SCSM environment can now hear! Translate incoming *.wav or *.ogg on emails to text with Azure Speech services. After enabling audio files will have their text transcriptions written to the File Attachment's Description. Get pricing details <a href="https://azure.microsoft.com/en-us/services/cognitive-services/speech-services/">here</a>.
+</td>
+  </tr>
+</table>
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Describe and Extract Text from Images (v2.3)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/ACSVision.png" /></td>
+    <td width="auto">Give your SCSM environment eyes with integration into Azure Cognitive Services Vision API. Once enabled, any image attached to emails will be submitted to Azure and will be tagged with 5 words describing what the image is. In the event text is detected, Optical Character Recognition (OCR) will additionally be performed. These results are then written into the Description property of the attachment. Get pricing details <a href="https://azure.microsoft.com/en-us/services/cognitive-services/computer-vision/">here</a>.
+</td>
+  </tr>
+</table>
+<table border="0">
+  <tr>
     <td colspan="3"><i>Predict Impacted Configuration Items with Azure Machine Learning (v2.2)</i></td>
   </tr>
   <tr>

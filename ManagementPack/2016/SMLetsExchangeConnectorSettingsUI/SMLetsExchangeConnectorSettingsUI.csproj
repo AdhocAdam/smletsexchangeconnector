@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -86,8 +86,14 @@
     <Compile Include="Forms\ArtificialIntelligence.xaml.cs">
       <DependentUpon>ArtificialIntelligence.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Forms\AzureSpeech.xaml.cs">
+      <DependentUpon>AzureSpeech.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Forms\AzureTranslate.xaml.cs">
       <DependentUpon>AzureTranslate.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\AzureVision.xaml.cs">
+      <DependentUpon>AzureVision.xaml</DependentUpon>
     </Compile>
     <Compile Include="Forms\CiresonIntegrationForm.xaml.cs">
       <DependentUpon>CiresonIntegrationForm.xaml</DependentUpon>
@@ -147,7 +153,15 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Forms\AzureSpeech.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Forms\AzureTranslate.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Forms\AzureVision.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -193,6 +207,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="16x16.png" />
+    <Resource Include="AssemblyImages\ACSSpeech.png" />
+    <Resource Include="AssemblyImages\ACSVision.png" />
     <Resource Include="AssemblyImages\translate.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -13,7 +13,7 @@
             <TextBlock Margin="10,-10,10,0" Text="Adam Dzyacky" TextWrapping="Wrap" />
             <!-- Contributors -->
             <TextBlock Margin="0,5,0,0" TextWrapping="Wrap" FontStyle="Italic" Text="SMLets Exchange Connector (PowerShell) Contributors" />
-            <TextBlock Margin="10,0" TextWrapping="Wrap" Text="Martin Blomgren, Tom Hendricks, Leigh Kilday, nradler2, Justin Workman, Brad Zima" />
+            <TextBlock Margin="10,0" TextWrapping="Wrap" Text="Martin Blomgren, Tom Hendricks, Leigh Kilday, nradler2, Justin Workman, Brad Zima, bennyguk" />
             <!-- Reviewers -->
             <TextBlock Margin="0,5,0,0" TextWrapping="Wrap" FontStyle="Italic" Text="SMLets Exchange Connector (PowerShell) Reviewers" />
             <TextBlock Margin="10,0" TextWrapping="Wrap" Text="Tom Hendricks, Brian Weist" />

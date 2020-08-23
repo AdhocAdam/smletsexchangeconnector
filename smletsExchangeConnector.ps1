@@ -10,7 +10,7 @@ enabling other organizational level processes via email
 
 .NOTES
 Author: Adam Dzyacky
-Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2, Justin Workman, Brad Zima
+Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2, Justin Workman, Brad Zima, bennyguk
 Reviewers: Tom Hendricks, Brian Weist
 Inspiration: The Cireson Community, Anders Asp, Stefan Roth, and (of course) Travis Wright for SMlets examples
 Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installed on SCSM workflow server by virtue of stock Exchange Connector).
@@ -20,6 +20,10 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 2.3.0 = #55 - Feature, Image Analysis (support for png, jpg, jpeg, bmp, and gif)
+                #5 - Feature, Optical Character Recognition (support for png, jpg, jpeg, bmp, and gif)
+                #54 - Feature, Speech to Text for Audio Files (support for wav and ogg)
+                #188 - Bug, Dynamic work item assignment not functioning as expected
 Version: 2.2.0 = #12 - Feature, Predict Affected/Impacted Configuration Item(s)
                 #175 - Bug, Get-TemplatesByMailbox: incorrect variable name
                 #88 - Bug, Verify-WorkItem does not handle null search results
@@ -450,6 +454,26 @@ $amlServiceRequestSupportGroupEnumPredictionExtName = "$($smexcoSettingsMP.AMLSe
 $enableAzureTranslateForNewWI = $smexcoSettingsMP.EnableACSTranslate
 $defaultAzureTranslateLanguage = $smexcoSettingsMP.ACSTranslateDefaultLanguageCode
 $azureCogSvcTranslateAPIKey = $smexcoSettingsMP.ACSTranslateAPIKey
+
+#optional, enable Azure Vision through Azure Cognitive Services
+#use Vision services from Azure in order to populate the Description of images attached to Work Items from email. By enabling, the image is first sent to
+#the Image Analysis API to attempt to describe the top 5 categories or Tags of the image. In the event one of these Tags is the word "text"
+#another call to the Optical Character Recognition (OCR) API will be made and attempt to extract text/words from the image.
+#Given the maximum length of the File Attachment's Description property is 255 characters, Tags will always be present but the OCR result could be chopped off.
+#For example a screenshot of an Outlook error message attached to an email would have these 5 Tags and the associated Description in the file's Description property.
+#Tags:screenshot,abstract,text,design,graphic;Desc:Microsoft Outlook Cannot start Microsoft Outlook. Cannot open the Outlook window.
+#pricing details can be found here: https://azure.microsoft.com/en-ca/pricing/details/cognitive-services/computer-vision/
+$enableAzureVision = $smexcoSettingsMP.EnableACSVision
+$azureVisionRegion = $smexcoSettingsMP.ACSVisionRegion
+$azureCogSvcVisionAPIKey = $smexcoSettingsMP.ACSVisionAPIKey
+
+#optional, enable Azure Speech through Azure Cognitive Services
+#use Speech services from Azure in order to populate the Description of wav/ogg files attached to Work Items from email. By enabling, the audio file is first sent to
+#use the Speech to Text API in an attempt to convert the file to readable text.
+#pricing details can be found here: https://azure.microsoft.com/en-us/services/cognitive-services/speech-services/
+$enableAzureSpeech = $smexcoSettingsMP.EnableACSSpeech
+$azureSpeechRegion = $smexcoSettingsMP.ACSSpeechRegion
+$azureCogSvcSpeechAPIKey = $smexcoSettingsMP.ACSSpeechAPIKey
 
 #optional, enable SCOM functionality
 #enableSCOMIntegration = set to $true or $false to enable this functionality
@@ -1916,8 +1940,49 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.FileName
-                #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
-                #$NewFile.Item($fileAttachmentClass, "Extension").Value =   $attachment.Extension
+                #optional, use Azure Cognitive Services Vision, OCR, or Speech to set the Description property on the file
+                try
+                {
+                    $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
+                    $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
+                    if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
+                    {
+                        $azureVisionResult = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
+                        $azureVisionTags = $azureVisionResult.tags.name | select-object -first 5
+                        $azureVisionTags = $azureVisionTags -join ','
+                        #if one of the Tags is "text" then attempt to extract text from the image through OCR as long as the confidence is greater than 90
+                        if ($azureVisionTags.contains("text"))
+                        {
+                            $AzureOCRConfidence = [math]::round((($azureVisionTags.tags | select-object name, confidence | ?{$_.name -eq "text"} | select-object confidence -ExpandProperty confidence) * 100), 2)
+                            if ($AzureOCRConfidence -ge 90)
+                            {
+                                $azureImageText = Get-AzureEmailImageText -imageToEvalute $AttachmentContent
+                                $ocrResult = $azureImageText.regions.Lines.words.text -join " "
+                                if ($ocrResult.length -ge 256){$ocrResult = $ocrResult.Substring(0,255)}
+                                #set the Description on the File Attachment with the Tags + OCR result
+                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags);Desc:$ocrResult"
+                            }
+                            else
+                            {
+                                #The OCR confidence wasn't high enough to test
+                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
+                            }
+                        }
+                        else
+                        {
+                            #The returned Azure Vision Tags don't contain the word "text"
+                            $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
+                        }
+                    }
+                    if (((".wav", ".ogg") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureSpeech))
+                    {
+                        $NewFile.Item($fileAttachmentClass, "Description").Value = (Get-AzureSpeechEmailAudioText -audioFileToEvaluate $attachmentContent).DisplayText
+                    }
+                }
+                catch
+                {
+                    #file doesn't have a parseable extension or the call to Azure Vision/Speech failed
+                }
                 $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
                 $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
                 $NewFile.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
@@ -1954,8 +2019,49 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name
-                #$NewFile.Item($fileAttachmentClass, "Description").Value = $attachment.Description
-                #$NewFile.Item($fileAttachmentClass, "Extension").Value =   $attachment.Extension
+                #optional, use Azure Cognitive Services Vision, OCR, or Speech to set the Description property on the file
+                try
+                {
+                    $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
+                    $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
+                    if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
+                    {
+                        $azureVisionResult = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
+                        $azureVisionTags = $azureVisionResult.tags.name | select-object -first 5
+                        $azureVisionTags = $azureVisionTags -join ','
+                        #if one of the Tags is "text" then attempt to extract text from the image through OCR as long as the confidence is greater than 90
+                        if ($azureVisionTags.contains("text"))
+                        {
+                            $AzureOCRConfidence = [math]::round((($azureVisionTags.tags | select-object name, confidence | ?{$_.name -eq "text"} | select-object confidence -ExpandProperty confidence) * 100), 2)
+                            if ($AzureOCRConfidence -ge 90)
+                            {
+                                $azureImageText = Get-AzureEmailImageText -imageToEvalute $AttachmentContent
+                                $ocrResult = $azureImageText.regions.Lines.words.text -join " "
+                                if ($ocrResult.length -ge 256){$ocrResult = $ocrResult.Substring(0,255)}
+                                #set the Description on the File Attachment with the Tags + OCR result
+                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags);Desc:$ocrResult"
+                            }
+                            else
+                            {
+                                #The OCR confidence wasn't high enough to test
+                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
+                            }
+                        }
+                        else
+                        {
+                            #The returned Azure Vision Tags don't contain the word "text"
+                            $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
+                        }
+                    }
+                    if (((".wav", ".ogg") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureSpeech))
+                    {
+                        $NewFile.Item($fileAttachmentClass, "Description").Value = (Get-AzureSpeechEmailAudioText -audioFileToEvaluate $attachmentContent).DisplayText
+                    }
+                }
+                catch
+                {
+                    #file doesn't have a parseable extension or the call to Azure Vision/Speech failed
+                }
                 $NewFile.Item($fileAttachmentClass, "Size").Value =        $MemoryStream.Length
                 $NewFile.Item($fileAttachmentClass, "AddedDate").Value =   [DateTime]::Now.ToUniversalTime()
                 $NewFile.Item($fileAttachmentClass, "Content").Value =     $MemoryStream
@@ -2085,11 +2191,11 @@ function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
         #based on how Dynamic Work Item assignment was configured, set the Assigned To User
         if ($DynamicWorkItemAssignment -eq "volume")
         {
-            $userToAssign = $supportGroupMembers | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1 
+            $userToAssign = $supportGroupMembers | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1 
         }
         elseif ($DynamicWorkItemAssignment -eq "OOOvolume")
         {
-            $userToAssign = $supportGroupMembers | Where-Object {$supportGroupMembers.OutOfOffice -ne $true} | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount -Descending | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1
+            $userToAssign = $supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1
         }
         elseif ($DynamicWorkItemAssignment -eq "random")
         {
@@ -3163,9 +3269,62 @@ function Get-AzureEmailKeywords ($messageToEvaluate)
     #return the keywords
     return $keywordResult.documents.keyPhrases
 }
-#endregion
+function Get-AzureEmailImageAnalysis ($imageToEvalute)
+{
+    #azure cognitive services, vision URL
+    $imageAnalysisURI = "https://$azureVisionRegion.api.cognitive.microsoft.com/vision/v3.0/analyze?visualFeatures=Tags"
 
-#region #### Modified version of Set-SCSMTemplateWithActivities from Morton Meisler seen here http://blog.ctglobalservices.com/service-manager-scsm/mme/set-scsmtemplatewithactivities-powershell-script/
+    #adapted from C# per: https://docs.microsoft.com/en-us/azure/cognitive-services/computer-vision/quickstarts/csharp-print-text
+    Add-Type -AssemblyName "System.Net.Http"
+    $httpClient = New-Object -TypeName "System.Net.Http.Httpclient"
+    $httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "$azureCogSvcVisionAPIKey")
+    $content = New-Object "System.Net.Http.ByteArrayContent" -ArgumentList @(,$imageToEvalute)
+    $content.Headers.ContentType = "application/octet-stream"
+    $request = $httpClient.PostAsync($imageAnalysisURI,$content)
+    $request.wait();
+    if($request.IsCompleted) {$result = $request.Result.Content.ReadAsStringAsync().Result | ConvertFrom-Json}
+
+    #return the Vision API analysis
+    return $result
+}
+
+function Get-AzureSpeechEmailAudioText ($waveFileToEvaluate)
+{  
+    #build the request
+    $SpeechServiceURI = "https://$azureSpeechRegion.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=en-us"
+    $RecoRequestHeader = @{
+      'Ocp-Apim-Subscription-Key' = "$azureCogSvcSpeechAPIKey";
+      'Content-type' = "audio/wav; codecs=audio/pcm; samplerate=16000";
+      'Transfer-Encoding' = 'chunked'
+      'Except' = "100-continue"
+      'Accept' = "application/json"
+    }
+
+    #Pass the audio byte array into the body and submit the request
+    $RecoResponse = Invoke-RestMethod -Method POST -Uri $SpeechServiceURI -Headers $RecoRequestHeader -Body $waveFileToEvaluate
+
+    #return the result
+    return $RecoResponse
+}
+function Get-AzureEmailImageText ($imageToEvalute)
+{
+    #azure cognitive services, vision URL
+    $imageTextURI = "https://$azureVisionRegion.api.cognitive.microsoft.com/vision/v3.0/ocr?detectOrientation=true"
+
+    #adapted from C# per: https://docs.microsoft.com/en-us/azure/cognitive-services/computer-vision/quickstarts/csharp-print-text
+    Add-Type -AssemblyName "System.Net.Http"
+    $httpClient = New-Object -TypeName "System.Net.Http.Httpclient"
+    $httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "$azureCogSvcVisionAPIKey")
+    $content = New-Object "System.Net.Http.ByteArrayContent" -ArgumentList @(,$imageToEvalute)
+    $content.Headers.ContentType = "application/octet-stream"
+    $request = $httpClient.PostAsync($imageTextURI,$content)
+    $request.wait();
+    if($request.IsCompleted) {$result = $request.Result.Content.ReadAsStringAsync().Result | ConvertFrom-Json}
+
+    #return the Vision API analysis
+    return $result
+}
+#endregion
 
 function Get-AMLWorkItemProbability ($EmailSubject, $EmailBody)
 {
@@ -3206,6 +3365,7 @@ function Get-AMLWorkItemProbability ($EmailSubject, $EmailBody)
     return ($probabilityMatrix)
 }
 
+#region #### Modified version of Set-SCSMTemplateWithActivities from Morton Meisler seen here http://blog.ctglobalservices.com/service-manager-scsm/mme/set-scsmtemplatewithactivities-powershell-script/
 function Update-SCSMPropertyCollection
 {
     Param ([Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateObject]$Object =$(throw "Please provide a valid template object")) 
@@ -3256,6 +3416,7 @@ function Apply-SCSMTemplate
     #Apply update template
     Set-SCSMObjectTemplate -Projection $Projection -Template $Template -ErrorAction Stop @scsmMGMTParams
 }
+#endregion
 
 function Remove-PII ($body)
 {
@@ -3276,8 +3437,6 @@ function Remove-PII ($body)
     }
     return $body
 }
-
-#endregion 
 
 #region #### SCOM Request Functions ####
 function Get-SCOMAuthorizedRequester ($sender)
