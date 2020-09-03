@@ -36,5 +36,16 @@ namespace SMLetsExchangeConnectorSettingsUI
         {
 
         }
+
+        //toggle AutoDiscover URL textbox availability
+        private void chkUseAutoDiscover_Checked(object sender, RoutedEventArgs e)
+        {
+            this.txtAutodiscoverURL.IsEnabled = false;
+        }
+
+        private void chkUseAutoDiscover_Unchecked(object sender, RoutedEventArgs e)
+        {
+            this.txtAutodiscoverURL.IsEnabled = true;
+        }
     }
 }
