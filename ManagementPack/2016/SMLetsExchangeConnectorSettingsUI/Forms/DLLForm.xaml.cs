@@ -62,7 +62,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             openFileDialog.Filter = "DLL files (*.dll)|*.dll|All files (*.*)|*.*";
             if (openFileDialog.ShowDialog() == true)
             {
-                txtMimeKitDLL.Text = openFileDialog.FileName;
+                txMSALDLL.Text = openFileDialog.FileName;
             }
         }
 
