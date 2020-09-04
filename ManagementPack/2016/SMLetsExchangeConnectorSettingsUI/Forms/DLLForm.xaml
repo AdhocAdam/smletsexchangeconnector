@@ -23,7 +23,7 @@
 
                 <Label Content="Microsoft Authentication Library DLL File Path (required for Office 365/OAuth)"/>
                 <TextBlock Text="C:\smletsExchangeConnector\Microsoft.Identity.Client.dll" FontStyle="Italic" FontSize="10" TextWrapping="Wrap" Margin="10,0,0,0" />
-                <TextBox x:Name="txMSALDLL" Height="23" Text="{Binding MSALFilePath, FallbackValue='', Mode=TwoWay}" Margin="10,0" />
+                <TextBox x:Name="txtMSALDLL" Height="23" Text="{Binding MSALFilePath, FallbackValue='', Mode=TwoWay}" Margin="10,0" />
                 <Button Content="Browse" Margin="10,5,0,0" Click="btn_BrowseMSALPath" HorizontalAlignment="Left" Width="71" />
 
                 <Label Content="Mimekit DLL File Path"/>
