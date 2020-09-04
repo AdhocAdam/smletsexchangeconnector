@@ -55,6 +55,17 @@ namespace SMLetsExchangeConnectorSettingsUI
             }
         }
 
+        private void btn_BrowseMSALPath(object sender, RoutedEventArgs e)
+        {
+            //OpenFileDialog openFileDialog = new OpenFileDialog();
+            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
+            openFileDialog.Filter = "DLL files (*.dll)|*.dll|All files (*.*)|*.*";
+            if (openFileDialog.ShowDialog() == true)
+            {
+                txtMimeKitDLL.Text = openFileDialog.FileName;
+            }
+        }
+
         private void btn_BrowseMimeKitPath(object sender, RoutedEventArgs e)
         {
             //OpenFileDialog openFileDialog = new OpenFileDialog();
