@@ -42,9 +42,9 @@
         	            </InlineUIContainer>
                     </TextBlock>
                     <TextBlock Text="Azure Tenant ID" />
-                    <TextBox />
+                    <TextBox x:Name="txtAzureTenantID" Text="{Binding AzureTenantID, FallbackValue='', Mode=TwoWay}" />
                     <TextBlock Text="Azure Application/Client ID" />
-                    <TextBox />
+                    <TextBox x:Name="txtAzureClientID" Text="{Binding AzureClientID, FallbackValue='', Mode=TwoWay}" />
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
