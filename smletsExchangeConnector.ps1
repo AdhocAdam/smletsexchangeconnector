@@ -3590,8 +3590,19 @@ if ($ceScripts) { Invoke-BeforeConnect }
 $exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService
 if ($UseExchangeOnline)
 {
-    #To request an access token from Azure, first load the Microsoft Authentication Library
-    [void] [Reflection.Assembly]::LoadFile("$msalDLLPath")
+    #request an access token from Azure
+    $ReqTokenBody = @{
+        Grant_Type    = "Password"
+        client_Id     = $AzureClientID
+        Username      = $username
+        Password      = $password
+        Scope         = "https://outlook.office.com/EWS.AccessAsUser.All"
+    }
+    $response = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token" -Method "POST" -Body $ReqTokenBody
+    
+    #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
+    $exchangeService.Url = [System.Uri]$ExchangeEndpoint
+    $exchangeService.Credentials = [Microsoft.Exchange.WebServices.Data.OAuthCredentials]($response.Access_Token)
 }
 else
 {
