@@ -2369,8 +2369,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.SCSMmanagementServer = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMmgmtServer"].ToString();
             this.WorkflowEmailAddress = emoAdminSetting[smletsExchangeConnectorSettingsClass, "WorkflowEmailAddress"].ToString();
             this.ExchangeAutodiscoverURL = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ExchangeAutodiscoverURL"].ToString();
-            this.ExchangeAutodiscoverURL = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureClientID"].ToString();
-            this.ExchangeAutodiscoverURL = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureTenantID"].ToString();
+            this.AzureClientID = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureClientID"].ToString();
+            this.AzureTenantID = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureTenantID"].ToString();
 
             //Autodiscover
             try { this.IsAutodiscoverEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseAutoDiscover"].ToString()); }
