@@ -31,7 +31,7 @@
                 <Label Height="25" Padding="0" Margin="10,10,10,0" x:Name="lblAutodiscoverURL" Content="Autodiscover URL"/>
                 <TextBox Height="25" Margin="10,0,10,10" x:Name="txtAutodiscoverURL" Text="{Binding ExchangeAutodiscoverURL, FallbackValue='', Mode=TwoWay}" />
                 <StackPanel Orientation="Horizontal">
-                    <CheckBox Name="Exchange365" Content="Office 365/Exchange Online"/>
+                    <CheckBox Name="Exchange365" Content="Office 365/Exchange Online" IsChecked="{Binding Path=IsExchangeOnline, Mode=TwoWay}" />
                 </StackPanel>
                 <StackPanel Visibility="{Binding Path=IsChecked, ElementName=Exchange365, Converter={StaticResource boolToVis}}">
                     <TextBlock VerticalAlignment="Top" Height="20" FontWeight="Light" FontSize="12" TextWrapping="Wrap">
