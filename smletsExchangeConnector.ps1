@@ -511,6 +511,7 @@ $privateCommentKeyword = "$($smexcoSettingsMP.SCSMKeywordPrivate)"
 #the PII regex file and HTML Suggestion Template paths will only be leveraged if these features are enabled above.
 #$htmlSuggestionTemplatePath must end with a "\"
 $exchangeEWSAPIPath = "$($smexcoSettingsMP.FilePathEWSDLL)"
+$msalDLLPath = "$($smexcoSettingsMP.FilePathMSALDLL)"
 $mimeKitDLLPath = "$($smexcoSettingsMP.FilePathMimeKitDLL)"
 $piiRegexPath = "$($smexcoSettingsMP.FilePathPIIRegex)"
 $htmlSuggestionTemplatePath = "$($smexcoSettingsMP.FilePathHTMLSuggestionTemplates)"
@@ -3586,16 +3587,25 @@ if ($ceScripts) { Invoke-BeforeConnect }
 #define Exchange assembly and connect to EWS
 [void] [Reflection.Assembly]::LoadFile("$exchangeEWSAPIPath")
 $exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService
-switch ($exchangeAuthenticationType)
+if ($UseExchangeOnline)
 {
-    "impersonation" {$exchangeService.Credentials = New-Object Net.NetworkCredential($username, $password, $domain)}
-    "windows" {$exchangeService.UseDefaultCredentials = $true}
+    #To request an access token from Azure, first load the Microsoft Authentication Library
+    [void] [Reflection.Assembly]::LoadFile("$msalDLLPath")
 }
-if ($UseAutoDiscover -eq $true) {
-    $exchangeService.AutodiscoverUrl($workflowEmailAddress)
-}
-else {
-    $exchangeService.Url = [System.Uri]$ExchangeEndpoint
+else
+{
+    #local exchange server
+    switch ($exchangeAuthenticationType)
+    {
+        "impersonation" {$exchangeService.Credentials = New-Object Net.NetworkCredential($username, $password, $domain)}
+        "windows" {$exchangeService.UseDefaultCredentials = $true}
+    }
+    if ($UseAutoDiscover -eq $true) {
+        $exchangeService.AutodiscoverUrl($workflowEmailAddress)
+    }
+    else {
+        $exchangeService.Url = [System.Uri]$ExchangeEndpoint
+    }
 }
 
 #define search parameters and search on the defined classes
