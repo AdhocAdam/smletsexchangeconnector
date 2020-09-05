@@ -43,6 +43,11 @@
               MaxLength="256"
               MinLength="0"
               Required="false" />
+              
+        <Property ID="UseExchangeOnline"
+              Type="bool"
+              Key="false"
+              Required="false" />
 
         <Property ID="AzureClientID"
               Type="string"
