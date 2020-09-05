@@ -25,9 +25,12 @@ namespace SMLetsExchangeConnectorSettingsUI
         private String strWorkflowEmailAddress = String.Empty;
         private Boolean boolEnableAutodiscover = false;
         private String strAutodiscoverURL = String.Empty;
+        private String strAzureTenantID = String.Empty;
+        private String strAzureAppID = String.Empty;
 
         //paths
         private String strEWSFilePath = String.Empty;
+        private String strMSALFilePath = String.Empty;
         private String strMimeKitFilePath = String.Empty;
         private String strPIIRegexFilePath = String.Empty;
         private String strCiresonHTMLSuggestionTemplatesPath = String.Empty;
@@ -288,6 +291,36 @@ namespace SMLetsExchangeConnectorSettingsUI
                 }
             }
         }
+        
+        public String AzureTenantID
+        {
+            get
+            {
+                return this.strAzureTenantID;
+            }
+            set
+            {
+                if (this.strAzureTenantID != value)
+                {
+                    this.strAzureTenantID = value;
+                }
+            }
+        }
+
+        public String AzureClientID
+        {
+            get
+            {
+                return this.strAzureAppID;
+            }
+            set
+            {
+                if (this.strAzureAppID != value)
+                {
+                    this.strAzureAppID = value;
+                }
+            }
+        }
 
         //file attachments
         public Boolean IsMaxFileSizeAttachmentsEnabled
@@ -332,6 +365,21 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.strEWSFilePath != value)
                 {
                     this.strEWSFilePath = value;
+                }
+            }
+        }
+        
+        public String MSALFilePath
+        {
+            get
+            {
+                return this.strMSALFilePath;
+            }
+            set
+            {
+                if (this.strMSALFilePath != value)
+                {
+                    this.strMSALFilePath = value;
                 }
             }
         }
@@ -2321,6 +2369,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.SCSMmanagementServer = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMmgmtServer"].ToString();
             this.WorkflowEmailAddress = emoAdminSetting[smletsExchangeConnectorSettingsClass, "WorkflowEmailAddress"].ToString();
             this.ExchangeAutodiscoverURL = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ExchangeAutodiscoverURL"].ToString();
+            this.ExchangeAutodiscoverURL = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureClientID"].ToString();
+            this.ExchangeAutodiscoverURL = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureTenantID"].ToString();
 
             //Autodiscover
             try { this.IsAutodiscoverEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseAutoDiscover"].ToString()); }
@@ -2328,6 +2378,7 @@ namespace SMLetsExchangeConnectorSettingsUI
 
             //DLL Paths - EWS, Mimekit, PII regex, HTML Suyggestions, Custom Events
             this.EWSFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathEWSDLL"].ToString();
+            this.MSALFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathMSALDLL"].ToString();
             this.MimeKitFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathMimeKitDLL"].ToString();
             this.PIIRegexFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathPIIRegex"].ToString();
             this.HTMLSuggestionTemplatesFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathHTMLSuggestionTemplates"].ToString();
@@ -3008,12 +3059,15 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "WorkflowEmailAddress"].Value = this.WorkflowEmailAddress;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseAutoDiscover"].Value = this.IsAutodiscoverEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ExchangeAutodiscoverURL"].Value = this.ExchangeAutodiscoverURL;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureClientID"].Value = this.AzureClientID;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureTenantID"].Value = this.AzureTenantID;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CreateUsersNotInCMDB"].Value = this.CreateUsersNotFoundtInCMDB;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "IncludeWholeEmail"].Value = this.IncludeWholeEmail;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AttachEmailToWorkItem"].Value = this.AttachEmailToWorkItem;
 
             //DLL Paths - EWS, Mimekit, PII regex, HTML Suyggestions, Custom Events
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathEWSDLL"].Value = this.EWSFilePath;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathMSALDLL"].Value = this.MSALFilePath;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathMimeKitDLL"].Value = this.MimeKitFilePath;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathPIIRegex"].Value = this.PIIRegexFilePath;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathHTMLSuggestionTemplates"].Value = this.HTMLSuggestionTemplatesFilePath;
