@@ -168,6 +168,7 @@ $password = ""
 $domain = ""
 $UseAutodiscover = $smexcoSettingsMP.UseAutoDiscover
 $ExchangeEndpoint = "$($smexcoSettingsMP.ExchangeAutodiscoverURL)"
+$UseExchangeOnline = $smexcoSettingsMP.UseExchangeOnline
 
 #defaultNewWorkItem = set to either "ir", "sr", "pr", or "cr"
 #default*RTemplate = define the displayname of the template you'll be using based on what you've set for $defaultNewWorkItem
