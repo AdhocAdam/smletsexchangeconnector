@@ -77,15 +77,6 @@
               MinLength="0"
               Required="false" />
 
-        <Property ID="FilePathMSALDLL"
-              Type="string"
-              AutoIncrement="false"
-              Key="false"
-              CaseSensitive="false"
-              MaxLength="256"
-              MinLength="0"
-              Required="false" />
-
           <Property ID="FilePathMimeKitDLL"
               Type="string"
               AutoIncrement="false"
