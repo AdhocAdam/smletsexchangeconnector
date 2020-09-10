@@ -31,7 +31,6 @@ namespace SMLetsExchangeConnectorSettingsUI
 
         //paths
         private String strEWSFilePath = String.Empty;
-        private String strMSALFilePath = String.Empty;
         private String strMimeKitFilePath = String.Empty;
         private String strPIIRegexFilePath = String.Empty;
         private String strCiresonHTMLSuggestionTemplatesPath = String.Empty;
@@ -381,21 +380,6 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.strEWSFilePath != value)
                 {
                     this.strEWSFilePath = value;
-                }
-            }
-        }
-        
-        public String MSALFilePath
-        {
-            get
-            {
-                return this.strMSALFilePath;
-            }
-            set
-            {
-                if (this.strMSALFilePath != value)
-                {
-                    this.strMSALFilePath = value;
                 }
             }
         }
@@ -2396,7 +2380,6 @@ namespace SMLetsExchangeConnectorSettingsUI
 
             //DLL Paths - EWS, Mimekit, PII regex, HTML Suyggestions, Custom Events
             this.EWSFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathEWSDLL"].ToString();
-            this.MSALFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathMSALDLL"].ToString();
             this.MimeKitFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathMimeKitDLL"].ToString();
             this.PIIRegexFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathPIIRegex"].ToString();
             this.HTMLSuggestionTemplatesFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathHTMLSuggestionTemplates"].ToString();
@@ -3086,7 +3069,6 @@ namespace SMLetsExchangeConnectorSettingsUI
 
             //DLL Paths - EWS, Mimekit, PII regex, HTML Suyggestions, Custom Events
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathEWSDLL"].Value = this.EWSFilePath;
-            emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathMSALDLL"].Value = this.MSALFilePath;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathMimeKitDLL"].Value = this.MimeKitFilePath;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathPIIRegex"].Value = this.PIIRegexFilePath;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathHTMLSuggestionTemplates"].Value = this.HTMLSuggestionTemplatesFilePath;
