@@ -512,7 +512,6 @@ $privateCommentKeyword = "$($smexcoSettingsMP.SCSMKeywordPrivate)"
 #the PII regex file and HTML Suggestion Template paths will only be leveraged if these features are enabled above.
 #$htmlSuggestionTemplatePath must end with a "\"
 $exchangeEWSAPIPath = "$($smexcoSettingsMP.FilePathEWSDLL)"
-$msalDLLPath = "$($smexcoSettingsMP.FilePathMSALDLL)"
 $mimeKitDLLPath = "$($smexcoSettingsMP.FilePathMimeKitDLL)"
 $piiRegexPath = "$($smexcoSettingsMP.FilePathPIIRegex)"
 $htmlSuggestionTemplatePath = "$($smexcoSettingsMP.FilePathHTMLSuggestionTemplates)"
