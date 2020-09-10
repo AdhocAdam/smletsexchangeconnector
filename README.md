@@ -7,7 +7,7 @@ This PowerShell script leverages the [SMlets module](https://www.powershellgalle
 
 
 ## So what is this for?
-The stock Exchange Connector is a seperate download that enables SCSM deployments to leverage an Exchange mailbox to process updates to work items. While incredibly useful, some feel limited by its inability to be customized given its nature as a sealed management pack. This PowerShell script replicates all functionality of [Exchange Connector 3.1](https://www.microsoft.com/en-ca/download/details.aspx?id=45291), introduces a host of new features, and most importantly enables SCSM Administrators to customize the solution to their needs.
+The stock Exchange Connector is a seperate download that enables SCSM deployments to leverage an Exchange mailbox to process updates to work items. While incredibly useful, some feel limited by its inability to be customized given its nature as a sealed management pack. This PowerShell script replicates all functionality of [Exchange Connector 4.0](https://www.microsoft.com/en-us/download/details.aspx?id=101579), introduces a host of new features, and most importantly enables SCSM Administrators to customize the solution to their needs.
 
 ## Who is this for?
 This is aimed at SCSM administrators looking to further push the automation limits of what their SCSM deployment can do with inbound email processing. As such, you should be comfortable with PowerShell and navigating SCSM via SMlets.

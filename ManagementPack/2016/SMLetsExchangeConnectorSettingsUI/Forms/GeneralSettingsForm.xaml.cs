@@ -36,6 +36,12 @@ namespace SMLetsExchangeConnectorSettingsUI
         {
 
         }
+        
+        //take the URL defined in the WPF and open a browser to it
+        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            System.Diagnostics.Process.Start(e.Uri.AbsoluteUri);
+        }
 
         //toggle AutoDiscover URL textbox availability
         private void chkUseAutoDiscover_Checked(object sender, RoutedEventArgs e)

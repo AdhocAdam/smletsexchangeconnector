@@ -25,6 +25,9 @@ namespace SMLetsExchangeConnectorSettingsUI
         private String strWorkflowEmailAddress = String.Empty;
         private Boolean boolEnableAutodiscover = false;
         private String strAutodiscoverURL = String.Empty;
+        private Boolean boolEnableExchangeOnline = false;
+        private String strAzureTenantID = String.Empty;
+        private String strAzureAppID = String.Empty;
 
         //paths
         private String strEWSFilePath = String.Empty;
@@ -285,6 +288,51 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.strAutodiscoverURL != value)
                 {
                     this.strAutodiscoverURL = value;
+                }
+            }
+        }
+        
+        public Boolean IsExchangeOnline
+        {
+            get
+            {
+                return this.boolEnableExchangeOnline;
+            }
+            set
+            {
+                if (this.boolEnableExchangeOnline != value)
+                {
+                    this.boolEnableExchangeOnline = value;
+                }
+            }
+        }
+        
+        public String AzureTenantID
+        {
+            get
+            {
+                return this.strAzureTenantID;
+            }
+            set
+            {
+                if (this.strAzureTenantID != value)
+                {
+                    this.strAzureTenantID = value;
+                }
+            }
+        }
+
+        public String AzureClientID
+        {
+            get
+            {
+                return this.strAzureAppID;
+            }
+            set
+            {
+                if (this.strAzureAppID != value)
+                {
+                    this.strAzureAppID = value;
                 }
             }
         }
@@ -2321,6 +2369,10 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.SCSMmanagementServer = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMmgmtServer"].ToString();
             this.WorkflowEmailAddress = emoAdminSetting[smletsExchangeConnectorSettingsClass, "WorkflowEmailAddress"].ToString();
             this.ExchangeAutodiscoverURL = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ExchangeAutodiscoverURL"].ToString();
+            try { this.IsExchangeOnline = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseExchangeOnline"].ToString()); }
+            catch { this.IsExchangeOnline = false; }
+            this.AzureClientID = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureClientID"].ToString();
+            this.AzureTenantID = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureTenantID"].ToString();
 
             //Autodiscover
             try { this.IsAutodiscoverEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseAutoDiscover"].ToString()); }
@@ -3008,6 +3060,9 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "WorkflowEmailAddress"].Value = this.WorkflowEmailAddress;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseAutoDiscover"].Value = this.IsAutodiscoverEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ExchangeAutodiscoverURL"].Value = this.ExchangeAutodiscoverURL;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseExchangeOnline"].Value = this.IsExchangeOnline;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureClientID"].Value = this.AzureClientID;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureTenantID"].Value = this.AzureTenantID;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CreateUsersNotInCMDB"].Value = this.CreateUsersNotFoundtInCMDB;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "IncludeWholeEmail"].Value = this.IncludeWholeEmail;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AttachEmailToWorkItem"].Value = this.AttachEmailToWorkItem;

@@ -43,6 +43,29 @@
               MaxLength="256"
               MinLength="0"
               Required="false" />
+              
+        <Property ID="UseExchangeOnline"
+              Type="bool"
+              Key="false"
+              Required="false" />
+
+        <Property ID="AzureClientID"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+        <Property ID="AzureTenantID"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
 
           <!--File Paths-->
           <Property ID="FilePathEWSDLL"

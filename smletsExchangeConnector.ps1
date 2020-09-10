@@ -153,7 +153,7 @@ $scsmMGMTServer = "$($smexcoSettingsMP.SCSMmgmtServer)"
 $scsmMGMTCreds = $null
 
 #define/use SCSM WF credentials
-#$exchangeAuthenticationType - "windows" or "impersonation" are valid inputs here.
+#$exchangeAuthenticationType - "windows" or "impersonation" are valid inputs here only with a local Exchange server.
     #Windows will use the credentials that start this script in order to authenticate to Exchange and retrieve messages
         #choosing this option only requires the $workflowEmailAddress variable to be defined
         #this is ideal if you'll be using Task Scheduler or SMA to initiate this
@@ -161,6 +161,9 @@ $scsmMGMTCreds = $null
         #choosing this option requires the $workflowEmailAddress, $username, $password, and $domain variables to be defined
 #UseAutoDiscover = Determines whether ($true) or not ($false) to connect to Exchange using autodiscover.  If $false, provide a URL for $ExchangeEndpoint
     #ExchangeEndpoint = A URL in the format of 'https://<yourservername.domain.tld>/EWS/Exchange.asmx' such as 'https://mail.contoso.com/EWS/Exchange.asmx'
+#UseExchangeOnline = When set to true the exchangeAuthenticationType is disregarded. Additionally on the General page in the Settings UI, the following should be set
+    #Use AutoDiscover should be set to false
+    #AutoDiscover URL should be set to https://outlook.office365.com/EWS/Exchange.asmx
 $exchangeAuthenticationType = "windows"
 $workflowEmailAddress = "$($smexcoSettingsMP.WorkflowEmailAddress)"
 $username = ""
@@ -168,6 +171,9 @@ $password = ""
 $domain = ""
 $UseAutodiscover = $smexcoSettingsMP.UseAutoDiscover
 $ExchangeEndpoint = "$($smexcoSettingsMP.ExchangeAutodiscoverURL)"
+$UseExchangeOnline = $smexcoSettingsMP.UseExchangeOnline
+$AzureClientID = "$($smexcoSettingsMP.AzureClientID)"
+$AzureTenantID = "$($smexcoSettingsMP.AzureTenantID)"
 
 #defaultNewWorkItem = set to either "ir", "sr", "pr", or "cr"
 #default*RTemplate = define the displayname of the template you'll be using based on what you've set for $defaultNewWorkItem
@@ -3586,16 +3592,36 @@ if ($ceScripts) { Invoke-BeforeConnect }
 #define Exchange assembly and connect to EWS
 [void] [Reflection.Assembly]::LoadFile("$exchangeEWSAPIPath")
 $exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService
-switch ($exchangeAuthenticationType)
+if ($UseExchangeOnline)
 {
-    "impersonation" {$exchangeService.Credentials = New-Object Net.NetworkCredential($username, $password, $domain)}
-    "windows" {$exchangeService.UseDefaultCredentials = $true}
-}
-if ($UseAutoDiscover -eq $true) {
-    $exchangeService.AutodiscoverUrl($workflowEmailAddress)
-}
-else {
+    #request an access token from Azure
+    $ReqTokenBody = @{
+        Grant_Type    = "Password"
+        client_Id     = $AzureClientID
+        Username      = $username
+        Password      = $password
+        Scope         = "https://outlook.office.com/EWS.AccessAsUser.All"
+    }
+    $response = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token" -Method "POST" -Body $ReqTokenBody
+    
+    #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
     $exchangeService.Url = [System.Uri]$ExchangeEndpoint
+    $exchangeService.Credentials = [Microsoft.Exchange.WebServices.Data.OAuthCredentials]($response.Access_Token)
+}
+else
+{
+    #local exchange server
+    switch ($exchangeAuthenticationType)
+    {
+        "impersonation" {$exchangeService.Credentials = New-Object Net.NetworkCredential($username, $password, $domain)}
+        "windows" {$exchangeService.UseDefaultCredentials = $true}
+    }
+    if ($UseAutoDiscover -eq $true) {
+        $exchangeService.AutodiscoverUrl($workflowEmailAddress)
+    }
+    else {
+        $exchangeService.Url = [System.Uri]$ExchangeEndpoint
+    }
 }
 
 #define search parameters and search on the defined classes
