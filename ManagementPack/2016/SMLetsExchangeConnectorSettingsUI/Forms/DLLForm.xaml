@@ -5,7 +5,7 @@
             xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
             xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="700" Height="684.153">
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="700" Height="621">
 
     <Grid Name="ConfigurationGrid" Margin="15,25,15,10">
         <!-- header -->
@@ -15,7 +15,7 @@
 
         <!-- configuration -->
         <ScrollViewer Name="scrollViewer" CanContentScroll="True" VerticalScrollBarVisibility="Disabled" HorizontalAlignment="Left" Width="493" Margin="0,92,0,10" >
-            <StackPanel Name="stackPanel" Orientation="Vertical" Height="537" Width="480" VerticalAlignment="Top">
+            <StackPanel Name="stackPanel" Orientation="Vertical" Height="474" Width="480" VerticalAlignment="Top">
                 <TextBlock Text="Exchange Web Services DLL File Path" />
                 <TextBlock Text="C:\Program Files\Microsoft\Exchange\Web Services\1.2\Microsoft.Exchange.WebServices.dll" FontStyle="Italic" FontSize="10" TextWrapping="Wrap" Margin="10,0,0,0" />
                 <TextBox x:Name="txtEWSapiDll" Height="23" Text="{Binding EWSFilePath, FallbackValue='', Mode=TwoWay}" Margin="10,0" />
