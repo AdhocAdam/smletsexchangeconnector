@@ -153,7 +153,7 @@ $scsmMGMTServer = "$($smexcoSettingsMP.SCSMmgmtServer)"
 $scsmMGMTCreds = $null
 
 #define/use SCSM WF credentials
-#$exchangeAuthenticationType - "windows" or "impersonation" are valid inputs here.
+#$exchangeAuthenticationType - "windows" or "impersonation" are valid inputs here only with a local Exchange server.
     #Windows will use the credentials that start this script in order to authenticate to Exchange and retrieve messages
         #choosing this option only requires the $workflowEmailAddress variable to be defined
         #this is ideal if you'll be using Task Scheduler or SMA to initiate this
@@ -161,6 +161,9 @@ $scsmMGMTCreds = $null
         #choosing this option requires the $workflowEmailAddress, $username, $password, and $domain variables to be defined
 #UseAutoDiscover = Determines whether ($true) or not ($false) to connect to Exchange using autodiscover.  If $false, provide a URL for $ExchangeEndpoint
     #ExchangeEndpoint = A URL in the format of 'https://<yourservername.domain.tld>/EWS/Exchange.asmx' such as 'https://mail.contoso.com/EWS/Exchange.asmx'
+#UseExchangeOnline = When set to true the exchangeAuthenticationType is disregarded. Additionally on the General page in the Settings UI, the following should be set
+    #Use AutoDiscover should be set to false
+    #AutoDiscover URL should be set to https://outlook.office365.com/EWS/Exchange.asmx
 $exchangeAuthenticationType = "windows"
 $workflowEmailAddress = "$($smexcoSettingsMP.WorkflowEmailAddress)"
 $username = ""
