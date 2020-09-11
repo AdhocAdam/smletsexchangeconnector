@@ -15,6 +15,15 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>OAuth 2.0 for Exchange Online (v2.4)</i></td>
+  </tr>
+  <tr>
+    <td width="200"><img src ="/FeatureScreenshots/OAuth.png" /></td>
+    <td width="auto">The connector supports OAuth 2.0 authentication via Azure AD Application registration to communicate with Exchange Online. Need help getting setup? The <a href="https://github.com/AdhocAdam/smletsexchangeconnector/wiki/Configuration-Examples#scenario-3-exchange-onlineoffice-365-with-oauth">wiki</a> has your covered.</td>
+  </tr>
+</table>
+<table border="0">
+  <tr>
     <td colspan="3"><i>Transcribe Audio Files to Text (v2.3)</i></td>
   </tr>
   <tr>
