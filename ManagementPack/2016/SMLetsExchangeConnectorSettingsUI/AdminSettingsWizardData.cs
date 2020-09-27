@@ -28,6 +28,8 @@ namespace SMLetsExchangeConnectorSettingsUI
         private Boolean boolEnableExchangeOnline = false;
         private String strAzureTenantID = String.Empty;
         private String strAzureAppID = String.Empty;
+        //run as account - exchange web services
+        ManagementPackSecureReference runasaccountews;
 
         //paths
         private String strEWSFilePath = String.Empty;
@@ -336,6 +338,24 @@ namespace SMLetsExchangeConnectorSettingsUI
                 }
             }
         }
+        
+        //run as account secure references
+        public ManagementPackSecureReference RunAsAccountEWS
+        {
+            get
+            {
+                return runasaccountews;
+            }
+            set
+            {
+                if (this.runasaccountews != value)
+                {
+                    runasaccountews = value;
+                    NotifyPropertyChanged("runAsAccount");
+                }
+            }
+        }
+        public IList<ManagementPackSecureReference> SecureRunAsAccounts { get; set; }
 
         //file attachments
         public Boolean IsMaxFileSizeAttachmentsEnabled
@@ -2373,6 +2393,28 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { this.IsExchangeOnline = false; }
             this.AzureClientID = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureClientID"].ToString();
             this.AzureTenantID = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureTenantID"].ToString();
+            
+            //Run as Account List
+            var allSecureReferences = emg.Security.GetSecureReferences();
+            List<ManagementPackSecureReference> securereferences = new List<ManagementPackSecureReference>();
+            foreach (ManagementPackSecureReference secRef in allSecureReferences)
+            {
+                if ((secRef.GetManagementPack().Name == "ServiceManager.LinkingFramework.Configuration") || (secRef.GetManagementPack().Name == "ServiceManager.Core.Library"))
+                {
+                    securereferences.Add(secRef);
+                }
+            }
+            this.SecureRunAsAccounts = securereferences.ToList();
+
+            //Run as Account - Exchange
+            try
+            {
+                this.RunAsAccountEWS = emg.Security.GetSecureReference(new Guid(emoAdminSetting[smletsExchangeConnectorSettingsClass, "SecureReferenceIdEWS"].ToString()));
+            }
+            catch
+            { 
+                //a run as account for exchange is not defined
+            }
 
             //Autodiscover
             try { this.IsAutodiscoverEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseAutoDiscover"].ToString()); }
