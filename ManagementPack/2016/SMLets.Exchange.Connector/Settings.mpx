@@ -85,6 +85,15 @@
               MaxLength="256"
               MinLength="0"
               Required="false" />
+              
+          <Property ID="FilePathSMExcoPS"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="400"
+              MinLength="0"
+              Required="false" />
 
           <Property ID="FilePathMimeKitDLL"
               Type="string"
