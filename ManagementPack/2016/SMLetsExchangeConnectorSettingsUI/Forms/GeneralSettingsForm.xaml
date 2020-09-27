@@ -5,7 +5,7 @@
             xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
             xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="551" Height="479"
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="551" Height="605"
             xmlns:converters="clr-namespace:SMLetsExchangeConnectorSettingsUI.Validation" >
 
     <Grid Name="ConfigurationGrid" Margin="15,25,15,10" >
@@ -16,7 +16,7 @@
 
         <!-- configuration -->
         <ScrollViewer Name="scrollViewer" Margin="10,75,0,10" CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Width="323">
-            <StackPanel Name="stackPanel" Orientation="Vertical" Height="349" VerticalAlignment="Top" HorizontalAlignment="Left" Width="313">
+            <StackPanel Name="stackPanel" Orientation="Vertical" Height="475" VerticalAlignment="Top" HorizontalAlignment="Left" Width="313">
                 <StackPanel.Resources>
                     <converters:BooleanToHiddenVisibility x:Key="boolToVis"/>
                 </StackPanel.Resources>
@@ -24,7 +24,11 @@
                 <TextBox Height="25" Margin="10,0,10,10" x:Name="txtSCSMmgmtServer" Text="{Binding SCSMmanagementServer, Mode=TwoWay}" />
                 <TextBlock Margin="10,0,0,0" x:Name="lblWFEmailAddress" TextWrapping="Wrap" Text="Workflow Email Address" />
                 <TextBox Height="25" Margin="10,0,10,10" x:Name="txtWFEmailAddress" Text="{Binding WorkflowEmailAddress, Mode=TwoWay}" Custom:Validation.RegexPattern="^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$"/>
-                <CheckBox Name="chkUseAutoDiscover" FlowDirection="LeftToRight" IsChecked="{Binding Path=IsAutodiscoverEnabled, Mode=TwoWay}" HorizontalAlignment="Left" Width="293" Checked="chkUseAutoDiscover_Checked" Unchecked="chkUseAutoDiscover_Unchecked" Margin="10,0,0,0" >
+
+                <TextBlock Margin="10,0,0,0" x:Name="lblRunAsAccountEWS" TextWrapping="Wrap" Text="Run As Account to connect to Exchange" />
+                <ComboBox Margin="10,0" ItemsSource="{Binding Path=SecureRunAsAccounts}" DisplayMemberPath="DisplayName" SelectedItem="{Binding RunAsAccountEWS, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                
+                <CheckBox Name="chkUseAutoDiscover" FlowDirection="LeftToRight" IsChecked="{Binding Path=IsAutodiscoverEnabled, Mode=TwoWay}" HorizontalAlignment="Left" Width="293" Checked="chkUseAutoDiscover_Checked" Unchecked="chkUseAutoDiscover_Unchecked" Margin="10,10,0,0" >
                     <TextBlock FlowDirection="LeftToRight" Text="Use Autodiscover" />
                 </CheckBox>
 
@@ -49,4 +53,4 @@
             </StackPanel>
         </ScrollViewer>
     </Grid>
-</wpfwiz:WizardRegularPageBase> 
+</wpfwiz:WizardRegularPageBase>
