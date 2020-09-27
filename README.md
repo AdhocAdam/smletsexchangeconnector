@@ -18,7 +18,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>Workflow Engine (v3.0)</i></td>
   </tr>
   <tr>
-    <td width="200"><img src ="/FeatureScreenshots/workflow.png" /></td>
+    <td align="center" width="200"><img src ="/FeatureScreenshots/workflow.png" /></td>
     <td width="auto">The connector can optionally can be driven through the Service Manager workflow engine. All while maintaining the customization and flexibility you've come to expect through a PowerShell based connector. Setup instructions can be found here.</td>
   </tr>
 </table>
