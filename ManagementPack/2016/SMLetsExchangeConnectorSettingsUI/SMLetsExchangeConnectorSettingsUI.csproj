@@ -89,6 +89,9 @@
     <Compile Include="Forms\AzureSpeech.xaml.cs">
       <DependentUpon>AzureSpeech.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Forms\WorkflowSettings.xaml.cs">
+      <DependentUpon>WorkflowSettings.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Forms\AzureTranslate.xaml.cs">
       <DependentUpon>AzureTranslate.xaml</DependentUpon>
     </Compile>
@@ -157,6 +160,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Forms\WorkflowSettings.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Forms\AzureTranslate.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -207,6 +214,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="16x16.png" />
+    <Resource Include="AssemblyImages\workflow.png" />
     <Resource Include="AssemblyImages\ACSSpeech.png" />
     <Resource Include="AssemblyImages\ACSVision.png" />
     <Resource Include="AssemblyImages\translate.png" />
