@@ -1,10 +1,10 @@
-﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.CiresonIntegrationForm" 
+<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.CiresonIntegrationForm" 
             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
             xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="550" Height="463">
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="550" Height="521">
 
     <Grid Name="ConfigurationGrid" Margin="15,25,15,10">
         <!-- header -->
@@ -13,8 +13,8 @@
         <Image Margin="360,111,0,0" Height="150" VerticalAlignment="Top" Source="../AssemblyImages/ciresonLogo.png" HorizontalAlignment="Right" Width="150"/>
 
         <!-- configuration -->
-        <ScrollViewer Name="scrollViewer" CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Width="365" Margin="0,111,0,0" Height="307" VerticalAlignment="Top">
-            <StackPanel Name="stackPanel" Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Top" Height="289" Width="355">
+        <ScrollViewer Name="scrollViewer" CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Width="365" Margin="0,111,0,0" Height="365" VerticalAlignment="Top">
+            <StackPanel Name="stackPanel" Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Top" Height="355" Width="355">
                 <CheckBox Name="chkCiresonIntegration" FlowDirection="LeftToRight" IsChecked="{Binding Path=IsCiresonIntegrationEnabled, Mode=TwoWay}" >
                     <TextBlock FlowDirection="LeftToRight" Text="Enable Cireson Integration" />
                 </CheckBox>
@@ -36,6 +36,10 @@
                 <TextBox Height="25" Margin="0,-8,0,10" Name="txtMinWordsToMatchForRO" Text="{Binding MinWordCountToSuggestRO, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkCiresonIntegration, Path=IsChecked}" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" Name="lblWordsToMatchForKA" Content="Minimum number words to match to suggest an KA"/>
                 <TextBox Height="25" Margin="0,-8,0,10" Name="txtMinWordsToMatchForKA" Text="{Binding MinWordCountToSuggestKA, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkCiresonIntegration, Path=IsChecked}" />
+                
+                <Label Height="25" Padding="0" Margin="0,0,0,0" Name="lblCiresonServiceAccount" Content="Run As Account to connect to Cireson Portal"/>
+                <ComboBox ItemsSource="{Binding Path=SecureRunAsAccounts}" DisplayMemberPath="DisplayName" SelectedItem="{Binding RunAsAccountCiresonPortal, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                
             </StackPanel>
         </ScrollViewer>
     </Grid>
