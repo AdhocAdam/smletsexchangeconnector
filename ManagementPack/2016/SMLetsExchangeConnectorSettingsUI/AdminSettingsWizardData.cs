@@ -126,6 +126,8 @@ namespace SMLetsExchangeConnectorSettingsUI
         private Boolean boolEnableCiresonKBSearch = false;
         private Boolean boolEnableCiresonROSearch = false;
         private Boolean boolEnableCiresonFirstResponseDateOnSuggestions = false;
+        //run as account - cireson portal
+        ManagementPackSecureReference runasaccountciresonportal;
 
         //announcements
         private String strAuthorizedAnnouncer = String.Empty;
@@ -1364,6 +1366,21 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.strCiresonPortalURL != value)
                 {
                     this.strCiresonPortalURL = value;
+                }
+            }
+        }
+        
+        public ManagementPackSecureReference RunAsAccountCiresonPortal
+        {
+            get
+            {
+                return runasaccountciresonportal;
+            }
+            set
+            {
+                if (this.runasaccountciresonportal != value)
+                {
+                    runasaccountciresonportal = value;
                 }
             }
         }
@@ -2753,6 +2770,15 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { this.IsCiresonKBSearchEnabled = false; }
             try { this.IsCiresonROSearchEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonSearchRequestOfferings"].ToString()); }
             catch { this.IsCiresonROSearchEnabled = false; }
+            //Run as Account - Cireson Portal
+            try
+            {
+                this.RunAsAccountCiresonPortal = emg.Security.GetSecureReference(new Guid(emoAdminSetting[smletsExchangeConnectorSettingsClass, "SecureReferenceIdCiresonPortal"].ToString()));
+            }
+            catch
+            {
+                //a run as account for the cireson portal is not defined
+            }
 
             //Announcements
             this.AuthorizedAnnouncementApproverType = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMAnnouncementApprovedMemberType"].ToString();
@@ -3286,6 +3312,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "NumberOfWordsToMatchFromEmailToCiresonRequestOffering"].Value = this.MinWordCountToSuggestRO;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "NumberOfWordsToMatchFromEmailToCiresonKnowledgeArticle"].Value = this.MinWordCountToSuggestKA;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableSetFirstResponseDateOnSuggestions"].Value = this.IsCiresonFirstResponseDateOnSuggestionsEnabled;
+            //Run As Account - Cireson
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "SecureReferenceIdCiresonPortal"].Value = this.RunAsAccountCiresonPortal.Id.ToString();
 
             //Announcements
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableAnnouncements"].Value = this.IsAnnouncementIntegrationEnabled;
