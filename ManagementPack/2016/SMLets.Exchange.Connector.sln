@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.24720.0
@@ -6,6 +6,8 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{D4B43EB3-688B-4EEE-86BD-088F0B28ABB3}") = "SMLets.Exchange.Connector", "SMLets.Exchange.Connector\SMLets.Exchange.Connector.mpproj", "{A76E19FA-9DAF-4590-ADE6-3F0B9646FB29}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SMLetsExchangeConnectorSettingsUI", "SMLetsExchangeConnectorSettingsUI\SMLetsExchangeConnectorSettingsUI.csproj", "{54FBBB67-B2BA-44E4-AB59-06A7FDEF5CF5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SMLets.Exchange.Connector.Resources", "SMLets.Exchange.Connector.Resources\SMLets.Exchange.Connector.Resources.csproj", "{036EDACC-64E0-4F47-A571-94F133E3C9DB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,6 +31,12 @@ Global
 		{54FBBB67-B2BA-44E4-AB59-06A7FDEF5CF5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{54FBBB67-B2BA-44E4-AB59-06A7FDEF5CF5}.Release|x86.ActiveCfg = Release|Any CPU
 		{54FBBB67-B2BA-44E4-AB59-06A7FDEF5CF5}.Release|x86.Build.0 = Release|Any CPU
+		{036EDACC-64E0-4F47-A571-94F133E3C9DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{036EDACC-64E0-4F47-A571-94F133E3C9DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{036EDACC-64E0-4F47-A571-94F133E3C9DB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{036EDACC-64E0-4F47-A571-94F133E3C9DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{036EDACC-64E0-4F47-A571-94F133E3C9DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{036EDACC-64E0-4F47-A571-94F133E3C9DB}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
