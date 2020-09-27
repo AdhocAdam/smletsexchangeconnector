@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -52,6 +52,17 @@ namespace SMLetsExchangeConnectorSettingsUI
             if (openFileDialog.ShowDialog() == true)
             {
                 txtEWSapiDll.Text = openFileDialog.FileName;
+            }
+        }
+
+        private void btn_BrowseSMExcoPSPath(object sender, RoutedEventArgs e)
+        {
+            //OpenFileDialog openFileDialog = new OpenFileDialog();
+            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
+            openFileDialog.Filter = "PowerShell Scripts (*.ps1)|*.ps1";
+            if (openFileDialog.ShowDialog() == true)
+            {
+                txtSMExcoPS1.Text = openFileDialog.FileName;
             }
         }
 
