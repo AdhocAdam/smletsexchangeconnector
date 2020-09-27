@@ -3108,6 +3108,9 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CreateUsersNotInCMDB"].Value = this.CreateUsersNotFoundtInCMDB;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "IncludeWholeEmail"].Value = this.IncludeWholeEmail;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AttachEmailToWorkItem"].Value = this.AttachEmailToWorkItem;
+            
+            //Run As Account - Exchange
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "SecureReferenceIdEWS"].Value = this.RunAsAccountEWS.Id.ToString();
 
             //DLL Paths - EWS, Mimekit, PII regex, HTML Suyggestions, Custom Events
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathEWSDLL"].Value = this.EWSFilePath;
