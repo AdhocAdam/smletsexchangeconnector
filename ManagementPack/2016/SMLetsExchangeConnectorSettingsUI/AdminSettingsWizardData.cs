@@ -3419,6 +3419,57 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableACSSpeech"].Value = this.IsAzureSpeechEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSpeechAPIKey"].Value = this.AzureSpeechAPIKey;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSpeechRegion"].Value = this.AzureSpeechRegion;
+            
+            //When creating a Run as Account in the UI, it is force stored in the unsealed "Service Manager Linking Framework Configuration" management pack
+            //By working with this MP, we can work directly alongside native SCSM connectors and Run as Accounts
+            //Credit to Travis Wright for an always detailed walkthrough of Run As Accounts in the SMLets notes
+            //https://github.com/SMLets/SMLets/blob/795242d4a44cf8857957a7628cca67655e2e4252/SMLets.Shared/Code/Security.cs#L819
+            try
+            {
+                //get the Service Manager Linking Framework Configuration unsealed MP and the rule. If the rule isn't found, the catch will engage
+                ManagementPack scsmLFXConfig = emg.ManagementPacks.GetManagementPack(new Guid("50daaf82-06ce-cacb-8cf5-3950aebae0b0"));
+                ManagementPackRule RunSMExco = scsmLFXConfig.GetRule("SMLets.Exchange.Connector.15d8b765a2f8b63ead14472f9b3c12f0");
+                if (this.RunAsAccountEWS != null)
+                {
+                    //the rule exists and a run as account was selected. update rule
+                    RunSMExco.Status = ManagementPackElementStatus.PendingUpdate;
+                    
+                    //Is the workflow enabled?
+                    if (this.IsSMExcoWorkflowEnabled == true)
+                    {
+                        RunSMExco.Enabled = ManagementPackMonitoringLevel.@true;
+                    }
+                    else
+                    {
+                        RunSMExco.Enabled = ManagementPackMonitoringLevel.@false;
+                    }
+
+                    //set the workflow interval from the value in the GUI
+                    RunSMExco.DataSourceCollection[0].Configuration = string.Format("\r\n <Scheduler>\r\n <SimpleReccuringSchedule>\r\n <Interval Unit=\"Seconds\">{0}</Interval>\r\n </SimpleReccuringSchedule>\r\n <ExcludeDates />\r\n </Scheduler>", this.SMExcoIntervalSeconds);
+                    
+                    //set the Run As Account reference to use in the workflow
+                    if (this.RunAsAccountEWS.Name.StartsWith("SecureReference"))
+                    {
+                        //if the secure reference actually begins with "SecureReference" it's defined in the Linking Framework Configuration MP. Just use it by name.
+                        string EWSRunAsName = this.RunAsAccountEWS.Name;
+                        RunSMExco.WriteActionCollection[0].Configuration = string.Format("\r\n<Subscription>\r\n <WindowsWorkflowConfiguration>\r\n <AssemblyName>SMLets.Exchange.Connector.Resources</AssemblyName>\r\n <WorkflowTypeName>SMLets.Exchange.Connector.Resources.RunScript</WorkflowTypeName>\r\n <WorkflowParameters>\r\n <WorkflowParameter Name=\"ExchangeDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"ExchangeUserName\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"ExchangePassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter></WorkflowParameters><RetryExceptions/><RetryDelaySeconds>60</RetryDelaySeconds><MaximumRunningTimeSeconds>300</MaximumRunningTimeSeconds></WindowsWorkflowConfiguration></Subscription>", EWSRunAsName);
+                    }
+                    else
+                    {
+                        //if it doesn't begin with SecureReference, it's defined in the Core MP which is already referenced in the Linking Framework Configuration MP
+                        string EWSRunAsName = "SMCore!" + this.RunAsAccountEWS.Name; //need to dynmically construct the reference name
+                        RunSMExco.WriteActionCollection[0].Configuration = string.Format("\r\n<Subscription>\r\n <WindowsWorkflowConfiguration>\r\n <AssemblyName>SMLets.Exchange.Connector.Resources</AssemblyName>\r\n <WorkflowTypeName>SMLets.Exchange.Connector.Resources.RunScript</WorkflowTypeName>\r\n <WorkflowParameters>\r\n <WorkflowParameter Name=\"ExchangeDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"ExchangeUserName\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"ExchangePassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter></WorkflowParameters><RetryExceptions/><RetryDelaySeconds>60</RetryDelaySeconds><MaximumRunningTimeSeconds>300</MaximumRunningTimeSeconds></WindowsWorkflowConfiguration></Subscription>", EWSRunAsName);
+                    }
+
+                    //save it
+                    scsmLFXConfig.AcceptChanges();
+                }
+            }
+            catch
+            {
+                //if we couldn't find the rule, it must not exist. create it
+                
+            }
 
             //Update the MP
             emoAdminSetting.Commit();
