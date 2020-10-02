@@ -3447,6 +3447,17 @@ namespace SMLetsExchangeConnectorSettingsUI
                     //set the workflow interval from the value in the GUI
                     RunSMExco.DataSourceCollection[0].Configuration = string.Format("\r\n <Scheduler>\r\n <SimpleReccuringSchedule>\r\n <Interval Unit=\"Seconds\">{0}</Interval>\r\n </SimpleReccuringSchedule>\r\n <ExcludeDates />\r\n </Scheduler>", this.SMExcoIntervalSeconds);
                     
+                    //Get the Secure Reference's Management Pack's, Aliased Name, from the SCSM LFX unsealed mp
+                    ManagementPack secRefMP = this.RunAsAccountEWS.GetManagementPack();
+                    string mpAlias = null;
+                    foreach (KeyValuePair<string, ManagementPackReference> reference in scsmLFXConfig.References)
+                    {
+                        if (secRefMP.Id == reference.Value.Id)
+                        {
+                            mpAlias = reference.Key;
+                        }
+                    }
+                    
                     //set the Run As Account reference to use in the workflow
                     if (this.RunAsAccountEWS.Name.StartsWith("SecureReference"))
                     {
@@ -3457,7 +3468,7 @@ namespace SMLetsExchangeConnectorSettingsUI
                     else
                     {
                         //if it doesn't begin with SecureReference, it's defined in the Core MP which is already referenced in the Linking Framework Configuration MP
-                        string EWSRunAsName = "SMCore!" + this.RunAsAccountEWS.Name; //need to dynmically construct the reference name
+                        string EWSRunAsName = mpAlias + "!" + this.RunAsAccountEWS.Name;
                         RunSMExco.WriteActionCollection[0].Configuration = string.Format("\r\n<Subscription>\r\n <WindowsWorkflowConfiguration>\r\n <AssemblyName>SMLets.Exchange.Connector.Resources</AssemblyName>\r\n <WorkflowTypeName>SMLets.Exchange.Connector.Resources.RunScript</WorkflowTypeName>\r\n <WorkflowParameters>\r\n <WorkflowParameter Name=\"ExchangeDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"ExchangeUserName\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"ExchangePassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter></WorkflowParameters><RetryExceptions/><RetryDelaySeconds>60</RetryDelaySeconds><MaximumRunningTimeSeconds>300</MaximumRunningTimeSeconds></WindowsWorkflowConfiguration></Subscription>", EWSRunAsName);
                     }
 
