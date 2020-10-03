@@ -214,6 +214,10 @@ namespace SMLetsExchangeConnectorSettingsUI
         private Boolean boolEnableAzureSpeech = false;
         private String strAzureSpeechAPIKey = String.Empty;
         private String strAzureSpeechRegion = String.Empty;
+        
+        //smlets exchange connector workflow mp
+        private Boolean boolSMexcoWFEnabled = false;
+        private String strSMExcoWFInterval = "0";
 
         //management pack guid
         private Guid guidEnterpriseManagementObjectID = Guid.Empty;
@@ -2371,6 +2375,37 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.strAzureSpeechRegion != value)
                 {
                     this.strAzureSpeechRegion = value;
+                }
+            }
+        }
+        
+        //smlets exchange connector workflow
+        public Boolean IsSMExcoWorkflowEnabled
+        {
+            get
+            {
+                return this.boolSMexcoWFEnabled;
+            }
+            set
+            {
+                if (this.boolSMexcoWFEnabled != value)
+                {
+                    this.boolSMexcoWFEnabled = value;
+                }
+            }
+        }
+
+        public String SMExcoIntervalSeconds
+        {
+            get
+            {
+                return this.strSMExcoWFInterval;
+            }
+            set
+            {
+                if (this.strSMExcoWFInterval != value)
+                {
+                    this.strSMExcoWFInterval = value;
                 }
             }
         }
