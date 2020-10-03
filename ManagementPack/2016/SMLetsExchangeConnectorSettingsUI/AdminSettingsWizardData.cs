@@ -10,7 +10,7 @@ using Microsoft.EnterpriseManagement;
 using Microsoft.EnterpriseManagement.Configuration;
 using Microsoft.Win32;
 using Microsoft.EnterpriseManagement.ConnectorFramework;
-
+using System.Xml;
 
 namespace SMLetsExchangeConnectorSettingsUI
 {
@@ -3155,6 +3155,31 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { this.IsAzureSpeechEnabled = false; }
             this.AzureSpeechAPIKey = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSpeechAPIKey"].ToString();
             this.AzureSpeechRegion = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSpeechRegion"].ToString();
+            
+            //load the workflow settings from Linking Framework Config mp
+            try
+            {
+                //Retrieve the unsealed workflow management pack that contains the workflow, to control whether or not the workflows are enabled/disabled
+                //https://marcelzehner.ch/2013/07/04/a-look-at-scsm-workflows-and-notifications-and-how-to-manage-them-by-using-scripts/
+                ManagementPack scsmLFXConfig = emg.ManagementPacks.GetManagementPack(new Guid("50daaf82-06ce-cacb-8cf5-3950aebae0b0"));
+                ManagementPackRule RunSMExco = scsmLFXConfig.GetRule("SMLets.Exchange.Connector.15d8b765a2f8b63ead14472f9b3c12f0");
+
+                //Is the workflow enabled?
+                if (RunSMExco.Enabled == ManagementPackMonitoringLevel.@false)
+                {
+                    this.IsSMExcoWorkflowEnabled = false;
+                }
+                else
+                {
+                    this.IsSMExcoWorkflowEnabled = true;
+                }
+                //retrieve the seconds interval from the XML
+                string smexcoWFconfig = RunSMExco.DataSourceCollection[0].Configuration;
+                XmlDocument xmlDocument = new XmlDocument();
+                xmlDocument.LoadXml(smexcoWFconfig);
+                this.SMExcoIntervalSeconds = xmlDocument.ChildNodes[0].ChildNodes[0].ChildNodes[0].InnerText;
+            }
+            catch { }
 
             //load the MP
             this.EnterpriseManagementObjectID = emoAdminSetting.Id;
