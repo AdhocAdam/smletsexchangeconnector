@@ -3483,6 +3483,8 @@ namespace SMLetsExchangeConnectorSettingsUI
                 {
                     ManagementPack scsmLFXConfig = emg.ManagementPacks.GetManagementPack(new Guid("50daaf82-06ce-cacb-8cf5-3950aebae0b0"));
                     ManagementPack msftSCLibrary = emg.ManagementPacks.GetManagementPack(new Guid("7cfc5cc0-ae0a-da4f-5ac2-d64540141a55"));
+                    ManagementPack scsmSubscriptions = emg.ManagementPacks.GetManagementPack(new Guid("0306141b-bf60-70a1-be18-e979132c873c"));
+                    ManagementPack scLibrary = emg.ManagementPacks.GetManagementPack(new Guid("01c8b236-3bce-9dba-6f1c-c119bcdc2972"));
                     
                     //create re-occuring schedule XML and set the interval from the value in the GUI
                     string NewSMEXCORuleDataSourceXML = string.Format("\r\n <Scheduler>\r\n <SimpleReccuringSchedule>\r\n <Interval Unit=\"Seconds\">{0}</Interval>\r\n </SimpleReccuringSchedule>\r\n <ExcludeDates />\r\n </Scheduler>", this.SMExcoIntervalSeconds);
@@ -3529,10 +3531,20 @@ namespace SMLetsExchangeConnectorSettingsUI
                         NewSMEXCORule.Enabled = ManagementPackMonitoringLevel.@false;
                     }
                     
-                    //??
+                    //build the Data Sources and Write Actions for the new Rule
+                    ManagementPackDataSourceModule dataSource = new ManagementPackDataSourceModule((ManagementPackElement)NewSMEXCORule, "DS1");
+                        dataSource.RunAs = (ManagementPackElementReference<ManagementPackSecureReference>)emg.Security.GetSecureReference(new Guid("A7ACDF53-01B7-84DF-7E10-C933F0DC9DC2"));
+                        dataSource.TypeID = (ManagementPackElementReference<ManagementPackDataSourceModuleType>)scLibrary.GetModuleType("System.Scheduler");
+                        dataSource.Configuration = NewSMEXCORuleDataSourceXML;
+                        NewSMEXCORule.DataSourceCollection.Add(dataSource);
+                    ManagementPackWriteActionModule writeAction = new ManagementPackWriteActionModule((ManagementPackElement)NewSMEXCORule, "WA1");
+                        writeAction.TypeID = (ManagementPackElementReference<ManagementPackWriteActionModuleType>)scsmSubscriptions.GetModuleType("Microsoft.EnterpriseManagement.SystemCenter.Subscription.WindowsWorkflowTaskWriteAction");    
+                        writeAction.Configuration = NewSMEXCORuleWriteActionXML;
+                        NewSMEXCORule.WriteActionCollection.Add(writeAction);
+                    NewSMEXCORule.Status = ManagementPackElementStatus.PendingAdd;
                     
                     //save it
-                    //scsmLFXConfig.AcceptChanges();
+                    scsmLFXConfig.AcceptChanges();
                 }
             }
 
