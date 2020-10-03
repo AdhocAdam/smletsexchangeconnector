@@ -3366,7 +3366,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "NumberOfWordsToMatchFromEmailToCiresonKnowledgeArticle"].Value = this.MinWordCountToSuggestKA;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableSetFirstResponseDateOnSuggestions"].Value = this.IsCiresonFirstResponseDateOnSuggestionsEnabled;
             //Run As Account - Cireson
-            emoAdminSetting[smletsExchangeConnectorSettingsClass, "SecureReferenceIdCiresonPortal"].Value = this.RunAsAccountCiresonPortal.Id.ToString();
+            try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SecureReferenceIdCiresonPortal"].Value = this.RunAsAccountCiresonPortal.Id.ToString(); }
+            catch { }
 
             //Announcements
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableAnnouncements"].Value = this.IsAnnouncementIntegrationEnabled;
