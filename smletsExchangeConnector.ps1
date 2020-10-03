@@ -159,7 +159,7 @@ $scsmMGMTCreds = $null
         #choosing this option only requires the $workflowEmailAddress variable to be defined
         #this is ideal if you'll be using Task Scheduler or SMA to initiate this
     #Impersonation will use the credentials that are defined here to connect to Exchange and retrieve messages
-        #choosing this option requires the $workflowEmailAddress, $username, $password, and $domain variables to be defined
+        #choosing this option requires the $workflowEmailAddress, $ewsusername, $ewspassword, and $ewsdomain variables to be defined
 #UseAutoDiscover = Determines whether ($true) or not ($false) to connect to Exchange using autodiscover.  If $false, provide a URL for $ExchangeEndpoint
     #ExchangeEndpoint = A URL in the format of 'https://<yourservername.domain.tld>/EWS/Exchange.asmx' such as 'https://mail.contoso.com/EWS/Exchange.asmx'
 #UseExchangeOnline = When set to true the exchangeAuthenticationType is disregarded. Additionally on the General page in the Settings UI, the following should be set
@@ -167,9 +167,9 @@ $scsmMGMTCreds = $null
     #AutoDiscover URL should be set to https://outlook.office365.com/EWS/Exchange.asmx
 $exchangeAuthenticationType = "windows"
 $workflowEmailAddress = "$($smexcoSettingsMP.WorkflowEmailAddress)"
-$username = ""
-$password = ""
-$domain = ""
+$ewsusername = ""
+$ewspassword = ""
+$ewsdomain = ""
 $UseAutodiscover = $smexcoSettingsMP.UseAutoDiscover
 $ExchangeEndpoint = "$($smexcoSettingsMP.ExchangeAutodiscoverURL)"
 $UseExchangeOnline = $smexcoSettingsMP.UseExchangeOnline
@@ -3599,8 +3599,8 @@ if ($UseExchangeOnline)
     $ReqTokenBody = @{
         Grant_Type    = "Password"
         client_Id     = $AzureClientID
-        Username      = $username
-        Password      = $password
+        Username      = $ewsusername
+        Password      = $ewspassword
         Scope         = "https://outlook.office.com/EWS.AccessAsUser.All"
     }
     $response = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token" -Method "POST" -Body $ReqTokenBody
@@ -3614,7 +3614,7 @@ else
     #local exchange server
     switch ($exchangeAuthenticationType)
     {
-        "impersonation" {$exchangeService.Credentials = New-Object Net.NetworkCredential($username, $password, $domain)}
+        "impersonation" {$exchangeService.Credentials = New-Object Net.NetworkCredential($ewsusername, $ewspassword, $ewsdomain)}
         "windows" {$exchangeService.UseDefaultCredentials = $true}
     }
     if ($UseAutoDiscover -eq $true) {
