@@ -66,6 +66,15 @@
               MaxLength="256"
               MinLength="0"
               Required="false" />
+              
+        <Property ID="SecureReferenceIdEWS"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
 
           <!--File Paths-->
           <Property ID="FilePathEWSDLL"
@@ -74,6 +83,15 @@
               Key="false"
               CaseSensitive="false"
               MaxLength="256"
+              MinLength="0"
+              Required="false" />
+              
+          <Property ID="FilePathSMExcoPS"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="400"
               MinLength="0"
               Required="false" />
 
@@ -598,6 +616,15 @@
               Required="false" />
 
           <Property ID="CiresonKeywordWatchlistRemove"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+              
+        <Property ID="SecureReferenceIdCiresonPortal"
               Type="string"
               AutoIncrement="false"
               Key="false"

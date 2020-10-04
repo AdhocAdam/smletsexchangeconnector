@@ -10,7 +10,7 @@ using Microsoft.EnterpriseManagement;
 using Microsoft.EnterpriseManagement.Configuration;
 using Microsoft.Win32;
 using Microsoft.EnterpriseManagement.ConnectorFramework;
-
+using System.Xml;
 
 namespace SMLetsExchangeConnectorSettingsUI
 {
@@ -28,9 +28,12 @@ namespace SMLetsExchangeConnectorSettingsUI
         private Boolean boolEnableExchangeOnline = false;
         private String strAzureTenantID = String.Empty;
         private String strAzureAppID = String.Empty;
+        //run as account - exchange web services
+        ManagementPackSecureReference runasaccountews;
 
         //paths
         private String strEWSFilePath = String.Empty;
+        private String strSMExcoFilePath = String.Empty;
         private String strMimeKitFilePath = String.Empty;
         private String strPIIRegexFilePath = String.Empty;
         private String strCiresonHTMLSuggestionTemplatesPath = String.Empty;
@@ -124,6 +127,8 @@ namespace SMLetsExchangeConnectorSettingsUI
         private Boolean boolEnableCiresonKBSearch = false;
         private Boolean boolEnableCiresonROSearch = false;
         private Boolean boolEnableCiresonFirstResponseDateOnSuggestions = false;
+        //run as account - cireson portal
+        ManagementPackSecureReference runasaccountciresonportal;
 
         //announcements
         private String strAuthorizedAnnouncer = String.Empty;
@@ -209,6 +214,10 @@ namespace SMLetsExchangeConnectorSettingsUI
         private Boolean boolEnableAzureSpeech = false;
         private String strAzureSpeechAPIKey = String.Empty;
         private String strAzureSpeechRegion = String.Empty;
+        
+        //smlets exchange connector workflow mp
+        private Boolean boolSMexcoWFEnabled = false;
+        private String strSMExcoWFInterval = "0";
 
         //management pack guid
         private Guid guidEnterpriseManagementObjectID = Guid.Empty;
@@ -336,6 +345,24 @@ namespace SMLetsExchangeConnectorSettingsUI
                 }
             }
         }
+        
+        //run as account secure references
+        public ManagementPackSecureReference RunAsAccountEWS
+        {
+            get
+            {
+                return runasaccountews;
+            }
+            set
+            {
+                if (this.runasaccountews != value)
+                {
+                    runasaccountews = value;
+                    NotifyPropertyChanged("runAsAccount");
+                }
+            }
+        }
+        public IList<ManagementPackSecureReference> SecureRunAsAccounts { get; set; }
 
         //file attachments
         public Boolean IsMaxFileSizeAttachmentsEnabled
@@ -380,6 +407,21 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.strEWSFilePath != value)
                 {
                     this.strEWSFilePath = value;
+                }
+            }
+        }
+        
+        public String SMExcoFilePath
+        {
+            get
+            {
+                return this.strSMExcoFilePath;
+            }
+            set
+            {
+                if (this.strSMExcoFilePath != value)
+                {
+                    this.strSMExcoFilePath = value;
                 }
             }
         }
@@ -1344,6 +1386,21 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.strCiresonPortalURL != value)
                 {
                     this.strCiresonPortalURL = value;
+                }
+            }
+        }
+        
+        public ManagementPackSecureReference RunAsAccountCiresonPortal
+        {
+            get
+            {
+                return runasaccountciresonportal;
+            }
+            set
+            {
+                if (this.runasaccountciresonportal != value)
+                {
+                    runasaccountciresonportal = value;
                 }
             }
         }
@@ -2321,6 +2378,37 @@ namespace SMLetsExchangeConnectorSettingsUI
                 }
             }
         }
+        
+        //smlets exchange connector workflow
+        public Boolean IsSMExcoWorkflowEnabled
+        {
+            get
+            {
+                return this.boolSMexcoWFEnabled;
+            }
+            set
+            {
+                if (this.boolSMexcoWFEnabled != value)
+                {
+                    this.boolSMexcoWFEnabled = value;
+                }
+            }
+        }
+
+        public String SMExcoIntervalSeconds
+        {
+            get
+            {
+                return this.strSMExcoWFInterval;
+            }
+            set
+            {
+                if (this.strSMExcoWFInterval != value)
+                {
+                    this.strSMExcoWFInterval = value;
+                }
+            }
+        }
 
         //management pack guid
         public Guid EnterpriseManagementObjectID
@@ -2373,6 +2461,28 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { this.IsExchangeOnline = false; }
             this.AzureClientID = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureClientID"].ToString();
             this.AzureTenantID = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureTenantID"].ToString();
+            
+            //Run as Account List
+            var allSecureReferences = emg.Security.GetSecureReferences();
+            List<ManagementPackSecureReference> securereferences = new List<ManagementPackSecureReference>();
+            foreach (ManagementPackSecureReference secRef in allSecureReferences)
+            {
+                if ((secRef.GetManagementPack().Name == "ServiceManager.LinkingFramework.Configuration") || (secRef.GetManagementPack().Name == "ServiceManager.Core.Library"))
+                {
+                    securereferences.Add(secRef);
+                }
+            }
+            this.SecureRunAsAccounts = securereferences.ToList();
+
+            //Run as Account - Exchange
+            try
+            {
+                this.RunAsAccountEWS = emg.Security.GetSecureReference(new Guid(emoAdminSetting[smletsExchangeConnectorSettingsClass, "SecureReferenceIdEWS"].ToString()));
+            }
+            catch
+            { 
+                //a run as account for exchange is not defined
+            }
 
             //Autodiscover
             try { this.IsAutodiscoverEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseAutoDiscover"].ToString()); }
@@ -2380,6 +2490,7 @@ namespace SMLetsExchangeConnectorSettingsUI
 
             //DLL Paths - EWS, Mimekit, PII regex, HTML Suyggestions, Custom Events
             this.EWSFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathEWSDLL"].ToString();
+            this.SMExcoFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathSMExcoPS"].ToString();
             this.MimeKitFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathMimeKitDLL"].ToString();
             this.PIIRegexFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathPIIRegex"].ToString();
             this.HTMLSuggestionTemplatesFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathHTMLSuggestionTemplates"].ToString();
@@ -2711,6 +2822,15 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { this.IsCiresonKBSearchEnabled = false; }
             try { this.IsCiresonROSearchEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonSearchRequestOfferings"].ToString()); }
             catch { this.IsCiresonROSearchEnabled = false; }
+            //Run as Account - Cireson Portal
+            try
+            {
+                this.RunAsAccountCiresonPortal = emg.Security.GetSecureReference(new Guid(emoAdminSetting[smletsExchangeConnectorSettingsClass, "SecureReferenceIdCiresonPortal"].ToString()));
+            }
+            catch
+            {
+                //a run as account for the cireson portal is not defined
+            }
 
             //Announcements
             this.AuthorizedAnnouncementApproverType = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMAnnouncementApprovedMemberType"].ToString();
@@ -3035,6 +3155,31 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { this.IsAzureSpeechEnabled = false; }
             this.AzureSpeechAPIKey = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSpeechAPIKey"].ToString();
             this.AzureSpeechRegion = emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSpeechRegion"].ToString();
+            
+            //load the workflow settings from Linking Framework Config mp
+            try
+            {
+                //Retrieve the unsealed workflow management pack that contains the workflow, to control whether or not the workflows are enabled/disabled
+                //https://marcelzehner.ch/2013/07/04/a-look-at-scsm-workflows-and-notifications-and-how-to-manage-them-by-using-scripts/
+                ManagementPack scsmLFXConfig = emg.ManagementPacks.GetManagementPack(new Guid("50daaf82-06ce-cacb-8cf5-3950aebae0b0"));
+                ManagementPackRule RunSMExco = scsmLFXConfig.GetRule("SMLets.Exchange.Connector.15d8b765a2f8b63ead14472f9b3c12f0");
+
+                //Is the workflow enabled?
+                if (RunSMExco.Enabled == ManagementPackMonitoringLevel.@false)
+                {
+                    this.IsSMExcoWorkflowEnabled = false;
+                }
+                else
+                {
+                    this.IsSMExcoWorkflowEnabled = true;
+                }
+                //retrieve the seconds interval from the XML
+                string smexcoWFconfig = RunSMExco.DataSourceCollection[0].Configuration;
+                XmlDocument xmlDocument = new XmlDocument();
+                xmlDocument.LoadXml(smexcoWFconfig);
+                this.SMExcoIntervalSeconds = xmlDocument.ChildNodes[0].ChildNodes[0].ChildNodes[0].InnerText;
+            }
+            catch { }
 
             //load the MP
             this.EnterpriseManagementObjectID = emoAdminSetting.Id;
@@ -3066,9 +3211,13 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CreateUsersNotInCMDB"].Value = this.CreateUsersNotFoundtInCMDB;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "IncludeWholeEmail"].Value = this.IncludeWholeEmail;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AttachEmailToWorkItem"].Value = this.AttachEmailToWorkItem;
+            
+            //Run As Account - Exchange
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "SecureReferenceIdEWS"].Value = this.RunAsAccountEWS.Id.ToString();
 
             //DLL Paths - EWS, Mimekit, PII regex, HTML Suyggestions, Custom Events
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathEWSDLL"].Value = this.EWSFilePath;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathSMExcoPS"].Value = this.SMExcoFilePath;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathMimeKitDLL"].Value = this.MimeKitFilePath;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathPIIRegex"].Value = this.PIIRegexFilePath;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathHTMLSuggestionTemplates"].Value = this.HTMLSuggestionTemplatesFilePath;
@@ -3241,6 +3390,9 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "NumberOfWordsToMatchFromEmailToCiresonRequestOffering"].Value = this.MinWordCountToSuggestRO;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "NumberOfWordsToMatchFromEmailToCiresonKnowledgeArticle"].Value = this.MinWordCountToSuggestKA;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableSetFirstResponseDateOnSuggestions"].Value = this.IsCiresonFirstResponseDateOnSuggestionsEnabled;
+            //Run As Account - Cireson
+            try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SecureReferenceIdCiresonPortal"].Value = this.RunAsAccountCiresonPortal.Id.ToString(); }
+            catch { }
 
             //Announcements
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableAnnouncements"].Value = this.IsAnnouncementIntegrationEnabled;
@@ -3346,6 +3498,134 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableACSSpeech"].Value = this.IsAzureSpeechEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSpeechAPIKey"].Value = this.AzureSpeechAPIKey;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSpeechRegion"].Value = this.AzureSpeechRegion;
+            
+            //When creating a Run as Account in the UI, it is force stored in the unsealed "Service Manager Linking Framework Configuration" management pack
+            //By working with this MP, we can work directly alongside native SCSM connectors and Run as Accounts
+            //Credit to Travis Wright for an always detailed walkthrough of Run As Accounts in the SMLets notes
+            //https://github.com/SMLets/SMLets/blob/795242d4a44cf8857957a7628cca67655e2e4252/SMLets.Shared/Code/Security.cs#L819
+            try
+            {
+                //get the Service Manager Linking Framework Configuration unsealed MP and the rule. If the rule isn't found, the catch will engage
+                ManagementPack scsmLFXConfig = emg.ManagementPacks.GetManagementPack(new Guid("50daaf82-06ce-cacb-8cf5-3950aebae0b0"));
+                ManagementPackRule RunSMExco = scsmLFXConfig.GetRule("SMLets.Exchange.Connector.15d8b765a2f8b63ead14472f9b3c12f0");
+                if (this.RunAsAccountEWS != null)
+                {
+                    //the rule exists and a run as account was selected. update rule
+                    RunSMExco.Status = ManagementPackElementStatus.PendingUpdate;
+                    
+                    //Is the workflow enabled?
+                    if (this.IsSMExcoWorkflowEnabled == true)
+                    {
+                        RunSMExco.Enabled = ManagementPackMonitoringLevel.@true;
+                    }
+                    else
+                    {
+                        RunSMExco.Enabled = ManagementPackMonitoringLevel.@false;
+                    }
+
+                    //set the workflow interval from the value in the GUI
+                    RunSMExco.DataSourceCollection[0].Configuration = string.Format("\r\n <Scheduler>\r\n <SimpleReccuringSchedule>\r\n <Interval Unit=\"Seconds\">{0}</Interval>\r\n </SimpleReccuringSchedule>\r\n <ExcludeDates />\r\n </Scheduler>", this.SMExcoIntervalSeconds);
+                    
+                    //Get the Secure Reference's Management Pack's, Aliased Name, from the SCSM LFX unsealed mp
+                    ManagementPack secRefMP = this.RunAsAccountEWS.GetManagementPack();
+                    string mpAlias = null;
+                    foreach (KeyValuePair<string, ManagementPackReference> reference in scsmLFXConfig.References)
+                    {
+                        if (secRefMP.Id == reference.Value.Id)
+                        {
+                            mpAlias = reference.Key;
+                        }
+                    }
+                    
+                    //set the Run As Account reference to use in the workflow
+                    if (this.RunAsAccountEWS.Name.StartsWith("SecureReference"))
+                    {
+                        //if the secure reference actually begins with "SecureReference" it's defined in the Linking Framework Configuration MP. Just use it by name.
+                        string EWSRunAsName = this.RunAsAccountEWS.Name;
+                        RunSMExco.WriteActionCollection[0].Configuration = string.Format("\r\n<Subscription>\r\n <WindowsWorkflowConfiguration>\r\n <AssemblyName>SMLets.Exchange.Connector.Resources</AssemblyName>\r\n <WorkflowTypeName>SMLets.Exchange.Connector.Resources.RunScript</WorkflowTypeName>\r\n <WorkflowParameters>\r\n <WorkflowParameter Name=\"ExchangeDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"ExchangeUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"ExchangePassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter></WorkflowParameters><RetryExceptions/><RetryDelaySeconds>60</RetryDelaySeconds><MaximumRunningTimeSeconds>300</MaximumRunningTimeSeconds></WindowsWorkflowConfiguration></Subscription>", EWSRunAsName);
+                    }
+                    else
+                    {
+                        //if it doesn't begin with SecureReference, it's defined in the Core MP which is already referenced in the Linking Framework Configuration MP
+                        string EWSRunAsName = mpAlias + "!" + this.RunAsAccountEWS.Name;
+                        RunSMExco.WriteActionCollection[0].Configuration = string.Format("\r\n<Subscription>\r\n <WindowsWorkflowConfiguration>\r\n <AssemblyName>SMLets.Exchange.Connector.Resources</AssemblyName>\r\n <WorkflowTypeName>SMLets.Exchange.Connector.Resources.RunScript</WorkflowTypeName>\r\n <WorkflowParameters>\r\n <WorkflowParameter Name=\"ExchangeDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"ExchangeUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"ExchangePassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter></WorkflowParameters><RetryExceptions/><RetryDelaySeconds>60</RetryDelaySeconds><MaximumRunningTimeSeconds>300</MaximumRunningTimeSeconds></WindowsWorkflowConfiguration></Subscription>", EWSRunAsName);
+                    }
+
+                    //save it
+                    scsmLFXConfig.AcceptChanges();
+                }
+            }
+            catch
+            {
+                //if we couldn't find the rule, it must not exist. define and create it
+                if (this.RunAsAccountEWS != null)
+                {
+                    ManagementPack scsmLFXConfig = emg.ManagementPacks.GetManagementPack(new Guid("50daaf82-06ce-cacb-8cf5-3950aebae0b0"));
+                    ManagementPack msftSCLibrary = emg.ManagementPacks.GetManagementPack(new Guid("7cfc5cc0-ae0a-da4f-5ac2-d64540141a55"));
+                    ManagementPack scsmSubscriptions = emg.ManagementPacks.GetManagementPack(new Guid("0306141b-bf60-70a1-be18-e979132c873c"));
+                    ManagementPack scLibrary = emg.ManagementPacks.GetManagementPack(new Guid("01c8b236-3bce-9dba-6f1c-c119bcdc2972"));
+                    
+                    //create re-occuring schedule XML and set the interval from the value in the GUI
+                    string NewSMEXCORuleDataSourceXML = string.Format("\r\n <Scheduler>\r\n <SimpleReccuringSchedule>\r\n <Interval Unit=\"Seconds\">{0}</Interval>\r\n </SimpleReccuringSchedule>\r\n <ExcludeDates />\r\n </Scheduler>", this.SMExcoIntervalSeconds);
+
+                    //Get the Secure Reference's Management Pack's, Aliased Name, from the SCSM LFX unsealed mp
+                    ManagementPack secRefMP = this.RunAsAccountEWS.GetManagementPack();
+                    string mpAlias = null;
+                    foreach (KeyValuePair<string, ManagementPackReference> reference in scsmLFXConfig.References)
+                    {
+                        if (secRefMP.Id == reference.Value.Id)
+                        {
+                            mpAlias = reference.Key;
+                        }
+                    }
+
+                    //create the rule configuration XML and set the Run As Account references to use in the workflow
+                    string NewSMEXCORuleWriteActionXML;
+                    if (this.RunAsAccountEWS.Name.StartsWith("SecureReference"))
+                    {
+                        //if the secure reference actually begins with "SecureReference" it's defined in the Linking Framework Configuration MP
+                        string EWSRunAsName = this.RunAsAccountEWS.Name;
+                        NewSMEXCORuleWriteActionXML = string.Format("\r\n<Subscription>\r\n <WindowsWorkflowConfiguration>\r\n <AssemblyName>SMLets.Exchange.Connector.Resources</AssemblyName>\r\n <WorkflowTypeName>SMLets.Exchange.Connector.Resources.RunScript</WorkflowTypeName>\r\n <WorkflowParameters>\r\n <WorkflowParameter Name=\"ExchangeDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"ExchangeUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"ExchangePassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter></WorkflowParameters><RetryExceptions/><RetryDelaySeconds>60</RetryDelaySeconds><MaximumRunningTimeSeconds>300</MaximumRunningTimeSeconds></WindowsWorkflowConfiguration></Subscription>", EWSRunAsName);
+                    }
+                    else
+                    {
+                        //if it doesn't begin with SecureReference, it's defined in the Core MP which is already aliased in the Linking Framework Configuration MP
+                        string EWSRunAsName = mpAlias + "!" + this.RunAsAccountEWS.Name;
+                        NewSMEXCORuleWriteActionXML = string.Format("\r\n<Subscription>\r\n <WindowsWorkflowConfiguration>\r\n <AssemblyName>SMLets.Exchange.Connector.Resources</AssemblyName>\r\n <WorkflowTypeName>SMLets.Exchange.Connector.Resources.RunScript</WorkflowTypeName>\r\n <WorkflowParameters>\r\n <WorkflowParameter Name=\"ExchangeDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"ExchangeUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"ExchangePassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter></WorkflowParameters><RetryExceptions/><RetryDelaySeconds>60</RetryDelaySeconds><MaximumRunningTimeSeconds>300</MaximumRunningTimeSeconds></WindowsWorkflowConfiguration></Subscription>", EWSRunAsName);
+                    }
+
+                    //create the new Management Pack Rule using the XML strings defined above.
+                    //Since only one instance of the SMLets Exchange Connector ever be deployed, the Rule Name is statically defined
+                    //To ensure its uniqueness, it's defined here as Name + the guid of the SMlets Exchange Connector MP sans hypens
+                    ManagementPackRule NewSMEXCORule = new ManagementPackRule(scsmLFXConfig, "SMLets.Exchange.Connector.15d8b765a2f8b63ead14472f9b3c12f0");
+                    NewSMEXCORule.Target = (ManagementPackElementReference<ManagementPackClass>)msftSCLibrary.GetClass("Microsoft.SystemCenter.SubscriptionWorkflowTarget");
+
+                    //Is the workflow enabled?
+                    if (this.IsSMExcoWorkflowEnabled == true)
+                    {
+                        NewSMEXCORule.Enabled = ManagementPackMonitoringLevel.@true;
+                    }
+                    else
+                    {
+                        NewSMEXCORule.Enabled = ManagementPackMonitoringLevel.@false;
+                    }
+                    
+                    //build the Data Sources and Write Actions for the new Rule
+                    ManagementPackDataSourceModule dataSource = new ManagementPackDataSourceModule((ManagementPackElement)NewSMEXCORule, "DS1");
+                        dataSource.RunAs = (ManagementPackElementReference<ManagementPackSecureReference>)emg.Security.GetSecureReference(new Guid("A7ACDF53-01B7-84DF-7E10-C933F0DC9DC2"));
+                        dataSource.TypeID = (ManagementPackElementReference<ManagementPackDataSourceModuleType>)scLibrary.GetModuleType("System.Scheduler");
+                        dataSource.Configuration = NewSMEXCORuleDataSourceXML;
+                        NewSMEXCORule.DataSourceCollection.Add(dataSource);
+                    ManagementPackWriteActionModule writeAction = new ManagementPackWriteActionModule((ManagementPackElement)NewSMEXCORule, "WA1");
+                        writeAction.TypeID = (ManagementPackElementReference<ManagementPackWriteActionModuleType>)scsmSubscriptions.GetModuleType("Microsoft.EnterpriseManagement.SystemCenter.Subscription.WindowsWorkflowTaskWriteAction");    
+                        writeAction.Configuration = NewSMEXCORuleWriteActionXML;
+                        NewSMEXCORule.WriteActionCollection.Add(writeAction);
+                    NewSMEXCORule.Status = ManagementPackElementStatus.PendingAdd;
+                    
+                    //save it
+                    scsmLFXConfig.AcceptChanges();
+                }
+            }
 
             //Update the MP
             emoAdminSetting.Commit();
