@@ -3546,6 +3546,67 @@ function Get-SCOMDistributedAppHealth ($message)
         return $false
     }
 }
+
+#inspired and modified from Kevin Holman/Mark Manty https://kevinholman.com/2016/04/02/writing-events-with-parameters-using-powershell/
+function New-SMEXCOEvent
+{
+    param (
+        [parameter(Mandatory=$true, Position=0)]
+        $EventID,
+        [parameter(Mandatory=$true, Position=1)]
+        [string] $LogMessage,
+        [parameter(Mandatory=$true, Position=2)]
+        [ValidateSet("General","New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem")] 
+        [string] $Source,
+        [parameter(Mandatory=$true, Position=3)] 
+        [ValidateSet("Information","Warning","Error")] 
+        [string] $Severity,
+        [parameter(Mandatory=$false, Position=4)]
+        [string] $EventParam1,
+        [parameter(Mandatory=$false, Position=5)]
+        [string] $EventParam2,
+        [parameter(Mandatory=$false, Position=6)]
+        [string] $EventParam3,
+        [parameter(Mandatory=$false, Position=7)]
+        [string] $EventParam4,
+        [parameter(Mandatory=$false, Position=8)]
+        [string] $EventParam5,
+        [parameter(Mandatory=$false, Position=9)]
+        [string] $EventParam6,
+        [parameter(Mandatory=$false, Position=9)]
+        [string] $EventParam7,
+        [parameter(Mandatory=$false, Position=9)]
+        [string] $EventParam8
+    )
+
+    switch ($severity)
+    {
+        "Information" {$id = New-Object System.Diagnostics.EventInstance($eventID,1)}
+        "Warning" {$id = New-Object System.Diagnostics.EventInstance($eventID,1,2)}
+        "Error" {$id = New-Object System.Diagnostics.EventInstance($eventID,1,1)}
+    }
+
+    try
+    {
+        #Attempt to write to the Windows Event Log
+        $evtObject = New-Object System.Diagnostics.EventLog
+        $evtObject.Log = "SMLets Exchange Connector"
+        $evtObject.Source = $source
+        $evtObject.Category = "custom"
+        $evtObject.WriteEvent($id, @($LogMessage,$eventparam1,$eventparam2,$eventparam3,$eventparam4,$eventparam5,$eventparam6))
+    }
+    catch
+    {
+        #The Event Log doesn't exist, use Write-Output/Warning/Error (SMA/Azure Automation)
+        Write-Output "EventId:$EventID;Severity:$Severity;Source:$Source;:Message$LogMessage;"
+        switch ($severity)
+        {
+            "Information" {Write-Output $EventID;$LogMessage;$Source;$Severity}
+            "Warning" {Write-Warning $EventID;$LogMessage;$Source;$Severity}
+            "Error" {Write-Error $EventID;$LogMessage;$Source;$Severity}
+        }
+    }
+}
 #endregion
 
 #determine/enforce merge logic in the event this was omitted in configuration
