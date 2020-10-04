@@ -3727,7 +3727,17 @@ else
 
 #define search parameters and search on the defined classes
 $inboxFolderName = [Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox
-$inboxFolder = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($exchangeService,$inboxFolderName)
+#authenticate to Exchange
+try
+{
+    $inboxFolder = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($exchangeService,$inboxFolderName)
+}
+catch
+{
+    #couldn't retrieve the Inbox, log an error and exit the connector
+    New-SMEXCOEvent -EventId 0 -LogMessage $_.Exception -Source "General" -Severity "Error"
+    break
+}
 $itemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 1000
 $propertySet = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.BasePropertySet]::FirstClassProperties)
 $propertySet.RequestedBodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::Text
