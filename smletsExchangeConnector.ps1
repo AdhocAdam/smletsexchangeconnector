@@ -3781,7 +3781,7 @@ $inboxFilterString = [scriptblock]::Create("$inboxFilterString")
 
 #filter the inbox
 $inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
-
+if ($loggingLevel -ge 1){New-SMEXCOEvent -EventId 1 -LogMessage "Messages to Process: $($inbox.Count)" -Source "General" -Severity "Information"; $messagesProcessed = 0}
 # Custom Event Handler
 if ($ceScripts) { Invoke-OnOpenInbox }
 
@@ -4137,4 +4137,7 @@ foreach ($message in $inbox)
         #Move to deleted items
         $message.Delete([Microsoft.Exchange.WebServices.Data.DeleteMode]::MoveToDeletedItems)
     }
+
+    #increment the number of messages processed if logging is enabled
+    if ($loggingLevel -ge 1){$messagesProcessed++; New-SMEXCOEvent -EventId 2 -LogMessage "Processed: $messagesProcessed of $($inbox.Count)" -Source "General" -Severity "Information"}
 }
