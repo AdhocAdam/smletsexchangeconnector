@@ -1782,6 +1782,13 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             {
                                     Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
                                     New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk @scsmMGMTParams
+                                    if ($loggingLevel -ge 4)
+                                    {
+                                        $logMessage = "Voting on $workItemID
+                                        SCSM User: $($commentLeftBy.DisplayName)
+                                        Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
+                                        New-SMEXCOEvent -EventId 2 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+                                    }
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterApproved }
                             }
@@ -1790,6 +1797,13 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             {
                                     Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
                                     New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk @scsmMGMTParams
+                                    if ($loggingLevel -ge 4)
+                                    {
+                                        $logMessage = "Voting on $workItemID
+                                        SCSM User: $($commentLeftBy.DisplayName)
+                                        Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
+                                        New-SMEXCOEvent -EventId 2 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+                                    }
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterRejected }
                             }
@@ -1803,6 +1817,13 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                     "System.WorkItem.ServiceRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
                                     "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
                                 }                       
+                                if ($loggingLevel -ge 4)
+                                {
+                                    $logMessage = "No vote to process for $workItemID. Adding to Parent Work Item $($parentWorkItem.Name)
+                                    SCSM User: $($commentLeftBy.DisplayName)
+                                    Comment: $commentToAdd"
+                                    New-SMEXCOEvent -EventId 2 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+                                }
                             }
                         }
                         else {
@@ -1822,6 +1843,14 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                 {
                                     Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
                                     New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $votedOnBehalfOfUser -Bulk @scsmMGMTParams
+                                    if ($loggingLevel -ge 4)
+                                    {
+                                        $logMessage = "Voting on $workItemID
+                                        SCSM User: $($commentLeftBy.DisplayName)
+                                        On Behalf of: $($reviewingUser.UserName)
+                                        Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
+                                        New-SMEXCOEvent -EventId 2 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+                                    }
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterApprovedOnBehalf }
                                 
@@ -1831,6 +1860,14 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                 {
                                     Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
                                     New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $votedOnBehalfOfUser -Bulk @scsmMGMTParams
+                                    if ($loggingLevel -ge 4)
+                                    {
+                                        $logMessage = "Voting on $workItemID
+                                        SCSM User: $($commentLeftBy.DisplayName)
+                                        On Behalf of: $($reviewingUser.UserName)
+                                        Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
+                                        New-SMEXCOEvent -EventId 2 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+                                    }
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterRejectedOnBehalf }
                                 }
@@ -1843,6 +1880,13 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                         "System.WorkItem.ChangeRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -Action "EndUserComment" -IsPrivate $false}
                                         "System.WorkItem.ServiceRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -Action "EndUserComment" -IsPrivate $false}
                                         "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -Action "EndUserComment" -IsPrivate $false}
+                                    }
+                                    if ($loggingLevel -ge 4)
+                                    {
+                                        $logMessage = "No vote to process on behalf of for $workItemID
+                                        SCSM User: $($commentLeftBy.DisplayName)
+                                        Vote: $commentToAdd"
+                                        New-SMEXCOEvent -EventId 2 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
                                     }
                                 }
                                 else {
