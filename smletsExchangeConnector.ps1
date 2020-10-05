@@ -706,6 +706,15 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     $title = $message.subject
     $description = $message.body
 
+    if ($loggingLevel -ge 4)
+    {
+        $logMessage = "Creating $wiType
+        From: $from
+        CC Users: $($cced.address) -join ','
+        Title: $title"
+        New-SMEXCOEvent -EventId 0 -LogMessage $logMessage -Source "New-WorkItem" -Severity "Information"
+    }
+
     #removes PII if RedactPiiFromMessage is enabled
     if ($redactPiiFromMessage -eq $true)
     {
@@ -807,6 +816,14 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                 $x++
             }
         }
+    }
+
+    if ($loggingLevel -ge 4)
+    {
+        $logMessage = "User Relationships for $title
+        Affected User: $($affectedUser.DisplayName)
+        Related Users: $($relatedUsers.DisplayName) -join ','"
+        New-SMEXCOEvent -EventId 1 -LogMessage $logMessage -Source "New-WorkItem" -Severity "Information"
     }
     
     if (($smexcoSettingsMP.UseMailboxRedirection -eq $true) -and ($smexcoSettingsMPMailboxes.Count -ge 1))
@@ -1207,6 +1224,17 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     # Custom Event Handler
                     if ($ceScripts) { Invoke-AfterCreateCR }
                 }
+    }
+
+    #if verbose logging, show details about the new work item
+    if ($loggingLevel -ge 4)
+    {
+        $logMessage = "Created $workItemType
+        ID: $($newWorkItem.Name)
+        Title: $($newWorkItem.Title)
+        Affected User: $($affectedUser.DisplayName)
+        Related Users: $($relatedUsers.DisplayName) -join ','"
+        New-SMEXCOEvent -EventId 2 -LogMessage $logMessage -Source "New-WorkItem" -Severity "Information"
     }
     
     # Custom Event Handler
@@ -3592,7 +3620,7 @@ function New-SMEXCOEvent
         $evtObject = New-Object System.Diagnostics.EventLog
         $evtObject.Log = "SMLets Exchange Connector"
         $evtObject.Source = $source
-        $evtObject.Category = "custom"
+        #$evtObject.Category = "custom"
         $evtObject.WriteEvent($id, @($LogMessage,$eventparam1,$eventparam2,$eventparam3,$eventparam4,$eventparam5,$eventparam6))
     }
     catch
