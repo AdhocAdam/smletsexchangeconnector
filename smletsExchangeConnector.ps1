@@ -3690,16 +3690,32 @@ function New-SMEXCOEvent
         "Error" {$id = New-Object System.Diagnostics.EventInstance($eventID,1,1)}
     }
 
-    try
+    if ($loggingType -eq "Workflow")
     {
-        #Attempt to write to the Windows Event Log
-        $evtObject = New-Object System.Diagnostics.EventLog
-        $evtObject.Log = "SMLets Exchange Connector"
-        $evtObject.Source = $source
-        #$evtObject.Category = "custom"
-        $evtObject.WriteEvent($id, @($LogMessage,$eventparam1,$eventparam2,$eventparam3,$eventparam4,$eventparam5,$eventparam6))
+        try 
+        {
+            #create the Event Log, if it already exists ignore and continue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "General" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "New-WorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Update-WorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Attach-EmailToWorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Verify-WorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Schedule-WorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCSMUserByEmailAddress" -ErrorAction SilentlyContinue
+
+            #Attempt to write to the Windows Event Log
+            $evtObject = New-Object System.Diagnostics.EventLog
+            $evtObject.Log = "SMLets Exchange Connector"
+            $evtObject.Source = $source
+            #$evtObject.Category = "custom"
+            $evtObject.WriteEvent($id, @($LogMessage,$eventparam1,$eventparam2,$eventparam3,$eventparam4,$eventparam5,$eventparam6))
+        }
+        catch
+        {
+            #couldn't create a Windows Event Log entry
+        }
     }
-    catch
+    else
     {
         #The Event Log doesn't exist, use Write-Output/Warning/Error (SMA/Azure Automation)
         Write-Output "EventId:$EventID;Severity:$Severity;Source:$Source;:Message$LogMessage;"
