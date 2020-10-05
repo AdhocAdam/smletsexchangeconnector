@@ -2822,9 +2822,11 @@ function Verify-WorkItem ($message, $returnWorkItem)
         $emailAttachmentSearchObject = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | select-object -first 1 
         if ($emailAttachmentSearchObject)
         {
+            if ($loggingLevel -ge 4){New-SMEXCOEvent -EventId 1 -LogMessage "File Attachment: $($emailAttachmentSearchObject.DisplayName) found" -Source "Verify-WorkItem" -Severity "Information"}
             $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $emailAttachmentSearchObject @scsmMGMTParams).sourceobject.id @scsmMGMTParams
             if ($relatedWorkItemFromAttachmentSearch)
             {
+                if ($loggingLevel -ge 4){New-SMEXCOEvent -EventId 2 -LogMessage "File Attachment: $($emailAttachmentSearchObject.DisplayName) has related Work Item $($relatedWorkItemFromAttachmentSearch.Name)" -Source "Verify-WorkItem" -Severity "Information"}
                 switch ($relatedWorkItemFromAttachmentSearch.ClassName)
                 {
                     "System.WorkItem.Incident" {Update-WorkItem -message $message -wiType "ir" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
@@ -2834,12 +2836,14 @@ function Verify-WorkItem ($message, $returnWorkItem)
             }
             else
             {
+                if ($loggingLevel -ge 2){New-SMEXCOEvent -EventId 3 -LogMessage "A File Attachment was found to merge this email with a known Work Item. But the Work Item could not be found." -Source "Verify-WorkItem" -Severity "Warning"}
                 #the File Attachment (email) was found, but the related Work Item was not, Create a New Work Item
                 New-WorkItem $message $defaultNewWorkItem
             }
         }
         else
         {
+            if ($loggingLevel -ge 2){New-SMEXCOEvent -EventId 4 -LogMessage "A File Attachment was not found to merge this email with a known Work Item" -Source "Verify-WorkItem" -Severity "Warning"}
             #the File Attachment (email) was not found, Create a New Work Item
             New-WorkItem $message $defaultNewWorkItem
         }
@@ -3655,7 +3659,7 @@ function New-SMEXCOEvent
         [parameter(Mandatory=$true, Position=1)]
         [string] $LogMessage,
         [parameter(Mandatory=$true, Position=2)]
-        [ValidateSet("General","New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem")] 
+        [ValidateSet("General","New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Verify-WorkItem")] 
         [string] $Source,
         [parameter(Mandatory=$true, Position=3)] 
         [ValidateSet("Information","Warning","Error")] 
