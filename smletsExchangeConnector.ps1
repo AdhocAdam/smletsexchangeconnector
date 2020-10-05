@@ -1248,6 +1248,14 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
 
 function Update-WorkItem ($message, $wiType, $workItemID) 
 {
+    if ($loggingLevel -ge 4)
+    {
+        $logMessage = "Updating $workItemID
+        From: $($message.From)
+        Title: $($message.Subject)"
+        New-SMEXCOEvent -EventId 0 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+    }
+
     #removes PII if RedactPiiFromMessage is enable
     if ($redactPiiFromMessage -eq $true)
     {
@@ -1295,6 +1303,25 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
     if ($message.Attachments)
     {
         Attach-FileToWorkItem $message $workItemID
+    }
+
+    #show the user who will perform the update and the [action] they are taking. If there is no [action] it's just a comment
+    if ($loggingLevel -ge 4)
+    {
+        try
+        {
+            $logMessage = "Action for $workItemID invoked by:
+            SCSM User: $($commentLeftBy.DisplayName)
+            Action: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
+            New-SMEXCOEvent -EventId 1 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+        }
+        catch
+        {
+            $logMessage = "Leaving a Comment on $workItemID invoked by:
+            SCSM User: $($commentLeftBy.DisplayName)
+            Comment: $commentToAdd"
+            New-SMEXCOEvent -EventId 1 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+        }
     }
 
     #update the work item with the comment and/or action
