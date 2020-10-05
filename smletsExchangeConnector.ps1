@@ -526,7 +526,8 @@ $htmlSuggestionTemplatePath = "$($smexcoSettingsMP.FilePathHTMLSuggestionTemplat
 #enable logging per standard Exchange Connector registry keys
 #valid options on that registry key are 1 to 7 where 7 is the most verbose
 #$loggingLevel = (Get-ItemProperty "HKLM:\Software\Microsoft\System Center Service Manager Exchange Connector" -ErrorAction SilentlyContinue).LoggingLevel
-#$loggingLevel = 1
+[int]$loggingLevel = "$($smexcoSettingsMP.LogLevel)"
+$loggingType = "$($smexcoSettingsMP.LogType)"
 
 #$ceScripts = invoke the Custom Events script, will optionally load custom/proprietary scripts as certain events occur.
     # set this equal to empty quotes ("") to turn custom events OFF
