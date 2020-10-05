@@ -3834,7 +3834,10 @@ try
 catch
 {
     #couldn't retrieve the Inbox, log an error and exit the connector
-    New-SMEXCOEvent -EventId 0 -LogMessage $_.Exception -Source "General" -Severity "Error"
+    if ($loggingLevel -ge 3)
+    {
+        New-SMEXCOEvent -EventId 0 -LogMessage $_.Exception -Source "General" -Severity "Error"
+    }
     break
 }
 $itemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 1000
