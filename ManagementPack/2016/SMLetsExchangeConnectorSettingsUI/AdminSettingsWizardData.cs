@@ -218,6 +218,10 @@ namespace SMLetsExchangeConnectorSettingsUI
         //smlets exchange connector workflow mp
         private Boolean boolSMexcoWFEnabled = false;
         private String strSMExcoWFInterval = "0";
+        
+        //logging
+        private String strLoggingLevel = String.Empty;
+        private String strLoggingType = String.Empty;
 
         //management pack guid
         private Guid guidEnterpriseManagementObjectID = Guid.Empty;
@@ -2409,6 +2413,37 @@ namespace SMLetsExchangeConnectorSettingsUI
                 }
             }
         }
+        
+        //logging
+        public String LoggingLevel
+        {
+            get
+            {
+                return this.strLoggingLevel;
+            }
+            set
+            {
+                if (this.strLoggingLevel != value)
+                {
+                    this.strLoggingLevel = value;
+                }
+            }
+        }
+
+        public String LoggingType
+        {
+            get
+            {
+                return this.strLoggingType;
+            }
+            set
+            {
+                if (this.strLoggingType != value)
+                {
+                    this.strLoggingType = value;
+                }
+            }
+        }
 
         //management pack guid
         public Guid EnterpriseManagementObjectID
@@ -3180,6 +3215,10 @@ namespace SMLetsExchangeConnectorSettingsUI
                 this.SMExcoIntervalSeconds = xmlDocument.ChildNodes[0].ChildNodes[0].ChildNodes[0].InnerText;
             }
             catch { }
+            
+            //logging
+            this.LoggingLevel = emoAdminSetting[smletsExchangeConnectorSettingsClass, "LogLevel"].ToString();
+            this.LoggingType = emoAdminSetting[smletsExchangeConnectorSettingsClass, "LogType"].ToString();
 
             //load the MP
             this.EnterpriseManagementObjectID = emoAdminSetting.Id;
@@ -3626,6 +3665,10 @@ namespace SMLetsExchangeConnectorSettingsUI
                     scsmLFXConfig.AcceptChanges();
                 }
             }
+            
+            //logging
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "LogLevel"].Value = this.LoggingLevel;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "LogType"].Value = this.LoggingType;
 
             //Update the MP
             emoAdminSetting.Commit();

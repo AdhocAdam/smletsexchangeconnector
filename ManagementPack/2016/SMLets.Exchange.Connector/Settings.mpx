@@ -1152,6 +1152,24 @@
               MaxLength="256"
               MinLength="0"
               Required="false" />
+
+        <!--Logging-->
+        <Property ID="LogType"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+        <Property ID="LogLevel"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
           
         </ClassType>
         

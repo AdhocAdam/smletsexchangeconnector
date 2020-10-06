@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("SMLets.Exchange.Connector.Resources")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("github.com/AdhocAdam/smletsexcahngeconnector")]
+[assembly: AssemblyCompany("github.com/AdhocAdam/smletsexchangeconnector")]
 [assembly: AssemblyProduct("SMLets.Exchange.Connector.Resources")]
 [assembly: AssemblyCopyright("Copyright ©  2020")]
 [assembly: AssemblyTrademark("")]
