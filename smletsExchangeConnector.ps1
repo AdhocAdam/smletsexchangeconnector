@@ -711,7 +711,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     {
         $logMessage = "Creating $wiType
         From: $from
-        CC Users: $($cced.address) -join ','
+        CC Users: $($($cced.address) -join ',')
         Title: $title"
         New-SMEXCOEvent -EventId 0 -LogMessage $logMessage -Source "New-WorkItem" -Severity "Information"
     }
@@ -823,7 +823,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     {
         $logMessage = "User Relationships for $title
         Affected User: $($affectedUser.DisplayName)
-        Related Users: $($relatedUsers.DisplayName) -join ','"
+        Related Users: $($($relatedUsers.DisplayName) -join ',')"
         New-SMEXCOEvent -EventId 1 -LogMessage $logMessage -Source "New-WorkItem" -Severity "Information"
     }
     
@@ -1234,7 +1234,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
         ID: $($newWorkItem.Name)
         Title: $($newWorkItem.Title)
         Affected User: $($affectedUser.DisplayName)
-        Related Users: $($relatedUsers.DisplayName) -join ','"
+        Related Users: $($($relatedUsers.DisplayName) -join ',')"
         New-SMEXCOEvent -EventId 2 -LogMessage $logMessage -Source "New-WorkItem" -Severity "Information"
     }
     
@@ -3904,7 +3904,7 @@ $inboxFilterString = [scriptblock]::Create("$inboxFilterString")
 
 #filter the inbox
 $inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
-if ($loggingLevel -ge 1){New-SMEXCOEvent -EventId 1 -LogMessage "Messages to Process: $($inbox.Count)" -Source "General" -Severity "Information"; $messagesProcessed = 0}
+if (($loggingLevel -ge 1)-and($inbox.Count -ge 1)){New-SMEXCOEvent -EventId 1 -LogMessage "Messages to Process: $($inbox.Count)" -Source "General" -Severity "Information"; $messagesProcessed = 0}
 # Custom Event Handler
 if ($ceScripts) { Invoke-OnOpenInbox }
 
