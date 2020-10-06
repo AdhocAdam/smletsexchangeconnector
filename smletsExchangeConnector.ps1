@@ -1309,14 +1309,14 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
     #show the user who will perform the update and the [action] they are taking. If there is no [action] it's just a comment
     if ($loggingLevel -ge 4)
     {
-        try
+        if ($commentToAdd -match '(?<=\[).*?(?=\])')
         {
             $logMessage = "Action for $workItemID invoked by:
             SCSM User: $($commentLeftBy.DisplayName)
             Action: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
             New-SMEXCOEvent -EventId 1 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
         }
-        catch
+        else
         {
             $logMessage = "Leaving a Comment on $workItemID invoked by:
             SCSM User: $($commentLeftBy.DisplayName)
