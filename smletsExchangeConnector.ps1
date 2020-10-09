@@ -1316,7 +1316,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
             $logMessage = "Action for $workItemID invoked by:
             SCSM User: $($commentLeftBy.DisplayName)
             Action: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
-            New-SMEXCOEvent -EventId 1 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+            New-SMEXCOEvent -Source "Update-WorkItem" -EventId 1 -LogMessage $logMessage -Severity "Information"
         }
         else
         {
