@@ -2214,10 +2214,12 @@ function Get-SCSMUserByEmailAddress ($EmailAddress)
     if ($userSMTPNotification) 
     { 
         $user = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
+        if ($loggingLevel -ge 4){New-SMEXCOEvent -Source "Get-SCSMUserByEmailAddress" -EventId 0 -LogMessage "Address: $EmailAddress was matched to SCSM User: $($user.UserName)\$($user.UserName)" -Severity "Information"}
         return $user
     }
     else
     {
+        if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Get-SCSMUserByEmailAddress" -EventId 1 -LogMessage "Address: $EmailAddress could not be matched to a user in SCSM" -Severity "Warning"}
         return $null
     }
 }
@@ -2792,6 +2794,7 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
             "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
             "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
         }
+        if ($loggingLevel -ge 1){New-SMEXCOEvent -Source "Schedule-WorkItem" -EventId 0 -LogMessage "Meeting scheduled for $($workItem.Name). Scheduled Start/End Times have been set." -Severity "Information"}
     }
 
     #the meeting request is a cancelation, null the values out of the Schedule Start/End Time
@@ -2814,6 +2817,7 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
             "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
             "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
         }
+        if ($loggingLevel -ge 1){New-SMEXCOEvent -Source "Schedule-WorkItem" -EventId 1 -LogMessage "Meeting cancelled for $($workItem.Name). Scheduled Start/End Times have been cleared." -Severity "Information"}
     }
 }
 
@@ -3662,7 +3666,7 @@ function New-SMEXCOEvent
         [parameter(Mandatory=$true, Position=1)]
         [string] $LogMessage,
         [parameter(Mandatory=$true, Position=2)]
-        [ValidateSet("General","New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Verify-WorkItem")] 
+        [ValidateSet("General","New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Verify-WorkItem", "Schedule-WorkItem", "Get-SCSMUserByEmailAddress")] 
         [string] $Source,
         [parameter(Mandatory=$true, Position=3)] 
         [ValidateSet("Information","Warning","Error")] 
