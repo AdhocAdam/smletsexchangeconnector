@@ -3720,6 +3720,9 @@ function New-SMEXCOEvent
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Verify-WorkItem" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Schedule-WorkItem" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCSMUserByEmailAddress" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Create-UserInCMDB" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Send-EmailFromWorkflowAccount" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Test-KeywordsFoundInMessage" -ErrorAction SilentlyContinue
 
             #Attempt to write to the Windows Event Log
             $evtObject = New-Object System.Diagnostics.EventLog
