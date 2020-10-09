@@ -2773,6 +2773,14 @@ function Send-EmailFromWorkflowAccount ($subject, $body, $bodyType, $toRecipient
     $emailToSendOut.Body.BodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::$bodyType
     $emailToSendOut.ToRecipients.Add($toRecipients)
     $emailToSendOut.Send()
+
+    if ($loggingLevel -ge 4)
+    {
+        $logMessage = "Email sent from Workflow account
+        Subject: $subject
+        Body: $body"
+        New-SMEXCOEvent -Source "Send-EmailFromWorkflowAccount" -EventId 0 -LogMessage $logMessage -Severity "Information"
+    }
 }
 
 function Schedule-WorkItem ($calAppt, $wiType, $workItem)
@@ -3040,6 +3048,8 @@ function Test-KeywordsFoundInMessage ($message) {
     if (-Not $found) {
         $found = ($message.body -match $workItemTypeOverrideKeywords)
     }
+
+    if (($loggingLevel -ge 1) -and ($found)){New-SMEXCOEvent -Source "Test-KeywordsFoundInMessage" -EventId 0 -LogMessage "Override keywords found in email. Will create: $workItemOverrideType instead of: $defaultNewWorkItem" -Severity "Information"}
     return $found
 }
 
@@ -3668,7 +3678,7 @@ function New-SMEXCOEvent
         [parameter(Mandatory=$true, Position=1)]
         [string] $LogMessage,
         [parameter(Mandatory=$true, Position=2)]
-        [ValidateSet("General","New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Verify-WorkItem", "Schedule-WorkItem", "Get-SCSMUserByEmailAddress", "Create-UserInCMDB")] 
+        [ValidateSet("General","New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Verify-WorkItem", "Schedule-WorkItem", "Get-SCSMUserByEmailAddress", "Create-UserInCMDB", "Send-EmailFromWorkflowAccount", "Test-KeywordsFoundInMessage")] 
         [string] $Source,
         [parameter(Mandatory=$true, Position=3)] 
         [ValidateSet("Information","Warning","Error")] 
