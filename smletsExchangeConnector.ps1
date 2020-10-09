@@ -3726,7 +3726,7 @@ function New-SMEXCOEvent
             $evtObject.Log = "SMLets Exchange Connector"
             $evtObject.Source = $source
             #$evtObject.Category = "custom"
-            $evtObject.WriteEvent($id, @($LogMessage,$eventparam1,$eventparam2,$eventparam3,$eventparam4,$eventparam5,$eventparam6))
+            $evtObject.WriteEvent($id, @($LogMessage,$eventparam1,$eventparam2,$eventparam3,$eventparam4,$eventparam5,$eventparam6,$eventparam7,$eventparam8))
         }
         catch
         {
