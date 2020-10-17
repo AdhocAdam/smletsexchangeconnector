@@ -20,7 +20,7 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
-Version: 3.0.0-Beta1 = #2 - Feature, adding support for logging regardless of deployment strategy
+Version: 3.0.0-Beta2 = #2 - Feature, adding support for logging regardless of deployment strategy
                = #207 - Feature, workflow support
 Version: 2.4.0 = #171 - Optimization, Support for Exchange Online via OAuth 2.0 tokens 
 Version: 2.3.0 = #55 - Feature, Image Analysis (support for png, jpg, jpeg, bmp, and gif)
