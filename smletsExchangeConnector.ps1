@@ -2513,19 +2513,19 @@ function Get-CiresonPortalAPIToken
         $ciresonPortalCredentials = @{"username" = "$ciresonPortalRunAsUsername"; "password" = "$ciresonPortalRunAsPassword"; "languagecode" = "ENU" } | ConvertTo-Json
         #make a credential object
         [securestring]$cpSecPW = ConvertTo-SecureString $ciresonPortalRunAsPassword -AsPlainText -Force
-        [pscredential]$cred = New-Object System.Management.Automation.PSCredential ($ciresonPortalRunAsUsername, $cpSecPW)
+        [pscredential]$ciresonPortalCred = New-Object System.Management.Automation.PSCredential ($ciresonPortalRunAsUsername, $cpSecPW)
     }
     else
     {
         $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
         #make a credential object
         [securestring]$cpSecPW = ConvertTo-SecureString $ciresonPortalPassword -AsPlainText -Force
-        [pscredential]$cred = New-Object System.Management.Automation.PSCredential ($ciresonPortalUsername, $cpSecPW)
+        [pscredential]$ciresonPortalCred = New-Object System.Management.Automation.PSCredential ($ciresonPortalUsername, $cpSecPW)
     }
 
     #make the call to the portal to retrieve a token
     $ciresonTokenURL = $ciresonPortalServer+"api/V3/Authorization/GetToken"
-    $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials -Credential $cred
+    $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials -Credential $ciresonPortalCred
     $ciresonAPIToken = "Token" + " " + $ciresonAPIToken
 
     return $ciresonAPIToken
