@@ -2214,7 +2214,7 @@ function Get-SCSMUserByEmailAddress ($EmailAddress)
     if ($userSMTPNotification) 
     { 
         $user = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
-        if ($loggingLevel -ge 4){New-SMEXCOEvent -Source "Get-SCSMUserByEmailAddress" -EventId 0 -LogMessage "Address: $EmailAddress was matched to SCSM User: $($user.UserName)\$($user.UserName)" -Severity "Information"}
+        if ($loggingLevel -ge 4){New-SMEXCOEvent -Source "Get-SCSMUserByEmailAddress" -EventId 0 -LogMessage "Address: $EmailAddress was matched to SCSM User: $($user.Domain)\$($user.UserName)" -Severity "Information"}
         return $user
     }
     else
