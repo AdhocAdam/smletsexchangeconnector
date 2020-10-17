@@ -52,6 +52,12 @@ namespace SMLetsExchangeConnectorSettingsUI
 
         }
         
+        //take the URL defined in the WPF and open a browser to it
+        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            System.Diagnostics.Process.Start(e.Uri.AbsoluteUri);
+        }
+        
         //when the form is saved, these values/objects will be passed back over to AdminSettingsWizardData's "AcceptChanges" event
         public override void SaveState(SavePageEventArgs e)
         {
