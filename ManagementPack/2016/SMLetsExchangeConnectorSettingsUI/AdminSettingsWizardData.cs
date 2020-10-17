@@ -3431,7 +3431,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableSetFirstResponseDateOnSuggestions"].Value = this.IsCiresonFirstResponseDateOnSuggestionsEnabled;
             //Run As Account - Cireson
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SecureReferenceIdCiresonPortal"].Value = this.RunAsAccountCiresonPortal.Id.ToString(); }
-            catch { }
+            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SecureReferenceIdCiresonPortal"].Value = this.SecureRunAsAccounts[0].Id.ToString(); }
 
             //Announcements
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableAnnouncements"].Value = this.IsAnnouncementIntegrationEnabled;
