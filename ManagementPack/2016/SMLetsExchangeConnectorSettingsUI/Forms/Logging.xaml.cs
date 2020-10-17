@@ -51,5 +51,12 @@ namespace SMLetsExchangeConnectorSettingsUI
         {
 
         }
+        
+        //when the form is saved, these values/objects will be passed back over to AdminSettingsWizardData's "AcceptChanges" event
+        public override void SaveState(SavePageEventArgs e)
+        {
+            settings.LoggingLevel = cbLoggingLevel.Text;
+            settings.LoggingType = cbLoggingType.Text;
+        }
     }
 }
