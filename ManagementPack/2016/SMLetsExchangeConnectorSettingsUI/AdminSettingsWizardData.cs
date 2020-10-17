@@ -3431,7 +3431,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableSetFirstResponseDateOnSuggestions"].Value = this.IsCiresonFirstResponseDateOnSuggestionsEnabled;
             //Run As Account - Cireson
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SecureReferenceIdCiresonPortal"].Value = this.RunAsAccountCiresonPortal.Id.ToString(); }
-            catch { }
+            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SecureReferenceIdCiresonPortal"].Value = this.SecureRunAsAccounts[0].Id.ToString(); }
 
             //Announcements
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableAnnouncements"].Value = this.IsAnnouncementIntegrationEnabled;
@@ -3564,8 +3564,8 @@ namespace SMLetsExchangeConnectorSettingsUI
 
                     //set the workflow interval from the value in the GUI
                     RunSMExco.DataSourceCollection[0].Configuration = string.Format("\r\n <Scheduler>\r\n <SimpleReccuringSchedule>\r\n <Interval Unit=\"Seconds\">{0}</Interval>\r\n </SimpleReccuringSchedule>\r\n <ExcludeDates />\r\n </Scheduler>", this.SMExcoIntervalSeconds);
-                    
-                    //Get the Secure Reference's Management Pack's, Aliased Name, from the SCSM LFX unsealed mp
+
+                    //Get the Secure Reference's Management Pack's, Aliased Name, from the SCSM LFX unsealed mp for EWS
                     ManagementPack secRefMP = this.RunAsAccountEWS.GetManagementPack();
                     string mpAlias = null;
                     foreach (KeyValuePair<string, ManagementPackReference> reference in scsmLFXConfig.References)
@@ -3575,20 +3575,56 @@ namespace SMLetsExchangeConnectorSettingsUI
                             mpAlias = reference.Key;
                         }
                     }
-                    
+
+                    //Get the Secure Reference's Management Pack's, Aliased Name, from the SCSM LFX unsealed mp for the Cireson Portal
+                    ManagementPack cpSecRefMP = this.RunAsAccountCiresonPortal.GetManagementPack();
+                    string cpMPAlias = null;
+                    foreach (KeyValuePair<string, ManagementPackReference> reference in scsmLFXConfig.References)
+                    {
+                        if (cpSecRefMP.Id == reference.Value.Id)
+                        {
+                            cpMPAlias = reference.Key;
+                        }
+                    }
+
                     //set the Run As Account reference to use in the workflow
+                    string ruleWFParameters = null;
+                    string ruleEWSParamXML = null;
+                    string ruleCPParamXML = null;
+
+                    //ews run as
                     if (this.RunAsAccountEWS.Name.StartsWith("SecureReference"))
                     {
                         //if the secure reference actually begins with "SecureReference" it's defined in the Linking Framework Configuration MP. Just use it by name.
                         string EWSRunAsName = this.RunAsAccountEWS.Name;
-                        RunSMExco.WriteActionCollection[0].Configuration = string.Format("\r\n<Subscription>\r\n <WindowsWorkflowConfiguration>\r\n <AssemblyName>SMLets.Exchange.Connector.Resources</AssemblyName>\r\n <WorkflowTypeName>SMLets.Exchange.Connector.Resources.RunScript</WorkflowTypeName>\r\n <WorkflowParameters>\r\n <WorkflowParameter Name=\"ExchangeDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"ExchangeUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"ExchangePassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter></WorkflowParameters><RetryExceptions/><RetryDelaySeconds>60</RetryDelaySeconds><MaximumRunningTimeSeconds>300</MaximumRunningTimeSeconds></WindowsWorkflowConfiguration></Subscription>", EWSRunAsName);
+                        ruleEWSParamXML = string.Format("<WorkflowParameter Name=\"ExchangeDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"ExchangeUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"ExchangePassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter>", EWSRunAsName);
                     }
                     else
                     {
                         //if it doesn't begin with SecureReference, it's defined in the Core MP which is already referenced in the Linking Framework Configuration MP
                         string EWSRunAsName = mpAlias + "!" + this.RunAsAccountEWS.Name;
-                        RunSMExco.WriteActionCollection[0].Configuration = string.Format("\r\n<Subscription>\r\n <WindowsWorkflowConfiguration>\r\n <AssemblyName>SMLets.Exchange.Connector.Resources</AssemblyName>\r\n <WorkflowTypeName>SMLets.Exchange.Connector.Resources.RunScript</WorkflowTypeName>\r\n <WorkflowParameters>\r\n <WorkflowParameter Name=\"ExchangeDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"ExchangeUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"ExchangePassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter></WorkflowParameters><RetryExceptions/><RetryDelaySeconds>60</RetryDelaySeconds><MaximumRunningTimeSeconds>300</MaximumRunningTimeSeconds></WindowsWorkflowConfiguration></Subscription>", EWSRunAsName);
+                        ruleEWSParamXML = string.Format("<WorkflowParameter Name=\"ExchangeDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"ExchangeUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"ExchangePassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter>", EWSRunAsName);
                     }
+
+                    //cireson portal run as
+                    if (this.RunAsAccountCiresonPortal.Name.StartsWith("SecureReference"))
+                    {
+                        //if the secure reference actually begins with "SecureReference" it's defined in the Linking Framework Configuration MP. Just use it by name.
+                        string CPRunAsName = this.RunAsAccountCiresonPortal.Name;
+                        ruleCPParamXML = string.Format("<WorkflowParameter Name=\"CiresonPortalDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"CiresonPortalUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"CiresonPortalPassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter>", CPRunAsName);
+                    }
+                    else
+                    {
+                        //if it doesn't begin with SecureReference, it's defined in the Core MP which is already referenced in the Linking Framework Configuration MP
+                        string CPRunAsName = cpMPAlias + "!" + this.RunAsAccountCiresonPortal.Name;
+                        ruleCPParamXML = string.Format("<WorkflowParameter Name=\"CiresonPortalDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"CiresonPortalUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"CiresonPortalPassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter>", CPRunAsName);
+                    }
+
+                    //combine the workflow parameters for EWS and the Cireson Portal
+                    ruleWFParameters = ruleEWSParamXML + "\r\n" + ruleCPParamXML;
+
+                    //set the Run As Accounts reference to use in the workflow
+                    RunSMExco.WriteActionCollection[0].Configuration = string.Format("\r\n<Subscription>\r\n <WindowsWorkflowConfiguration>\r\n <AssemblyName>SMLets.Exchange.Connector.Resources</AssemblyName>\r\n <WorkflowTypeName>SMLets.Exchange.Connector.Resources.RunScript</WorkflowTypeName>\r\n <WorkflowParameters> {0} </WorkflowParameters><RetryExceptions/><RetryDelaySeconds>60</RetryDelaySeconds><MaximumRunningTimeSeconds>300</MaximumRunningTimeSeconds></WindowsWorkflowConfiguration></Subscription>", ruleWFParameters);
 
                     //save it
                     scsmLFXConfig.AcceptChanges();
@@ -3596,14 +3632,14 @@ namespace SMLetsExchangeConnectorSettingsUI
             }
             catch
             {
-                //if we couldn't find the rule, it must not exist. define and create it
+                //if we couldn't find the rule, it must not exist. create it
                 if (this.RunAsAccountEWS != null)
                 {
                     ManagementPack scsmLFXConfig = emg.ManagementPacks.GetManagementPack(new Guid("50daaf82-06ce-cacb-8cf5-3950aebae0b0"));
                     ManagementPack msftSCLibrary = emg.ManagementPacks.GetManagementPack(new Guid("7cfc5cc0-ae0a-da4f-5ac2-d64540141a55"));
                     ManagementPack scsmSubscriptions = emg.ManagementPacks.GetManagementPack(new Guid("0306141b-bf60-70a1-be18-e979132c873c"));
                     ManagementPack scLibrary = emg.ManagementPacks.GetManagementPack(new Guid("01c8b236-3bce-9dba-6f1c-c119bcdc2972"));
-                    
+
                     //create re-occuring schedule XML and set the interval from the value in the GUI
                     string NewSMEXCORuleDataSourceXML = string.Format("\r\n <Scheduler>\r\n <SimpleReccuringSchedule>\r\n <Interval Unit=\"Seconds\">{0}</Interval>\r\n </SimpleReccuringSchedule>\r\n <ExcludeDates />\r\n </Scheduler>", this.SMExcoIntervalSeconds);
 
@@ -3618,20 +3654,56 @@ namespace SMLetsExchangeConnectorSettingsUI
                         }
                     }
 
-                    //create the rule configuration XML and set the Run As Account references to use in the workflow
-                    string NewSMEXCORuleWriteActionXML;
+                    //Get the Secure Reference's Management Pack's, Aliased Name, from the SCSM LFX unsealed mp for the Cireson Portal
+                    ManagementPack cpSecRefMP = this.RunAsAccountCiresonPortal.GetManagementPack();
+                    string cpMPAlias = null;
+                    foreach (KeyValuePair<string, ManagementPackReference> reference in scsmLFXConfig.References)
+                    {
+                        if (cpSecRefMP.Id == reference.Value.Id)
+                        {
+                            cpMPAlias = reference.Key;
+                        }
+                    }
+
+                    //set the Run As Account reference to use in the workflow
+                    string ruleWFParameters = null;
+                    string ruleEWSParamXML = null;
+                    string ruleCPParamXML = null;
+
+                    //ews run as
                     if (this.RunAsAccountEWS.Name.StartsWith("SecureReference"))
                     {
-                        //if the secure reference actually begins with "SecureReference" it's defined in the Linking Framework Configuration MP
+                        //if the secure reference actually begins with "SecureReference" it's defined in the Linking Framework Configuration MP. Just use it by name.
                         string EWSRunAsName = this.RunAsAccountEWS.Name;
-                        NewSMEXCORuleWriteActionXML = string.Format("\r\n<Subscription>\r\n <WindowsWorkflowConfiguration>\r\n <AssemblyName>SMLets.Exchange.Connector.Resources</AssemblyName>\r\n <WorkflowTypeName>SMLets.Exchange.Connector.Resources.RunScript</WorkflowTypeName>\r\n <WorkflowParameters>\r\n <WorkflowParameter Name=\"ExchangeDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"ExchangeUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"ExchangePassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter></WorkflowParameters><RetryExceptions/><RetryDelaySeconds>60</RetryDelaySeconds><MaximumRunningTimeSeconds>300</MaximumRunningTimeSeconds></WindowsWorkflowConfiguration></Subscription>", EWSRunAsName);
+                        ruleEWSParamXML = string.Format("<WorkflowParameter Name=\"ExchangeDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"ExchangeUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"ExchangePassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter>", EWSRunAsName);
                     }
                     else
                     {
-                        //if it doesn't begin with SecureReference, it's defined in the Core MP which is already aliased in the Linking Framework Configuration MP
+                        //if it doesn't begin with SecureReference, it's defined in the Core MP which is already referenced in the Linking Framework Configuration MP
                         string EWSRunAsName = mpAlias + "!" + this.RunAsAccountEWS.Name;
-                        NewSMEXCORuleWriteActionXML = string.Format("\r\n<Subscription>\r\n <WindowsWorkflowConfiguration>\r\n <AssemblyName>SMLets.Exchange.Connector.Resources</AssemblyName>\r\n <WorkflowTypeName>SMLets.Exchange.Connector.Resources.RunScript</WorkflowTypeName>\r\n <WorkflowParameters>\r\n <WorkflowParameter Name=\"ExchangeDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"ExchangeUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"ExchangePassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter></WorkflowParameters><RetryExceptions/><RetryDelaySeconds>60</RetryDelaySeconds><MaximumRunningTimeSeconds>300</MaximumRunningTimeSeconds></WindowsWorkflowConfiguration></Subscription>", EWSRunAsName);
+                        ruleEWSParamXML = string.Format("<WorkflowParameter Name=\"ExchangeDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"ExchangeUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"ExchangePassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter>", EWSRunAsName);
                     }
+
+                    //cireson portal run as
+                    if (this.RunAsAccountCiresonPortal.Name.StartsWith("SecureReference"))
+                    {
+                        //if the secure reference actually begins with "SecureReference" it's defined in the Linking Framework Configuration MP. Just use it by name.
+                        string CPRunAsName = this.RunAsAccountCiresonPortal.Name;
+                        ruleCPParamXML = string.Format("<WorkflowParameter Name=\"CiresonPortalDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"CiresonPortalUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"CiresonPortalPassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter>", CPRunAsName);
+                    }
+                    else
+                    {
+                        //if it doesn't begin with SecureReference, it's defined in the Core MP which is already referenced in the Linking Framework Configuration MP
+                        string CPRunAsName = cpMPAlias + "!" + this.RunAsAccountCiresonPortal.Name;
+                        ruleCPParamXML = string.Format("<WorkflowParameter Name=\"CiresonPortalDomain\" Type=\"string\">$RunAs[Name=\"{0}\"]/Domain$</WorkflowParameter><WorkflowParameter Name=\"CiresonPortalUsername\" Type=\"string\">$RunAs[Name=\"{0}\"]/UserName$</WorkflowParameter><WorkflowParameter Name=\"CiresonPortalPassword\" Type=\"string\">$RunAs[Name=\"{0}\"]/Password$</WorkflowParameter>", CPRunAsName);
+                    }
+
+                    //combine the workflow parameters for EWS and the Cireson Portal
+                    ruleWFParameters = ruleEWSParamXML + "\r\n" + ruleCPParamXML;
+
+                    //create the rule configuration XML and set the Run As Account references to use in the workflow
+                    string NewSMEXCORuleWriteActionXML;
+                    NewSMEXCORuleWriteActionXML = string.Format("\r\n<Subscription>\r\n <WindowsWorkflowConfiguration>\r\n <AssemblyName>SMLets.Exchange.Connector.Resources</AssemblyName>\r\n <WorkflowTypeName>SMLets.Exchange.Connector.Resources.RunScript</WorkflowTypeName>\r\n <WorkflowParameters>\r\n {0} </WorkflowParameters><RetryExceptions/><RetryDelaySeconds>60</RetryDelaySeconds><MaximumRunningTimeSeconds>300</MaximumRunningTimeSeconds></WindowsWorkflowConfiguration></Subscription>", ruleWFParameters);
 
                     //create the new Management Pack Rule using the XML strings defined above.
                     //Since only one instance of the SMLets Exchange Connector ever be deployed, the Rule Name is statically defined
@@ -3648,7 +3720,7 @@ namespace SMLetsExchangeConnectorSettingsUI
                     {
                         NewSMEXCORule.Enabled = ManagementPackMonitoringLevel.@false;
                     }
-                    
+
                     //build the Data Sources and Write Actions for the new Rule
                     ManagementPackDataSourceModule dataSource = new ManagementPackDataSourceModule((ManagementPackElement)NewSMEXCORule, "DS1");
                         dataSource.RunAs = (ManagementPackElementReference<ManagementPackSecureReference>)emg.Security.GetSecureReference(new Guid("A7ACDF53-01B7-84DF-7E10-C933F0DC9DC2"));
@@ -3660,7 +3732,7 @@ namespace SMLetsExchangeConnectorSettingsUI
                         writeAction.Configuration = NewSMEXCORuleWriteActionXML;
                         NewSMEXCORule.WriteActionCollection.Add(writeAction);
                     NewSMEXCORule.Status = ManagementPackElementStatus.PendingAdd;
-                    
+
                     //save it
                     scsmLFXConfig.AcceptChanges();
                 }
