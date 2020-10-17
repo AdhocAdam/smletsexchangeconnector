@@ -715,7 +715,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
         From: $from
         CC Users: $($($cced.address) -join ',')
         Title: $title"
-        New-SMEXCOEvent -EventId 0 -LogMessage $logMessage -Source "New-WorkItem" -Severity "Information"
+        New-SMEXCOEvent -Source "New-WorkItem" -EventId 0 -LogMessage $logMessage -Severity "Information"
     }
 
     #removes PII if RedactPiiFromMessage is enabled
@@ -826,7 +826,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
         $logMessage = "User Relationships for $title
         Affected User: $($affectedUser.DisplayName)
         Related Users: $($($relatedUsers.DisplayName) -join ',')"
-        New-SMEXCOEvent -EventId 1 -LogMessage $logMessage -Source "New-WorkItem" -Severity "Information"
+        New-SMEXCOEvent -Source "New-WorkItem" -EventId 1 -LogMessage $logMessage -Severity "Information"
     }
     
     if (($smexcoSettingsMP.UseMailboxRedirection -eq $true) -and ($smexcoSettingsMPMailboxes.Count -ge 1))
@@ -1237,7 +1237,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
         Title: $($newWorkItem.Title)
         Affected User: $($affectedUser.DisplayName)
         Related Users: $($($relatedUsers.DisplayName) -join ',')"
-        New-SMEXCOEvent -EventId 2 -LogMessage $logMessage -Source "New-WorkItem" -Severity "Information"
+        New-SMEXCOEvent -Source "New-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
     }
     
     # Custom Event Handler
@@ -1256,7 +1256,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
         $logMessage = "Updating $workItemID
         From: $($message.From)
         Title: $($message.Subject)"
-        New-SMEXCOEvent -EventId 0 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+        New-SMEXCOEven -Source "Update-WorkItem" -EventId 0 -LogMessage $logMessage -Severity "Information"
     }
 
     #removes PII if RedactPiiFromMessage is enable
@@ -1316,14 +1316,14 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
             $logMessage = "Action for $workItemID invoked by:
             SCSM User: $($commentLeftBy.DisplayName)
             Action: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
-            New-SMEXCOEvent -EventId 1 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+            New-SMEXCOEvent -Source "Update-WorkItem" -EventId 1 -LogMessage $logMessage -Severity "Information"
         }
         else
         {
             $logMessage = "Leaving a Comment on $workItemID invoked by:
             SCSM User: $($commentLeftBy.DisplayName)
             Comment: $commentToAdd"
-            New-SMEXCOEvent -EventId 1 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+            New-SMEXCOEvent -Source "Update-WorkItem" -EventId 1 -LogMessage $logMessage -Severity "Information"
         }
     }
 
@@ -1790,7 +1790,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                         $logMessage = "Voting on $workItemID
                                         SCSM User: $($commentLeftBy.DisplayName)
                                         Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
-                                        New-SMEXCOEvent -EventId 2 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+                                        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
                                     }
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterApproved }
@@ -1805,7 +1805,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                         $logMessage = "Voting on $workItemID
                                         SCSM User: $($commentLeftBy.DisplayName)
                                         Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
-                                        New-SMEXCOEvent -EventId 2 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+                                        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
                                     }
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterRejected }
@@ -1825,7 +1825,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                     $logMessage = "No vote to process for $workItemID. Adding to Parent Work Item $($parentWorkItem.Name)
                                     SCSM User: $($commentLeftBy.DisplayName)
                                     Comment: $commentToAdd"
-                                    New-SMEXCOEvent -EventId 2 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+                                    New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
                                 }
                             }
                         }
@@ -1852,7 +1852,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                         SCSM User: $($commentLeftBy.DisplayName)
                                         On Behalf of: $($reviewingUser.UserName)
                                         Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
-                                        New-SMEXCOEvent -EventId 2 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+                                        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
                                     }
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterApprovedOnBehalf }
@@ -1869,7 +1869,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                         SCSM User: $($commentLeftBy.DisplayName)
                                         On Behalf of: $($reviewingUser.UserName)
                                         Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
-                                        New-SMEXCOEvent -EventId 2 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+                                        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
                                     }
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterRejectedOnBehalf }
@@ -1889,7 +1889,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                         $logMessage = "No vote to process on behalf of for $workItemID
                                         SCSM User: $($commentLeftBy.DisplayName)
                                         Vote: $commentToAdd"
-                                        New-SMEXCOEvent -EventId 2 -LogMessage $logMessage -Source "Update-WorkItem" -Severity "Information"
+                                        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
                                     }
                                 }
                                 else {
@@ -2214,10 +2214,12 @@ function Get-SCSMUserByEmailAddress ($EmailAddress)
     if ($userSMTPNotification) 
     { 
         $user = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
+        if ($loggingLevel -ge 4){New-SMEXCOEvent -Source "Get-SCSMUserByEmailAddress" -EventId 0 -LogMessage "Address: $EmailAddress was matched to SCSM User: $($user.UserName)\$($user.UserName)" -Severity "Information"}
         return $user
     }
     else
     {
+        if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Get-SCSMUserByEmailAddress" -EventId 1 -LogMessage "Address: $EmailAddress could not be matched to a user in SCSM" -Severity "Warning"}
         return $null
     }
 }
@@ -2393,6 +2395,7 @@ function Create-UserInCMDB ($userEmail)
 
     #create the new user
     $newUser = New-SCSMObject -Class $domainUserClass -PropertyHashtable @{"domain" = "$domainAndTLD"; "username" = "$username"; "displayname" = "$userEmail"} @scsmMGMTParams -PassThru
+    if (($loggingLevel -ge 1) -and ($newUser)){New-SMEXCOEvent -Source "Create-UserInCMDB" -EventId 0 -LogMessage "New User created in SCSM. Username: $username" -Severity "Information"}
 
     #create the user notification projection
     $userNoticeProjection = @{__CLASS = "$($domainUserClass.Name)";
@@ -2403,7 +2406,8 @@ function Create-UserInCMDB ($userEmail)
                                 }
 
     #create the user's email notification channel
-    New-SCSMObjectProjection -Type "$($userHasPrefProjection.Name)" -Projection $userNoticeProjection @scsmMGMTParams
+    $userHasNotification = New-SCSMObjectProjection -Type "$($userHasPrefProjection.Name)" -Projection $userNoticeProjection -PassThru @scsmMGMTParams
+    if (($loggingLevel -ge 1) -and ($userHasNotification)){New-SMEXCOEvent -Source "Create-UserInCMDB" -EventId 1 -LogMessage "New User: $username successfully related to their new Notification: $userEmail" -Severity "Information"}
     
     # Custom Event Handler
     if ($ceScripts) { Invoke-AfterUserCreatedInCMDB }
@@ -2769,6 +2773,14 @@ function Send-EmailFromWorkflowAccount ($subject, $body, $bodyType, $toRecipient
     $emailToSendOut.Body.BodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::$bodyType
     $emailToSendOut.ToRecipients.Add($toRecipients)
     $emailToSendOut.Send()
+
+    if ($loggingLevel -ge 4)
+    {
+        $logMessage = "Email sent from Workflow account
+        Subject: $subject
+        Body: $body"
+        New-SMEXCOEvent -Source "Send-EmailFromWorkflowAccount" -EventId 0 -LogMessage $logMessage -Severity "Information"
+    }
 }
 
 function Schedule-WorkItem ($calAppt, $wiType, $workItem)
@@ -2792,6 +2804,7 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
             "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
             "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
         }
+        if ($loggingLevel -ge 1){New-SMEXCOEvent -Source "Schedule-WorkItem" -EventId 0 -LogMessage "Meeting scheduled for $($workItem.Name). Scheduled Start/End Times have been set." -Severity "Information"}
     }
 
     #the meeting request is a cancelation, null the values out of the Schedule Start/End Time
@@ -2814,6 +2827,7 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
             "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
             "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
         }
+        if ($loggingLevel -ge 1){New-SMEXCOEvent -Source "Schedule-WorkItem" -EventId 1 -LogMessage "Meeting cancelled for $($workItem.Name). Scheduled Start/End Times have been cleared." -Severity "Information"}
     }
 }
 
@@ -2825,11 +2839,11 @@ function Verify-WorkItem ($message, $returnWorkItem)
         $emailAttachmentSearchObject = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | select-object -first 1 
         if ($emailAttachmentSearchObject)
         {
-            if ($loggingLevel -ge 4){New-SMEXCOEvent -EventId 1 -LogMessage "File Attachment: $($emailAttachmentSearchObject.DisplayName) found" -Source "Verify-WorkItem" -Severity "Information"}
+            if ($loggingLevel -ge 4){New-SMEXCOEvent -Source "Verify-WorkItem" -EventId 1 -LogMessage "File Attachment: $($emailAttachmentSearchObject.DisplayName) found" -Severity "Information"}
             $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $emailAttachmentSearchObject @scsmMGMTParams).sourceobject.id @scsmMGMTParams
             if ($relatedWorkItemFromAttachmentSearch)
             {
-                if ($loggingLevel -ge 4){New-SMEXCOEvent -EventId 2 -LogMessage "File Attachment: $($emailAttachmentSearchObject.DisplayName) has related Work Item $($relatedWorkItemFromAttachmentSearch.Name)" -Source "Verify-WorkItem" -Severity "Information"}
+                if ($loggingLevel -ge 4){New-SMEXCOEvent -Source "Verify-WorkItem" -EventId 2 -LogMessage "File Attachment: $($emailAttachmentSearchObject.DisplayName) has related Work Item $($relatedWorkItemFromAttachmentSearch.Name)" -Severity "Information"}
                 switch ($relatedWorkItemFromAttachmentSearch.ClassName)
                 {
                     "System.WorkItem.Incident" {Update-WorkItem -message $message -wiType "ir" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
@@ -2839,14 +2853,14 @@ function Verify-WorkItem ($message, $returnWorkItem)
             }
             else
             {
-                if ($loggingLevel -ge 2){New-SMEXCOEvent -EventId 3 -LogMessage "A File Attachment was found to merge this email with a known Work Item. But the Work Item could not be found." -Source "Verify-WorkItem" -Severity "Warning"}
+                if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Verify-WorkItem" -EventId 3 -LogMessage "A File Attachment was found to merge this email with a known Work Item. But the Work Item could not be found." -Severity "Warning"}
                 #the File Attachment (email) was found, but the related Work Item was not, Create a New Work Item
                 New-WorkItem $message $defaultNewWorkItem
             }
         }
         else
         {
-            if ($loggingLevel -ge 2){New-SMEXCOEvent -EventId 4 -LogMessage "A File Attachment was not found to merge this email with a known Work Item" -Source "Verify-WorkItem" -Severity "Warning"}
+            if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Verify-WorkItem" -EventId 4 -LogMessage "A File Attachment was not found to merge this email with a known Work Item" -Severity "Warning"}
             #the File Attachment (email) was not found, Create a New Work Item
             New-WorkItem $message $defaultNewWorkItem
         }
@@ -3034,6 +3048,8 @@ function Test-KeywordsFoundInMessage ($message) {
     if (-Not $found) {
         $found = ($message.body -match $workItemTypeOverrideKeywords)
     }
+
+    if (($loggingLevel -ge 1) -and ($found)){New-SMEXCOEvent -Source "Test-KeywordsFoundInMessage" -EventId 0 -LogMessage "Override keywords found in email. Will create: $workItemOverrideType instead of: $defaultNewWorkItem" -Severity "Information"}
     return $found
 }
 
@@ -3662,7 +3678,7 @@ function New-SMEXCOEvent
         [parameter(Mandatory=$true, Position=1)]
         [string] $LogMessage,
         [parameter(Mandatory=$true, Position=2)]
-        [ValidateSet("General","New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Verify-WorkItem")] 
+        [ValidateSet("General","New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Verify-WorkItem", "Schedule-WorkItem", "Get-SCSMUserByEmailAddress", "Create-UserInCMDB", "Send-EmailFromWorkflowAccount", "Test-KeywordsFoundInMessage")] 
         [string] $Source,
         [parameter(Mandatory=$true, Position=3)] 
         [ValidateSet("Information","Warning","Error")] 
@@ -3704,13 +3720,16 @@ function New-SMEXCOEvent
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Verify-WorkItem" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Schedule-WorkItem" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCSMUserByEmailAddress" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Create-UserInCMDB" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Send-EmailFromWorkflowAccount" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Test-KeywordsFoundInMessage" -ErrorAction SilentlyContinue
 
             #Attempt to write to the Windows Event Log
             $evtObject = New-Object System.Diagnostics.EventLog
             $evtObject.Log = "SMLets Exchange Connector"
             $evtObject.Source = $source
             #$evtObject.Category = "custom"
-            $evtObject.WriteEvent($id, @($LogMessage,$eventparam1,$eventparam2,$eventparam3,$eventparam4,$eventparam5,$eventparam6))
+            $evtObject.WriteEvent($id, @($LogMessage,$eventparam1,$eventparam2,$eventparam3,$eventparam4,$eventparam5,$eventparam6,$eventparam7,$eventparam8))
         }
         catch
         {
@@ -3853,13 +3872,18 @@ $inboxFolderName = [Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::In
 try
 {
     $inboxFolder = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($exchangeService,$inboxFolderName)
+    #the authentication bind to Exchange service and Inbox folder worked, log an information event
+    if ($loggingLevel -ge 4)
+    {
+        New-SMEXCOEvent -Source "General" -EventId 0 -LogMessage "Successfully connected to Exchange" -Severity "Information"
+    }
 }
 catch
 {
     #couldn't retrieve the Inbox, log an error and exit the connector
     if ($loggingLevel -ge 3)
     {
-        New-SMEXCOEvent -EventId 0 -LogMessage $_.Exception -Source "General" -Severity "Error"
+        New-SMEXCOEvent -Source "General" -EventId 1 -LogMessage $_.Exception -Severity "Error"
     }
     break
 }
@@ -3906,7 +3930,7 @@ $inboxFilterString = [scriptblock]::Create("$inboxFilterString")
 
 #filter the inbox
 $inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
-if (($loggingLevel -ge 1)-and($inbox.Count -ge 1)){New-SMEXCOEvent -EventId 1 -LogMessage "Messages to Process: $($inbox.Count)" -Source "General" -Severity "Information"; $messagesProcessed = 0}
+if (($loggingLevel -ge 1)-and($inbox.Count -ge 1)){New-SMEXCOEvent -Source "General" -EventId 2 -LogMessage "Messages to Process: $($inbox.Count)" -Severity "Information"; $messagesProcessed = 0}
 # Custom Event Handler
 if ($ceScripts) { Invoke-OnOpenInbox }
 
@@ -4264,5 +4288,5 @@ foreach ($message in $inbox)
     }
 
     #increment the number of messages processed if logging is enabled
-    if ($loggingLevel -ge 1){$messagesProcessed++; New-SMEXCOEvent -EventId 2 -LogMessage "Processed: $messagesProcessed of $($inbox.Count)" -Source "General" -Severity "Information"}
+    if ($loggingLevel -ge 1){$messagesProcessed++; New-SMEXCOEvent -Source "General" -EventId 3 -LogMessage "Processed: $messagesProcessed of $($inbox.Count)" -Severity "Information"}
 }
