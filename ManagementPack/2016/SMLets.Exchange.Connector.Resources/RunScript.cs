@@ -18,6 +18,9 @@ namespace SMLets.Exchange.Connector.Resources
         public static DependencyProperty ExchangeDomainProperty = DependencyProperty.Register("ExchangeDomain", typeof(string), typeof(RunScript));
         public static DependencyProperty ExchangeUsernameProperty = DependencyProperty.Register("ExchangeUsername", typeof(string), typeof(RunScript));
         public static DependencyProperty ExchangePasswordProperty = DependencyProperty.Register("ExchangePassword", typeof(string), typeof(RunScript));
+        public static DependencyProperty CiresonPortalDomainProperty = DependencyProperty.Register("CiresonPortalDomain", typeof(string), typeof(RunScript));
+        public static DependencyProperty CiresonPortalUsernameProperty = DependencyProperty.Register("CiresonPortalUsername", typeof(string), typeof(RunScript));
+        public static DependencyProperty CiresonPortalPasswordProperty = DependencyProperty.Register("CiresonPortalPassword", typeof(string), typeof(RunScript));
 
         [DescriptionAttribute("The domain of the user")]
         [CategoryAttribute("credential")]
@@ -67,6 +70,54 @@ namespace SMLets.Exchange.Connector.Resources
             }
         }
 
+        [DescriptionAttribute("The domain of the cireson portal user")]
+        [CategoryAttribute("credential")]
+        [BrowsableAttribute(true)]
+        [DesignerSerializationVisibilityAttribute(DesignerSerializationVisibility.Visible)]
+        public string CiresonPortalDomain
+        {
+            get
+            {
+                return ((String)(base.GetValue(RunScript.CiresonPortalDomainProperty)));
+            }
+            set
+            {
+                base.SetValue(RunScript.CiresonPortalDomainProperty, value);
+            }
+        }
+
+        [DescriptionAttribute("The username of the cireson portal user")]
+        [CategoryAttribute("credential")]
+        [BrowsableAttribute(true)]
+        [DesignerSerializationVisibilityAttribute(DesignerSerializationVisibility.Visible)]
+        public string CiresonPortalUsername
+        {
+            get
+            {
+                return ((String)(base.GetValue(RunScript.CiresonPortalUsernameProperty)));
+            }
+            set
+            {
+                base.SetValue(RunScript.CiresonPortalUsernameProperty, value);
+            }
+        }
+
+        [DescriptionAttribute("The password of the cireson portal user")]
+        [CategoryAttribute("credential")]
+        [BrowsableAttribute(true)]
+        [DesignerSerializationVisibilityAttribute(DesignerSerializationVisibility.Visible)]
+        public string CiresonPortalPassword
+        {
+            get
+            {
+                return ((String)(base.GetValue(RunScript.CiresonPortalPasswordProperty)));
+            }
+            set
+            {
+                base.SetValue(RunScript.CiresonPortalPasswordProperty, value);
+            }
+        }
+
         //execute the Workflow
         protected override ActivityExecutionStatus Execute(ActivityExecutionContext SMEXCOContext)
         {
@@ -94,6 +145,8 @@ namespace SMLets.Exchange.Connector.Resources
             pipeline.Runspace.SessionStateProxy.SetVariable("ewsdomain", this.ExchangeDomain);
             pipeline.Runspace.SessionStateProxy.SetVariable("ewsusername", this.ExchangeUsername);
             pipeline.Runspace.SessionStateProxy.SetVariable("ewspassword", this.ExchangePassword);
+            pipeline.Runspace.SessionStateProxy.SetVariable("ciresonPortalRunAsUsername", this.CiresonPortalUsername);
+            pipeline.Runspace.SessionStateProxy.SetVariable("ciresonPortalRunAsPassword", this.CiresonPortalPassword);
             Collection<PSObject> results = pipeline.Invoke();
             runspace.Close();
 
