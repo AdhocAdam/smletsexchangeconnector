@@ -1256,7 +1256,7 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
         $logMessage = "Updating $workItemID
         From: $($message.From)
         Title: $($message.Subject)"
-        New-SMEXCOEven -Source "Update-WorkItem" -EventId 0 -LogMessage $logMessage -Severity "Information"
+        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 0 -LogMessage $logMessage -Severity "Information"
     }
 
     #removes PII if RedactPiiFromMessage is enable
