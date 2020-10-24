@@ -3846,6 +3846,11 @@ if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Co
             $exchangeService.Url = [System.Uri]$ExchangeEndpoint
         }
     }
+    #impersonation is being used with the workflow
+    if ($smexcoSettingsMP.UseImpersonation)
+    {
+        $exchangeService.ImpersonatedUserId = [Microsoft.Exchange.WebServices.Data.ImpersonatedUserId]::new([Microsoft.Exchange.WebServices.Data.ConnectingIdType]::SmtpAddress, $workflowEmailAddress)
+    }
 }
 else
 {
