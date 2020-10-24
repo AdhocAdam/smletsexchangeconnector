@@ -34,6 +34,11 @@
               Type="bool"
               Key="false"
               Required="false" />
+              
+          <Property ID="UseImpersonation"
+              Type="bool"
+              Key="false"
+              Required="false" />
 
           <Property ID="ExchangeAutodiscoverURL"
               Type="string"
