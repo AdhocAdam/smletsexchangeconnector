@@ -27,7 +27,11 @@
 
                 <TextBlock Margin="10,0,0,0" x:Name="lblRunAsAccountEWS" TextWrapping="Wrap" Text="Run As Account to connect to Exchange" />
                 <ComboBox Margin="10,0" ItemsSource="{Binding Path=SecureRunAsAccounts}" DisplayMemberPath="DisplayName" SelectedItem="{Binding RunAsAccountEWS, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                
+
+                <CheckBox Name="chkUseImpersonation" FlowDirection="LeftToRight" IsChecked="{Binding Path=IsImpersonationEnabled, Mode=TwoWay}" HorizontalAlignment="Left" Width="293" Margin="10,10,0,0" >
+                    <TextBlock FlowDirection="LeftToRight" Text="Use Impersonation" />
+                </CheckBox>
+
                 <CheckBox Name="chkUseAutoDiscover" FlowDirection="LeftToRight" IsChecked="{Binding Path=IsAutodiscoverEnabled, Mode=TwoWay}" HorizontalAlignment="Left" Width="293" Checked="chkUseAutoDiscover_Checked" Unchecked="chkUseAutoDiscover_Unchecked" Margin="10,10,0,0" >
                     <TextBlock FlowDirection="LeftToRight" Text="Use Autodiscover" />
                 </CheckBox>

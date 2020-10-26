@@ -24,6 +24,7 @@ namespace SMLetsExchangeConnectorSettingsUI
         private String strscsmMGMTServer = String.Empty;
         private String strWorkflowEmailAddress = String.Empty;
         private Boolean boolEnableAutodiscover = false;
+        private Boolean boolEnableImpersonation = false;
         private String strAutodiscoverURL = String.Empty;
         private Boolean boolEnableExchangeOnline = false;
         private String strAzureTenantID = String.Empty;
@@ -286,6 +287,21 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.boolEnableAutodiscover != value)
                 {
                     this.boolEnableAutodiscover = value;
+                }
+            }
+        }
+        
+        public Boolean IsImpersonationEnabled
+        {
+            get
+            {
+                return this.boolEnableImpersonation;
+            }
+            set
+            {
+                if (this.boolEnableImpersonation != value)
+                {
+                    this.boolEnableImpersonation = value;
                 }
             }
         }
@@ -2522,6 +2538,10 @@ namespace SMLetsExchangeConnectorSettingsUI
             //Autodiscover
             try { this.IsAutodiscoverEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseAutoDiscover"].ToString()); }
             catch { this.IsAutodiscoverEnabled = false; }
+            
+            //Impersonation
+            try { this.IsImpersonationEnabled = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseImpersonation"].ToString()); }
+            catch { this.IsImpersonationEnabled = false; }
 
             //DLL Paths - EWS, Mimekit, PII regex, HTML Suyggestions, Custom Events
             this.EWSFilePath = emoAdminSetting[smletsExchangeConnectorSettingsClass, "FilePathEWSDLL"].ToString();
@@ -3242,6 +3262,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             //General Settings
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMmgmtServer"].Value = this.SCSMmanagementServer;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "WorkflowEmailAddress"].Value = this.WorkflowEmailAddress;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseImpersonation"].Value = this.IsImpersonationEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseAutoDiscover"].Value = this.IsAutodiscoverEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ExchangeAutodiscoverURL"].Value = this.ExchangeAutodiscoverURL;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseExchangeOnline"].Value = this.IsExchangeOnline;
