@@ -3408,7 +3408,7 @@ function Get-AzureEmailTranslation ($TextToTranslate, $SourceLanguage, $TargetLa
         if ($loggingLevel -ge 4)
         {
             $azureEmailTranslationLogBody = "Source Lang: $SourceLanguage
-                Source Lang: $TargetLanguage
+                Target Lang: $TargetLanguage
                 Original Text: $TextToTranslate
                 Translated Text: $RecoResponse.translations[0].text
             "
