@@ -3338,8 +3338,25 @@ function Get-AzureEmailSentiment ($messageToEvaluate)
     $final = @{documents = $documents}
     $messagePayload = ConvertTo-Json $final
 
-    #invoke the Cognitive Services Sentiment API
-    $sentimentResult = Invoke-RestMethod -Method Post -Uri $sentimentURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcTextAnalyticsAPIKey } -Body $messagePayload -ContentType "application/json"
+    try
+    {
+        #invoke the Cognitive Services Sentiment API
+        $sentimentResult = Invoke-RestMethod -Method Post -Uri $sentimentURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcTextAnalyticsAPIKey } -Body $messagePayload -ContentType "application/json"
+        
+        #API contacted, log an info event
+        if ($loggingLevel -ge 4)
+        {
+            New-SMEXCOEvent -Source "Get-AzureEmailSentiment" -EventID 0 -Severity "Information" -LogMessage "Azure Sentiment Score: $($sentimentResult.documents.score * 100)"
+        }
+    }
+    catch
+    {
+        #the API could not be contacted, log an error
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "Get-AzureEmailSentiment" -EventID 1 -Severity "Error" -LogMessage $_.Exception
+        }
+    }
     
     #return the percent score
     return ($sentimentResult.documents.score * 100)
@@ -3382,8 +3399,30 @@ function Get-AzureEmailTranslation ($TextToTranslate, $SourceLanguage, $TargetLa
     $originalBytes = [Text.Encoding]::Default.GetBytes($TextToTranslate)
     $TextToTranslate = [Text.Encoding]::Utf8.GetString($originalBytes)
 
-    #Send text to Azure for translation
-    $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToTranslate)]"
+    try
+    {
+        #Send text to Azure for translation
+        $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToTranslate)]"
+
+        #API contacted, log an info event
+        if ($loggingLevel -ge 4)
+        {
+            $azureEmailTranslationLogBody = "Source Lang: $SourceLanguage
+                Source Lang: $TargetLanguage
+                Original Text: $TextToTranslate
+                Translated Text: $RecoResponse.translations[0].text
+            "
+            New-SMEXCOEvent -Source "Get-AzureEmailTranslation" -EventID 0 -Severity "Information" -LogMessage $azureEmailTranslationLogBody
+        }
+    }
+    catch
+    {
+        #API could not be contacted, log an error
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "Get-AzureEmailTranslation" -EventID 1 -Severity "Error" -LogMessage $_.Exception
+        }
+    }
 
     #Return the converted text
     return $($RecoResponse.translations[0].text)
@@ -3410,8 +3449,25 @@ function Get-AzureEmailKeywords ($messageToEvaluate)
     $final = @{documents = $documents}
     $messagePayload = ConvertTo-Json $final
 
-    #invoke the Text Analytics Keyword API
-    $keywordResult = Invoke-RestMethod -Method Post -Uri $keyPhraseURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcTextAnalyticsAPIKey } -Body $messagePayload -ContentType "application/json" 
+    try
+    {
+        #invoke the Text Analytics Keyword API
+        $keywordResult = Invoke-RestMethod -Method Post -Uri $keyPhraseURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcTextAnalyticsAPIKey } -Body $messagePayload -ContentType "application/json"
+
+        #API contacted, log an info event
+        if ($loggingLevel -ge 4)
+        {
+            New-SMEXCOEvent -Source "Get-AzureEmailKeywords" -EventID 0 -Severity "Information" -LogMessage "Keywords identified from Azure: $($keywordResult.documents.keyPhrases)"
+        }
+    }
+    catch
+    {
+        #API could not be contacted, log an error
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "Get-AzureEmailKeywords" -EventID 1 -Severity "Error" -LogMessage $_.Exception
+        }
+    }
 
     #return the keywords
     return $keywordResult.documents.keyPhrases
@@ -3427,9 +3483,29 @@ function Get-AzureEmailImageAnalysis ($imageToEvalute)
     $httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "$azureCogSvcVisionAPIKey")
     $content = New-Object "System.Net.Http.ByteArrayContent" -ArgumentList @(,$imageToEvalute)
     $content.Headers.ContentType = "application/octet-stream"
-    $request = $httpClient.PostAsync($imageAnalysisURI,$content)
-    $request.wait();
-    if($request.IsCompleted) {$result = $request.Result.Content.ReadAsStringAsync().Result | ConvertFrom-Json}
+
+    try
+    {
+        $request = $httpClient.PostAsync($imageAnalysisURI,$content)
+        $request.wait();
+        if($request.IsCompleted) {$result = $request.Result.Content.ReadAsStringAsync().Result | ConvertFrom-Json}
+
+        #API contacted, log an info event
+        if ($loggingLevel -ge 4)
+        {
+            $logAzureVisionTags = $azureVisionResult.tags.name | select-object -first 5
+            $emailImageTagsLogEventBody = "Identified Image Tags from Azure: $($logAzureVisionTags -join ',')"
+            New-SMEXCOEvent -Source "Get-AzureEmailImageAnalysis" -EventID 0 -Severity "Information" -LogMessage $emailImageTagsLogEventBody
+        }
+    }
+    catch
+    {
+        #the API could not be contacted, log an error
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "Get-AzureEmailImageAnalysis" -EventID 1 -Severity "Error" -LogMessage $_.Exception
+        }
+    }
 
     #return the Vision API analysis
     return $result
@@ -3447,8 +3523,26 @@ function Get-AzureSpeechEmailAudioText ($waveFileToEvaluate)
       'Accept' = "application/json"
     }
 
-    #Pass the audio byte array into the body and submit the request
-    $RecoResponse = Invoke-RestMethod -Method POST -Uri $SpeechServiceURI -Headers $RecoRequestHeader -Body $waveFileToEvaluate
+    try
+    {
+        #Pass the audio byte array into the body and submit the request
+        $RecoResponse = Invoke-RestMethod -Method POST -Uri $SpeechServiceURI -Headers $RecoRequestHeader -Body $waveFileToEvaluate
+
+        #API contacted, log an info event
+        if ($loggingLevel -ge 4)
+        {
+            $emailSpeechToTextLogEventBody = "Azure Speech to Text: $($RecoResponse.DisplayText)"
+            New-SMEXCOEvent -Source "Get-AzureSpeechEmailAudioText" -EventID 0 -Severity "Information" -LogMessage $emailSpeechToTextLogEventBody
+        }
+    }
+    catch
+    {
+        #the API could not be contacted, log an error
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "Get-AzureSpeechEmailAudioText" -EventID 1 -Severity "Error" -LogMessage $_.Exception
+        }
+    }
 
     #return the result
     return $RecoResponse
@@ -3464,9 +3558,28 @@ function Get-AzureEmailImageText ($imageToEvalute)
     $httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "$azureCogSvcVisionAPIKey")
     $content = New-Object "System.Net.Http.ByteArrayContent" -ArgumentList @(,$imageToEvalute)
     $content.Headers.ContentType = "application/octet-stream"
-    $request = $httpClient.PostAsync($imageTextURI,$content)
-    $request.wait();
-    if($request.IsCompleted) {$result = $request.Result.Content.ReadAsStringAsync().Result | ConvertFrom-Json}
+
+    try
+    {
+        $request = $httpClient.PostAsync($imageTextURI,$content)
+        $request.wait();
+        if($request.IsCompleted) {$result = $request.Result.Content.ReadAsStringAsync().Result | ConvertFrom-Json}
+
+        #API contacted, log an info event
+        if ($loggingLevel -ge 4)
+        {
+            $emailImageTextLogEventBody = "Identified Image Text from Azure: $($result.regions.Lines.words.text -join " ")"
+            New-SMEXCOEvent -Source "Get-AzureEmailImageText" -EventID 0 -Severity "Information" -LogMessage $emailImageTextLogEventBody
+        }
+    }
+    catch
+    {
+        #the API could not be contacted, log an error
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "Get-AzureEmailImageText" -EventID 1 -Severity "Error" -LogMessage $_.Exception
+        }
+    }
 
     #return the Vision API analysis
     return $result
@@ -3493,20 +3606,47 @@ function Get-AMLWorkItemProbability ($EmailSubject, $EmailBody)
     }
 "@
 
-    #invoke the Azure Machine Learning web service for predicting Work Item Type, Classification, and Support Group
-    $probabilityResponse = Invoke-RestMethod -Uri $amlURL -Method Post -Header $headerTable -Body $messagePayload -ContentType "application/json"
+    try
+    {
+        #invoke the Azure Machine Learning web service for predicting Work Item Type, Classification, and Support Group
+        $probabilityResponse = Invoke-RestMethod -Uri $amlURL -Method Post -Header $headerTable -Body $messagePayload -ContentType "application/json"
 
-    #return custom probability object
-    $probabilityResults = $probabilityResponse.Results.output1.value.Values[0]
-    $probabilityMatrix = New-Object -TypeName psobject
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemType -Value $probabilityResults[0]
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemTypeConfidence -Value (($probabilityResults[1] -as [decimal]) * 100)
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassification -Value $probabilityResults[2]
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassificationConfidence -Value (($probabilityResults[3] -as [decimal]) * 100)
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroup -Value $probabilityResults[4]
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroupConfidence -Value (($probabilityResults[5] -as [decimal]) * 100)
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name AffectedConfigItem -Value $probabilityResults[6]
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name AffectedConfigItemConfidence -Value (($probabilityResults[7] -as [decimal]) * 100)
+        #return custom probability object
+        $probabilityResults = $probabilityResponse.Results.output1.value.Values[0]
+        $probabilityMatrix = New-Object -TypeName psobject
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemType -Value $probabilityResults[0]
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemTypeConfidence -Value (($probabilityResults[1] -as [decimal]) * 100)
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassification -Value $probabilityResults[2]
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassificationConfidence -Value (($probabilityResults[3] -as [decimal]) * 100)
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroup -Value $probabilityResults[4]
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroupConfidence -Value (($probabilityResults[5] -as [decimal]) * 100)
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name AffectedConfigItem -Value $probabilityResults[6]
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name AffectedConfigItemConfidence -Value (($probabilityResults[7] -as [decimal]) * 100)
+
+        #logging is verbose, record the entire AML prediction
+        if ($loggingLevel -ge 4)
+        {
+            $amlLogInfoLogEventBody = "AML predictions: $EmailSubject
+                WorkItemType: $($probabilityMatrix.WorkItemType)
+                WorkItemTypeConfidence: $($probabilityMatrix.WorkItemTypeConfidence)
+                WorkItemClassification: $($probabilityMatrix.WorkItemClassification)
+                WorkItemClassificationConfidence: $($probabilityMatrix.WorkItemClassificationConfidence)
+                WorkItemSupportGroup: $($probabilityMatrix.WorkItemSupportGroup)
+                WorkItemSupportGroupConfidence: $($probabilityMatrix.WorkItemSupportGroupConfidence)
+                AffectedConfigItem: $($probabilityMatrix.AffectedConfigItem)
+                AffectedConfigItemConfidence: $($probabilityMatrix.AffectedConfigItemConfidence)
+            "
+            New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 0 -Severity "Information" -LogMessage $amlLogInfoLogEventBody
+        }
+    }
+    catch
+    {
+        #the Web Service couldn't be contacted
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 1 -Severity "Error" -LogMessage $_.Exception
+        }
+    }
 
     #return the percent score
     return ($probabilityMatrix)
@@ -3695,7 +3835,10 @@ function New-SMEXCOEvent
         [parameter(Mandatory=$true, Position=1)]
         [string] $LogMessage,
         [parameter(Mandatory=$true, Position=2)]
-        [ValidateSet("General","New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Verify-WorkItem", "Schedule-WorkItem", "Get-SCSMUserByEmailAddress", "Create-UserInCMDB", "Send-EmailFromWorkflowAccount", "Test-KeywordsFoundInMessage")] 
+        [ValidateSet("General","New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Verify-WorkItem",
+            "Schedule-WorkItem", "Get-SCSMUserByEmailAddress", "Create-UserInCMDB", "Send-EmailFromWorkflowAccount",
+            "Test-KeywordsFoundInMessage", "Get-AMLWorkItemProbability", "Get-AzureEmailTranslation", "Get-AzureEmailKeywords",
+            "Get-AzureEmailSentiment", "Get-AzureEmailImageAnalysis", "Get-AzureSpeechEmailAudioText", "Get-AzureEmailImageText")] 
         [string] $Source,
         [parameter(Mandatory=$true, Position=3)] 
         [ValidateSet("Information","Warning","Error")] 
@@ -3740,6 +3883,13 @@ function New-SMEXCOEvent
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Create-UserInCMDB" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Send-EmailFromWorkflowAccount" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Test-KeywordsFoundInMessage" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AMLWorkItemProbability" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailTranslation" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailKeywords" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailSentiment" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailImageAnalysis" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureSpeechEmailAudioText" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailImageText" -ErrorAction SilentlyContinue
 
             #Attempt to write to the Windows Event Log
             $evtObject = New-Object System.Diagnostics.EventLog
