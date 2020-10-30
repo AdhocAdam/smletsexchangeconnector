@@ -3601,7 +3601,15 @@ namespace SMLetsExchangeConnectorSettingsUI
                     }
 
                     //Get the Secure Reference's Management Pack's, Aliased Name, from the SCSM LFX unsealed mp for the Cireson Portal
-                    ManagementPack cpSecRefMP = this.RunAsAccountCiresonPortal.GetManagementPack();
+                    ManagementPack cpSecRefMP = null;
+                    if (this.RunAsAccountCiresonPortal)
+                    {
+                        cpSecRefMP = this.RunAsAccountCiresonPortal.GetManagementPack();
+                    }
+                    else
+                    {
+                        cpSecRefMP = this.SecureRunAsAccounts[0].GetManagementPack();
+                    }
                     string cpMPAlias = null;
                     foreach (KeyValuePair<string, ManagementPackReference> reference in scsmLFXConfig.References)
                     {
@@ -3679,7 +3687,15 @@ namespace SMLetsExchangeConnectorSettingsUI
                     }
 
                     //Get the Secure Reference's Management Pack's, Aliased Name, from the SCSM LFX unsealed mp for the Cireson Portal
-                    ManagementPack cpSecRefMP = this.RunAsAccountCiresonPortal.GetManagementPack();
+                    ManagementPack cpSecRefMP = null;
+                    if (this.RunAsAccountCiresonPortal)
+                    {
+                        cpSecRefMP = this.RunAsAccountCiresonPortal.GetManagementPack();
+                    }
+                    else
+                    {
+                        cpSecRefMP = this.SecureRunAsAccounts[0].GetManagementPack();
+                    }
                     string cpMPAlias = null;
                     foreach (KeyValuePair<string, ManagementPackReference> reference in scsmLFXConfig.References)
                     {
