@@ -75,7 +75,7 @@
                     <ComboBox x:Name="cbIRStatusRELReply" Width="201" Margin="0,8,0,0"  ItemsSource="{Binding Path=IncidentStatusEnums}" SelectedItem="{Binding Path=DefaultIncidentStatusOnRelReplyEnum}" DisplayMemberPath="DisplayName"  />
                 </StackPanel>
 
-                <TextBlock x:Name="txtBlkWorkItemManagementResolveControl" Text="Resolution Management when using [resolve] Keyword (delete key clears)" FontWeight="Bold" Margin="0,10,0,0" />
+                <TextBlock x:Name="txtBlkWorkItemManagementResolveControl" Text="Resolutions when using [resolved] or [completed] keywords (delete key clears)" FontWeight="Bold" Margin="0,10,0,0" />
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Default Incident Resolution Category:" Margin="0,8,0,0"/>
                     <ComboBox x:Name="cbIRResCat" Width="300" Margin="0,8,0,0" ItemsSource="{Binding Path=IncidentResolutionCategoryEnums}" SelectedItem="{Binding Path=DefaultIncidentResolutionCategoryEnum}" DisplayMemberPath="DisplayName" KeyDown="cbIRResCat_KeyDown" />
