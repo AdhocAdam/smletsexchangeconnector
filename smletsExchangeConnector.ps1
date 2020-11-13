@@ -145,6 +145,128 @@ Version: 1.1 = GitHub issue raised on updating work items. Per discussion was pi
                 ensures the brackets aren't passed when performing the search/update.
 #>
 
+#inspired and modified from Kevin Holman/Mark Manty https://kevinholman.com/2016/04/02/writing-events-with-parameters-using-powershell/
+function New-SMEXCOEvent
+{
+    param (
+        [parameter(Mandatory=$true, Position=0)]
+        $EventID,
+        [parameter(Mandatory=$true, Position=1)]
+        [string] $LogMessage,
+        [parameter(Mandatory=$true, Position=2)]
+        [ValidateSet("General", "CustomEvents", "New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Attach-FileToWorkItem", "Verify-WorkItem",
+            "Schedule-WorkItem", "Get-SCSMUserByEmailAddress", "Get-TierMembership", "Get-TierMembers", "Get-AssignedToWorkItemVolume",
+            "Set-AssignedToPerSupportGroup", "Get-SCSMWorkItemParent", "Create-UserInCMDB", "Add-ActionLogEntry", "Get-CiresonPortalAPIToken",
+            "Get-CiresonPortalUser", "Get-CiresonPortalGroup", "Get-CiresonPortalAnnouncements", "Search-AvailableCiresonPortalOfferings",
+            "Search-CiresonKnowledgeBase", "Get-CiresonSuggestionURL", "Send-CiresonSuggestionEmail", "Add-CiresonWatchListUser",
+            "Remove-CiresonWatchListUser", "Read-MIMEMessage", "Get-TemplatesByMailbox", "Get-SCSMAuthorizedAnnouncer", "Set-CoreSCSMAnnouncement",
+            "Set-CiresonPortalAnnouncement", "Get-AzureEmailLanguage", "Get-SCOMAuthorizedRequeste", "Get-SCOMDistributedAppHealth",
+            "Send-EmailFromWorkflowAccount", "Test-KeywordsFoundInMessage", "Get-AMLWorkItemProbability", "Get-AzureEmailTranslation",
+            "Get-AzureEmailKeywords", "Get-AzureEmailSentiment", "Get-AzureEmailImageAnalysis", "Get-AzureSpeechEmailAudioText",
+            "Get-AzureEmailImageText")] 
+        [string] $Source,
+        [parameter(Mandatory=$true, Position=3)] 
+        [ValidateSet("Information","Warning","Error")] 
+        [string] $Severity,
+        [parameter(Mandatory=$false, Position=4)]
+        [string] $EventParam1,
+        [parameter(Mandatory=$false, Position=5)]
+        [string] $EventParam2,
+        [parameter(Mandatory=$false, Position=6)]
+        [string] $EventParam3,
+        [parameter(Mandatory=$false, Position=7)]
+        [string] $EventParam4,
+        [parameter(Mandatory=$false, Position=8)]
+        [string] $EventParam5,
+        [parameter(Mandatory=$false, Position=9)]
+        [string] $EventParam6,
+        [parameter(Mandatory=$false, Position=9)]
+        [string] $EventParam7,
+        [parameter(Mandatory=$false, Position=9)]
+        [string] $EventParam8
+    )
+
+    switch ($severity)
+    {
+        "Information" {$id = New-Object System.Diagnostics.EventInstance($eventID,1)}
+        "Warning" {$id = New-Object System.Diagnostics.EventInstance($eventID,1,2)}
+        "Error" {$id = New-Object System.Diagnostics.EventInstance($eventID,1,1)}
+    }
+
+    if ($loggingType -eq "Workflow")
+    {
+        try 
+        {
+            #create the Event Log, if it already exists ignore and continue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "General" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "CustomEvents" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "New-WorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Update-WorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Attach-EmailToWorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Attach-FileToWorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Verify-WorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Schedule-WorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCSMUserByEmailAddress" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-TierMembership" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-TierMembers" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AssignedToWorkItemVolume" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Set-AssignedToPerSupportGroup" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCSMWorkItemParent" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Create-UserInCMDB" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Add-ActionLogEntry" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-CiresonPortalAPIToken" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-CiresonPortalUser" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-CiresonPortalGroup" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-CiresonPortalAnnouncements" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Search-AvailableCiresonPortalOfferings" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Search-CiresonKnowledgeBase" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-CiresonSuggestionURL" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Send-CiresonSuggestionEmail" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Add-CiresonWatchListUser" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Remove-CiresonWatchListUser" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Read-MIMEMessage" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-TemplatesByMailbox" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCSMAuthorizedAnnouncer" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Set-CoreSCSMAnnouncement" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Set-CiresonPortalAnnouncement" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailLanguage" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCOMAuthorizedRequeste" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCOMDistributedAppHealth" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Send-EmailFromWorkflowAccount" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Test-KeywordsFoundInMessage" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AMLWorkItemProbability" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailTranslation" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailKeywords" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailSentiment" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailImageAnalysis" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureSpeechEmailAudioText" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailImageText" -ErrorAction SilentlyContinue
+
+            #Attempt to write to the Windows Event Log
+            $evtObject = New-Object System.Diagnostics.EventLog
+            $evtObject.Log = "SMLets Exchange Connector"
+            $evtObject.Source = $source
+            #$evtObject.Category = "custom"
+            $evtObject.WriteEvent($id, @($LogMessage,$eventparam1,$eventparam2,$eventparam3,$eventparam4,$eventparam5,$eventparam6,$eventparam7,$eventparam8))
+        }
+        catch
+        {
+            #couldn't create a Windows Event Log entry
+        }
+    }
+    else
+    {
+        #The Event Log doesn't exist, use Write-Output/Warning/Error (SMA/Azure Automation)
+        Write-Output "EventId:$EventID;Severity:$Severity;Source:$Source;:Message$LogMessage;"
+        switch ($severity)
+        {
+            "Information" {Write-Output $EventID;$LogMessage;$Source;$Severity}
+            "Warning" {Write-Warning $EventID;$LogMessage;$Source;$Severity}
+            "Error" {Write-Error $EventID;$LogMessage;$Source;$Severity}
+        }
+    }
+}
+
 #region #### Configuration ####
 #retrieve the SMLets Exchange Connector MP to define configuration
 $smexcoSettingsMP = ((Get-SCSMObject -Class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings$")))
@@ -536,7 +658,26 @@ $loggingType = "$($smexcoSettingsMP.LogType)"
     # if using this feature, DO NOT USE QUOTES.  Start with a period/dot and then add the path to the script/runbook.
     # If running in SMA OR as a scheduled task with the custom events script in the same folder, use this format: . .\smletsExchangeConnector_CustomEvents.ps1
     # If running as a scheduled task and you have stored the events script in another folder, use this format: . C:\otherFolder\smletsExchangeConnector_CustomEvents.ps1'
-$ceScripts =  if($smexcoSettingsMP.FilePathCustomEvents.EndsWith(".ps1")) { Invoke-Expression $smexcoSettingsMP.FilePathCustomEvents}
+$ceScripts = if($smexcoSettingsMP.FilePathCustomEvents.EndsWith(".ps1"))
+{
+    try
+    {
+        Invoke-Expression $smexcoSettingsMP.FilePathCustomEvents
+        if ($loggingLevel -ge 4)
+        {
+            New-SMEXCOEvent -Source "CustomEvents" -EventID 0 -Severity "Information" -LogMessage "Custom Events PowerShell loaded successfully" | out-null
+            $true
+        }
+    }
+    catch
+    {
+        if ($loggingLevel -ge 2)
+        {
+            New-SMEXCOEvent -Source "CustomEvents" -EventID 1 -Severity "Warning" -LogMessage $_.Exception | out-null
+            $false
+        }
+    }
+}
 #endregion #### Configuration ####
 
 #region #### Process User Configs and Prep SMLets ####
@@ -3823,96 +3964,6 @@ function Get-SCOMDistributedAppHealth ($message)
     else
     {
         return $false
-    }
-}
-
-#inspired and modified from Kevin Holman/Mark Manty https://kevinholman.com/2016/04/02/writing-events-with-parameters-using-powershell/
-function New-SMEXCOEvent
-{
-    param (
-        [parameter(Mandatory=$true, Position=0)]
-        $EventID,
-        [parameter(Mandatory=$true, Position=1)]
-        [string] $LogMessage,
-        [parameter(Mandatory=$true, Position=2)]
-        [ValidateSet("General","New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Verify-WorkItem",
-            "Schedule-WorkItem", "Get-SCSMUserByEmailAddress", "Create-UserInCMDB", "Send-EmailFromWorkflowAccount",
-            "Test-KeywordsFoundInMessage", "Get-AMLWorkItemProbability", "Get-AzureEmailTranslation", "Get-AzureEmailKeywords",
-            "Get-AzureEmailSentiment", "Get-AzureEmailImageAnalysis", "Get-AzureSpeechEmailAudioText", "Get-AzureEmailImageText")] 
-        [string] $Source,
-        [parameter(Mandatory=$true, Position=3)] 
-        [ValidateSet("Information","Warning","Error")] 
-        [string] $Severity,
-        [parameter(Mandatory=$false, Position=4)]
-        [string] $EventParam1,
-        [parameter(Mandatory=$false, Position=5)]
-        [string] $EventParam2,
-        [parameter(Mandatory=$false, Position=6)]
-        [string] $EventParam3,
-        [parameter(Mandatory=$false, Position=7)]
-        [string] $EventParam4,
-        [parameter(Mandatory=$false, Position=8)]
-        [string] $EventParam5,
-        [parameter(Mandatory=$false, Position=9)]
-        [string] $EventParam6,
-        [parameter(Mandatory=$false, Position=9)]
-        [string] $EventParam7,
-        [parameter(Mandatory=$false, Position=9)]
-        [string] $EventParam8
-    )
-
-    switch ($severity)
-    {
-        "Information" {$id = New-Object System.Diagnostics.EventInstance($eventID,1)}
-        "Warning" {$id = New-Object System.Diagnostics.EventInstance($eventID,1,2)}
-        "Error" {$id = New-Object System.Diagnostics.EventInstance($eventID,1,1)}
-    }
-
-    if ($loggingType -eq "Workflow")
-    {
-        try 
-        {
-            #create the Event Log, if it already exists ignore and continue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "General" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "New-WorkItem" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Update-WorkItem" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Attach-EmailToWorkItem" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Verify-WorkItem" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Schedule-WorkItem" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCSMUserByEmailAddress" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Create-UserInCMDB" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Send-EmailFromWorkflowAccount" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Test-KeywordsFoundInMessage" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AMLWorkItemProbability" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailTranslation" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailKeywords" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailSentiment" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailImageAnalysis" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureSpeechEmailAudioText" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailImageText" -ErrorAction SilentlyContinue
-
-            #Attempt to write to the Windows Event Log
-            $evtObject = New-Object System.Diagnostics.EventLog
-            $evtObject.Log = "SMLets Exchange Connector"
-            $evtObject.Source = $source
-            #$evtObject.Category = "custom"
-            $evtObject.WriteEvent($id, @($LogMessage,$eventparam1,$eventparam2,$eventparam3,$eventparam4,$eventparam5,$eventparam6,$eventparam7,$eventparam8))
-        }
-        catch
-        {
-            #couldn't create a Windows Event Log entry
-        }
-    }
-    else
-    {
-        #The Event Log doesn't exist, use Write-Output/Warning/Error (SMA/Azure Automation)
-        Write-Output "EventId:$EventID;Severity:$Severity;Source:$Source;:Message$LogMessage;"
-        switch ($severity)
-        {
-            "Information" {Write-Output $EventID;$LogMessage;$Source;$Severity}
-            "Warning" {Write-Warning $EventID;$LogMessage;$Source;$Severity}
-            "Error" {Write-Error $EventID;$LogMessage;$Source;$Severity}
-        }
     }
 }
 #endregion
