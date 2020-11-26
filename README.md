@@ -15,6 +15,15 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>Workflow Engine (v3.0)</i></td>
+  </tr>
+  <tr>
+    <td align="center" width="200"><img src ="/FeatureScreenshots/workflow.png" /></td>
+    <td width="auto">The connector can optionally can be driven through the Service Manager workflow engine and leverage Run as Accounts. All while maintaining the customization and flexibility you've come to expect through a PowerShell based connector. Setup instructions can be found <a href="https://github.com/AdhocAdam/smletsexchangeconnector/wiki/Configuration-Examples#scenario-4-native-service-manager">here</a>.</td>
+  </tr>
+</table>
+<table border="0">
+  <tr>
     <td colspan="3"><i>OAuth 2.0 for Exchange Online (v2.4)</i></td>
   </tr>
   <tr>

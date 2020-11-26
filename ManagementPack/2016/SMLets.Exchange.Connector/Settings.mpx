@@ -34,6 +34,11 @@
               Type="bool"
               Key="false"
               Required="false" />
+              
+          <Property ID="UseImpersonation"
+              Type="bool"
+              Key="false"
+              Required="false" />
 
           <Property ID="ExchangeAutodiscoverURL"
               Type="string"
@@ -66,6 +71,15 @@
               MaxLength="256"
               MinLength="0"
               Required="false" />
+              
+        <Property ID="SecureReferenceIdEWS"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
 
           <!--File Paths-->
           <Property ID="FilePathEWSDLL"
@@ -74,6 +88,15 @@
               Key="false"
               CaseSensitive="false"
               MaxLength="256"
+              MinLength="0"
+              Required="false" />
+              
+          <Property ID="FilePathSMExcoPS"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="400"
               MinLength="0"
               Required="false" />
 
@@ -605,6 +628,15 @@
               MaxLength="256"
               MinLength="0"
               Required="false" />
+              
+        <Property ID="SecureReferenceIdCiresonPortal"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
 
           <!--Announcement Properties-->
           <Property ID="EnableAnnouncements"
@@ -1118,6 +1150,24 @@
               Required="false" />
         
         <Property ID="ACSSpeechRegion"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+
+        <!--Logging-->
+        <Property ID="LogType"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+        <Property ID="LogLevel"
               Type="string"
               AutoIncrement="false"
               Key="false"

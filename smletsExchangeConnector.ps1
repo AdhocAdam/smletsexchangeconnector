@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
 Provides SCSM Exchange Connector functionality through PowerShell
 
@@ -20,6 +20,8 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 3.0.0 = #2 - Feature, adding support for logging regardless of deployment strategy
+               = #207 - Feature, workflow support
 Version: 2.4.0 = #171 - Optimization, Support for Exchange Online via OAuth 2.0 tokens 
 Version: 2.3.0 = #55 - Feature, Image Analysis (support for png, jpg, jpeg, bmp, and gif)
                 #5 - Feature, Optical Character Recognition (support for png, jpg, jpeg, bmp, and gif)
@@ -143,10 +145,133 @@ Version: 1.1 = GitHub issue raised on updating work items. Per discussion was pi
                 ensures the brackets aren't passed when performing the search/update.
 #>
 
+#inspired and modified from Kevin Holman/Mark Manty https://kevinholman.com/2016/04/02/writing-events-with-parameters-using-powershell/
+function New-SMEXCOEvent
+{
+    param (
+        [parameter(Mandatory=$true, Position=0)]
+        $EventID,
+        [parameter(Mandatory=$true, Position=1)]
+        [string] $LogMessage,
+        [parameter(Mandatory=$true, Position=2)]
+        [ValidateSet("General", "CustomEvents", "New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Attach-FileToWorkItem", "Verify-WorkItem",
+            "Schedule-WorkItem", "Get-SCSMUserByEmailAddress", "Get-TierMembership", "Get-TierMembers", "Get-AssignedToWorkItemVolume",
+            "Set-AssignedToPerSupportGroup", "Get-SCSMWorkItemParent", "Create-UserInCMDB", "Add-ActionLogEntry", "Get-CiresonPortalAPIToken",
+            "Get-CiresonPortalUser", "Get-CiresonPortalGroup", "Get-CiresonPortalAnnouncements", "Search-AvailableCiresonPortalOfferings",
+            "Search-CiresonKnowledgeBase", "Get-CiresonSuggestionURL", "Send-CiresonSuggestionEmail", "Add-CiresonWatchListUser",
+            "Remove-CiresonWatchListUser", "Read-MIMEMessage", "Get-TemplatesByMailbox", "Get-SCSMAuthorizedAnnouncer", "Set-CoreSCSMAnnouncement",
+            "Set-CiresonPortalAnnouncement", "Get-AzureEmailLanguage", "Get-SCOMAuthorizedRequester", "Get-SCOMDistributedAppHealth",
+            "Send-EmailFromWorkflowAccount", "Test-KeywordsFoundInMessage", "Get-AMLWorkItemProbability", "Get-AzureEmailTranslation",
+            "Get-AzureEmailKeywords", "Get-AzureEmailSentiment", "Get-AzureEmailImageAnalysis", "Get-AzureSpeechEmailAudioText",
+            "Get-AzureEmailImageText")] 
+        [string] $Source,
+        [parameter(Mandatory=$true, Position=3)] 
+        [ValidateSet("Information","Warning","Error")] 
+        [string] $Severity,
+        [parameter(Mandatory=$false, Position=4)]
+        [string] $EventParam1,
+        [parameter(Mandatory=$false, Position=5)]
+        [string] $EventParam2,
+        [parameter(Mandatory=$false, Position=6)]
+        [string] $EventParam3,
+        [parameter(Mandatory=$false, Position=7)]
+        [string] $EventParam4,
+        [parameter(Mandatory=$false, Position=8)]
+        [string] $EventParam5,
+        [parameter(Mandatory=$false, Position=9)]
+        [string] $EventParam6,
+        [parameter(Mandatory=$false, Position=9)]
+        [string] $EventParam7,
+        [parameter(Mandatory=$false, Position=9)]
+        [string] $EventParam8
+    )
+
+    switch ($severity)
+    {
+        "Information" {$id = New-Object System.Diagnostics.EventInstance($eventID,1)}
+        "Warning" {$id = New-Object System.Diagnostics.EventInstance($eventID,1,2)}
+        "Error" {$id = New-Object System.Diagnostics.EventInstance($eventID,1,1)}
+    }
+
+    if ($loggingType -eq "Workflow")
+    {
+        try 
+        {
+            #create the Event Log, if it already exists ignore and continue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "General" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "CustomEvents" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "New-WorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Update-WorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Attach-EmailToWorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Attach-FileToWorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Verify-WorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Schedule-WorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCSMUserByEmailAddress" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-TierMembership" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-TierMembers" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AssignedToWorkItemVolume" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Set-AssignedToPerSupportGroup" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCSMWorkItemParent" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Create-UserInCMDB" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Add-ActionLogEntry" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-CiresonPortalAPIToken" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-CiresonPortalUser" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-CiresonPortalGroup" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-CiresonPortalAnnouncements" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Search-AvailableCiresonPortalOfferings" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Search-CiresonKnowledgeBase" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-CiresonSuggestionURL" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Send-CiresonSuggestionEmail" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Add-CiresonWatchListUser" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Remove-CiresonWatchListUser" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Read-MIMEMessage" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-TemplatesByMailbox" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCSMAuthorizedAnnouncer" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Set-CoreSCSMAnnouncement" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Set-CiresonPortalAnnouncement" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailLanguage" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCOMAuthorizedRequeste" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCOMDistributedAppHealth" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Send-EmailFromWorkflowAccount" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Test-KeywordsFoundInMessage" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AMLWorkItemProbability" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailTranslation" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailKeywords" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailSentiment" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailImageAnalysis" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureSpeechEmailAudioText" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailImageText" -ErrorAction SilentlyContinue
+
+            #Attempt to write to the Windows Event Log
+            $evtObject = New-Object System.Diagnostics.EventLog
+            $evtObject.Log = "SMLets Exchange Connector"
+            $evtObject.Source = $source
+            #$evtObject.Category = "custom"
+            $evtObject.WriteEvent($id, @($LogMessage,$eventparam1,$eventparam2,$eventparam3,$eventparam4,$eventparam5,$eventparam6,$eventparam7,$eventparam8))
+        }
+        catch
+        {
+            #couldn't create a Windows Event Log entry
+        }
+    }
+    else
+    {
+        #The Event Log doesn't exist, use Write-Output/Warning/Error (SMA/Azure Automation)
+        Write-Output "EventId:$EventID;Severity:$Severity;Source:$Source;:Message$LogMessage;"
+        switch ($severity)
+        {
+            "Information" {Write-Output $EventID;$LogMessage;$Source;$Severity}
+            "Warning" {Write-Warning $EventID;$LogMessage;$Source;$Severity}
+            "Error" {Write-Error $EventID;$LogMessage;$Source;$Severity}
+        }
+    }
+}
+
 #region #### Configuration ####
 #retrieve the SMLets Exchange Connector MP to define configuration
 $smexcoSettingsMP = ((Get-SCSMObject -Class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings$")))
 $smexcoSettingsMPMailboxes = ((Get-SCSMObject -Class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings.AdditionalMailbox$")))
+$scsmLFXConfigMP = Get-SCSMManagementPack -Id "50daaf82-06ce-cacb-8cf5-3950aebae0b0"
 
 #define the SCSM management server, this could be a remote name or localhost
 $scsmMGMTServer = "$($smexcoSettingsMP.SCSMmgmtServer)"
@@ -525,14 +650,34 @@ $htmlSuggestionTemplatePath = "$($smexcoSettingsMP.FilePathHTMLSuggestionTemplat
 #enable logging per standard Exchange Connector registry keys
 #valid options on that registry key are 1 to 7 where 7 is the most verbose
 #$loggingLevel = (Get-ItemProperty "HKLM:\Software\Microsoft\System Center Service Manager Exchange Connector" -ErrorAction SilentlyContinue).LoggingLevel
-#$loggingLevel = 1
+[int]$loggingLevel = "$($smexcoSettingsMP.LogLevel)"
+$loggingType = "$($smexcoSettingsMP.LogType)"
 
 #$ceScripts = invoke the Custom Events script, will optionally load custom/proprietary scripts as certain events occur.
     # set this equal to empty quotes ("") to turn custom events OFF
     # if using this feature, DO NOT USE QUOTES.  Start with a period/dot and then add the path to the script/runbook.
     # If running in SMA OR as a scheduled task with the custom events script in the same folder, use this format: . .\smletsExchangeConnector_CustomEvents.ps1
     # If running as a scheduled task and you have stored the events script in another folder, use this format: . C:\otherFolder\smletsExchangeConnector_CustomEvents.ps1'
-$ceScripts =  if($smexcoSettingsMP.FilePathCustomEvents.EndsWith(".ps1")) { Invoke-Expression $smexcoSettingsMP.FilePathCustomEvents}
+$ceScripts = if($smexcoSettingsMP.FilePathCustomEvents.EndsWith(".ps1"))
+{
+    try
+    {
+        Invoke-Expression $smexcoSettingsMP.FilePathCustomEvents
+        if ($loggingLevel -ge 4)
+        {
+            New-SMEXCOEvent -Source "CustomEvents" -EventID 0 -Severity "Information" -LogMessage "Custom Events PowerShell loaded successfully" | out-null
+            $true
+        }
+    }
+    catch
+    {
+        if ($loggingLevel -ge 2)
+        {
+            New-SMEXCOEvent -Source "CustomEvents" -EventID 1 -Severity "Warning" -LogMessage $_.Exception | out-null
+            $false
+        }
+    }
+}
 #endregion #### Configuration ####
 
 #region #### Process User Configs and Prep SMLets ####
@@ -705,6 +850,15 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
     $title = $message.subject
     $description = $message.body
 
+    if ($loggingLevel -ge 4)
+    {
+        $logMessage = "Creating $wiType
+        From: $from
+        CC Users: $($($cced.address) -join ',')
+        Title: $title"
+        New-SMEXCOEvent -Source "New-WorkItem" -EventId 0 -LogMessage $logMessage -Severity "Information"
+    }
+
     #removes PII if RedactPiiFromMessage is enabled
     if ($redactPiiFromMessage -eq $true)
     {
@@ -806,6 +960,14 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                 $x++
             }
         }
+    }
+
+    if ($loggingLevel -ge 4)
+    {
+        $logMessage = "User Relationships for $title
+        Affected User: $($affectedUser.DisplayName)
+        Related Users: $($($relatedUsers.DisplayName) -join ',')"
+        New-SMEXCOEvent -Source "New-WorkItem" -EventId 1 -LogMessage $logMessage -Severity "Information"
     }
     
     if (($smexcoSettingsMP.UseMailboxRedirection -eq $true) -and ($smexcoSettingsMPMailboxes.Count -ge 1))
@@ -1207,6 +1369,17 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
                     if ($ceScripts) { Invoke-AfterCreateCR }
                 }
     }
+
+    #if verbose logging, show details about the new work item
+    if ($loggingLevel -ge 4)
+    {
+        $logMessage = "Created $workItemType
+        ID: $($newWorkItem.Name)
+        Title: $($newWorkItem.Title)
+        Affected User: $($affectedUser.DisplayName)
+        Related Users: $($($relatedUsers.DisplayName) -join ',')"
+        New-SMEXCOEvent -Source "New-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
+    }
     
     # Custom Event Handler
     if ($ceScripts) { Invoke-AfterCreateAnyWorkItem }
@@ -1219,6 +1392,14 @@ function New-WorkItem ($message, $wiType, $returnWIBool) 
 
 function Update-WorkItem ($message, $wiType, $workItemID) 
 {
+    if ($loggingLevel -ge 4)
+    {
+        $logMessage = "Updating $workItemID
+        From: $($message.From)
+        Title: $($message.Subject)"
+        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 0 -LogMessage $logMessage -Severity "Information"
+    }
+
     #removes PII if RedactPiiFromMessage is enable
     if ($redactPiiFromMessage -eq $true)
     {
@@ -1266,6 +1447,25 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
     if ($message.Attachments)
     {
         Attach-FileToWorkItem $message $workItemID
+    }
+
+    #show the user who will perform the update and the [action] they are taking. If there is no [action] it's just a comment
+    if ($loggingLevel -ge 4)
+    {
+        if ($commentToAdd -match '(?<=\[).*?(?=\])')
+        {
+            $logMessage = "Action for $workItemID invoked by:
+            SCSM User: $($commentLeftBy.DisplayName)
+            Action: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
+            New-SMEXCOEvent -Source "Update-WorkItem" -EventId 1 -LogMessage $logMessage -Severity "Information"
+        }
+        else
+        {
+            $logMessage = "Leaving a Comment on $workItemID invoked by:
+            SCSM User: $($commentLeftBy.DisplayName)
+            Comment: $commentToAdd"
+            New-SMEXCOEvent -Source "Update-WorkItem" -EventId 1 -LogMessage $logMessage -Severity "Information"
+        }
     }
 
     #update the work item with the comment and/or action
@@ -1726,6 +1926,13 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             {
                                     Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
                                     New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk @scsmMGMTParams
+                                    if ($loggingLevel -ge 4)
+                                    {
+                                        $logMessage = "Voting on $workItemID
+                                        SCSM User: $($commentLeftBy.DisplayName)
+                                        Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
+                                        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
+                                    }
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterApproved }
                             }
@@ -1734,6 +1941,13 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                             {
                                     Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
                                     New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk @scsmMGMTParams
+                                    if ($loggingLevel -ge 4)
+                                    {
+                                        $logMessage = "Voting on $workItemID
+                                        SCSM User: $($commentLeftBy.DisplayName)
+                                        Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
+                                        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
+                                    }
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterRejected }
                             }
@@ -1747,6 +1961,13 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                     "System.WorkItem.ServiceRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
                                     "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
                                 }                       
+                                if ($loggingLevel -ge 4)
+                                {
+                                    $logMessage = "No vote to process for $workItemID. Adding to Parent Work Item $($parentWorkItem.Name)
+                                    SCSM User: $($commentLeftBy.DisplayName)
+                                    Comment: $commentToAdd"
+                                    New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
+                                }
                             }
                         }
                         else {
@@ -1766,6 +1987,14 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                 {
                                     Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
                                     New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $votedOnBehalfOfUser -Bulk @scsmMGMTParams
+                                    if ($loggingLevel -ge 4)
+                                    {
+                                        $logMessage = "Voting on $workItemID
+                                        SCSM User: $($commentLeftBy.DisplayName)
+                                        On Behalf of: $($reviewingUser.UserName)
+                                        Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
+                                        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
+                                    }
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterApprovedOnBehalf }
                                 
@@ -1775,6 +2004,14 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                 {
                                     Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
                                     New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $votedOnBehalfOfUser -Bulk @scsmMGMTParams
+                                    if ($loggingLevel -ge 4)
+                                    {
+                                        $logMessage = "Voting on $workItemID
+                                        SCSM User: $($commentLeftBy.DisplayName)
+                                        On Behalf of: $($reviewingUser.UserName)
+                                        Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
+                                        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
+                                    }
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterRejectedOnBehalf }
                                 }
@@ -1787,6 +2024,13 @@ function Update-WorkItem ($message, $wiType, $workItemID) 
                                         "System.WorkItem.ChangeRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -Action "EndUserComment" -IsPrivate $false}
                                         "System.WorkItem.ServiceRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -Action "EndUserComment" -IsPrivate $false}
                                         "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -Action "EndUserComment" -IsPrivate $false}
+                                    }
+                                    if ($loggingLevel -ge 4)
+                                    {
+                                        $logMessage = "No vote to process on behalf of for $workItemID
+                                        SCSM User: $($commentLeftBy.DisplayName)
+                                        Vote: $commentToAdd"
+                                        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
                                     }
                                 }
                                 else {
@@ -2111,10 +2355,12 @@ function Get-SCSMUserByEmailAddress ($EmailAddress)
     if ($userSMTPNotification) 
     { 
         $user = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
+        if ($loggingLevel -ge 4){New-SMEXCOEvent -Source "Get-SCSMUserByEmailAddress" -EventId 0 -LogMessage "Address: $EmailAddress was matched to SCSM User: $($user.Domain)\$($user.UserName)" -Severity "Information"}
         return $user
     }
     else
     {
+        if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Get-SCSMUserByEmailAddress" -EventId 1 -LogMessage "Address: $EmailAddress could not be matched to a user in SCSM" -Severity "Warning"}
         return $null
     }
 }
@@ -2290,6 +2536,7 @@ function Create-UserInCMDB ($userEmail)
 
     #create the new user
     $newUser = New-SCSMObject -Class $domainUserClass -PropertyHashtable @{"domain" = "$domainAndTLD"; "username" = "$username"; "displayname" = "$userEmail"} @scsmMGMTParams -PassThru
+    if (($loggingLevel -ge 1) -and ($newUser)){New-SMEXCOEvent -Source "Create-UserInCMDB" -EventId 0 -LogMessage "New User created in SCSM. Username: $username" -Severity "Information"}
 
     #create the user notification projection
     $userNoticeProjection = @{__CLASS = "$($domainUserClass.Name)";
@@ -2300,7 +2547,8 @@ function Create-UserInCMDB ($userEmail)
                                 }
 
     #create the user's email notification channel
-    New-SCSMObjectProjection -Type "$($userHasPrefProjection.Name)" -Projection $userNoticeProjection @scsmMGMTParams
+    $userHasNotification = New-SCSMObjectProjection -Type "$($userHasPrefProjection.Name)" -Projection $userNoticeProjection -PassThru @scsmMGMTParams
+    if (($loggingLevel -ge 1) -and ($userHasNotification)){New-SMEXCOEvent -Source "Create-UserInCMDB" -EventId 1 -LogMessage "New User: $username successfully related to their new Notification: $userEmail" -Severity "Information"}
     
     # Custom Event Handler
     if ($ceScripts) { Invoke-AfterUserCreatedInCMDB }
@@ -2400,10 +2648,27 @@ function Add-ActionLogEntry {
 #if using windows authentication, retrieve a Cireson Web API token
 function Get-CiresonPortalAPIToken
 {
-    $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
+    #determine if the connector is running as a workflow
+    if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Connector.15d8b765a2f8b63ead14472f9b3c12f0")} | Select-Object Enabled -ExpandProperty Enabled)
+    {
+        $ciresonPortalCredentials = @{"username" = "$ciresonPortalRunAsUsername"; "password" = "$ciresonPortalRunAsPassword"; "languagecode" = "ENU" } | ConvertTo-Json
+        #make a credential object
+        [securestring]$cpSecPW = ConvertTo-SecureString $ciresonPortalRunAsPassword -AsPlainText -Force
+        [pscredential]$ciresonPortalCred = New-Object System.Management.Automation.PSCredential ($ciresonPortalRunAsUsername, $cpSecPW)
+    }
+    else
+    {
+        $ciresonPortalCredentials = @{"username" = "$ciresonPortalUsername"; "password" = "$ciresonPortalPassword"; "languagecode" = "ENU" } | ConvertTo-Json
+        #make a credential object
+        [securestring]$cpSecPW = ConvertTo-SecureString $ciresonPortalPassword -AsPlainText -Force
+        [pscredential]$ciresonPortalCred = New-Object System.Management.Automation.PSCredential ($ciresonPortalUsername, $cpSecPW)
+    }
+
+    #make the call to the portal to retrieve a token
     $ciresonTokenURL = $ciresonPortalServer+"api/V3/Authorization/GetToken"
-    $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials
+    $ciresonAPIToken = Invoke-RestMethod -uri $ciresonTokenURL -Method post -Body $ciresonPortalCredentials -Credential $ciresonPortalCred
     $ciresonAPIToken = "Token" + " " + $ciresonAPIToken
+
     return $ciresonAPIToken
 }
 
@@ -2666,6 +2931,14 @@ function Send-EmailFromWorkflowAccount ($subject, $body, $bodyType, $toRecipient
     $emailToSendOut.Body.BodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::$bodyType
     $emailToSendOut.ToRecipients.Add($toRecipients)
     $emailToSendOut.Send()
+
+    if ($loggingLevel -ge 4)
+    {
+        $logMessage = "Email sent from Workflow account
+        Subject: $subject
+        Body: $body"
+        New-SMEXCOEvent -Source "Send-EmailFromWorkflowAccount" -EventId 0 -LogMessage $logMessage -Severity "Information"
+    }
 }
 
 function Schedule-WorkItem ($calAppt, $wiType, $workItem)
@@ -2689,6 +2962,7 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
             "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
             "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
         }
+        if ($loggingLevel -ge 1){New-SMEXCOEvent -Source "Schedule-WorkItem" -EventId 0 -LogMessage "Meeting scheduled for $($workItem.Name). Scheduled Start/End Times have been set." -Severity "Information"}
     }
 
     #the meeting request is a cancelation, null the values out of the Schedule Start/End Time
@@ -2711,6 +2985,7 @@ function Schedule-WorkItem ($calAppt, $wiType, $workItem)
             "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
             "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
         }
+        if ($loggingLevel -ge 1){New-SMEXCOEvent -Source "Schedule-WorkItem" -EventId 1 -LogMessage "Meeting cancelled for $($workItem.Name). Scheduled Start/End Times have been cleared." -Severity "Information"}
     }
 }
 
@@ -2722,9 +2997,11 @@ function Verify-WorkItem ($message, $returnWorkItem)
         $emailAttachmentSearchObject = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | select-object -first 1 
         if ($emailAttachmentSearchObject)
         {
+            if ($loggingLevel -ge 4){New-SMEXCOEvent -Source "Verify-WorkItem" -EventId 1 -LogMessage "File Attachment: $($emailAttachmentSearchObject.DisplayName) found" -Severity "Information"}
             $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $emailAttachmentSearchObject @scsmMGMTParams).sourceobject.id @scsmMGMTParams
             if ($relatedWorkItemFromAttachmentSearch)
             {
+                if ($loggingLevel -ge 4){New-SMEXCOEvent -Source "Verify-WorkItem" -EventId 2 -LogMessage "File Attachment: $($emailAttachmentSearchObject.DisplayName) has related Work Item $($relatedWorkItemFromAttachmentSearch.Name)" -Severity "Information"}
                 switch ($relatedWorkItemFromAttachmentSearch.ClassName)
                 {
                     "System.WorkItem.Incident" {Update-WorkItem -message $message -wiType "ir" -workItemID $relatedWorkItemFromAttachmentSearch.id; if($returnWorkItem){return $relatedWorkItemFromAttachmentSearch}}
@@ -2734,12 +3011,14 @@ function Verify-WorkItem ($message, $returnWorkItem)
             }
             else
             {
+                if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Verify-WorkItem" -EventId 3 -LogMessage "A File Attachment was found to merge this email with a known Work Item. But the Work Item could not be found." -Severity "Warning"}
                 #the File Attachment (email) was found, but the related Work Item was not, Create a New Work Item
                 New-WorkItem $message $defaultNewWorkItem
             }
         }
         else
         {
+            if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Verify-WorkItem" -EventId 4 -LogMessage "A File Attachment was not found to merge this email with a known Work Item" -Severity "Warning"}
             #the File Attachment (email) was not found, Create a New Work Item
             New-WorkItem $message $defaultNewWorkItem
         }
@@ -2927,6 +3206,8 @@ function Test-KeywordsFoundInMessage ($message) {
     if (-Not $found) {
         $found = ($message.body -match $workItemTypeOverrideKeywords)
     }
+
+    if (($loggingLevel -ge 1) -and ($found)){New-SMEXCOEvent -Source "Test-KeywordsFoundInMessage" -EventId 0 -LogMessage "Override keywords found in email. Will create: $workItemOverrideType instead of: $defaultNewWorkItem" -Severity "Information"}
     return $found
 }
 
@@ -3198,8 +3479,25 @@ function Get-AzureEmailSentiment ($messageToEvaluate)
     $final = @{documents = $documents}
     $messagePayload = ConvertTo-Json $final
 
-    #invoke the Cognitive Services Sentiment API
-    $sentimentResult = Invoke-RestMethod -Method Post -Uri $sentimentURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcTextAnalyticsAPIKey } -Body $messagePayload -ContentType "application/json"
+    try
+    {
+        #invoke the Cognitive Services Sentiment API
+        $sentimentResult = Invoke-RestMethod -Method Post -Uri $sentimentURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcTextAnalyticsAPIKey } -Body $messagePayload -ContentType "application/json"
+        
+        #API contacted, log an info event
+        if ($loggingLevel -ge 4)
+        {
+            New-SMEXCOEvent -Source "Get-AzureEmailSentiment" -EventID 0 -Severity "Information" -LogMessage "Azure Sentiment Score: $($sentimentResult.documents.score * 100)"
+        }
+    }
+    catch
+    {
+        #the API could not be contacted, log an error
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "Get-AzureEmailSentiment" -EventID 1 -Severity "Error" -LogMessage $_.Exception
+        }
+    }
     
     #return the percent score
     return ($sentimentResult.documents.score * 100)
@@ -3242,8 +3540,30 @@ function Get-AzureEmailTranslation ($TextToTranslate, $SourceLanguage, $TargetLa
     $originalBytes = [Text.Encoding]::Default.GetBytes($TextToTranslate)
     $TextToTranslate = [Text.Encoding]::Utf8.GetString($originalBytes)
 
-    #Send text to Azure for translation
-    $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToTranslate)]"
+    try
+    {
+        #Send text to Azure for translation
+        $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToTranslate)]"
+
+        #API contacted, log an info event
+        if ($loggingLevel -ge 4)
+        {
+            $azureEmailTranslationLogBody = "Source Lang: $SourceLanguage
+                Target Lang: $TargetLanguage
+                Original Text: $TextToTranslate
+                Translated Text: $RecoResponse.translations[0].text
+            "
+            New-SMEXCOEvent -Source "Get-AzureEmailTranslation" -EventID 0 -Severity "Information" -LogMessage $azureEmailTranslationLogBody
+        }
+    }
+    catch
+    {
+        #API could not be contacted, log an error
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "Get-AzureEmailTranslation" -EventID 1 -Severity "Error" -LogMessage $_.Exception
+        }
+    }
 
     #Return the converted text
     return $($RecoResponse.translations[0].text)
@@ -3270,8 +3590,25 @@ function Get-AzureEmailKeywords ($messageToEvaluate)
     $final = @{documents = $documents}
     $messagePayload = ConvertTo-Json $final
 
-    #invoke the Text Analytics Keyword API
-    $keywordResult = Invoke-RestMethod -Method Post -Uri $keyPhraseURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcTextAnalyticsAPIKey } -Body $messagePayload -ContentType "application/json" 
+    try
+    {
+        #invoke the Text Analytics Keyword API
+        $keywordResult = Invoke-RestMethod -Method Post -Uri $keyPhraseURI -Header @{ "Ocp-Apim-Subscription-Key" = $azureCogSvcTextAnalyticsAPIKey } -Body $messagePayload -ContentType "application/json"
+
+        #API contacted, log an info event
+        if ($loggingLevel -ge 4)
+        {
+            New-SMEXCOEvent -Source "Get-AzureEmailKeywords" -EventID 0 -Severity "Information" -LogMessage "Keywords identified from Azure: $($keywordResult.documents.keyPhrases)"
+        }
+    }
+    catch
+    {
+        #API could not be contacted, log an error
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "Get-AzureEmailKeywords" -EventID 1 -Severity "Error" -LogMessage $_.Exception
+        }
+    }
 
     #return the keywords
     return $keywordResult.documents.keyPhrases
@@ -3287,9 +3624,29 @@ function Get-AzureEmailImageAnalysis ($imageToEvalute)
     $httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "$azureCogSvcVisionAPIKey")
     $content = New-Object "System.Net.Http.ByteArrayContent" -ArgumentList @(,$imageToEvalute)
     $content.Headers.ContentType = "application/octet-stream"
-    $request = $httpClient.PostAsync($imageAnalysisURI,$content)
-    $request.wait();
-    if($request.IsCompleted) {$result = $request.Result.Content.ReadAsStringAsync().Result | ConvertFrom-Json}
+
+    try
+    {
+        $request = $httpClient.PostAsync($imageAnalysisURI,$content)
+        $request.wait();
+        if($request.IsCompleted) {$result = $request.Result.Content.ReadAsStringAsync().Result | ConvertFrom-Json}
+
+        #API contacted, log an info event
+        if ($loggingLevel -ge 4)
+        {
+            $logAzureVisionTags = $azureVisionResult.tags.name | select-object -first 5
+            $emailImageTagsLogEventBody = "Identified Image Tags from Azure: $($logAzureVisionTags -join ',')"
+            New-SMEXCOEvent -Source "Get-AzureEmailImageAnalysis" -EventID 0 -Severity "Information" -LogMessage $emailImageTagsLogEventBody
+        }
+    }
+    catch
+    {
+        #the API could not be contacted, log an error
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "Get-AzureEmailImageAnalysis" -EventID 1 -Severity "Error" -LogMessage $_.Exception
+        }
+    }
 
     #return the Vision API analysis
     return $result
@@ -3307,8 +3664,26 @@ function Get-AzureSpeechEmailAudioText ($waveFileToEvaluate)
       'Accept' = "application/json"
     }
 
-    #Pass the audio byte array into the body and submit the request
-    $RecoResponse = Invoke-RestMethod -Method POST -Uri $SpeechServiceURI -Headers $RecoRequestHeader -Body $waveFileToEvaluate
+    try
+    {
+        #Pass the audio byte array into the body and submit the request
+        $RecoResponse = Invoke-RestMethod -Method POST -Uri $SpeechServiceURI -Headers $RecoRequestHeader -Body $waveFileToEvaluate
+
+        #API contacted, log an info event
+        if ($loggingLevel -ge 4)
+        {
+            $emailSpeechToTextLogEventBody = "Azure Speech to Text: $($RecoResponse.DisplayText)"
+            New-SMEXCOEvent -Source "Get-AzureSpeechEmailAudioText" -EventID 0 -Severity "Information" -LogMessage $emailSpeechToTextLogEventBody
+        }
+    }
+    catch
+    {
+        #the API could not be contacted, log an error
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "Get-AzureSpeechEmailAudioText" -EventID 1 -Severity "Error" -LogMessage $_.Exception
+        }
+    }
 
     #return the result
     return $RecoResponse
@@ -3324,9 +3699,28 @@ function Get-AzureEmailImageText ($imageToEvalute)
     $httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "$azureCogSvcVisionAPIKey")
     $content = New-Object "System.Net.Http.ByteArrayContent" -ArgumentList @(,$imageToEvalute)
     $content.Headers.ContentType = "application/octet-stream"
-    $request = $httpClient.PostAsync($imageTextURI,$content)
-    $request.wait();
-    if($request.IsCompleted) {$result = $request.Result.Content.ReadAsStringAsync().Result | ConvertFrom-Json}
+
+    try
+    {
+        $request = $httpClient.PostAsync($imageTextURI,$content)
+        $request.wait();
+        if($request.IsCompleted) {$result = $request.Result.Content.ReadAsStringAsync().Result | ConvertFrom-Json}
+
+        #API contacted, log an info event
+        if ($loggingLevel -ge 4)
+        {
+            $emailImageTextLogEventBody = "Identified Image Text from Azure: $($result.regions.Lines.words.text -join " ")"
+            New-SMEXCOEvent -Source "Get-AzureEmailImageText" -EventID 0 -Severity "Information" -LogMessage $emailImageTextLogEventBody
+        }
+    }
+    catch
+    {
+        #the API could not be contacted, log an error
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "Get-AzureEmailImageText" -EventID 1 -Severity "Error" -LogMessage $_.Exception
+        }
+    }
 
     #return the Vision API analysis
     return $result
@@ -3353,20 +3747,47 @@ function Get-AMLWorkItemProbability ($EmailSubject, $EmailBody)
     }
 "@
 
-    #invoke the Azure Machine Learning web service for predicting Work Item Type, Classification, and Support Group
-    $probabilityResponse = Invoke-RestMethod -Uri $amlURL -Method Post -Header $headerTable -Body $messagePayload -ContentType "application/json"
+    try
+    {
+        #invoke the Azure Machine Learning web service for predicting Work Item Type, Classification, and Support Group
+        $probabilityResponse = Invoke-RestMethod -Uri $amlURL -Method Post -Header $headerTable -Body $messagePayload -ContentType "application/json"
 
-    #return custom probability object
-    $probabilityResults = $probabilityResponse.Results.output1.value.Values[0]
-    $probabilityMatrix = New-Object -TypeName psobject
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemType -Value $probabilityResults[0]
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemTypeConfidence -Value (($probabilityResults[1] -as [decimal]) * 100)
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassification -Value $probabilityResults[2]
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassificationConfidence -Value (($probabilityResults[3] -as [decimal]) * 100)
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroup -Value $probabilityResults[4]
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroupConfidence -Value (($probabilityResults[5] -as [decimal]) * 100)
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name AffectedConfigItem -Value $probabilityResults[6]
-    $probabilityMatrix | Add-Member -MemberType NoteProperty -Name AffectedConfigItemConfidence -Value (($probabilityResults[7] -as [decimal]) * 100)
+        #return custom probability object
+        $probabilityResults = $probabilityResponse.Results.output1.value.Values[0]
+        $probabilityMatrix = New-Object -TypeName psobject
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemType -Value $probabilityResults[0]
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemTypeConfidence -Value (($probabilityResults[1] -as [decimal]) * 100)
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassification -Value $probabilityResults[2]
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassificationConfidence -Value (($probabilityResults[3] -as [decimal]) * 100)
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroup -Value $probabilityResults[4]
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroupConfidence -Value (($probabilityResults[5] -as [decimal]) * 100)
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name AffectedConfigItem -Value $probabilityResults[6]
+        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name AffectedConfigItemConfidence -Value (($probabilityResults[7] -as [decimal]) * 100)
+
+        #logging is verbose, record the entire AML prediction
+        if ($loggingLevel -ge 4)
+        {
+            $amlLogInfoLogEventBody = "AML predictions: $EmailSubject
+                WorkItemType: $($probabilityMatrix.WorkItemType)
+                WorkItemTypeConfidence: $($probabilityMatrix.WorkItemTypeConfidence)
+                WorkItemClassification: $($probabilityMatrix.WorkItemClassification)
+                WorkItemClassificationConfidence: $($probabilityMatrix.WorkItemClassificationConfidence)
+                WorkItemSupportGroup: $($probabilityMatrix.WorkItemSupportGroup)
+                WorkItemSupportGroupConfidence: $($probabilityMatrix.WorkItemSupportGroupConfidence)
+                AffectedConfigItem: $($probabilityMatrix.AffectedConfigItem)
+                AffectedConfigItemConfidence: $($probabilityMatrix.AffectedConfigItemConfidence)
+            "
+            New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 0 -Severity "Information" -LogMessage $amlLogInfoLogEventBody
+        }
+    }
+    catch
+    {
+        #the Web Service couldn't be contacted
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 1 -Severity "Error" -LogMessage $_.Exception
+        }
+    }
 
     #return the percent score
     return ($probabilityMatrix)
@@ -3593,41 +4014,102 @@ if ($ceScripts) { Invoke-BeforeConnect }
 #define Exchange assembly and connect to EWS
 [void] [Reflection.Assembly]::LoadFile("$exchangeEWSAPIPath")
 $exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService
-if ($UseExchangeOnline)
+#figure out if the workflow should be used
+if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Connector.15d8b765a2f8b63ead14472f9b3c12f0")} | Select-Object Enabled -ExpandProperty Enabled)
 {
-    #request an access token from Azure
-    $ReqTokenBody = @{
-        Grant_Type    = "Password"
-        client_Id     = $AzureClientID
-        Username      = $username
-        Password      = $password
-        Scope         = "https://outlook.office.com/EWS.AccessAsUser.All"
+    #the workflow exists and it is enabled, determine how to connect to Exchange
+    if ($UseExchangeOnline)
+    {
+        #request an access token from Azure
+        $ReqTokenBody = @{
+            Grant_Type    = "Password"
+            client_Id     = $AzureClientID
+            Username      = $ewsusername
+            Password      = $ewspassword
+            Scope         = "https://outlook.office.com/EWS.AccessAsUser.All"
+        }
+        $response = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token" -Method "POST" -Body $ReqTokenBody
+        
+        #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
+        $exchangeService.Url = [System.Uri]$ExchangeEndpoint
+        $exchangeService.Credentials = [Microsoft.Exchange.WebServices.Data.OAuthCredentials]($response.Access_Token)
     }
-    $response = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token" -Method "POST" -Body $ReqTokenBody
-    
-    #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
-    $exchangeService.Url = [System.Uri]$ExchangeEndpoint
-    $exchangeService.Credentials = [Microsoft.Exchange.WebServices.Data.OAuthCredentials]($response.Access_Token)
+    else
+    {
+        #local exchange server
+        $exchangeService.Credentials = New-Object Net.NetworkCredential($ewsusername, $ewspassword, $ewsdomain)
+        if ($UseAutoDiscover -eq $true) 
+        {
+            $exchangeService.AutodiscoverUrl($workflowEmailAddress)
+        }
+        else 
+        {
+            $exchangeService.Url = [System.Uri]$ExchangeEndpoint
+        }
+    }
+    #impersonation is being used with the workflow
+    if ($smexcoSettingsMP.UseImpersonation)
+    {
+        $exchangeService.ImpersonatedUserId = [Microsoft.Exchange.WebServices.Data.ImpersonatedUserId]::new([Microsoft.Exchange.WebServices.Data.ConnectingIdType]::SmtpAddress, $workflowEmailAddress)
+    }
 }
 else
 {
-    #local exchange server
-    switch ($exchangeAuthenticationType)
+    #the workflow either doesn't exist or it's not enabled, determine how to connect to Exchange
+    if ($UseExchangeOnline)
     {
-        "impersonation" {$exchangeService.Credentials = New-Object Net.NetworkCredential($username, $password, $domain)}
-        "windows" {$exchangeService.UseDefaultCredentials = $true}
-    }
-    if ($UseAutoDiscover -eq $true) {
-        $exchangeService.AutodiscoverUrl($workflowEmailAddress)
-    }
-    else {
+        #request an access token from Azure
+        $ReqTokenBody = @{
+            Grant_Type    = "Password"
+            client_Id     = $AzureClientID
+            Username      = $username
+            Password      = $password
+            Scope         = "https://outlook.office.com/EWS.AccessAsUser.All"
+        }
+        $response = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token" -Method "POST" -Body $ReqTokenBody
+        
+        #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
         $exchangeService.Url = [System.Uri]$ExchangeEndpoint
+        $exchangeService.Credentials = [Microsoft.Exchange.WebServices.Data.OAuthCredentials]($response.Access_Token)
+    }
+    else
+    {
+        #local exchange server
+        switch ($exchangeAuthenticationType)
+        {
+            "impersonation" {$exchangeService.Credentials = New-Object Net.NetworkCredential($username, $password, $domain)}
+            "windows" {$exchangeService.UseDefaultCredentials = $true}
+        }
+        if ($UseAutoDiscover -eq $true) {
+            $exchangeService.AutodiscoverUrl($workflowEmailAddress)
+        }
+        else {
+            $exchangeService.Url = [System.Uri]$ExchangeEndpoint
+        }
     }
 }
 
 #define search parameters and search on the defined classes
 $inboxFolderName = [Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox
-$inboxFolder = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($exchangeService,$inboxFolderName)
+#authenticate to Exchange
+try
+{
+    $inboxFolder = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($exchangeService,$inboxFolderName)
+    #the authentication bind to Exchange service and Inbox folder worked, log an information event
+    if ($loggingLevel -ge 4)
+    {
+        New-SMEXCOEvent -Source "General" -EventId 0 -LogMessage "Successfully connected to Exchange" -Severity "Information"
+    }
+}
+catch
+{
+    #couldn't retrieve the Inbox, log an error and exit the connector
+    if ($loggingLevel -ge 3)
+    {
+        New-SMEXCOEvent -Source "General" -EventId 1 -LogMessage $_.Exception -Severity "Error"
+    }
+    break
+}
 $itemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 1000
 $propertySet = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.BasePropertySet]::FirstClassProperties)
 $propertySet.RequestedBodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::Text
@@ -3671,7 +4153,7 @@ $inboxFilterString = [scriptblock]::Create("$inboxFilterString")
 
 #filter the inbox
 $inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
-
+if (($loggingLevel -ge 1)-and($inbox.Count -ge 1)){New-SMEXCOEvent -Source "General" -EventId 2 -LogMessage "Messages to Process: $($inbox.Count)" -Severity "Information"; $messagesProcessed = 0}
 # Custom Event Handler
 if ($ceScripts) { Invoke-OnOpenInbox }
 
@@ -4027,4 +4509,7 @@ foreach ($message in $inbox)
         #Move to deleted items
         $message.Delete([Microsoft.Exchange.WebServices.Data.DeleteMode]::MoveToDeletedItems)
     }
+
+    #increment the number of messages processed if logging is enabled
+    if ($loggingLevel -ge 1){$messagesProcessed++; New-SMEXCOEvent -Source "General" -EventId 3 -LogMessage "Processed: $messagesProcessed of $($inbox.Count)" -Severity "Information"}
 }

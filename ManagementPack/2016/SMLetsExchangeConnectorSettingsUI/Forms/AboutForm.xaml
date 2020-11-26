@@ -18,10 +18,11 @@
             <TextBlock Margin="0,5,0,0" TextWrapping="Wrap" FontStyle="Italic" Text="SMLets Exchange Connector (PowerShell) Reviewers" />
             <TextBlock Margin="10,0" TextWrapping="Wrap" Text="Tom Hendricks, Brian Weist" />
             <!-- License -->
-            <TextBlock Margin="0,10,0,0" Height="125" TextWrapping="Wrap">
-                This MP contains no workflows, does not share/collect any data about your environment, and serves the sole purpose of having a central location for
-                defining the settings for the SMLets Exchange Connector. A PowerShell based alternative to the stock connector available for System Center Service
-                Manager 2012+. The script, management pack, and related projects source code are all available on GitHub for contribution and review.
+            <TextBlock Margin="0,10,0,0" Height="165" TextWrapping="Wrap">
+                This MP can optionally leverage a workflow to execute the connector that is stored in the unsealed Service Manager Linking Framework Configuration MP, this solution
+                does not share/collect any data about your environment, and serves the sole purpose of having a central location for defining the settings for the SMLets Exchange Connector.
+                A PowerShell based alternative to the stock connector available for System Center Service Manager 2016+. The script, management pack, and related source code
+                are all available on GitHub for contribution and review.
             </TextBlock>
             <TextBlock Height="140" TextWrapping="Wrap">
                 DISCLAIMER: This MP and associated script leverage the community driven SMLets PowerShell module, Exchange Web Services dll, Microsoft PowerShell

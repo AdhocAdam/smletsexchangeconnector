@@ -55,9 +55,12 @@ namespace SMLetsExchangeConnectorSettingsUI
             //Get the Object using the GUID from above – since this is a singleton object we can get it by GUID 
             EnterpriseManagementObject emoAdminSetting = emg.EntityObjects.GetObject<EnterpriseManagementObject>(new Guid(strSingletonBaseManagedObjectID), ObjectQueryOptions.Default);
 
+            //Get the SMLets Exchange Connector MP
+            ManagementPack smletsMP = emg.ManagementPacks.GetManagementPack(new Guid("15d8b765-a2f8-b63e-ad14-472f9b3c12f0"));
+            
             //Create a new "wizard" (also used for property dialogs as in this case), set the title bar, create the data, and add the pages 
             WizardStory wizard = new WizardStory();
-            wizard.WizardWindowTitle = "SMLets Exchange Connector Settings v2.4";
+            wizard.WizardWindowTitle = "SMLets Exchange Connector Settings v" + smletsMP.Version.ToString();
             WizardData data = new AdminSettingWizardData(emoAdminSetting);
             wizard.WizardData = data;
             wizard.AddLast(new WizardStep("General", typeof(GeneralSettingsForm), wizard.WizardData));
@@ -74,6 +77,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             wizard.AddLast(new WizardStep("Translation", typeof(AzureTranslate), wizard.WizardData));
             wizard.AddLast(new WizardStep("Vision", typeof(AzureVision), wizard.WizardData));
             wizard.AddLast(new WizardStep("Transcription", typeof(AzureSpeech), wizard.WizardData));
+            wizard.AddLast(new WizardStep("Workflow", typeof(WorkflowSettings), wizard.WizardData));
+            wizard.AddLast(new WizardStep("Logging", typeof(Logging), wizard.WizardData));
             wizard.AddLast(new WizardStep("About", typeof(AboutForm), wizard.WizardData));
 
             //Show the property page 
