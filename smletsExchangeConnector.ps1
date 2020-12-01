@@ -4230,8 +4230,8 @@ foreach ($message in $inbox)
    
         $email = New-Object System.Object 
         $email | Add-Member -type NoteProperty -name From -value $response.From.address
-        $email | Add-Member -type NoteProperty -name To -value $response.To.Address
-        $email | Add-Member -type NoteProperty -name CC -value $response.Cc.Address
+        $email | Add-Member -type NoteProperty -name To -value $response.To
+        $email | Add-Member -type NoteProperty -name CC -value $response.Cc
         $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
         $email | Add-Member -type NoteProperty -name Attachments -value $signedAttachments
         $email | Add-Member -type NoteProperty -name Body -value $response.TextBody
@@ -4291,18 +4291,18 @@ foreach ($message in $inbox)
         $decryptedBody = $response.Body.Decrypt($certStore)
 
         #Messaged is encrypted
-        if (($response.Body -ne $null) -and ($response.Body.SecureMimeType -eq "EnvelopedData") -and ($decryptedBody.TextBody))
+        if ($decryptedBody.ContentType.MimeType -eq "multipart/alternative")
         {         
             #check to see if there are attachments
             $decryptedAttachments = $decryptedBody | ?{$_.isattachment -eq $true}
 
             $email = New-Object System.Object 
             $email | Add-Member -type NoteProperty -name From -value $response.From.Address
-            $email | Add-Member -type NoteProperty -name To -value $response.To.Address
-            $email | Add-Member -type NoteProperty -name CC -value $response.Cc.Address
+            $email | Add-Member -type NoteProperty -name To -value $response.To
+            $email | Add-Member -type NoteProperty -name CC -value $response.Cc
             $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
             $email | Add-Member -type NoteProperty -name Attachments -value $decryptedAttachments
-            $email | Add-Member -type NoteProperty -name Body -value $decryptedBody.TextBody
+            $email | Add-Member -type NoteProperty -name Body -value $decryptedBody.GetTextBody("Text")
             $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
             $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
             $email | Add-Member -type NoteProperty -name ID -Value $message.Id
@@ -4349,7 +4349,7 @@ foreach ($message in $inbox)
             if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
         }
         #Message is encrypted and signed
-        else
+        if ($decryptedBody.ContentType.MimeType -eq "application/x-pkcs7-mime")
         {
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
@@ -4357,13 +4357,15 @@ foreach ($message in $inbox)
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessSignedEmail }
             
+            $isVerifiedSig = $decryptedBody.Verify($certStore, [ref]$decryptedBody)
+            
             $email = New-Object System.Object 
             $email | Add-Member -type NoteProperty -name From -value $response.From.Address
-            $email | Add-Member -type NoteProperty -name To -value $response.To.Address
-            $email | Add-Member -type NoteProperty -name CC -value $response.Cc.Address
+            $email | Add-Member -type NoteProperty -name To -value $response.To
+            $email | Add-Member -type NoteProperty -name CC -value $response.Cc
             $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
             $email | Add-Member -type NoteProperty -name Attachments -value $decryptedAttachments
-            $email | Add-Member -type NoteProperty -name Body -value "This message is digitally encrypted and signed. Please see the related/attached item."
+            $email | Add-Member -type NoteProperty -name Body -value $decryptedBody.GetTextBody("Text")
             $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
             $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
             $email | Add-Member -type NoteProperty -name ID -Value $message.Id
