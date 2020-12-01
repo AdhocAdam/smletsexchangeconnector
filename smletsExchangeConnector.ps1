@@ -4230,8 +4230,8 @@ foreach ($message in $inbox)
    
         $email = New-Object System.Object 
         $email | Add-Member -type NoteProperty -name From -value $response.From.address
-        $email | Add-Member -type NoteProperty -name To -value $response.To.Address
-        $email | Add-Member -type NoteProperty -name CC -value $response.Cc.Address
+        $email | Add-Member -type NoteProperty -name To -value $response.To
+        $email | Add-Member -type NoteProperty -name CC -value $response.Cc
         $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
         $email | Add-Member -type NoteProperty -name Attachments -value $signedAttachments
         $email | Add-Member -type NoteProperty -name Body -value $response.TextBody
@@ -4298,8 +4298,8 @@ foreach ($message in $inbox)
 
             $email = New-Object System.Object 
             $email | Add-Member -type NoteProperty -name From -value $response.From.Address
-            $email | Add-Member -type NoteProperty -name To -value $response.To.Address
-            $email | Add-Member -type NoteProperty -name CC -value $response.Cc.Address
+            $email | Add-Member -type NoteProperty -name To -value $response.To
+            $email | Add-Member -type NoteProperty -name CC -value $response.Cc
             $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
             $email | Add-Member -type NoteProperty -name Attachments -value $decryptedAttachments
             $email | Add-Member -type NoteProperty -name Body -value $decryptedBody.GetTextBody("Text")
@@ -4361,8 +4361,8 @@ foreach ($message in $inbox)
             
             $email = New-Object System.Object 
             $email | Add-Member -type NoteProperty -name From -value $response.From.Address
-            $email | Add-Member -type NoteProperty -name To -value $response.To.Address
-            $email | Add-Member -type NoteProperty -name CC -value $response.Cc.Address
+            $email | Add-Member -type NoteProperty -name To -value $response.To
+            $email | Add-Member -type NoteProperty -name CC -value $response.Cc
             $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
             $email | Add-Member -type NoteProperty -name Attachments -value $decryptedAttachments
             $email | Add-Member -type NoteProperty -name Body -value $decryptedBody.GetTextBody("Text")
