@@ -4292,7 +4292,6 @@ foreach ($message in $inbox)
         
         $response = Read-MIMEMessage $message
         try {$decryptedBody = $response.Body.Decrypt($certStore)} catch {if($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Cryptography" -EventID 2 -Severity "Error" -LogMessage $_.Exception}}
-        $decryptedBody = $response.Body.Decrypt($certStore)
 
         #Messaged is encrypted
         if ($decryptedBody.ContentType.MimeType -eq "multipart/alternative")
