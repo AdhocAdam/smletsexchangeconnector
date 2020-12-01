@@ -4249,28 +4249,64 @@ foreach ($message in $inbox)
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessEmail }
 
-        switch -Regex ($email.subject) 
-        { 
-            #### primary work item types ####
-            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
- 
-            #### activities ####
-            "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
-            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
+        #Verify digital signature
+        foreach ($sig in $response.Body.Verify($certStore))
+        {
+            try
+            {
+                $sigResult = $sig.Verify()
+                if ($sigResult -eq $true)
+                {
+                    $validSig = $true
+                }
+            }
+            catch
+            {
+                $validSig = $false
+            }
+        }
 
-            #### 3rd party classes, work items, etc. add here ####
-            "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
+        #The signature is valid OR signature is not valid and invalid signatures are set to process anyway
+        if (($validSig) -or (($validSig -eq $false) -and ($ignoreValidSig -eq $true)))
+        {
+            switch -Regex ($email.subject)
+            { 
+                #### primary work item types ####
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+    
+                #### activities ####
+                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
+                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
 
-            #### Email is a Reply and does not contain a [Work Item ID]
-            # Check if Work Item (Title, Body, Sender, CC, etc.) exists
-            # and the user was replying too fast to receive Work Item ID notification
-            "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
+                #### 3rd party classes, work items, etc. add here ####
+                "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
 
-            #### default action, create work item ####
-            default {new-workitem $email $defaultNewWorkItem} 
+                #### Email is a Reply and does not contain a [Work Item ID]
+                # Check if Work Item (Title, Body, Sender, CC, etc.) exists
+                # and the user was replying too fast to receive Work Item ID notification
+                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
+                
+                #### Email is going to invoke a custom action. The signature MUST be valid to proceed
+                "\[$pwshKeyword]" {if ($validSig -and $ceScripts)
+                {
+                    Invoke-ValidDigitalSignatureAction
+                    #you could then insert custom pwsh to parse email, sender, body, etc. and then
+                    #restart a computer, bounce a windows service, ping a network device, call a 3rd party Rest API,
+                    #or initiate a webhook for a 3rd party platform
+                }}
+                
+                #### default action, create work item ####
+                default {new-workitem $email $defaultNewWorkItem} 
+            }
+        }
+        #the signature is not valid and invalid signatures should not be processed, call custom actions if enabled
+        else
+        {
+            #Custom Event Handler
+            if ($ceScripts) { Invoke-InvalidDigitalSignatureAction } 
         }
         
         # Custom Event Handler
