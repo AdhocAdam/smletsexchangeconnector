@@ -3981,6 +3981,7 @@ if (($processDigitallySignedMessages -eq $true) -or ($processEncryptedMessages -
     try
     {
         [void][System.Reflection.Assembly]::LoadFile($mimeKitDLLPath)
+        [void][System.Reflection.Assembly]::LoadFile($($mimeKitDLLPath -ireplace [regex]::Escape("MimeKit.dll"), "BouncyCastle.Crypto.dll"))
         if ($certStore -eq "user")
         {
             $certStore = New-Object MimeKit.Cryptography.WindowsSecureMimeContext("CurrentUser")
