@@ -154,7 +154,7 @@ function New-SMEXCOEvent
         [parameter(Mandatory=$true, Position=1)]
         [string] $LogMessage,
         [parameter(Mandatory=$true, Position=2)]
-        [ValidateSet("General", "CustomEvents", "New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Attach-FileToWorkItem", "Verify-WorkItem",
+        [ValidateSet("General", "CustomEvents", "Cryptography", "New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Attach-FileToWorkItem", "Verify-WorkItem",
             "Schedule-WorkItem", "Get-SCSMUserByEmailAddress", "Get-TierMembership", "Get-TierMembers", "Get-AssignedToWorkItemVolume",
             "Set-AssignedToPerSupportGroup", "Get-SCSMWorkItemParent", "Create-UserInCMDB", "Add-ActionLogEntry", "Get-CiresonPortalAPIToken",
             "Get-CiresonPortalUser", "Get-CiresonPortalGroup", "Get-CiresonPortalAnnouncements", "Search-AvailableCiresonPortalOfferings",
@@ -200,6 +200,7 @@ function New-SMEXCOEvent
             #create the Event Log, if it already exists ignore and continue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "General" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "CustomEvents" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Cryptography" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "New-WorkItem" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Update-WorkItem" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Attach-EmailToWorkItem" -ErrorAction SilentlyContinue
@@ -3988,12 +3989,14 @@ if (($processDigitallySignedMessages -eq $true) -or ($processEncryptedMessages -
         {
             $certStore = New-Object MimeKit.Cryptography.WindowsSecureMimeContext("LocalMachine")
         }
+        if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Cryptography" -EventID 0 -Severity "Information" -LogMessage "Email certificate loaded."}
     }
     catch
     {
         #decrypting certificate or mimekit couldn't be loaded. Don't process signed/encrypted emails
         $processDigitallySignedMessages = $false
         $processEncryptedMessages = $false
+        if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Cryptography" -EventID 1 -Severity "Error" -LogMessage $_.Exception}
     }
 }
 
@@ -4288,6 +4291,7 @@ foreach ($message in $inbox)
         if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
         
         $response = Read-MIMEMessage $message
+        try {$decryptedBody = $response.Body.Decrypt($certStore)} catch {if($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Cryptography" -EventID 2 -Severity "Error" -LogMessage $_.Exception}}
         $decryptedBody = $response.Body.Decrypt($certStore)
 
         #Messaged is encrypted
