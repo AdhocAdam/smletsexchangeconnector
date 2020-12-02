@@ -640,6 +640,7 @@ $skipKeyword = "$($smexcoSettingsMP.SCSMKeywordSkipped)"
 $approvedKeyword = "$($smexcoSettingsMP.SCSMKeywordApprove)"
 $rejectedKeyword = "$($smexcoSettingsMP.SCSMKeywordReject)"
 $privateCommentKeyword = "$($smexcoSettingsMP.SCSMKeywordPrivate)"
+$powershellKeyword = "$($smexcoSettingsMP.KeywordPowerShell)"
 
 #define the path to the Exchange Web Services API and MimeKit
 #the PII regex file and HTML Suggestion Template paths will only be leveraged if these features are enabled above.
@@ -4291,7 +4292,7 @@ foreach ($message in $inbox)
                 "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
                 
                 #### Email is going to invoke a custom action. The signature MUST be valid to proceed
-                "\[$pwshKeyword]" {if ($validSig -and $ceScripts)
+                "\[$powershellKeyword]" {if ($validSig -and $ceScripts)
                 {
                     Invoke-ValidDigitalSignatureAction
                     #you could then insert custom pwsh to parse email, sender, body, etc. and then
