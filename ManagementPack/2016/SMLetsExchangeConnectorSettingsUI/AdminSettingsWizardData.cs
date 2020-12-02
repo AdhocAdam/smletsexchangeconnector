@@ -114,6 +114,7 @@ namespace SMLetsExchangeConnectorSettingsUI
         private String strHealthKW = String.Empty;
         private String strAnnouncementKW = String.Empty;
         private String strPrivateKW = String.Empty;
+        private String strPowerShellKW = String.Empty;
 
         //cireson
         private Boolean boolCiresonMPExists = false;
@@ -1271,6 +1272,21 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.strHealthKW != value)
                 {
                     this.strHealthKW = value;
+                }
+            }
+        }
+        
+        public String KeywordPowerShell
+        {
+            get
+            {
+                return this.strPowerShellKW;
+            }
+            set
+            {
+                if (this.strPowerShellKW != value)
+                {
+                    this.strPowerShellKW = value;
                 }
             }
         }
@@ -2878,6 +2894,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.KeywordAnnouncement = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordAnnouncement"].ToString();
             this.KeywordHealth = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMKeywordHealth"].ToString();
             this.KeywordPrivate = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordPrivate"].ToString();
+            this.KeywordPowerShell = emoAdminSetting[smletsExchangeConnectorSettingsClass, "KeywordPowerShell"].ToString();
 
             //Cireson Integration
             this.CiresonPortalURL = emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonPortalURL"].ToString();
@@ -3456,6 +3473,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordAnnouncement"].Value = this.KeywordAnnouncement;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMKeywordHealth"].Value = this.KeywordHealth;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordPrivate"].Value = this.KeywordPrivate;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "KeywordPowerShell"].Value = this.KeywordPowerShell;
 
             //Cireson Integration
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableCiresonIntegration"].Value = this.IsCiresonIntegrationEnabled;
