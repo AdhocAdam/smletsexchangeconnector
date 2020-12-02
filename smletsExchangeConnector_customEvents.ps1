@@ -53,6 +53,17 @@ function Invoke-BeforeProcessSignedEmail {
   
 }
 
+function Invoke-ValidDigitalSignatureAction {
+  # This function occurs when an email is digitally signed, the signature is cryptographyically verified by Mimekit, and 
+  # the [pwsh] keyword is in the subject
+
+}
+
+function Invoke-InvalidDigitalSignatureAction {
+  # This function occurs when the connector is set to ignore digitally signed emails whose signatures cannot be cryptographically verified
+  
+}
+
 function Invoke-AfterProcessSignedEmail {
   # This function occurs after a digitally signed email message is processed, and after the "normal" email processed event
 
