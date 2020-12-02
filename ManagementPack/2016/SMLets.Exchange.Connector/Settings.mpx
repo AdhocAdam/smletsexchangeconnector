@@ -352,6 +352,11 @@
                 Type="bool"
                 Key="false"
                 Required="false" />
+                
+            <Property ID="IgnoreInvalidDigitalSignature"
+                Type="bool"
+                Key="false"
+                Required="false" />
 
             <Property ID="CertificateStore"
                 Type="string"
