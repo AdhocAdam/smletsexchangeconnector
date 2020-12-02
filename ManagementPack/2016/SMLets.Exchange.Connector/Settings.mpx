@@ -565,6 +565,15 @@
               MaxLength="256"
               MinLength="0"
               Required="false" />
+              
+          <Property ID="KeywordPowerShell"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
 
           <!--Cireson Integration-->
           <Property ID="EnableCiresonIntegration"
