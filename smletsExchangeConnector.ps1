@@ -406,6 +406,7 @@ $ExternalPartyCommentTypeSR = "$($smexcoSettingsMP.ExternalPartyCommentTypeSR)"
 $processCalendarAppointment = $smexcoSettingsMP.ProcessCalendarAppointments
 $processDigitallySignedMessages = $smexcoSettingsMP.ProcessDigitallySignedMessages
 $processEncryptedMessages = $smexcoSettingsMP.ProcessDigitallyEncryptedMessages
+$ignoreInvalidDigitalSignature = $smexcoSettingsMP.IgnoreInvalidDigitalSignature
 $certStore = "$($smexcoSettingsMP.CertificateStore)"
 $mergeReplies = $smexcoSettingsMP.MergeReplies
 
@@ -4267,7 +4268,7 @@ foreach ($message in $inbox)
         }
 
         #The signature is valid OR signature is not valid and invalid signatures are set to process anyway
-        if (($validSig) -or (($validSig -eq $false) -and ($ignoreValidSig -eq $true)))
+        if (($validSig) -or (($validSig -eq $false) -and ($ignoreInvalidDigitalSignature -eq $true)))
         {
             switch -Regex ($email.subject)
             { 
