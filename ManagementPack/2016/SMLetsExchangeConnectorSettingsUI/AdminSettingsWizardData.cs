@@ -57,6 +57,7 @@ namespace SMLetsExchangeConnectorSettingsUI
         private Boolean boolProcessCalendarAppointments = false;
         private Boolean boolProcessEncryptedEmails = false;
         private Boolean boolProcessDigitallySignedEmails = false;
+        private Boolean boolIgnoreInvalidDigSig = false;
         private String strCertStore = String.Empty;
 
         //processing logic - additional mail types
@@ -764,6 +765,21 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.boolProcessDigitallySignedEmails != value)
                 {
                     this.boolProcessDigitallySignedEmails = value;
+                }
+            }
+        }
+        
+        public Boolean IgnoreInvalidDigitalSignature
+        {
+            get
+            {
+                return this.boolIgnoreInvalidDigSig;
+            }
+            set
+            {
+                if (this.boolIgnoreInvalidDigSig != value)
+                {
+                    this.boolIgnoreInvalidDigSig = value;
                 }
             }
         }
@@ -2583,6 +2599,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { this.ProcessEncryptedEmails = false; }
             try { this.ProcessDigitallySignedEmails = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "ProcessDigitallySignedMessages"].ToString()); }
             catch { this.ProcessDigitallySignedEmails = false; }
+            try { this.IgnoreInvalidDigitalSignature = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "IgnoreInvalidDigitalSignature"].ToString()); }
+            catch { this.IgnoreInvalidDigitalSignature = false; }
             this.DynamicAnalystAssignment = emoAdminSetting[smletsExchangeConnectorSettingsClass, "DynamicAnalystAssignmentType"].ToString();
             this.CertificateStore = emoAdminSetting[smletsExchangeConnectorSettingsClass, "CertificateStore"].ToString();
 
@@ -3294,6 +3312,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CreateNewWorkItemIfWorkItemClosed"].Value = this.ProcessClosedWorkItemsToNewWorkItems;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ProcessDigitallyEncryptedMessages"].Value = this.ProcessEncryptedEmails;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ProcessDigitallySignedMessages"].Value = this.ProcessDigitallySignedEmails;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "IgnoreInvalidDigitalSignature"].Value = this.IgnoreInvalidDigitalSignature;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CertificateStore"].Value = this.CertificateStore;
 
             //Processing Logic - Set Incident Resolution, Service Request Implentation, and Problem Resolution Categories by their Enum Name
