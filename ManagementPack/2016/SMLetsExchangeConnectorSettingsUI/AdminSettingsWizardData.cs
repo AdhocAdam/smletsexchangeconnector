@@ -57,6 +57,7 @@ namespace SMLetsExchangeConnectorSettingsUI
         private Boolean boolProcessCalendarAppointments = false;
         private Boolean boolProcessEncryptedEmails = false;
         private Boolean boolProcessDigitallySignedEmails = false;
+        private Boolean boolIgnoreInvalidDigSig = false;
         private String strCertStore = String.Empty;
 
         //processing logic - additional mail types
@@ -113,6 +114,7 @@ namespace SMLetsExchangeConnectorSettingsUI
         private String strHealthKW = String.Empty;
         private String strAnnouncementKW = String.Empty;
         private String strPrivateKW = String.Empty;
+        private String strPowerShellKW = String.Empty;
 
         //cireson
         private Boolean boolCiresonMPExists = false;
@@ -767,6 +769,21 @@ namespace SMLetsExchangeConnectorSettingsUI
                 }
             }
         }
+        
+        public Boolean IgnoreInvalidDigitalSignature
+        {
+            get
+            {
+                return this.boolIgnoreInvalidDigSig;
+            }
+            set
+            {
+                if (this.boolIgnoreInvalidDigSig != value)
+                {
+                    this.boolIgnoreInvalidDigSig = value;
+                }
+            }
+        }
 
         public String CertificateStore
         {
@@ -1255,6 +1272,21 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.strHealthKW != value)
                 {
                     this.strHealthKW = value;
+                }
+            }
+        }
+        
+        public String KeywordPowerShell
+        {
+            get
+            {
+                return this.strPowerShellKW;
+            }
+            set
+            {
+                if (this.strPowerShellKW != value)
+                {
+                    this.strPowerShellKW = value;
                 }
             }
         }
@@ -2583,6 +2615,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { this.ProcessEncryptedEmails = false; }
             try { this.ProcessDigitallySignedEmails = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "ProcessDigitallySignedMessages"].ToString()); }
             catch { this.ProcessDigitallySignedEmails = false; }
+            try { this.IgnoreInvalidDigitalSignature = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "IgnoreInvalidDigitalSignature"].ToString()); }
+            catch { this.IgnoreInvalidDigitalSignature = false; }
             this.DynamicAnalystAssignment = emoAdminSetting[smletsExchangeConnectorSettingsClass, "DynamicAnalystAssignmentType"].ToString();
             this.CertificateStore = emoAdminSetting[smletsExchangeConnectorSettingsClass, "CertificateStore"].ToString();
 
@@ -2860,6 +2894,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.KeywordAnnouncement = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordAnnouncement"].ToString();
             this.KeywordHealth = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMKeywordHealth"].ToString();
             this.KeywordPrivate = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordPrivate"].ToString();
+            this.KeywordPowerShell = emoAdminSetting[smletsExchangeConnectorSettingsClass, "KeywordPowerShell"].ToString();
 
             //Cireson Integration
             this.CiresonPortalURL = emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonPortalURL"].ToString();
@@ -3294,6 +3329,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CreateNewWorkItemIfWorkItemClosed"].Value = this.ProcessClosedWorkItemsToNewWorkItems;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ProcessDigitallyEncryptedMessages"].Value = this.ProcessEncryptedEmails;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ProcessDigitallySignedMessages"].Value = this.ProcessDigitallySignedEmails;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "IgnoreInvalidDigitalSignature"].Value = this.IgnoreInvalidDigitalSignature;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CertificateStore"].Value = this.CertificateStore;
 
             //Processing Logic - Set Incident Resolution, Service Request Implentation, and Problem Resolution Categories by their Enum Name
@@ -3437,6 +3473,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordAnnouncement"].Value = this.KeywordAnnouncement;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMKeywordHealth"].Value = this.KeywordHealth;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordPrivate"].Value = this.KeywordPrivate;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "KeywordPowerShell"].Value = this.KeywordPowerShell;
 
             //Cireson Integration
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableCiresonIntegration"].Value = this.IsCiresonIntegrationEnabled;

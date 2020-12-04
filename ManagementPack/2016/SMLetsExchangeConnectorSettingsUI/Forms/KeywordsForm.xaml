@@ -53,6 +53,8 @@
                 <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtSCOMHealthKeyword" Text="{Binding KeywordHealth, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
                 <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAddWatchlistKeyword" Content="[watch] - requires Cireson Portal"/>
                 <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtAddWatchlistKeyword" Text="{Binding KeywordAddWatchlist, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
+                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblPowerShellKeyword" Content="[pwsh] - requires Digital Email Signatures"/>
+                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtPowerShellKeyword" Text="{Binding KeywordPowerShell, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
             </StackPanel>
         </StackPanel>
     </Grid>

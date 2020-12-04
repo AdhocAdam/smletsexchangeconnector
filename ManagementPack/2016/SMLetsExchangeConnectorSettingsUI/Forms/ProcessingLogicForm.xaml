@@ -5,7 +5,7 @@
             xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
             xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="551" Height="1085.8" 
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="551" Height="1115.8" 
             xmlns:local="clr-namespace:SMLetsExchangeConnectorSettingsUI.Validation" >
 
     <Grid Name="ConfigurationGrid" Margin="15,10,10,10">
@@ -158,6 +158,7 @@
                 <TextBlock x:Name="CryptoProcessing" Text="Digital Signatures/Encryption" FontWeight="Bold" Margin="0,8,0,0"/>
                 <CheckBox x:Name="chkProcessEncryptedMessages" Margin="5,0,0,0"  Content="Process Encrypted Emails (requires MimeKit)" IsChecked="{Binding Path=ProcessEncryptedEmails, Mode=TwoWay}"/>
                 <CheckBox x:Name="chkProcessDigitallySignedMessages" Margin="5,8,0,0"  Content="Process Digitally Signed Emails (requires MimeKit)" IsChecked="{Binding Path=ProcessDigitallySignedEmails, Mode=TwoWay}" />
+                <CheckBox x:Name="chkIgnoreInvalidDigSig" Margin="25,8,0,0" Content="Process Digitally Signed emails that have certificate errors (expired, invalid, etc.)" IsChecked="{Binding Path=IgnoreInvalidDigitalSignature, Mode=TwoWay}" />
 
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Decrypting certificate store:" Margin="0,8,0,0"/>
