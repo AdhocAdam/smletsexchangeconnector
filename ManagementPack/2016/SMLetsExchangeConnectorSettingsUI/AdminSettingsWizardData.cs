@@ -11,6 +11,7 @@ using Microsoft.EnterpriseManagement.Configuration;
 using Microsoft.Win32;
 using Microsoft.EnterpriseManagement.ConnectorFramework;
 using System.Xml;
+using System.Globalization;
 
 namespace SMLetsExchangeConnectorSettingsUI
 {
