@@ -3517,12 +3517,33 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementKeywordLow"].Value = this.LowPriorityAnnouncementKeyword;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementKeywordMedium"].Value = this.MediumPriorityAnnouncementKeyword;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementKeywordHigh"].Value = this.HighPriorityAnnouncementKeyword;
-            try { decimal.Parse(this.LowPriorityExpiresInHours); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityLowExpirationInHours"].Value = this.LowPriorityExpiresInHours; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityLowExpirationInHours"].Value = 0; }
-            try { decimal.Parse(this.MediumPriorityExpiresInHours); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityNormalExpirationInHours"].Value = this.MediumPriorityExpiresInHours; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityNormalExpirationInHours"].Value = 0; }
-            try { decimal.Parse(this.HighPriorityExpiresInHours); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityCriticalExpirationInHours"].Value = this.HighPriorityExpiresInHours; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityCriticalExpirationInHours"].Value = 0; }
+                        decimal cultureParsedLowPriorityAnnounce;
+            if (Decimal.TryParse(this.LowPriorityExpiresInHours, numberRegionStyle, currentCulture, out cultureParsedLowPriorityAnnounce))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityLowExpirationInHours"].Value = cultureParsedLowPriorityAnnounce.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityLowExpirationInHours"].Value = 0;
+            }
+            decimal cultureParsedMedPriorityAnnounce;
+            if (Decimal.TryParse(this.MediumPriorityExpiresInHours, numberRegionStyle, currentCulture, out cultureParsedMedPriorityAnnounce))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityNormalExpirationInHours"].Value = cultureParsedMedPriorityAnnounce.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityNormalExpirationInHours"].Value = 0;
+            }
+            decimal cultureParsedHighPriorityAnnounce;
+            if (Decimal.TryParse(this.HighPriorityExpiresInHours, numberRegionStyle, currentCulture, out cultureParsedHighPriorityAnnounce))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityCriticalExpirationInHours"].Value = cultureParsedHighPriorityAnnounce.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityCriticalExpirationInHours"].Value = 0;
+            }
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementUsers"].Value = this.SCSMApprovedAnnouncers;
             //if the Announcement group is set, don't null it
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementGroupGUID"].Value = this.SCSMApprovedAnnouncementGroup["Id"]; }
