@@ -3365,7 +3365,15 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { }
 
             //File Attachments
-            emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinimumFileAttachmentSize"].Value = this.MinFileAttachmentSize;
+            decimal cultureParsedMinFileSize;
+            if (Decimal.TryParse(this.MinFileAttachmentSize, numberRegionStyle, currentCulture, out cultureParsedMinFileSize))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinimumFileAttachmentSize"].Value = cultureParsedMinFileSize.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinimumFileAttachmentSize"].Value = 5.0;
+            }
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnforceFileAttachmentSettings"].Value = this.IsMaxFileSizeAttachmentsEnabled;
 
             //Default Templates
