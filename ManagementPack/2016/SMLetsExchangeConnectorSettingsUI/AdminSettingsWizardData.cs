@@ -3295,6 +3295,12 @@ namespace SMLetsExchangeConnectorSettingsUI
             //Get the SMLets Exchange Connector Settings object using the object GUID 
             EnterpriseManagementObject emoAdminSetting = emg.EntityObjects.GetObject<EnterpriseManagementObject>(this.EnterpriseManagementObjectID, ObjectQueryOptions.Default);
 
+            //Declare current region and allowed number formats
+            NumberStyles numberRegionStyle;
+            CultureInfo currentCulture;
+            numberRegionStyle = NumberStyles.AllowDecimalPoint;
+            currentCulture = CultureInfo.CurrentCulture;
+
             //General Settings
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMmgmtServer"].Value = this.SCSMmanagementServer;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "WorkflowEmailAddress"].Value = this.WorkflowEmailAddress;
