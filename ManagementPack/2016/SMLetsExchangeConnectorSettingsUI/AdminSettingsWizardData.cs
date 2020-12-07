@@ -3592,14 +3592,42 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableAML"].Value = this.IsAzureMachineLearningEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLAPIKey"].Value = this.AzureMachineLearningAPIKey;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLurl"].Value = this.AzureMachineLearningURL;
-            try { decimal.Parse(this.AzureMachineLearningWIConfidence); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemType"].Value = this.AzureMachineLearningWIConfidence; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemType"].Value = 95; }
-            try { decimal.Parse(this.AzureMachineLearningClassificationConfidence); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemClassification"].Value = this.AzureMachineLearningClassificationConfidence; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemClassification"].Value = 95; }
-            try { decimal.Parse(this.AzureMachineLearningSupportGroupConfidence); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].Value = this.AzureMachineLearningSupportGroupConfidence; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].Value = 95; }
-            try { decimal.Parse(this.AzureMachineLearningAffectedConfigItemConfidence); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceImpactedConfigItem"].Value = this.AzureMachineLearningAffectedConfigItemConfidence; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceImpactedConfigItem"].Value = 95; }
+            decimal cultureParsedAMLWIConfidence;
+            if (Decimal.TryParse(this.AzureMachineLearningWIConfidence, numberRegionStyle, currentCulture, out cultureParsedAMLWIConfidence))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemType"].Value = cultureParsedAMLWIConfidence.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemType"].Value = 95;
+            }
+            decimal cultureParsedAMLClassificationConfidence;
+            if (Decimal.TryParse(this.AzureMachineLearningClassificationConfidence, numberRegionStyle, currentCulture, out cultureParsedAMLClassificationConfidence))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemClassification"].Value = cultureParsedAMLClassificationConfidence.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemClassification"].Value = 95;
+            }
+            decimal cultureParsedAMLSupportGroupConfidence;
+            if (Decimal.TryParse(this.AzureMachineLearningSupportGroupConfidence, numberRegionStyle, currentCulture, out cultureParsedAMLSupportGroupConfidence))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].Value = cultureParsedAMLSupportGroupConfidence.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].Value = 95;
+            }
+            decimal cultureParsedAMLConfigItemConfidence;
+            if (Decimal.TryParse(this.AzureMachineLearningAffectedConfigItemConfidence, numberRegionStyle, currentCulture, out cultureParsedAMLConfigItemConfidence))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceImpactedConfigItem"].Value = cultureParsedAMLConfigItemConfidence.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceImpactedConfigItem"].Value = 95;
+            }
 
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLIncidentConfidenceClassExtensionGUID"].Value = this.AMLIncidentConfidenceDecExtension.Id; }
             catch { }
