@@ -3545,8 +3545,15 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTextAnalyticsRegion"].Value = this.ACSRegion;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTextAnalyticsAPIKey"].Value = this.AzureCognitiveServicesAPIKey;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSPriorityScoringBoundaries"].Value = this.AzureCognitiveServicesBoundaries.ToString();
-            try { decimal.Parse(this.MinimumPercentToCreateServiceRequest); emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinACSSentimentToCreateSR"].Value = this.MinimumPercentToCreateServiceRequest; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinACSSentimentToCreateSR"].Value = 95; }
+            decimal cultureParsedMinACSSentimentToCreateSR;
+            if (Decimal.TryParse(this.MinimumPercentToCreateServiceRequest, numberRegionStyle, currentCulture, out cultureParsedMinACSSentimentToCreateSR))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinACSSentimentToCreateSR"].Value = cultureParsedMinACSSentimentToCreateSR.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinACSSentimentToCreateSR"].Value = 95.0;
+            }
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSentimentScoreIncidentClassExtensionGUID"].Value = this.ACSIncidentSentimentDecExtension.Id; }
             catch { }
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSentimentScoreServiceRequestClassExtensionGUID"].Value = this.ACSServiceRequestSentimentDecExtension.Id; }
