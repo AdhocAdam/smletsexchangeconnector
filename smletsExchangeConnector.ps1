@@ -20,6 +20,11 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 3.1.0 = #10 - Optimization, Unable to process digitally signed AND encrypted messages
+                #223 - Enhancement, Ability to ignore emails with invalid digital signature
+                #224 - Feature, [pwsh] keyword for use with digital signatures
+                #228 - Bug, Conversion overflow error when opening MP
+                #217 - Bug, Regional decimal delimeter when validating Min File Attachment size
 Version: 3.0.0 = #2 - Feature, adding support for logging regardless of deployment strategy
                = #207 - Feature, workflow support
 Version: 2.4.0 = #171 - Optimization, Support for Exchange Online via OAuth 2.0 tokens 
