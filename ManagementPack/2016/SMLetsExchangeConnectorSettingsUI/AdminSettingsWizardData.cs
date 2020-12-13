@@ -11,6 +11,7 @@ using Microsoft.EnterpriseManagement.Configuration;
 using Microsoft.Win32;
 using Microsoft.EnterpriseManagement.ConnectorFramework;
 using System.Xml;
+using System.Globalization;
 
 namespace SMLetsExchangeConnectorSettingsUI
 {
@@ -57,6 +58,7 @@ namespace SMLetsExchangeConnectorSettingsUI
         private Boolean boolProcessCalendarAppointments = false;
         private Boolean boolProcessEncryptedEmails = false;
         private Boolean boolProcessDigitallySignedEmails = false;
+        private Boolean boolIgnoreInvalidDigSig = false;
         private String strCertStore = String.Empty;
 
         //processing logic - additional mail types
@@ -113,6 +115,7 @@ namespace SMLetsExchangeConnectorSettingsUI
         private String strHealthKW = String.Empty;
         private String strAnnouncementKW = String.Empty;
         private String strPrivateKW = String.Empty;
+        private String strPowerShellKW = String.Empty;
 
         //cireson
         private Boolean boolCiresonMPExists = false;
@@ -767,6 +770,21 @@ namespace SMLetsExchangeConnectorSettingsUI
                 }
             }
         }
+        
+        public Boolean IgnoreInvalidDigitalSignature
+        {
+            get
+            {
+                return this.boolIgnoreInvalidDigSig;
+            }
+            set
+            {
+                if (this.boolIgnoreInvalidDigSig != value)
+                {
+                    this.boolIgnoreInvalidDigSig = value;
+                }
+            }
+        }
 
         public String CertificateStore
         {
@@ -1255,6 +1273,21 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.strHealthKW != value)
                 {
                     this.strHealthKW = value;
+                }
+            }
+        }
+        
+        public String KeywordPowerShell
+        {
+            get
+            {
+                return this.strPowerShellKW;
+            }
+            set
+            {
+                if (this.strPowerShellKW != value)
+                {
+                    this.strPowerShellKW = value;
                 }
             }
         }
@@ -2583,6 +2616,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { this.ProcessEncryptedEmails = false; }
             try { this.ProcessDigitallySignedEmails = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "ProcessDigitallySignedMessages"].ToString()); }
             catch { this.ProcessDigitallySignedEmails = false; }
+            try { this.IgnoreInvalidDigitalSignature = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "IgnoreInvalidDigitalSignature"].ToString()); }
+            catch { this.IgnoreInvalidDigitalSignature = false; }
             this.DynamicAnalystAssignment = emoAdminSetting[smletsExchangeConnectorSettingsClass, "DynamicAnalystAssignmentType"].ToString();
             this.CertificateStore = emoAdminSetting[smletsExchangeConnectorSettingsClass, "CertificateStore"].ToString();
 
@@ -2860,6 +2895,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.KeywordAnnouncement = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordAnnouncement"].ToString();
             this.KeywordHealth = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMKeywordHealth"].ToString();
             this.KeywordPrivate = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordPrivate"].ToString();
+            this.KeywordPowerShell = emoAdminSetting[smletsExchangeConnectorSettingsClass, "KeywordPowerShell"].ToString();
 
             //Cireson Integration
             this.CiresonPortalURL = emoAdminSetting[smletsExchangeConnectorSettingsClass, "CiresonPortalURL"].ToString();
@@ -3259,6 +3295,12 @@ namespace SMLetsExchangeConnectorSettingsUI
             //Get the SMLets Exchange Connector Settings object using the object GUID 
             EnterpriseManagementObject emoAdminSetting = emg.EntityObjects.GetObject<EnterpriseManagementObject>(this.EnterpriseManagementObjectID, ObjectQueryOptions.Default);
 
+            //Declare current region and allowed number formats
+            NumberStyles numberRegionStyle;
+            CultureInfo currentCulture;
+            numberRegionStyle = NumberStyles.AllowDecimalPoint;
+            currentCulture = CultureInfo.CurrentCulture;
+
             //General Settings
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMmgmtServer"].Value = this.SCSMmanagementServer;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "WorkflowEmailAddress"].Value = this.WorkflowEmailAddress;
@@ -3294,6 +3336,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CreateNewWorkItemIfWorkItemClosed"].Value = this.ProcessClosedWorkItemsToNewWorkItems;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ProcessDigitallyEncryptedMessages"].Value = this.ProcessEncryptedEmails;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ProcessDigitallySignedMessages"].Value = this.ProcessDigitallySignedEmails;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "IgnoreInvalidDigitalSignature"].Value = this.IgnoreInvalidDigitalSignature;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CertificateStore"].Value = this.CertificateStore;
 
             //Processing Logic - Set Incident Resolution, Service Request Implentation, and Problem Resolution Categories by their Enum Name
@@ -3322,7 +3365,15 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { }
 
             //File Attachments
-            emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinimumFileAttachmentSize"].Value = this.MinFileAttachmentSize;
+            decimal cultureParsedMinFileSize;
+            if (Decimal.TryParse(this.MinFileAttachmentSize, numberRegionStyle, currentCulture, out cultureParsedMinFileSize))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinimumFileAttachmentSize"].Value = cultureParsedMinFileSize.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinimumFileAttachmentSize"].Value = 5.0;
+            }
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnforceFileAttachmentSettings"].Value = this.IsMaxFileSizeAttachmentsEnabled;
 
             //Default Templates
@@ -3437,6 +3488,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordAnnouncement"].Value = this.KeywordAnnouncement;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMKeywordHealth"].Value = this.KeywordHealth;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordPrivate"].Value = this.KeywordPrivate;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "KeywordPowerShell"].Value = this.KeywordPowerShell;
 
             //Cireson Integration
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableCiresonIntegration"].Value = this.IsCiresonIntegrationEnabled;
@@ -3465,12 +3517,33 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementKeywordLow"].Value = this.LowPriorityAnnouncementKeyword;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementKeywordMedium"].Value = this.MediumPriorityAnnouncementKeyword;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementKeywordHigh"].Value = this.HighPriorityAnnouncementKeyword;
-            try { decimal.Parse(this.LowPriorityExpiresInHours); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityLowExpirationInHours"].Value = this.LowPriorityExpiresInHours; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityLowExpirationInHours"].Value = 0; }
-            try { decimal.Parse(this.MediumPriorityExpiresInHours); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityNormalExpirationInHours"].Value = this.MediumPriorityExpiresInHours; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityNormalExpirationInHours"].Value = 0; }
-            try { decimal.Parse(this.HighPriorityExpiresInHours); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityCriticalExpirationInHours"].Value = this.HighPriorityExpiresInHours; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityCriticalExpirationInHours"].Value = 0; }
+                        decimal cultureParsedLowPriorityAnnounce;
+            if (Decimal.TryParse(this.LowPriorityExpiresInHours, numberRegionStyle, currentCulture, out cultureParsedLowPriorityAnnounce))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityLowExpirationInHours"].Value = cultureParsedLowPriorityAnnounce.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityLowExpirationInHours"].Value = 0;
+            }
+            decimal cultureParsedMedPriorityAnnounce;
+            if (Decimal.TryParse(this.MediumPriorityExpiresInHours, numberRegionStyle, currentCulture, out cultureParsedMedPriorityAnnounce))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityNormalExpirationInHours"].Value = cultureParsedMedPriorityAnnounce.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityNormalExpirationInHours"].Value = 0;
+            }
+            decimal cultureParsedHighPriorityAnnounce;
+            if (Decimal.TryParse(this.HighPriorityExpiresInHours, numberRegionStyle, currentCulture, out cultureParsedHighPriorityAnnounce))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityCriticalExpirationInHours"].Value = cultureParsedHighPriorityAnnounce.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AnnouncementPriorityCriticalExpirationInHours"].Value = 0;
+            }
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementUsers"].Value = this.SCSMApprovedAnnouncers;
             //if the Announcement group is set, don't null it
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementGroupGUID"].Value = this.SCSMApprovedAnnouncementGroup["Id"]; }
@@ -3493,8 +3566,15 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTextAnalyticsRegion"].Value = this.ACSRegion;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSTextAnalyticsAPIKey"].Value = this.AzureCognitiveServicesAPIKey;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSPriorityScoringBoundaries"].Value = this.AzureCognitiveServicesBoundaries.ToString();
-            try { decimal.Parse(this.MinimumPercentToCreateServiceRequest); emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinACSSentimentToCreateSR"].Value = this.MinimumPercentToCreateServiceRequest; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinACSSentimentToCreateSR"].Value = 95; }
+            decimal cultureParsedMinACSSentimentToCreateSR;
+            if (Decimal.TryParse(this.MinimumPercentToCreateServiceRequest, numberRegionStyle, currentCulture, out cultureParsedMinACSSentimentToCreateSR))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinACSSentimentToCreateSR"].Value = cultureParsedMinACSSentimentToCreateSR.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "MinACSSentimentToCreateSR"].Value = 95.0;
+            }
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSentimentScoreIncidentClassExtensionGUID"].Value = this.ACSIncidentSentimentDecExtension.Id; }
             catch { }
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSentimentScoreServiceRequestClassExtensionGUID"].Value = this.ACSServiceRequestSentimentDecExtension.Id; }
@@ -3512,14 +3592,42 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableAML"].Value = this.IsAzureMachineLearningEnabled;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLAPIKey"].Value = this.AzureMachineLearningAPIKey;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLurl"].Value = this.AzureMachineLearningURL;
-            try { decimal.Parse(this.AzureMachineLearningWIConfidence); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemType"].Value = this.AzureMachineLearningWIConfidence; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemType"].Value = 95; }
-            try { decimal.Parse(this.AzureMachineLearningClassificationConfidence); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemClassification"].Value = this.AzureMachineLearningClassificationConfidence; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemClassification"].Value = 95; }
-            try { decimal.Parse(this.AzureMachineLearningSupportGroupConfidence); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].Value = this.AzureMachineLearningSupportGroupConfidence; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].Value = 95; }
-            try { decimal.Parse(this.AzureMachineLearningAffectedConfigItemConfidence); emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceImpactedConfigItem"].Value = this.AzureMachineLearningAffectedConfigItemConfidence; }
-            catch { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceImpactedConfigItem"].Value = 95; }
+            decimal cultureParsedAMLWIConfidence;
+            if (Decimal.TryParse(this.AzureMachineLearningWIConfidence, numberRegionStyle, currentCulture, out cultureParsedAMLWIConfidence))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemType"].Value = cultureParsedAMLWIConfidence.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemType"].Value = 95;
+            }
+            decimal cultureParsedAMLClassificationConfidence;
+            if (Decimal.TryParse(this.AzureMachineLearningClassificationConfidence, numberRegionStyle, currentCulture, out cultureParsedAMLClassificationConfidence))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemClassification"].Value = cultureParsedAMLClassificationConfidence.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemClassification"].Value = 95;
+            }
+            decimal cultureParsedAMLSupportGroupConfidence;
+            if (Decimal.TryParse(this.AzureMachineLearningSupportGroupConfidence, numberRegionStyle, currentCulture, out cultureParsedAMLSupportGroupConfidence))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].Value = cultureParsedAMLSupportGroupConfidence.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceWorkItemSupportGroup"].Value = 95;
+            }
+            decimal cultureParsedAMLConfigItemConfidence;
+            if (Decimal.TryParse(this.AzureMachineLearningAffectedConfigItemConfidence, numberRegionStyle, currentCulture, out cultureParsedAMLConfigItemConfidence))
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceImpactedConfigItem"].Value = cultureParsedAMLConfigItemConfidence.ToString(CultureInfo.InvariantCulture.NumberFormat);
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLMinConfidenceImpactedConfigItem"].Value = 95;
+            }
 
             try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "AMLIncidentConfidenceClassExtensionGUID"].Value = this.AMLIncidentConfidenceDecExtension.Id; }
             catch { }

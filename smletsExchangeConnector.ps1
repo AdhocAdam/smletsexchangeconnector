@@ -20,6 +20,11 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 3.1.0 = #10 - Optimization, Unable to process digitally signed AND encrypted messages
+                #223 - Enhancement, Ability to ignore emails with invalid digital signature
+                #224 - Feature, [pwsh] keyword for use with digital signatures
+                #228 - Bug, Conversion overflow error when opening MP
+                #217 - Bug, Regional decimal delimeter when validating Min File Attachment size
 Version: 3.0.0 = #2 - Feature, adding support for logging regardless of deployment strategy
                = #207 - Feature, workflow support
 Version: 2.4.0 = #171 - Optimization, Support for Exchange Online via OAuth 2.0 tokens 
@@ -154,7 +159,7 @@ function New-SMEXCOEvent
         [parameter(Mandatory=$true, Position=1)]
         [string] $LogMessage,
         [parameter(Mandatory=$true, Position=2)]
-        [ValidateSet("General", "CustomEvents", "New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Attach-FileToWorkItem", "Verify-WorkItem",
+        [ValidateSet("General", "CustomEvents", "Cryptography", "New-WorkItem","Update-WorkItem","Attach-EmailToWorkItem", "Attach-FileToWorkItem", "Verify-WorkItem",
             "Schedule-WorkItem", "Get-SCSMUserByEmailAddress", "Get-TierMembership", "Get-TierMembers", "Get-AssignedToWorkItemVolume",
             "Set-AssignedToPerSupportGroup", "Get-SCSMWorkItemParent", "Create-UserInCMDB", "Add-ActionLogEntry", "Get-CiresonPortalAPIToken",
             "Get-CiresonPortalUser", "Get-CiresonPortalGroup", "Get-CiresonPortalAnnouncements", "Search-AvailableCiresonPortalOfferings",
@@ -200,6 +205,7 @@ function New-SMEXCOEvent
             #create the Event Log, if it already exists ignore and continue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "General" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "CustomEvents" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Cryptography" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "New-WorkItem" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Update-WorkItem" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Attach-EmailToWorkItem" -ErrorAction SilentlyContinue
@@ -405,6 +411,7 @@ $ExternalPartyCommentTypeSR = "$($smexcoSettingsMP.ExternalPartyCommentTypeSR)"
 $processCalendarAppointment = $smexcoSettingsMP.ProcessCalendarAppointments
 $processDigitallySignedMessages = $smexcoSettingsMP.ProcessDigitallySignedMessages
 $processEncryptedMessages = $smexcoSettingsMP.ProcessDigitallyEncryptedMessages
+$ignoreInvalidDigitalSignature = $smexcoSettingsMP.IgnoreInvalidDigitalSignature
 $certStore = "$($smexcoSettingsMP.CertificateStore)"
 $mergeReplies = $smexcoSettingsMP.MergeReplies
 
@@ -638,6 +645,7 @@ $skipKeyword = "$($smexcoSettingsMP.SCSMKeywordSkipped)"
 $approvedKeyword = "$($smexcoSettingsMP.SCSMKeywordApprove)"
 $rejectedKeyword = "$($smexcoSettingsMP.SCSMKeywordReject)"
 $privateCommentKeyword = "$($smexcoSettingsMP.SCSMKeywordPrivate)"
+$powershellKeyword = "$($smexcoSettingsMP.KeywordPowerShell)"
 
 #define the path to the Exchange Web Services API and MimeKit
 #the PII regex file and HTML Suggestion Template paths will only be leveraged if these features are enabled above.
@@ -3980,6 +3988,7 @@ if (($processDigitallySignedMessages -eq $true) -or ($processEncryptedMessages -
     try
     {
         [void][System.Reflection.Assembly]::LoadFile($mimeKitDLLPath)
+        [void][System.Reflection.Assembly]::LoadFile($($mimeKitDLLPath -ireplace [regex]::Escape("MimeKit.dll"), "BouncyCastle.Crypto.dll"))
         if ($certStore -eq "user")
         {
             $certStore = New-Object MimeKit.Cryptography.WindowsSecureMimeContext("CurrentUser")
@@ -3988,12 +3997,14 @@ if (($processDigitallySignedMessages -eq $true) -or ($processEncryptedMessages -
         {
             $certStore = New-Object MimeKit.Cryptography.WindowsSecureMimeContext("LocalMachine")
         }
+        if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Cryptography" -EventID 0 -Severity "Information" -LogMessage "Email certificate loaded."}
     }
     catch
     {
         #decrypting certificate or mimekit couldn't be loaded. Don't process signed/encrypted emails
         $processDigitallySignedMessages = $false
         $processEncryptedMessages = $false
+        if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Cryptography" -EventID 1 -Severity "Error" -LogMessage $_.Exception}
     }
 }
 
@@ -4230,8 +4241,8 @@ foreach ($message in $inbox)
    
         $email = New-Object System.Object 
         $email | Add-Member -type NoteProperty -name From -value $response.From.address
-        $email | Add-Member -type NoteProperty -name To -value $response.To.Address
-        $email | Add-Member -type NoteProperty -name CC -value $response.Cc.Address
+        $email | Add-Member -type NoteProperty -name To -value $response.To
+        $email | Add-Member -type NoteProperty -name CC -value $response.Cc
         $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
         $email | Add-Member -type NoteProperty -name Attachments -value $signedAttachments
         $email | Add-Member -type NoteProperty -name Body -value $response.TextBody
@@ -4245,28 +4256,66 @@ foreach ($message in $inbox)
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessEmail }
 
-        switch -Regex ($email.subject) 
-        { 
-            #### primary work item types ####
-            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
- 
-            #### activities ####
-            "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
-            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
+        #Verify digital signature
+        foreach ($sig in $response.Body.Verify($certStore))
+        {
+            try
+            {
+                $sigResult = $sig.Verify()
+                if ($sigResult -eq $true)
+                {
+                    $validSig = $true
+                    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Cryptography" -Severity "Information" -EventID 2 -LogMessage "Digital signature is valid"}
+                }
+            }
+            catch
+            {
+                $validSig = $false
+                if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Cryptography" -Severity "Warning" -EventID 3 -LogMessage "Digital signature could not be verified"}
+            }
+        }
 
-            #### 3rd party classes, work items, etc. add here ####
-            "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
+        #The signature is valid OR signature is not valid and invalid signatures are set to process anyway
+        if (($validSig) -or (($validSig -eq $false) -and ($ignoreInvalidDigitalSignature -eq $true)))
+        {
+            switch -Regex ($email.subject)
+            { 
+                #### primary work item types ####
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+    
+                #### activities ####
+                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
+                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
 
-            #### Email is a Reply and does not contain a [Work Item ID]
-            # Check if Work Item (Title, Body, Sender, CC, etc.) exists
-            # and the user was replying too fast to receive Work Item ID notification
-            "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
+                #### 3rd party classes, work items, etc. add here ####
+                "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
 
-            #### default action, create work item ####
-            default {new-workitem $email $defaultNewWorkItem} 
+                #### Email is a Reply and does not contain a [Work Item ID]
+                # Check if Work Item (Title, Body, Sender, CC, etc.) exists
+                # and the user was replying too fast to receive Work Item ID notification
+                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
+                
+                #### Email is going to invoke a custom action. The signature MUST be valid to proceed
+                "\[$powershellKeyword]" {if ($validSig -and $ceScripts)
+                {
+                    Invoke-ValidDigitalSignatureAction
+                    #you could then insert custom pwsh to parse email, sender, body, etc. and then
+                    #restart a computer, bounce a windows service, ping a network device, call a 3rd party Rest API,
+                    #or initiate a webhook for a 3rd party platform
+                }}
+                
+                #### default action, create work item ####
+                default {new-workitem $email $defaultNewWorkItem} 
+            }
+        }
+        #the signature is not valid and invalid signatures should not be processed, call custom actions if enabled
+        else
+        {
+            #Custom Event Handler
+            if ($ceScripts) { Invoke-InvalidDigitalSignatureAction } 
         }
         
         # Custom Event Handler
@@ -4288,21 +4337,21 @@ foreach ($message in $inbox)
         if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
         
         $response = Read-MIMEMessage $message
-        $decryptedBody = $response.Body.Decrypt($certStore)
+        try {$decryptedBody = $response.Body.Decrypt($certStore)} catch {if($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Cryptography" -EventID 4 -Severity "Error" -LogMessage $_.Exception}}
 
         #Messaged is encrypted
-        if (($response.Body -ne $null) -and ($response.Body.SecureMimeType -eq "EnvelopedData") -and ($decryptedBody.TextBody))
+        if ($decryptedBody.ContentType.MimeType -eq "multipart/alternative")
         {         
             #check to see if there are attachments
             $decryptedAttachments = $decryptedBody | ?{$_.isattachment -eq $true}
 
             $email = New-Object System.Object 
             $email | Add-Member -type NoteProperty -name From -value $response.From.Address
-            $email | Add-Member -type NoteProperty -name To -value $response.To.Address
-            $email | Add-Member -type NoteProperty -name CC -value $response.Cc.Address
+            $email | Add-Member -type NoteProperty -name To -value $response.To
+            $email | Add-Member -type NoteProperty -name CC -value $response.Cc
             $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
             $email | Add-Member -type NoteProperty -name Attachments -value $decryptedAttachments
-            $email | Add-Member -type NoteProperty -name Body -value $decryptedBody.TextBody
+            $email | Add-Member -type NoteProperty -name Body -value $decryptedBody.GetTextBody("Text")
             $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
             $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
             $email | Add-Member -type NoteProperty -name ID -Value $message.Id
@@ -4349,7 +4398,7 @@ foreach ($message in $inbox)
             if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
         }
         #Message is encrypted and signed
-        else
+        if ($decryptedBody.ContentType.MimeType -eq "application/x-pkcs7-mime")
         {
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
@@ -4357,13 +4406,15 @@ foreach ($message in $inbox)
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessSignedEmail }
             
+            $isVerifiedSig = $decryptedBody.Verify($certStore, [ref]$decryptedBody)
+            
             $email = New-Object System.Object 
             $email | Add-Member -type NoteProperty -name From -value $response.From.Address
-            $email | Add-Member -type NoteProperty -name To -value $response.To.Address
-            $email | Add-Member -type NoteProperty -name CC -value $response.Cc.Address
+            $email | Add-Member -type NoteProperty -name To -value $response.To
+            $email | Add-Member -type NoteProperty -name CC -value $response.Cc
             $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
             $email | Add-Member -type NoteProperty -name Attachments -value $decryptedAttachments
-            $email | Add-Member -type NoteProperty -name Body -value "This message is digitally encrypted and signed. Please see the related/attached item."
+            $email | Add-Member -type NoteProperty -name Body -value $decryptedBody.GetTextBody("Text")
             $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
             $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
             $email | Add-Member -type NoteProperty -name ID -Value $message.Id

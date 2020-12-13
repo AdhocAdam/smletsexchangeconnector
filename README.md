@@ -15,6 +15,15 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>[pwsh] Keyword (v3.1)</i></td>
+  </tr>
+  <tr>
+    <td align="center" width="200"><img src ="/FeatureScreenshots/pwshKeyword.png" /></td>
+    <td width="auto">It's now possible with digital signatures and custom events to call Rest APIs, invoke Webhooks, and execute PowerShell <i>directly</i> from email. This feature makes use of Mimekit to verify the sender and then calls your CustomEvents file to take further action. Looking for ideas to get started? Head over to the <a href="https://github.com/AdhocAdam/smletsexchangeconnector/wiki/Custom-Events-Examples#invoke-validdigitalsignatureaction">wiki</a>.</td>
+  </tr>
+</table>
+<table border="0">
+  <tr>
     <td colspan="3"><i>Workflow Engine (v3.0)</i></td>
   </tr>
   <tr>

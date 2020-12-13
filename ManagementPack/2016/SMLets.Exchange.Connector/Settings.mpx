@@ -352,6 +352,11 @@
                 Type="bool"
                 Key="false"
                 Required="false" />
+                
+            <Property ID="IgnoreInvalidDigitalSignature"
+                Type="bool"
+                Key="false"
+                Required="false" />
 
             <Property ID="CertificateStore"
                 Type="string"
@@ -553,6 +558,15 @@
               Required="false" />
 
           <Property ID="SCOMKeywordHealth"
+              Type="string"
+              AutoIncrement="false"
+              Key="false"
+              CaseSensitive="false"
+              MaxLength="256"
+              MinLength="0"
+              Required="false" />
+              
+          <Property ID="KeywordPowerShell"
               Type="string"
               AutoIncrement="false"
               Key="false"

@@ -15,7 +15,7 @@
         <!-- configuration -->
         <StackPanel Name="stackPanel" Orientation="Vertical" Margin="10,82,155,10">
             <TextBlock Name="txtblkMinFileSizeInKB" Text="Minimum File Size in KB before File Attached (e.g. 21.45)" Margin="10,5,0,0" />
-            <TextBox x:Name="txtMinFileSizeInKB" Height="23" TextWrapping="Wrap" Margin="10,0,176.5,0" Text="{Binding MinFileAttachmentSize, Mode=TwoWay}" Custom:Validation.RegexPattern="^^[.][0-9]+$|^[0-9]*[.]{0,1}[0-9]*$" />
+            <TextBox x:Name="txtMinFileSizeInKB" Height="23" TextWrapping="Wrap" Margin="10,0,176.5,0" Text="{Binding MinFileAttachmentSize, Mode=TwoWay}" />
             <CheckBox Name="chkMaxFileSize" FlowDirection="LeftToRight" IsChecked="{Binding Path=IsMaxFileSizeAttachmentsEnabled, Mode=TwoWay}" Margin="10,5,0,0" >
                 <TextBlock FlowDirection="LeftToRight" Text="Enforce Maximum Attachment Size per individually defined Work Item Settings" TextWrapping="Wrap" />
             </CheckBox>
