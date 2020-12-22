@@ -1,0 +1,2696 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) Microsoft Corporation. All rights reserved.-->
+<xsi:schema xmlns:xsi="http://www.w3.org/2001/XMLSchema" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:reporting="http://schemas.microsoft.com/mom/reporting/2007/ReportParameterSettings" xmlns:xsdgen="generator" elementFormDefault="qualified" attributeFormDefault="unqualified">
+  <xsi:import namespace="http://schemas.microsoft.com/maml/2004/10" schemaLocation="maml\Maml.xsd" />
+  <xsi:import namespace="http://schemas.microsoft.com/mom/reporting/2007/ReportParameterSettings" schemaLocation="reporting\ReportParameterSettingsSchema.xsd" />
+  <xsi:element name="ManagementPackFragment">
+    <xsi:annotation>
+      <xsi:documentation>Root Managment Pack element</xsi:documentation>
+    </xsi:annotation>
+    <xsi:complexType>
+      <xsi:sequence>
+        <xsi:element name="TypeDefinitions" minOccurs="0">
+          <xsi:complexType>
+            <xsi:sequence>
+              <xsi:element name="EntityTypes" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="ClassTypes" minOccurs="0">
+                      <xsi:complexType mixed="0">
+                        <xsi:sequence>
+                          <xsi:element name="ClassType" type="ManagementPackClass" minOccurs="0" maxOccurs="unbounded">
+                            <xsi:unique name="ClassPropertyNameUnique">
+                              <xsi:selector xpath="Property" />
+                              <xsi:field xpath="@ID" />
+                            </xsi:unique>
+                          </xsi:element>
+                        </xsi:sequence>
+                      </xsi:complexType>
+                    </xsi:element>
+                    <xsi:element name="RelationshipTypes" minOccurs="0">
+                      <xsi:complexType>
+                        <xsi:sequence>
+                          <xsi:element name="RelationshipType" type="ManagementPackRelationship" minOccurs="0" maxOccurs="unbounded">
+                            <xsi:unique name="RelationshipPropertyNameUnique">
+                              <xsi:selector xpath="Property" />
+                              <xsi:field xpath="@ID" />
+                            </xsi:unique>
+                          </xsi:element>
+                        </xsi:sequence>
+                      </xsi:complexType>
+                    </xsi:element>
+                    <xsi:element name="EnumerationTypes" minOccurs="0">
+                      <xsi:complexType>
+                        <xsi:sequence>
+                          <xsi:element name="EnumerationValue" type="ManagementPackEnumeration" minOccurs="0" maxOccurs="unbounded" />
+                        </xsi:sequence>
+                      </xsi:complexType>
+                      <xsi:unique name="EnumerationValueNameUnique">
+                        <xsi:selector xpath="EnumerationValue" />
+                        <xsi:field xpath="@ID" />
+                      </xsi:unique>
+                    </xsi:element>
+                    <xsi:element name="TypeProjections" minOccurs="0">
+                      <xsi:complexType>
+                        <xsi:sequence>
+                          <xsi:element name="TypeProjection" type="ManagementPackTypeProjection" minOccurs="0" maxOccurs="unbounded" />
+                        </xsi:sequence>
+                      </xsi:complexType>
+                      <xsi:unique name="TypeProjectionNameUnique">
+                        <xsi:selector xpath="TypeProjection" />
+                        <xsi:field xpath="@ID" />
+                      </xsi:unique>
+                    </xsi:element>
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="SchemaTypes" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="SchemaType" type="ManagementPackSchemaType" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="SecureReferences" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="SecureReference" type="ManagementPackSecureReference" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="ModuleTypes" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="DataSourceModuleType" type="ManagementPackDataSourceModuleType" minOccurs="0" maxOccurs="unbounded" />
+                    <xsi:element name="ProbeActionModuleType" type="ManagementPackProbeActionModuleType" minOccurs="0" maxOccurs="unbounded" />
+                    <xsi:element name="ConditionDetectionModuleType" type="ManagementPackConditionDetectionModuleType" minOccurs="0" maxOccurs="unbounded" />
+                    <xsi:element name="WriteActionModuleType" type="ManagementPackWriteActionModuleType" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="Extensions" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:any namespace="##targetNamespace" processContents="lax" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+            </xsi:sequence>
+          </xsi:complexType>
+        </xsi:element>
+        <xsi:element name="Categories" minOccurs="0">
+          <xsi:complexType>
+            <xsi:sequence>
+              <xsi:element name="Category" type="ManagementPackCategory" minOccurs="0" maxOccurs="unbounded" />
+            </xsi:sequence>
+          </xsi:complexType>
+        </xsi:element>
+        <xsi:element name="Monitoring" minOccurs="0">
+          <xsi:complexType>
+            <xsi:sequence>
+              <xsi:element name="Discoveries" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="Discovery" type="ManagementPackDiscovery" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="Rules" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="Rule" type="ManagementPackRule" minOccurs="0" maxOccurs="unbounded">
+                      <xsi:unique name="RuleModulesUniqueConstraint">
+                        <xsi:selector xpath=".//*" />
+                        <xsi:field xpath="@ID" />
+                      </xsi:unique>
+                    </xsi:element>
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="ServiceLevelObjectives" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="MonitorSLO" type="ManagementPackMonitorSLO" minOccurs="0" maxOccurs="unbounded" />
+                    <xsi:element name="PerformanceCounterSLO" type="ManagementPackPerformanceCounterSLO" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="Extensions" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:any namespace="##targetNamespace" processContents="lax" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+            </xsi:sequence>
+          </xsi:complexType>
+        </xsi:element>
+        <xsi:element name="Templates" minOccurs="0">
+          <xsi:complexType>
+            <xsi:sequence>
+              <xsi:element name="ObjectTemplate" type="ManagementPackObjectTemplate" minOccurs="0" maxOccurs="unbounded" />
+            </xsi:sequence>
+          </xsi:complexType>
+        </xsi:element>
+        <xsi:element name="PresentationTypes" minOccurs="0">
+          <xsi:complexType>
+            <xsi:sequence>
+              <xsi:element name="ViewTypes" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="ViewType" type="ManagementPackViewType" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="Extensions" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:any namespace="##targetNamespace" processContents="lax" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+            </xsi:sequence>
+          </xsi:complexType>
+        </xsi:element>
+        <xsi:element name="Presentation" minOccurs="0">
+          <xsi:complexType>
+            <xsi:sequence>
+              <xsi:element name="Forms" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="Form" type="ManagementPackForm" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="ConsoleTasks" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="ConsoleTask" type="ManagementPackConsoleTask" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="Views" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="View" type="ManagementPackView" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="Folders" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="Folder" type="ManagementPackFolder" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="FolderItems" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="FolderItem" type="ManagementPackFolderItem" minOccurs="0" maxOccurs="unbounded">
+                      <xsi:unique name="FolderItemNameUnique">
+                        <xsi:selector xpath="." />
+                        <xsi:field xpath="@ID" />
+                      </xsi:unique>
+                    </xsi:element>
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="ImageReferences" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="ImageReference" type="ManagementPackImageReference" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="StringResources" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="StringResource" type="ManagementPackStringResource" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="Extensions" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:any namespace="##targetNamespace" processContents="lax" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+            </xsi:sequence>
+          </xsi:complexType>
+        </xsi:element>
+        <xsi:element name="Warehouse" minOccurs="0">
+          <xsi:complexType>
+            <xsi:sequence>
+              <xsi:element name="Outriggers" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="Outrigger" type="ManagementPackOutriggerType" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="Dimensions" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="Dimension" type="ManagementPackDimensionType" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="Measures" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="Measure" type="ManagementPackMeasureType" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="Facts" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="Fact" type="ManagementPackFactType" minOccurs="0" maxOccurs="unbounded" />
+                    <xsi:element name="RelationshipFact" type="ManagementPackRelationshipFactType" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="WarehouseModules" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="WarehouseModule" type="ManagementPackWarehouseModuleType" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="Extensions" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:any namespace="##targetNamespace" processContents="lax" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+            </xsi:sequence>
+          </xsi:complexType>
+        </xsi:element>
+        <xsi:element name="Reporting" minOccurs="0">
+          <xsi:complexType>
+            <xsi:sequence>
+              <xsi:element name="DataWarehouseScripts" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="DataWarehouseScript" type="ManagementPackDataWarehouseScript" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="DataWarehouseDataSets" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="DataWarehouseDataSet" type="ManagementPackDataWarehouseDataSet" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="Reports" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="Report" type="ManagementPackReport" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="LinkedReports" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="LinkedReport" type="ManagementPackLinkedReport" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="ReportParameterControls" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:element name="ReportParameterControl" type="ManagementPackReportParameterControl" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+              <xsi:element name="Extensions" minOccurs="0">
+                <xsi:complexType>
+                  <xsi:sequence>
+                    <xsi:any namespace="##targetNamespace" processContents="lax" minOccurs="0" maxOccurs="unbounded" />
+                  </xsi:sequence>
+                </xsi:complexType>
+              </xsi:element>
+            </xsi:sequence>
+          </xsi:complexType>
+        </xsi:element>
+        <xsi:element name="LanguagePacks" minOccurs="0">
+          <xsi:complexType>
+            <xsi:sequence>
+              <xsi:element name="LanguagePack" type="ManagementPackLanguagePack" minOccurs="0" maxOccurs="unbounded" />
+            </xsi:sequence>
+          </xsi:complexType>
+        </xsi:element>
+        <xsi:element name="Resources" minOccurs="0">
+          <xsi:complexType>
+            <xsi:sequence>
+              <xsi:element name="Resource" type="ManagementPackResource" minOccurs="0" maxOccurs="unbounded" />
+              <xsi:element name="Assembly" type="ManagementPackAssemblyResource" minOccurs="0" maxOccurs="unbounded" />
+              <xsi:element name="ReportResource" type="ManagementPackReportResource" minOccurs="0" maxOccurs="unbounded" />
+              <!--
+              <xsi:element name="WebPart" type="ManagementPackWebPartResource" minOccurs="0" maxOccurs="unbounded" />
+              -->
+              <xsi:element name="Image" type="ManagementPackImage" minOccurs="0" maxOccurs="unbounded" />
+              <xsi:element name="DeployableResource" type="ManagementPackDeployableResource" minOccurs="0" maxOccurs="unbounded" />
+              <xsi:element name="DeployableAssembly" type="ManagementPackDeployableAssemblyResource" minOccurs="0" maxOccurs="unbounded" />
+            </xsi:sequence>
+          </xsi:complexType>
+        </xsi:element>
+        <xsi:element name="Extensions" minOccurs="0">
+          <xsi:complexType>
+            <xsi:sequence>
+              <xsi:any namespace="##targetNamespace" processContents="lax" minOccurs="0" maxOccurs="unbounded" />
+            </xsi:sequence>
+          </xsi:complexType>
+        </xsi:element>
+      </xsi:sequence>
+      <xsi:attribute name="SchemaVersion" type="xsi:string" use="required" />
+    </xsi:complexType>
+  </xsi:element>
+  <xsi:complexType name="ManagementPackResource" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:attribute name="FileName" type="ManagementPackString" use="required" />
+        <xsi:attribute name="HasNullStream" type="xsi:boolean" use="optional" default="false" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDeployableResource" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackResource" />
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackReportResource" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackResource">
+        <xsi:attribute name="MIMEType" type="ManagementPackString" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackAssemblyResourceDependency" xsdgen:include="true">
+    <xsi:attribute name="ID" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackAssemblyResource" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackAssemblyResource" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackResource">
+        <xsi:sequence>
+          <xsi:element name="Dependency" type="ManagementPackAssemblyResourceDependency" minOccurs="0" maxOccurs="unbounded" />
+        </xsi:sequence>
+        <xsi:attribute name="QualifiedName" type="xsi:string" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDeployableAssemblyResource" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAssemblyResource" />
+    </xsi:complexContent>
+  </xsi:complexType>
+  <!--
+  <xsi:complexType name="ManagementPackWebPartResource" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackResource">
+        <xsi:sequence>
+          <xsi:element name="Dependency" type="ManagementPackAssemblyResourceDependency" minOccurs="0" maxOccurs="unbounded" />
+        </xsi:sequence>
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>  
+  -->
+  <!-- <xsi:simpleType name="ManagementPackImageCategory">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="u16x16Icon"/>
+      <xsi:enumeration value="u32x32Icon"/>
+      <xsi:enumeration value="DiagramIcon"/>
+      <xsi:enumeration value="BmpIcon"/>
+      <xsi:enumeration value="StatusIcon"/>
+      <xsi:enumeration value="BackgroundImage"/>
+    </xsi:restriction>
+  </xsi:simpleType>-->
+  <xsi:complexType name="ManagementPackImage" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackResource">
+        <xsi:sequence>
+          <!-- <xsi:element name="ImageData" type="xsi:hexBinary"/> -->
+          <xsi:element name="ImageSettings" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:any namespace="##targetNamespace" processContents="lax" minOccurs="0" maxOccurs="unbounded" xsdgen:id="ImageSettings" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+        </xsi:sequence>
+        <!-- <xsi:attribute name="Category" type="ManagementPackImageCategory" use="required"/> -->
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================Enumerations============================================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:simpleType name="ManagementPackAccessibility">
+    <xsi:restriction base="xsd:string">
+      <xsi:enumeration value="Public" />
+      <xsi:enumeration value="Internal" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackEntityPropertyTypes">
+    <xsi:restriction base="xsd:string">
+      <xsi:enumeration value="int" />
+      <xsi:enumeration value="decimal" />
+      <xsi:enumeration value="double" />
+      <xsi:enumeration value="string" />
+      <xsi:enumeration value="datetime" />
+      <xsi:enumeration value="guid" />
+      <xsi:enumeration value="bool" />
+      <xsi:enumeration value="enum" />
+      <xsi:enumeration value="richtext" />
+      <xsi:enumeration value="binary" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="HealthState">
+    <xsi:restriction base="xsd:string">
+      <xsi:enumeration value="Uninitialized">
+        <xsi:annotation>
+          <xsi:documentation source="0" />
+        </xsi:annotation>
+      </xsi:enumeration>
+      <xsi:enumeration value="Success">
+        <xsi:annotation>
+          <xsi:documentation source="1" />
+        </xsi:annotation>
+      </xsi:enumeration>
+      <xsi:enumeration value="Warning">
+        <xsi:annotation>
+          <xsi:documentation source="2" />
+        </xsi:annotation>
+      </xsi:enumeration>
+      <xsi:enumeration value="Error">
+        <xsi:annotation>
+          <xsi:documentation source="3" />
+        </xsi:annotation>
+      </xsi:enumeration>
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackMonitorDetections">
+    <xsi:restriction base="xsd:string">
+      <xsi:enumeration value="Regular" />
+      <xsi:enumeration value="Ondemand" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackWorkflowPriority">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="Low" />
+      <xsi:enumeration value="Normal" />
+      <xsi:enumeration value="High" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:annotation>
+    <xsi:documentation>======================Simple Schema Data types============================================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:simpleType name="ManagementPackCategoryType">
+    <xsi:restriction base="xsi:string">
+      <xsi:maxLength value="256" />
+      <xsi:minLength value="1" />
+      <xsi:enumeration value="PerformanceCollection" />
+      <xsi:enumeration value="Operations" />
+      <xsi:enumeration value="EventCollection" />
+      <xsi:enumeration value="StateCollection" />
+      <xsi:enumeration value="SoftwareAndUpdates" />
+      <xsi:enumeration value="Alert" />
+      <xsi:enumeration value="System" />
+      <xsi:enumeration value="Custom" />
+      <xsi:enumeration value="AvailabilityHealth" />
+      <xsi:enumeration value="PerformanceHealth" />
+      <xsi:enumeration value="ConfigurationHealth" />
+      <xsi:enumeration value="SecurityHealth" />
+      <xsi:enumeration value="Discovery" />
+      <xsi:enumeration value="Notification" />
+      <xsi:enumeration value="DSIntegration" />
+      <xsi:enumeration value="ConnectorFramework" />
+      <xsi:enumeration value="ExceptionMonitoring" />
+      <xsi:enumeration value="Maintenance" />
+      <xsi:enumeration value="None" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackMonitoringLevel">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="false" />
+      <xsi:enumeration value="onAdvancedMonitoring" />
+      <xsi:enumeration value="onStandardMonitoring" />
+      <xsi:enumeration value="onEssentialMonitoring" />
+      <xsi:enumeration value="true" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackAttributeListTypeEnum">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="Exclude" />
+      <xsi:enumeration value="Include" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackDimensionHierarchySupport">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="Exact" />
+      <xsi:enumeration value="IncludeExtendedClassProperties" />
+      <xsi:enumeration value="IncludeDerivedClassProperties" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackMeasureAggregation">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="None" />
+      <xsi:enumeration value="Additive" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackTimeGrainEnum">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="Hourly" />
+      <xsi:enumeration value="Daily" />
+      <xsi:enumeration value="Weekly" />
+      <xsi:enumeration value="Monthly" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackScriptTypeEnum">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="Extract" />
+      <xsi:enumeration value="Transform" />
+      <xsi:enumeration value="Load" />
+      <xsi:enumeration value="Index" />
+      <xsi:enumeration value="Report SP" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackEntityInstanceReference">
+    <xsi:restriction base="xsd:string">
+      <xsi:minLength value="1" />
+      <xsi:maxLength value="512" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackGuid">
+    <xsi:restriction base="xsd:string">
+      <xsi:maxLength value="38" />
+      <xsi:minLength value="36" />
+      <xsi:pattern value="\{{0,1}[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\}{0,1}" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackIsolationLevel">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="Shared" />
+      <xsi:enumeration value="OwnProcess" />
+      <xsi:enumeration value="Any" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackKeyToken">
+    <xsi:restriction base="xsd:string">
+      <xsi:minLength value="16" />
+      <xsi:pattern value="[0-9a-fA-F]{16}|MOM_MANAGEMENTPACK_PUBLIC_KEY_TOKEN" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackString">
+    <xsi:restriction base="xsd:string">
+      <xsi:maxLength value="256" />
+      <xsi:minLength value="1" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackLongString">
+    <xsi:restriction base="xsd:string">
+      <xsi:minLength value="1" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackVersion">
+    <xsi:restriction base="xsd:string">
+      <xsi:pattern value="[0-9]{1,10}\.[0-9]{1,10}\.[0-9]{1,10}\.[0-9]{1,10}|MOM_MANAGEMENTPACK_VERSION" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackSchemaVersion">
+    <xsi:restriction base="xsd:string">
+      <xsi:pattern value="[0-9]{1,10}\.[0-9]{1,10}" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:annotation>
+    <xsi:documentation>======================Identity simple types============================================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:simpleType name="ManagementPackIdentifierReference">
+    <xsi:restriction base="xsd:string">
+      <xsi:minLength value="1" />
+      <xsi:maxLength value="512" />
+      <xsi:pattern value="([A-Za-z0-9_\.]+!){0,1}[A-Za-z0-9_\.]+" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackPathIdentifierReference">
+    <xsi:restriction base="xsd:string">
+      <xsi:minLength value="1" />
+      <xsi:pattern value="([A-Za-z0-9_\.]+!){0,1}[A-Za-z0-9_\.]+(/[A-Za-z0-9_\.]+)*" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackIdentifierOrGuidReference">
+    <xsi:restriction base="xsd:string">
+      <xsi:minLength value="1" />
+      <xsi:maxLength value="512" />
+      <xsi:pattern value="(([A-Za-z0-9_\.]+!){0,1}[A-Za-z0-9_\.]+)|((\{){0,1}[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}(\}){0,1})" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackUniqueIdentifier">
+    <xsi:restriction base="xsd:ID">
+      <xsi:minLength value="1" />
+      <xsi:maxLength value="256" />
+      <xsi:pattern value="[A-Za-z0-9_\.]+" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackLocalIdentifierReference">
+    <xsi:restriction base="xsi:string">
+      <xsi:minLength value="1" />
+      <xsi:maxLength value="256" />
+      <xsi:pattern value="[A-Za-z0-9_\.]+" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:annotation>
+    <xsi:documentation>======================Complex Schema data types===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackConfigurationSchemaType" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="IncludeSchemaTypes" minOccurs="0">
+        <xsi:complexType>
+          <xsi:sequence>
+            <xsi:element name="SchemaType" type="ManagementPackIdentifierReference" maxOccurs="unbounded" xsdgen:reference="ManagementPackSchemaType" />
+          </xsi:sequence>
+        </xsi:complexType>
+      </xsi:element>
+      <xsi:sequence>
+        <xsi:any namespace="http://www.w3.org/2001/XMLSchema" processContents="skip" minOccurs="0" maxOccurs="unbounded" xsdgen:id="Schema" />
+      </xsi:sequence>
+    </xsi:sequence>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackIdentity">
+    <xsi:sequence>
+      <xsi:element name="ID" type="ManagementPackUniqueIdentifier" />
+      <xsi:element name="Version" type="ManagementPackVersion" />
+    </xsi:sequence>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackManagedImplementation" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="Assembly" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackAssemblyResource" />
+      <xsi:element name="Type" type="ManagementPackString" />
+    </xsi:sequence>
+  </xsi:complexType>
+  <xsi:attributeGroup name="ManagementPackTargetingPropertiesWithMonitoringLevel">
+    <xsi:attribute name="Enabled" type="ManagementPackMonitoringLevel" use="optional" default="true" />
+    <xsi:attribute name="Target" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackClass" />
+  </xsi:attributeGroup>
+  <xsi:attributeGroup name="ManagementPackTargetingProperties">
+    <xsi:attribute name="Enabled" type="xsi:boolean" use="optional" default="true" />
+    <xsi:attribute name="Target" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackClass" />
+  </xsi:attributeGroup>
+  <xsi:complexType name="ManagementPackXSDSchemaType">
+    <xsi:sequence>
+      <xsi:any namespace="http://www.w3.org/2001/XMLSchema" processContents="skip" minOccurs="0" maxOccurs="unbounded" xsdgen:id="Schema" />
+    </xsi:sequence>
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================Abstract Base Types===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackElement" abstract="true">
+    <xsi:attribute name="ID" type="ManagementPackUniqueIdentifier" use="required" />
+    <xsi:attribute name="Comment" type="ManagementPackString" use="optional" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackSubElement" abstract="true">
+    <xsi:attribute name="ID" type="ManagementPackLocalIdentifierReference" use="required" />
+    <xsi:attribute name="Comment" type="ManagementPackString" use="optional" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackAccessibleElement" abstract="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackElement">
+        <xsi:attribute name="Accessibility" type="ManagementPackAccessibility" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackLanguageIdentity" abstract="true" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:restriction base="ManagementPackElement">
+        <xsi:attribute name="ID" use="required">
+          <xsi:simpleType>
+            <xsi:restriction base="ManagementPackUniqueIdentifier">
+              <xsi:maxLength value="3" />
+              <xsi:pattern value="[A-Z]+" />
+            </xsi:restriction>
+          </xsi:simpleType>
+        </xsi:attribute>
+      </xsi:restriction>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackElementInfo" abstract="true">
+    <xsi:attribute name="ElementID" type="ManagementPackIdentifierReference" use="required" />
+    <xsi:attribute name="SubElementID" type="ManagementPackLocalIdentifierReference" use="optional" />
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================Manifest Types===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:annotation>
+    <xsi:documentation>======================Schema Types===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackSchemaType" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:any namespace="http://www.w3.org/2001/XMLSchema" processContents="skip" minOccurs="0" maxOccurs="unbounded" xsdgen:id="Schema" />
+        </xsi:sequence>
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackSchemaTypeReference">
+    <xsi:attribute name="TypeID" type="ManagementPackIdentifierReference" use="required" />
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================SDM Application Types===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackCategory" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackElement">
+        <xsi:sequence>
+          <xsi:element name="ManagementPackName" type="ManagementPackLocalIdentifierReference" minOccurs="0" maxOccurs="1" />
+          <xsi:element name="ManagementPackVersion" type="ManagementPackVersion" minOccurs="0" maxOccurs="1" />
+          <xsi:element name="ManagementPackPublicKeyToken" type="ManagementPackKeyToken" minOccurs="0" maxOccurs="1" />
+        </xsi:sequence>
+        <xsi:attribute name="Target" type="ManagementPackIdentifierOrGuidReference" use="optional" xsdgen:reference="ManagementPackElement" />
+        <xsi:attribute name="Value" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackEnumeration" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackObjectTemplate" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackElement">
+        <xsi:sequence>
+          <xsi:element name="Property" type="ManagementPackObjectTemplateProperty" minOccurs="0" maxOccurs="unbounded" />
+          <xsi:element name="Object" type="ManagementPackObjectTemplateObject" minOccurs="0" maxOccurs="unbounded" />
+        </xsi:sequence>
+        <xsi:attribute name="TypeID" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackElement" />
+        <xsi:attribute name="TypeConstraint" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackClass" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackObjectTemplateProperty" xsdgen:include="true">
+    <xsi:simpleContent>
+      <xsi:extension base="xsi:string">
+        <xsi:attribute name="Path" type="xsi:string" use="required" />
+      </xsi:extension>
+    </xsi:simpleContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackObjectTemplateObject" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="Property" type="ManagementPackObjectTemplateProperty" minOccurs="0" maxOccurs="unbounded" />
+      <xsi:element name="Object" type="ManagementPackObjectTemplateObject" minOccurs="0" maxOccurs="unbounded" />
+    </xsi:sequence>
+    <xsi:attribute name="Path" type="xsi:string" use="required" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackTypeProjection" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Component" type="ManagementPackTypeProjectionComponent" minOccurs="0" maxOccurs="unbounded" />
+        </xsi:sequence>
+        <xsi:attribute name="Type" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackClass" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackTypeProjectionComponent" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="Component" type="ManagementPackTypeProjectionComponent" minOccurs="0" maxOccurs="unbounded" />
+    </xsi:sequence>
+    <xsi:attribute name="Path" type="xsi:string" use="required" />
+    <xsi:attribute name="Alias" type="xsi:string" use="optional" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackEnumeration" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:attribute name="Parent" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackEnumeration" />
+        <xsi:attribute name="Ordinal" type="xsi:double" use="optional" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackProperty" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackSubElement">
+        <xsi:attribute name="Type" type="ManagementPackEntityPropertyTypes" use="required" />
+        <xsi:attribute name="AutoIncrement" type="xsd:boolean" use="optional" default="false" />
+        <xsi:attribute name="Key" type="xsd:boolean" use="optional" default="false" />
+        <xsi:attribute name="CaseSensitive" type="xsd:boolean" use="optional" default="false" />
+        <xsi:attribute name="MaxLength" use="optional" default="256">
+          <xsi:simpleType>
+            <xsi:restriction base="xsi:int">
+              <xsi:minInclusive value="1" />
+            </xsi:restriction>
+          </xsi:simpleType>
+        </xsi:attribute>
+        <xsi:attribute name="MinLength" use="optional" default="0">
+          <xsi:simpleType>
+            <xsi:restriction base="xsi:int">
+              <xsi:minInclusive value="0" />
+            </xsi:restriction>
+          </xsi:simpleType>
+        </xsi:attribute>
+        <xsi:attribute name="Scale" use="optional" default="0">
+          <xsi:simpleType>
+            <xsi:restriction base="xsi:int">
+              <xsi:minInclusive value="0" />
+              <xsi:maxInclusive value="38" />
+            </xsi:restriction>
+          </xsi:simpleType>
+        </xsi:attribute>
+        <xsi:attribute name="Required" type="xsd:boolean" use="optional" default="false" />
+        <xsi:attribute name="MinValue" use="optional" default="-2147483648">
+          <xsi:simpleType>
+            <xsi:restriction base="xsi:int">
+              <xsi:minInclusive value="-2147483648" />
+              <xsi:maxInclusive value="2147483647" />
+            </xsi:restriction>
+          </xsi:simpleType>
+        </xsi:attribute>
+        <xsi:attribute name="MaxValue" use="optional" default="2147483647">
+          <xsi:simpleType>
+            <xsi:restriction base="xsi:int">
+              <xsi:minInclusive value="-2147483648" />
+              <xsi:maxInclusive value="2147483647" />
+            </xsi:restriction>
+          </xsi:simpleType>
+        </xsi:attribute>
+        <xsi:attribute name="RegEx" type="xsd:string" use="optional" />
+        <xsi:attribute name="EnumType" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackEnumeration" />
+        <xsi:attribute name="DefaultValue" type="xsd:anySimpleType" use="optional" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackType" abstract="true" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Property" type="ManagementPackProperty" minOccurs="0" maxOccurs="unbounded" />
+        </xsi:sequence>
+        <xsi:attribute name="Abstract" type="xsd:boolean" use="optional" default="false" />
+        <xsi:attribute name="Base" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackType" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackPropertyOptimizationPropertyReference" xsdgen:include="true">
+    <xsi:attribute name="ID" type="xsi:string" use="required" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackPropertyOptimization" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackSubElement">
+        <xsi:sequence>
+          <xsi:element name="Property" type="ManagementPackPropertyOptimizationPropertyReference" minOccurs="0" maxOccurs="unbounded">
+            <xsi:unique name="PropertyOptimizationPropertyReferenceUniqueConstraint">
+              <xsi:selector xpath=".//*" />
+              <xsi:field xpath="@ID" />
+            </xsi:unique>
+          </xsi:element>
+        </xsi:sequence>
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackSearchablePropertyReference" xsdgen:include="true">
+    <xsi:attribute name="ClassID" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackClass" />
+    <xsi:attribute name="ID" type="xsi:string" use="required" />
+    <xsi:attribute name="Filter" type="xsi:string" use="required" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackSearchableProperties" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="Property" type="ManagementPackSearchablePropertyReference" minOccurs="0" maxOccurs="unbounded" />
+    </xsi:sequence>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackClass" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackType">
+        <xsi:sequence>
+          <xsi:element name="Optimization" type="ManagementPackPropertyOptimization" minOccurs="0" maxOccurs="unbounded">
+            <xsi:unique name="PropertyOptimizationUniqueConstraint">
+              <xsi:selector xpath=".//*" />
+              <xsi:field xpath="@ID" />
+            </xsi:unique>
+          </xsi:element>
+          <xsi:element name="FullTextSearchable" type="ManagementPackSearchableProperties" minOccurs="0" maxOccurs="1" />
+        </xsi:sequence>
+        <xsi:attribute name="Hosted" type="xsd:boolean" use="optional" default="false" />
+        <xsi:attribute name="Singleton" type="xsd:boolean" use="optional" default="false" />
+        <xsi:attribute name="Extension" type="xsd:boolean" use="optional" default="false" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackRelationshipEndpoint" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackSubElement">
+        <xsi:attribute name="MinCardinality" use="optional" default="0">
+          <xsi:simpleType>
+            <xsi:restriction base="xsi:int">
+              <xsi:minInclusive value="0" />
+              <xsi:maxInclusive value="2147483647" />
+            </xsi:restriction>
+          </xsi:simpleType>
+        </xsi:attribute>
+        <xsi:attribute name="MaxCardinality" use="optional" default="2147483647">
+          <xsi:simpleType>
+            <xsi:restriction base="xsi:int">
+              <xsi:minInclusive value="1" />
+              <xsi:maxInclusive value="2147483647" />
+            </xsi:restriction>
+          </xsi:simpleType>
+        </xsi:attribute>
+        <xsi:attribute name="Type" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackClass" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackRelationship" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackType">
+        <xsi:sequence>
+          <xsi:element name="Source" type="ManagementPackRelationshipEndpoint" minOccurs="1" maxOccurs="1" />
+          <xsi:element name="Target" type="ManagementPackRelationshipEndpoint" minOccurs="1" maxOccurs="1" />
+        </xsi:sequence>
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================Data Types ===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackDataType" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Implementation">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="Assembly" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackAssemblyResource" minOccurs="0" />
+                <xsi:element name="Type" type="ManagementPackString" minOccurs="0" />
+                <xsi:element name="ClassID" type="ManagementPackGuid" minOccurs="0" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+        </xsi:sequence>
+        <xsi:attribute name="Base" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackDataType" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================Secure References ===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackSecureReference" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:attribute name="Context" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackClass" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================Module Types ===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackModuleType" abstract="true" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Configuration" type="ManagementPackConfigurationSchemaType" />
+          <xsi:element name="OverrideableParameters" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="OverrideableParameter" type="ManagementPackOverrideableParameter" minOccurs="0" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+          <xsi:element name="ModuleImplementation">
+            <xsi:complexType>
+              <xsi:choice>
+                <xsi:element name="Managed" type="ManagementPackManagedImplementation" />
+                <xsi:element name="Native">
+                  <xsi:complexType>
+                    <xsi:sequence>
+                      <xsi:element name="ClassID" type="ManagementPackString" />
+                    </xsi:sequence>
+                  </xsi:complexType>
+                </xsi:element>
+                <xsi:element name="Composite">
+                  <xsi:complexType>
+                    <xsi:sequence>
+                      <xsi:element name="MemberModules">
+                        <xsi:complexType>
+                          <xsi:sequence>
+                            <xsi:element name="DataSource" type="ManagementPackModuleTypeReference" minOccurs="0" maxOccurs="unbounded" />
+                            <xsi:element name="ProbeAction" type="ManagementPackModuleTypeReference" minOccurs="0" maxOccurs="unbounded" />
+                            <xsi:element name="ConditionDetection" type="ManagementPackModuleTypeReference" minOccurs="0" maxOccurs="unbounded" />
+                            <xsi:element name="WriteAction" type="ManagementPackModuleTypeReference" minOccurs="0" maxOccurs="unbounded" />
+                          </xsi:sequence>
+                        </xsi:complexType>
+                      </xsi:element>
+                      <xsi:element name="Composition">
+                        <xsi:complexType>
+                          <xsi:sequence>
+                            <xsi:element name="Node" type="ManagementPackModuleCompositionNodeType" />
+                          </xsi:sequence>
+                        </xsi:complexType>
+                      </xsi:element>
+                    </xsi:sequence>
+                  </xsi:complexType>
+                  <xsi:keyref name="ModuleReferenceIDKeyRef" refer="ModuleReferenceIDKey">
+                    <xsi:selector xpath=".//Node" />
+                    <xsi:field xpath="@ID" />
+                  </xsi:keyref>
+                  <xsi:key name="ModuleReferenceIDKey">
+                    <xsi:selector xpath="./MemberModules/*" />
+                    <xsi:field xpath="@ID" />
+                  </xsi:key>
+                </xsi:element>
+              </xsi:choice>
+              <xsi:attribute name="Isolation" type="ManagementPackIsolationLevel" use="optional" default="Any" />
+            </xsi:complexType>
+          </xsi:element>
+        </xsi:sequence>
+        <xsi:attribute name="RunAs" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackSecureReference" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackModuleCompositionNodeType" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="Node" type="ManagementPackModuleCompositionNodeType" minOccurs="0" maxOccurs="unbounded" />
+    </xsi:sequence>
+    <xsi:attribute name="ID" type="ManagementPackLocalIdentifierReference" use="required" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDataSourceModuleType" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackModuleType">
+        <xsi:sequence>
+          <xsi:element name="OutputType" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackDataType" />
+        </xsi:sequence>
+        <xsi:attribute name="Batching" type="xsd:boolean" use="optional" default="false" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackProbeActionModuleType" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackModuleType">
+        <xsi:sequence>
+          <xsi:element name="OutputType" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackDataType" />
+          <xsi:choice>
+            <xsi:element name="InputType" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackDataType" />
+            <xsi:element name="TriggerOnly" type="xsd:boolean" />
+          </xsi:choice>
+        </xsi:sequence>
+        <xsi:attribute name="Batching" type="xsd:boolean" use="optional" default="false" />
+        <xsi:attribute name="PassThrough" type="xsd:boolean" use="optional" default="false" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackConditionDetectionModuleType" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackModuleType">
+        <xsi:sequence>
+          <xsi:element name="OutputType" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackDataType" />
+          <xsi:element name="InputTypes">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="InputType" type="ManagementPackIdentifierReference" maxOccurs="unbounded" xsdgen:reference="ManagementPackDataType" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+        </xsi:sequence>
+        <xsi:attribute name="Batching" type="xsd:boolean" use="optional" default="false" />
+        <xsi:attribute name="Stateful" type="xsd:boolean" use="optional" default="false" />
+        <xsi:attribute name="PassThrough" type="xsd:boolean" use="optional" default="false" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackWriteActionModuleType" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackModuleType">
+        <xsi:sequence>
+          <xsi:element name="OutputType" type="ManagementPackIdentifierReference" minOccurs="0" xsdgen:reference="ManagementPackDataType" />
+          <xsi:element name="InputType" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackDataType" />
+        </xsi:sequence>
+        <xsi:attribute name="Batching" type="xsd:boolean" use="optional" default="false" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackModuleTypeReference" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackSubElement">
+        <xsi:sequence>
+          <xsi:any namespace="##targetNamespace" processContents="lax" minOccurs="0" maxOccurs="unbounded" xsdgen:id="Configuration" />
+        </xsi:sequence>
+        <xsi:attribute name="TypeID" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackModuleType" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackOverrideableParameter" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackSubElement">
+        <xsi:attribute name="Selector" type="ManagementPackLongString" use="required" />
+        <xsi:attribute name="ParameterType" type="ManagementPackEntityPropertyTypes" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================Monitor Types ===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackUnitMonitorType" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="MonitorTypeStates">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="MonitorTypeState" type="ManagementPackMonitorTypeState" minOccurs="2" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+            <xsi:unique name="MonitorTypeStatesUnique">
+              <xsi:selector xpath="MonitorTypeState" />
+              <xsi:field xpath="@ID" />
+            </xsi:unique>
+          </xsi:element>
+          <xsi:element name="Configuration" type="ManagementPackConfigurationSchemaType" />
+          <xsi:element name="OverrideableParameters" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="OverrideableParameter" type="ManagementPackOverrideableParameter" minOccurs="0" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+          <xsi:element name="MonitorImplementation">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="MemberModules">
+                  <xsi:complexType>
+                    <xsi:sequence>
+                      <xsi:element name="DataSource" type="ManagementPackModuleTypeReference" minOccurs="0" maxOccurs="unbounded" />
+                      <xsi:element name="ProbeAction" type="ManagementPackModuleTypeReference" minOccurs="0" maxOccurs="unbounded" />
+                      <xsi:element name="ConditionDetection" type="ManagementPackModuleTypeReference" minOccurs="0" maxOccurs="unbounded" />
+                    </xsi:sequence>
+                  </xsi:complexType>
+                </xsi:element>
+                <xsi:element name="RegularDetections">
+                  <xsi:complexType>
+                    <xsi:sequence>
+                      <xsi:element name="RegularDetection" type="ManagementPackMonitorTypeDetection" maxOccurs="unbounded" />
+                    </xsi:sequence>
+                  </xsi:complexType>
+                </xsi:element>
+                <xsi:element name="OnDemandDetections" minOccurs="0">
+                  <xsi:complexType>
+                    <xsi:sequence>
+                      <xsi:element name="OnDemandDetection" type="ManagementPackMonitorTypeDetection" maxOccurs="unbounded" />
+                    </xsi:sequence>
+                  </xsi:complexType>
+                </xsi:element>
+              </xsi:sequence>
+            </xsi:complexType>
+            <xsi:keyref name="MonitorMemberModulesKeyRef" refer="MonitorMemberModulesKey">
+              <xsi:selector xpath=".//Node" />
+              <xsi:field xpath="@ID" />
+            </xsi:keyref>
+            <xsi:key name="MonitorMemberModulesKey">
+              <xsi:selector xpath="./MemberModules/*" />
+              <xsi:field xpath="@ID" />
+            </xsi:key>
+          </xsi:element>
+        </xsi:sequence>
+        <xsi:attribute name="RunAs" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackSecureReference" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackMonitorTypeState" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackSubElement">
+        <xsi:attribute name="NoDetection" type="xsi:boolean" use="optional" default="false" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackMonitorTypeDetection" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="Node" type="ManagementPackModuleCompositionNodeType" />
+    </xsi:sequence>
+    <xsi:attribute name="MonitorTypeStateID" type="ManagementPackLocalIdentifierReference" use="required" />
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================Monitoring Section Types ===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackRule" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackElement">
+        <xsi:sequence>
+          <xsi:element name="Category" type="ManagementPackCategoryType" />
+          <xsi:element name="DataSources">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="DataSource" type="ManagementPackDataSourceModule" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+          <xsi:element name="ConditionDetection" type="ManagementPackConditionDetectionModule" minOccurs="0" />
+          <xsi:element name="WriteActions">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="WriteAction" type="ManagementPackWriteActionModule" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+        </xsi:sequence>
+        <xsi:attributeGroup ref="ManagementPackTargetingPropertiesWithMonitoringLevel" />
+        <xsi:attribute name="ConfirmDelivery" type="xsd:boolean" use="optional" default="false" />
+        <xsi:attribute name="Remotable" type="xsi:boolean" use="optional" default="true" />
+        <xsi:attribute name="Priority" type="ManagementPackWorkflowPriority" use="optional" default="Normal" />
+        <xsi:attribute name="DiscardLevel" use="optional" default="100">
+          <xsi:simpleType>
+            <xsi:restriction base="xsi:int">
+              <xsi:minInclusive value="1" />
+              <xsi:maxInclusive value="100" />
+            </xsi:restriction>
+          </xsi:simpleType>
+        </xsi:attribute>
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackTask" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Category" type="ManagementPackCategoryType" />
+          <xsi:choice>
+            <xsi:element name="ProbeAction" type="ManagementPackProbeActionModule" />
+            <xsi:element name="WriteAction" type="ManagementPackWriteActionModule" />
+          </xsi:choice>
+        </xsi:sequence>
+        <xsi:attributeGroup ref="ManagementPackTargetingProperties" />
+        <xsi:attribute name="Timeout" type="xsd:int" use="optional" default="300" />
+        <xsi:attribute name="Remotable" type="xsi:boolean" use="optional" default="true" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackConfigurationGroup" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:attribute name="Target" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackClass" />
+        <xsi:attribute name="Context" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackClass" />
+        <xsi:attribute name="ContextInstance" type="ManagementPackGuid" use="optional" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:simpleType name="ManagementPackMonitorSLOState" xsdgen:include="true">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="Yellow" />
+      <xsi:enumeration value="Unavailable" />
+      <xsi:enumeration value="Disabled" />
+      <xsi:enumeration value="Unmonitored" />
+      <xsi:enumeration value="PlannedMaintenance" />
+      <xsi:enumeration value="UnplannedMaintenance" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackPerformanceCounterSLOAggregationMethod" xsdgen:include="true">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="Average" />
+      <xsi:enumeration value="Min" />
+      <xsi:enumeration value="Max" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackPerformanceCounterSLODesiredObjective" xsdgen:include="true">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="UnderThreshold" />
+      <xsi:enumeration value="OverThreshold" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:complexType name="ManagementPackSLO" abstract="true" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackElement">
+        <xsi:attribute name="ConfigurationGroupId" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackConfigurationGroup" />
+        <xsi:attribute name="Target" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackClass" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackMonitorSLO" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackSLO">
+        <xsi:sequence>
+          <xsi:element name="MonitorId" type="ManagementPackIdentifierReference" minOccurs="1" maxOccurs="1" xsdgen:reference="ManagementPackMonitor" />
+          <xsi:element name="Goal" type="xsi:double" minOccurs="1" maxOccurs="1" />
+          <xsi:element name="UndesiredStates" minOccurs="0" maxOccurs="1">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="State" type="ManagementPackMonitorSLOState" minOccurs="0" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+        </xsi:sequence>
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackPerformanceCounterSLO" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackSLO">
+        <xsi:sequence>
+          <xsi:element name="RuleId" type="ManagementPackIdentifierReference" minOccurs="1" maxOccurs="1" xsdgen:reference="ManagementPackRule" />
+          <xsi:element name="PerfCounterAggregationMethod" type="ManagementPackPerformanceCounterSLOAggregationMethod" minOccurs="1" maxOccurs="1" />
+          <xsi:element name="Threshold" type="xsi:double" minOccurs="1" maxOccurs="1" />
+          <xsi:element name="DesiredObjective" type="ManagementPackPerformanceCounterSLODesiredObjective" minOccurs="1" maxOccurs="1" />
+        </xsi:sequence>
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>====================== Monitors ===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackMonitorAlertSettings" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="AlertOnState" type="HealthState" />
+      <xsi:element name="AutoResolve" type="xsi:boolean" />
+      <xsi:element name="AlertPriority" type="ManagementPackWorkflowPriority" />
+      <xsi:element name="AlertSeverity" type="ManagementPackAlertSeverity" default="Error" minOccurs="0" />
+      <xsi:element name="AlertParameters" minOccurs="0">
+        <xsi:complexType>
+          <xsi:sequence>
+            <xsi:element name="AlertParameter1" type="ManagementPackString" minOccurs="0" />
+            <xsi:element name="AlertParameter2" type="ManagementPackString" minOccurs="0" />
+            <xsi:element name="AlertParameter3" type="ManagementPackString" minOccurs="0" />
+            <xsi:element name="AlertParameter4" type="ManagementPackString" minOccurs="0" />
+            <xsi:element name="AlertParameter5" type="ManagementPackString" minOccurs="0" />
+            <xsi:element name="AlertParameter6" type="ManagementPackString" minOccurs="0" />
+            <xsi:element name="AlertParameter7" type="ManagementPackString" minOccurs="0" />
+            <xsi:element name="AlertParameter8" type="ManagementPackString" minOccurs="0" />
+            <xsi:element name="AlertParameter9" type="ManagementPackString" minOccurs="0" />
+            <xsi:element name="AlertParameter10" type="ManagementPackString" minOccurs="0" />
+          </xsi:sequence>
+        </xsi:complexType>
+      </xsi:element>
+    </xsi:sequence>
+    <xsi:attribute name="AlertMessage" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackStringResource" />
+  </xsi:complexType>
+  <xsi:simpleType name="ManagementPackAlertSeverity">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="Information" />
+      <xsi:enumeration value="Warning" />
+      <xsi:enumeration value="Error" />
+      <xsi:enumeration value="MatchMonitorHealth" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:complexType name="ManagementPackMonitor" abstract="true" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Category" type="ManagementPackCategoryType" />
+          <xsi:element name="AlertSettings" type="ManagementPackMonitorAlertSettings" minOccurs="0" xsdgen:nullable="true" />
+        </xsi:sequence>
+        <xsi:attributeGroup ref="ManagementPackTargetingPropertiesWithMonitoringLevel" />
+        <xsi:attribute name="ParentMonitorID" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackAggregateMonitor" />
+        <xsi:attribute name="Remotable" type="xsi:boolean" use="optional" default="true" />
+        <xsi:attribute name="Priority" type="ManagementPackWorkflowPriority" use="optional" default="Normal" />
+        <xsi:attribute name="RunAs" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackSecureReference" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackUnitMonitor" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackMonitor">
+        <xsi:sequence>
+          <xsi:element name="OperationalStates">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="OperationalState" type="ManagementPackUnitMonitorOperationalState" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+            <xsi:unique name="MonitorOPerationalStateUnique">
+              <xsi:selector xpath="OperationalState" />
+              <xsi:field xpath="@ID" />
+            </xsi:unique>
+          </xsi:element>
+          <xsi:element name="Configuration">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:any namespace="##targetNamespace" processContents="lax" minOccurs="0" maxOccurs="unbounded" xsdgen:id="Configuration" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+        </xsi:sequence>
+        <xsi:attribute name="TypeID" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackUnitMonitorType" />
+        <xsi:attribute name="ConfirmDelivery" type="xsd:boolean" use="optional" default="false" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackUnitMonitorOperationalState" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackSubElement">
+        <xsi:attribute name="MonitorTypeStateID" type="ManagementPackLocalIdentifierReference" use="required" />
+        <xsi:attribute name="HealthState" type="HealthState" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackAggregateMonitor" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackMonitor">
+        <xsi:sequence>
+          <xsi:element name="Algorithm" type="ManagementPackAggregateMonitorAlgorithm" />
+        </xsi:sequence>
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:simpleType name="ManagementPackAggregateMonitorAlgorithm">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="WorstOf" />
+      <xsi:enumeration value="BestOf" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:complexType name="ManagementPackDependencyMonitor" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackMonitor">
+        <xsi:sequence>
+          <xsi:element name="Algorithm" type="ManagementPackDependencyMonitorAlgorithm" />
+          <xsi:element name="AlgorithmParameter" type="ManagementPackString" minOccurs="0" />
+          <xsi:element name="MemberInMaintenance" type="HealthState" minOccurs="0" />
+          <xsi:element name="MemberUnAvailable" type="HealthState" minOccurs="0" />
+        </xsi:sequence>
+        <xsi:attribute name="RelationshipType" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackRelationship" />
+        <xsi:attribute name="MemberMonitor" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackMonitor" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:simpleType name="ManagementPackDependencyMonitorAlgorithm">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="WorstOf" />
+      <xsi:enumeration value="BestOf" />
+      <xsi:enumeration value="Percentage" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:annotation>
+    <xsi:documentation>====================== Diagnostic, Recovery and Discovery===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackDiagnostic" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Category" type="ManagementPackCategoryType" />
+          <xsi:element name="ConditionDetection" type="ManagementPackConditionDetectionModule" minOccurs="0" />
+          <xsi:element name="ProbeAction" type="ManagementPackProbeActionModule" />
+        </xsi:sequence>
+        <xsi:attributeGroup ref="ManagementPackTargetingPropertiesWithMonitoringLevel" />
+        <xsi:attribute name="Monitor" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackMonitor" />
+        <xsi:attribute name="ExecuteOnState" type="HealthState" use="required" />
+        <xsi:attribute name="Remotable" type="xsi:boolean" use="optional" default="true" />
+        <xsi:attribute name="Timeout" type="xsd:int" use="optional" default="300" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackRecovery" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Category" type="ManagementPackCategoryType" />
+          <!--
+      <xsi:choice>
+      <xsi:element name="ExecuteOnState" type="HealthState"/>
+      <xsi:element name="ExecuteOnDiagnostic" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackDiagnostic"/>
+      </xsi:choice>
+      -->
+          <xsi:element name="ConditionDetection" type="ManagementPackConditionDetectionModule" minOccurs="0" />
+          <xsi:element name="WriteAction" type="ManagementPackWriteActionModule" />
+        </xsi:sequence>
+        <xsi:attributeGroup ref="ManagementPackTargetingPropertiesWithMonitoringLevel" />
+        <xsi:attribute name="Monitor" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackMonitor" />
+        <xsi:attribute name="ResetMonitor" type="xsi:boolean" use="required" />
+        <xsi:attribute name="ExecuteOnState" type="HealthState" use="optional" />
+        <xsi:attribute name="ExecuteOnDiagnostic" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackDiagnostic" />
+        <xsi:attribute name="Remotable" type="xsi:boolean" use="optional" default="true" />
+        <xsi:attribute name="Timeout" type="xsd:int" use="optional" default="300" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDiscovery" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackElement">
+        <xsi:sequence>
+          <xsi:element name="Category" type="ManagementPackCategoryType" />
+          <xsi:element name="DiscoveryTypes">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="DiscoveryClass" type="ManagementPackDiscoveryClass" minOccurs="0" maxOccurs="unbounded" />
+                <xsi:element name="DiscoveryRelationship" type="ManagementPackDiscoveryRelationship" minOccurs="0" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+          <xsi:element name="DataSource" type="ManagementPackDataSourceModule" />
+        </xsi:sequence>
+        <xsi:attributeGroup ref="ManagementPackTargetingPropertiesWithMonitoringLevel" />
+        <xsi:attribute name="ConfirmDelivery" type="xsd:boolean" use="optional" default="false" />
+        <xsi:attribute name="Remotable" type="xsi:boolean" use="optional" default="true" />
+        <xsi:attribute name="Priority" type="ManagementPackWorkflowPriority" use="optional" default="Normal" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDiscoveryClass" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="Property" type="ManagementPackDiscoveryClassProperty" minOccurs="0" maxOccurs="unbounded" />
+    </xsi:sequence>
+    <xsi:attribute name="TypeID" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackClass" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDiscoveryRelationship" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="Property" type="ManagementPackDiscoveryRelationshipProperty" minOccurs="0" maxOccurs="unbounded" />
+    </xsi:sequence>
+    <xsi:attribute name="TypeID" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackRelationship" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDiscoveryClassProperty" xsdgen:include="true">
+    <xsi:attribute name="TypeID" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackClass" />
+    <xsi:attribute name="PropertyID" type="ManagementPackLocalIdentifierReference" use="required" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDiscoveryRelationshipProperty" xsdgen:include="true">
+    <xsi:attribute name="TypeID" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackRelationship" />
+    <xsi:attribute name="PropertyID" type="ManagementPackLocalIdentifierReference" use="required" />
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>====================== Modules ===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackModule" abstract="true" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackSubElement">
+        <xsi:sequence>
+          <xsi:any namespace="##targetNamespace" processContents="lax" minOccurs="0" maxOccurs="unbounded" xsdgen:id="Configuration" />
+        </xsi:sequence>
+        <xsi:attribute name="RunAs" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackSecureReference" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDataSourceModule" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackModule">
+        <xsi:attribute name="TypeID" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackDataSourceModuleType" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackConditionDetectionModule" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackModule">
+        <xsi:attribute name="TypeID" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackConditionDetectionModuleType" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackProbeActionModule" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackModule">
+        <xsi:attribute name="TypeID" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackProbeActionModuleType" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackWriteActionModule" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackModule">
+        <xsi:attribute name="TypeID" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackWriteActionModuleType" />
+        <xsi:attribute name="Target" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackClass" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================Overrides Section===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackOverride" abstract="true" mixed="false" xsdgen:include="true">
+    <xsi:complexContent mixed="false">
+      <xsi:extension base="ManagementPackElement">
+        <xsi:sequence>
+          <xsi:element name="Value" type="ManagementPackLongString" />
+        </xsi:sequence>
+        <xsi:attribute name="Context" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackClass" />
+        <xsi:attribute name="ContextInstance" type="ManagementPackGuid" use="optional" />
+        <xsi:attribute name="Enforced" type="xsi:boolean" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackCategoryOverride" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackOverride">
+        <xsi:attribute name="Category" type="ManagementPackCategoryType" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackMonitoringOverride" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackOverride" />
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackRuleOverride" abstract="true" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackOverride">
+        <xsi:attribute name="Rule" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackRule" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackRuleConfigurationOverride" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackRuleOverride">
+        <xsi:attribute name="Parameter" type="ManagementPackLocalIdentifierReference" use="required" />
+        <xsi:attribute name="Module" type="ManagementPackLocalIdentifierReference" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackRulePropertyOverride" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackRuleOverride">
+        <xsi:attribute name="Property" type="ManagementPackWorkflowProperty" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackMonitorOverride" abstract="true" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackOverride">
+        <xsi:attribute name="Monitor" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackMonitor" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackMonitorConfigurationOverride" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackMonitorOverride">
+        <xsi:attribute name="Parameter" type="ManagementPackLocalIdentifierReference" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackMonitorPropertyOverride" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackMonitorOverride">
+        <xsi:attribute name="Property" type="ManagementPackMonitorProperty" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDiagnosticOverride" abstract="true" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackOverride">
+        <xsi:attribute name="Diagnostic" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackDiagnostic" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDiagnosticConfigurationOverride" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackDiagnosticOverride">
+        <xsi:attribute name="Parameter" type="ManagementPackLocalIdentifierReference" use="required" />
+        <xsi:attribute name="Module" type="ManagementPackLocalIdentifierReference" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDiagnosticPropertyOverride" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackDiagnosticOverride">
+        <xsi:attribute name="Property" type="ManagementPackWorkflowProperty" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackRecoveryOverride" abstract="true" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackOverride">
+        <xsi:attribute name="Recovery" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackRecovery" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackRecoveryConfigurationOverride" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackRecoveryOverride">
+        <xsi:attribute name="Parameter" type="ManagementPackLocalIdentifierReference" use="required" />
+        <xsi:attribute name="Module" type="ManagementPackLocalIdentifierReference" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackRecoveryPropertyOverride" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackRecoveryOverride">
+        <xsi:attribute name="Property" type="ManagementPackWorkflowProperty" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDiscoveryOverride" abstract="true" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackOverride">
+        <xsi:attribute name="Discovery" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackDiscovery" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDiscoveryConfigurationOverride" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackDiscoveryOverride">
+        <xsi:attribute name="Parameter" type="ManagementPackLocalIdentifierReference" use="required" />
+        <xsi:attribute name="Module" type="ManagementPackLocalIdentifierReference" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDiscoveryPropertyOverride" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackDiscoveryOverride">
+        <xsi:attribute name="Property" type="ManagementPackWorkflowProperty" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackSecureReferenceOverride" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackOverride">
+        <xsi:attribute name="SecureReference" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackSecureReference" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:simpleType name="ManagementPackSecureReferenceOverrideProperty">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="SecureReferenceId" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackWorkflowProperty">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="Enabled" />
+      <xsi:enumeration value="TraceEnabled" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackMonitorProperty">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="Enabled" />
+      <xsi:enumeration value="TraceEnabled" />
+      <xsi:enumeration value="Algorithm" />
+      <xsi:enumeration value="AlgorithmPercentage" />
+      <xsi:enumeration value="DefaultState" />
+      <xsi:enumeration value="GenerateAlert" />
+      <xsi:enumeration value="AutoResolve" />
+      <xsi:enumeration value="AlertPriority" />
+      <xsi:enumeration value="AlertOnState" />
+      <xsi:enumeration value="AlertSeverity" />
+      <xsi:enumeration value="AlertMessage" />
+      <xsi:enumeration value="AlertParameter1" />
+      <xsi:enumeration value="AlertParameter2" />
+      <xsi:enumeration value="AlertParameter3" />
+      <xsi:enumeration value="AlertParameter4" />
+      <xsi:enumeration value="AlertParameter5" />
+      <xsi:enumeration value="AlertParameter6" />
+      <xsi:enumeration value="AlertParameter7" />
+      <xsi:enumeration value="AlertParameter8" />
+      <xsi:enumeration value="AlertParameter9" />
+      <xsi:enumeration value="AlertParameter10" />
+      <xsi:enumeration value="MemberInMaintenance" />
+      <xsi:enumeration value="MemberUnavailable" />
+      <xsi:enumeration value="IgnoreMemberInMaintenance" />
+      <xsi:enumeration value="IgnoreMemberUnavailable" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:annotation>
+    <xsi:documentation>======================Templates Section===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackTemplate" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackElement">
+        <xsi:sequence>
+          <xsi:element name="Configuration" type="ManagementPackConfigurationSchemaType" />
+          <xsi:element name="References" type="ManagementPackTemplateSection" />
+          <xsi:element name="Implementation" type="ManagementPackTemplateSection" />
+        </xsi:sequence>
+        <xsi:attribute name="Purpose" type="ManagementPackString" use="optional" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackTemplateSection" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:any namespace="##targetNamespace" processContents="lax" maxOccurs="unbounded" xsdgen:id="TemplateContent" />
+    </xsi:sequence>
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================Dashboard Types Section===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:simpleType name="ManagementPackDirectionEnum" xsdgen:include="true">
+    <xsi:restriction base="xsd:string">
+      <xsi:enumeration value="In" />
+      <xsi:enumeration value="Out" />
+      <xsi:enumeration value="Both" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:simpleType name="ManagementPackLifetimeEnum" xsdgen:include="true">
+    <xsi:restriction base="xsd:string">
+      <xsi:enumeration value="ReferenceCount" />
+      <xsi:enumeration value="ManagementPackElement" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:complexType name="ManagementPackComponentType" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Property" minOccurs="0" maxOccurs="unbounded" type="ManagementPackComponentTypeProperty" />
+        </xsi:sequence>
+        <xsi:attribute name="Base" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackElement" />
+        <xsi:attribute name="Target" type="xsd:string" />
+        <xsi:attribute name="Lifetime" type="ManagementPackLifetimeEnum" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackComponentTypeProperty" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:choice minOccurs="0" maxOccurs="1">
+        <xsi:element name="Component" type="ManagementPackComponentTypeReference" />
+        <xsi:element name="Reference" type="xsd:string" />
+        <xsi:element name="ComplexValue" type="ManagementPackComplexValueReference" />
+        <xsi:element name="ComplexValueCollection" type="ManagementPackComplexValueCollectionReference" />
+        <xsi:element name="SimpleValue" type="ManagementPackSimpleValueReference" />
+      </xsi:choice>
+    </xsi:sequence>
+    <xsi:attribute name="Name" type="xsd:string" />
+    <xsi:attribute name="Type" type="xsd:string" />
+    <xsi:attribute name="BindingDirection" type="ManagementPackDirectionEnum" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackComponentReference" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence />
+        <xsi:attribute name="TypeID" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackElement" use="required" />
+        <xsi:attribute name="Parent" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackElement" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackComponentOverride" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackElement">
+        <xsi:sequence>
+          <xsi:element name="Bindings" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="Binding" type="ManagementPackPropertyBinding" minOccurs="0" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+        </xsi:sequence>
+        <xsi:attribute name="TypeID" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackElement" use="required" />
+        <xsi:attribute name="Context" type="xsd:string" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackComponentTypeReference" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="Target" type="xsd:string" minOccurs="0" />
+      <xsi:element name="Binding" type="ManagementPackPropertyBinding" minOccurs="0" maxOccurs="unbounded" />
+    </xsi:sequence>
+    <xsi:attribute name="TypeId" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackElement" />
+    <xsi:attribute name="ReferenceName" type="xsd:string" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackComplexValueReference" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="Binding" type="ManagementPackPropertyBinding" minOccurs="0" maxOccurs="unbounded" />
+    </xsi:sequence>
+    <xsi:attribute name="Type" type="xsd:string" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackComplexValueCollectionReference" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="ComplexValue" type="ManagementPackComplexValueReference" minOccurs="0" maxOccurs="unbounded" />
+    </xsi:sequence>
+    <xsi:attribute name="Type" type="xsd:string" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackSimpleValueReference" xsdgen:include="true">
+    <xsi:attribute name="Type" type="xsd:string" use="required" />
+    <xsi:attribute name="Value" type="xsd:string" use="required" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackPropertyBinding" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:choice minOccurs="0" maxOccurs="1">
+        <xsi:element name="Component" type="ManagementPackComponentTypeReference" />
+        <xsi:element name="Reference" type="xsd:string" />
+        <xsi:element name="ComplexValue" type="ManagementPackComplexValueReference" />
+        <xsi:element name="ComplexValueCollection" type="ManagementPackComplexValueCollectionReference" />
+        <xsi:element name="SimpleValue" type="ManagementPackSimpleValueReference" />
+      </xsi:choice>
+    </xsi:sequence>
+    <xsi:attribute name="PropertyId" type="xsd:string" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackComponentImplementationUnit" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="ServiceOverride" type="ManagementPackServiceOverride" minOccurs="0" maxOccurs="unbounded" />
+      <xsi:choice minOccurs="0" maxOccurs="1">
+        <xsi:element name="ContractFactory" type="xsd:string" />
+        <xsi:element name="XamlFactory" type="xsd:string" />
+      </xsi:choice>
+      <xsi:element name="Property" minOccurs="0" maxOccurs="unbounded" type="ManagementPackComponentImplementationUnitProperty" />
+    </xsi:sequence>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackComponentImplementationUnitProperty" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:choice minOccurs="1" maxOccurs="1">
+        <xsi:element name="Component" type="ManagementPackComponentTypeReference" />
+        <xsi:element name="Reference" type="xsd:string" />
+        <xsi:element name="ComplexValue" type="ManagementPackComplexValueReference" />
+        <xsi:element name="ComplexValueCollection" type="ManagementPackComplexValueCollectionReference" />
+        <xsi:element name="SimpleValue" type="ManagementPackSimpleValueReference" />
+      </xsi:choice>
+    </xsi:sequence>
+    <xsi:attribute name="Name" type="xsd:string" use="required" />
+    <xsi:attribute name="Direction" type="ManagementPackDirectionEnum" use="required" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackComponentImplementationComposite" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="ServiceOverride" type="ManagementPackServiceOverride" minOccurs="0" maxOccurs="unbounded" />
+      <xsi:element name="Variable" minOccurs="0" maxOccurs="unbounded" type="ManagementPackComponentImplementationCompositeVariable" />
+      <xsi:element name="Component" type="ManagementPackComponentTypeReference" minOccurs="0" />
+      <xsi:element name="Base" type="ManagementPackBaseComponentReference" minOccurs="0" />
+    </xsi:sequence>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackComponentImplementationCompositeVariable" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:choice minOccurs="0" maxOccurs="1">
+        <xsi:element name="Component" type="ManagementPackComponentTypeReference" />
+        <xsi:element name="Reference" type="xsd:string" />
+        <xsi:element name="ComplexValue" type="ManagementPackComplexValueReference" />
+        <xsi:element name="ComplexValueCollection" type="ManagementPackComplexValueCollectionReference" />
+        <xsi:element name="SimpleValue" type="ManagementPackSimpleValueReference" />
+      </xsi:choice>
+    </xsi:sequence>
+    <xsi:attribute name="Id" type="xsd:string" use="required" />
+    <xsi:attribute name="Type" type="xsd:string" use="required" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackComponentImplementation" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:choice minOccurs="1" maxOccurs="1">
+            <xsi:element name="Unit" type="ManagementPackComponentImplementationUnit" />
+            <xsi:element name="Composite" type="ManagementPackComponentImplementationComposite" />
+          </xsi:choice>
+        </xsi:sequence>
+        <xsi:attribute name="TypeId" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackElement" use="required" />
+        <xsi:attribute name="Target" type="xsd:string" />
+        <xsi:attribute name="Platform" type="ManagementPackPlatform" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackBaseComponentReference" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="Target" type="xsd:string" minOccurs="0" />
+      <xsi:element name="Binding" type="ManagementPackPropertyBinding" minOccurs="0" maxOccurs="unbounded" />
+    </xsi:sequence>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackServiceOverride" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:choice minOccurs="0" maxOccurs="1">
+        <xsi:element name="Component" type="ManagementPackComponentTypeReference" />
+        <xsi:element name="Reference" type="xsd:string" />
+        <xsi:element name="ComplexValue" type="ManagementPackComplexValueReference" />
+        <xsi:element name="ComplexValueCollection" type="ManagementPackComplexValueCollectionReference" />
+        <xsi:element name="SimpleValue" type="ManagementPackSimpleValueReference" />
+      </xsi:choice>
+    </xsi:sequence>
+    <xsi:attribute name="ServiceId" type="xsd:string" />
+    <xsi:attribute name="Type" type="xsd:string" />
+    <xsi:attribute name="OriginalKnownAsVariable" type="xsd:string" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackComponentBehavior" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Bindings" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="Binding" type="ManagementPackPropertyBinding" minOccurs="0" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+        </xsi:sequence>
+        <xsi:attribute name="BehaviorTypeId" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackElement" use="required" />
+        <xsi:attribute name="ComponentTypeId" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackElement" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackBehaviorType" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Property" minOccurs="0" maxOccurs="unbounded" type="ManagementPackComponentTypeProperty" />
+        </xsi:sequence>
+        <xsi:attribute name="Base" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackElement" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:simpleType name="ManagementPackPlatform" xsdgen:include="true">
+    <xsi:restriction base="xsd:string">
+      <xsi:maxLength value="256" />
+      <xsi:pattern value="([A-Za-z0-9_]+)(, [A-Za-z0-9_]+)*" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:complexType name="ManagementPackBehaviorImplementationUnit" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:choice minOccurs="0" maxOccurs="1">
+        <xsi:element name="ContractFactory" type="xsd:string" />
+        <xsi:element name="XamlFactory" type="xsd:string" />
+      </xsi:choice>
+      <xsi:element name="Property" minOccurs="0" maxOccurs="unbounded" type="ManagementPackBehaviorImplementationUnitProperty" />
+    </xsi:sequence>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackBehaviorImplementationUnitProperty" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:choice minOccurs="1" maxOccurs="1">
+        <xsi:element name="Component" type="ManagementPackComponentTypeReference" />
+        <xsi:element name="Reference" type="xsd:string" />
+        <xsi:element name="ComplexValue" type="ManagementPackComplexValueReference" />
+        <xsi:element name="ComplexValueCollection" type="ManagementPackComplexValueCollectionReference" />
+        <xsi:element name="SimpleValue" type="ManagementPackSimpleValueReference" />
+      </xsi:choice>
+    </xsi:sequence>
+    <xsi:attribute name="Name" type="xsd:string" use="required" />
+    <xsi:attribute name="Direction" type="ManagementPackDirectionEnum" use="required" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackBehaviorImplementation" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Unit" minOccurs="0" type="ManagementPackBehaviorImplementationUnit" />
+        </xsi:sequence>
+        <xsi:attribute name="TypeId" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackElement" use="required" />
+        <xsi:attribute name="Platform" type="ManagementPackPlatform" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================Presentation Types Section===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackForm" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:any namespace="##targetNamespace" processContents="lax" minOccurs="0" maxOccurs="unbounded" xsdgen:id="Configuration" />
+        </xsi:sequence>
+        <xsi:attribute name="Target" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackElement" />
+        <xsi:attribute name="Assembly" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackAssemblyResource" />
+        <xsi:attribute name="BaseForm" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackForm" />
+        <xsi:attribute name="TypeName" type="xsi:string" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackUIPage" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Implementation" type="ManagementPackManagedImplementation" />
+        </xsi:sequence>
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackUIPageSet" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackElement">
+        <xsi:sequence>
+          <xsi:element name="UIPageReferences">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="UIPageReference" type="ManagementPackUIPageReference" maxOccurs="unbounded">
+                  <xsi:unique name="UIPageTextUnique">
+                    <xsi:selector xpath=".//*" />
+                    <xsi:field xpath="@ID" />
+                  </xsi:unique>
+                </xsi:element>
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+          <xsi:element name="OutputTransform" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded" xsdgen:id="OutputTransform" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+        </xsi:sequence>
+        <xsi:attribute name="TypeDefinitionID" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackElement" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackUIPageReference" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackElement">
+        <xsi:sequence>
+          <xsi:element name="InputParameters" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded" xsdgen:id="InputParameters" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+          <xsi:element name="InputTransform" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded" xsdgen:id="InputTransform" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+          <xsi:element name="Title" type="ManagementPackUIPageReferenceSubElement" minOccurs="0" />
+          <xsi:element name="SubTitle" type="ManagementPackUIPageReferenceSubElement" minOccurs="0" />
+          <xsi:element name="TabName" type="ManagementPackUIPageReferenceSubElement" minOccurs="0" />
+        </xsi:sequence>
+        <xsi:attribute name="PageID" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackUIPage" />
+        <xsi:attribute name="Usage" type="ManagementPackUIPageReferenceUsage" use="optional" default="CreationAndUpdate" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:simpleType name="ManagementPackUIPageReferenceUsage">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="CreationOnly" />
+      <xsi:enumeration value="CreationAndUpdate" />
+      <xsi:enumeration value="UpdateOnly" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:complexType name="ManagementPackUIPageReferenceSubElement" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackSubElement" />
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackViewType" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Configuration" type="ManagementPackConfigurationSchemaType" />
+          <xsi:element name="ViewImplementation" type="ManagementPackManagedImplementation" />
+        </xsi:sequence>
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================Presentation Section===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackConsoleTaskParameter" xsdgen:include="true">
+    <xsi:simpleContent>
+      <xsi:extension base="xsi:string">
+        <xsi:attribute name="Name" type="xsi:string" use="optional" />
+      </xsi:extension>
+    </xsi:simpleContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackConsoleTask" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Criteria" type="xsd:string" minOccurs="0" maxOccurs="1" />
+          <xsi:element name="Assembly" type="ManagementPackIdentifierReference" minOccurs="1" maxOccurs="1" xsdgen:reference="ManagementPackAssemblyResource" />
+          <xsi:element name="Handler" type="xsd:string" minOccurs="1" maxOccurs="1" />
+          <xsi:element name="Parameters" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="Argument" type="ManagementPackConsoleTaskParameter" minOccurs="0" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+        </xsi:sequence>
+        <xsi:attribute name="Enabled" type="xsi:boolean" use="optional" default="true" />
+        <xsi:attribute name="Target" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackElement" />
+        <xsi:attribute name="RequireOutput" type="xsi:boolean" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackFolder" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:attribute name="ParentFolder" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackFolder" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackFolderItem" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackElementInfo">
+        <xsi:attribute name="ID" type="xsi:string" use="required" xsdgen:generatedName="Name" />
+        <xsi:attribute name="Folder" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackFolder" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackImageReference" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackElementInfo">
+        <xsi:attribute name="ImageID" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackImage" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackView" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Category" type="xsd:string" />
+          <xsi:any namespace="##targetNamespace" processContents="lax" minOccurs="0" maxOccurs="unbounded" xsdgen:id="Configuration" />
+        </xsi:sequence>
+        <xsi:attributeGroup ref="ManagementPackTargetingProperties" />
+        <xsi:attribute name="TypeID" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackViewType" />
+        <xsi:attribute name="Visible" type="xsd:boolean" use="optional" default="true" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackStringResource" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackElement" />
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================Warehouse Section===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackWarehouseProperty" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackSubElement">
+        <xsi:attribute name="Type" type="ManagementPackEntityPropertyTypes" use="required" />
+        <xsi:attribute name="CaseSensitive" type="xsd:boolean" use="optional" default="false" />
+        <xsi:attribute name="MaxLength" use="optional" default="256">
+          <xsi:simpleType>
+            <xsi:restriction base="xsi:int">
+              <xsi:minInclusive value="1" />
+              <xsi:maxInclusive value="65536" />
+            </xsi:restriction>
+          </xsi:simpleType>
+        </xsi:attribute>
+        <xsi:attribute name="Nullable" type="xsd:boolean" use="optional" default="false" />
+        <xsi:attribute name="DefaultValue" type="xsd:anySimpleType" use="optional" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackWarehouseEntityType" xsdgen:include="true" abstract="true">
+    <xsi:annotation>
+      <xsi:documentation>
+        Abstract base type for all warehouse entities
+      </xsi:documentation>
+    </xsi:annotation>
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackWarehouseRelationalEntityType" xsdgen:include="true" abstract="true">
+    <xsi:annotation>
+      <xsi:documentation>
+        Abstract base type for all warehouse relational entities
+      </xsi:documentation>
+    </xsi:annotation>
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackWarehouseEntityType">
+        <xsi:sequence>
+          <xsi:element name="WaterMarkDependency" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackElement" minOccurs="0" maxOccurs="unbounded" />
+        </xsi:sequence>
+        <xsi:attribute name="Template" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackEnumeration" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackTypeWarehouseAttribute" xsdgen:include="true">
+    <xsi:annotation>
+      <xsi:documentation>
+        This types represents a property on a type, class or a projection type. 
+      </xsi:documentation>
+    </xsi:annotation>
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackSubElement">
+        <xsi:attribute name="Alias" type="xsi:string" use="optional" />
+        <xsi:attribute name="PropertyPath" type="xsi:string" use="required" />
+        <xsi:attribute name="SlowlyChangingAttribute" type="xsi:boolean" use="optional" />
+        <xsi:attribute name="DefaultValue" type="xsi:string" use="optional" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackOutriggerType" xsdgen:include="true">
+    <xsi:annotation>
+      <xsi:documentation>
+        Outriggers hang out of dimensions, they usually describe the state of the dimension member rather than the dimension member itself as the attributes do. 
+        It is a "snowflaking" technique where low cardinality "attributes" Often are seperated out in a different table. In this implementation of 
+        the warehouse outriggers differ from "snowflakes" in a way that a same outrigger is used across several dimensions, unlike snowflakes that 
+        are usually coupled to a dimension and by themselves are meaningful "dimension" of the business like product classification.
+        A Typical example of outriggers are things like Status which is self describing and is not a dimension by itself.
+      </xsi:documentation>
+    </xsi:annotation>
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackWarehouseRelationalEntityType">
+        <xsi:sequence>
+          <xsi:element name="Attribute" type="ManagementPackTypeWarehouseAttribute" minOccurs="1" maxOccurs="unbounded" />
+        </xsi:sequence>
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDimensionType" xsdgen:include="true">
+    <xsi:annotation>
+      <xsi:documentation>
+          Dimensions along with facts form the nucleus of all the data stored in the warehouse.
+          It is used to describe, qualify, or otherwise add meaning to "facts" in a star schema fact table.
+          Dimensions are the “by” items in analysis of facts “by” product, market, time, period, etc.
+          Descriptive data that describes the measurements (facts) that business users wish to analyze.
+        </xsi:documentation>
+    </xsi:annotation>
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackWarehouseRelationalEntityType">
+        <xsi:sequence>
+          <xsi:element name="InclusionAttribute" type="ManagementPackTypeWarehouseAttribute" minOccurs="0" maxOccurs="unbounded" />
+          <xsi:element name="ExclusionAttribute" type="ManagementPackTypeWarehouseAttribute" minOccurs="0" maxOccurs="unbounded" />
+        </xsi:sequence>
+        <xsi:attribute name="InferredDimension" type="xsi:boolean" />
+        <xsi:attribute name="Target" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackClass" use="required" />
+        <xsi:attribute name="HierarchySupport" type="ManagementPackDimensionHierarchySupport" use="required" />
+        <!--Extension is way of extending a dimension that is defined on the Type that is being "Extended" by adding additional properties-->
+        <xsi:attribute name="Extends" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackDimensionType" use="optional" />
+        <xsi:attribute name="Reconcile" type="xsi:boolean" use="optional" default="false" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackMeasureType" xsdgen:include="true">
+    <xsi:annotation>
+      <xsi:documentation>
+         A measure represents (a column that contains) quantifiable data, usually numeric, that can be aggregated.
+         Examples include numeric results, system usage, System response time, System uptime, etc.
+         a.k.a as KPI, measures are what organizations believe are vital for their success and wants to track/trend.
+       </xsi:documentation>
+    </xsi:annotation>
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackWarehouseEntityType">
+        <xsi:sequence>
+          <xsi:element name="DataType" type="ManagementPackWarehouseProperty" minOccurs="1" maxOccurs="1" />
+        </xsi:sequence>
+        <xsi:attribute name="Aggregation" type="ManagementPackMeasureAggregation" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackBaseFactType" xsdgen:include="true" abstract="true">
+    <xsi:annotation>
+      <xsi:documentation>
+        A measure represents (a column that contains) quantifiable data, usually numeric, that can be aggregated.
+        Examples include numeric results, system usage, System response time, System uptime, etc.
+        a.k.a as KPI, measures are what organizations believe are vital for their success and wants to track/trend.
+      </xsi:documentation>
+    </xsi:annotation>
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackWarehouseRelationalEntityType">
+        <xsi:attribute name="Domain" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackEnumeration" />
+        <xsi:attribute name="TimeGrain" type="ManagementPackTimeGrainEnum" use="required" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackFactTypeDimension">
+    <xsi:simpleContent>
+      <xsi:extension base="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackDimensionType">
+        <xsi:attribute name="Alias" type="xsi:string" use="optional" />
+        <xsi:attribute name="Nullable" type="xsd:boolean" use="optional" default="false" />
+      </xsi:extension>
+    </xsi:simpleContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackFactTypeOutrigger">
+    <xsi:simpleContent>
+      <xsi:extension base="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackOutriggerType">
+        <xsi:attribute name="Alias" type="xsi:string" use="optional" />
+        <xsi:attribute name="Nullable" type="xsd:boolean" use="optional" default="false" />
+      </xsi:extension>
+    </xsi:simpleContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackFactType" xsdgen:include="true">
+    <xsi:annotation>
+      <xsi:documentation>
+        A measure represents (a column that contains) quantifiable data, usually numeric, that can be aggregated.
+        Examples include numeric results, system usage, System response time, System uptime, etc.
+        a.k.a as KPI, measures are what organizations believe are vital for their success and wants to track/trend.
+      </xsi:documentation>
+    </xsi:annotation>
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackBaseFactType">
+        <xsi:sequence>
+          <xsi:element name="Dimensions" minOccurs="1" maxOccurs="1">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="Dimension" type="ManagementPackFactTypeDimension" minOccurs="1" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+          <xsi:element name="Outriggers" minOccurs="0" maxOccurs="1">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="Outrigger" type="ManagementPackFactTypeOutrigger" minOccurs="1" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+          <xsi:element name="DegenerateDimensions" minOccurs="0" maxOccurs="1">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="DegenerateDimension" type="ManagementPackWarehouseProperty" minOccurs="1" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+          <xsi:element name="Measures" minOccurs="0" maxOccurs="1">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="Measure" type="ManagementPackIdentifierReference" minOccurs="1" maxOccurs="unbounded" xsdgen:reference="ManagementPackMeasureType" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+        </xsi:sequence>
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackRelationshipFactTypeRelationships" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="RelationshipProperty" type="ManagementPackString" minOccurs="0" maxOccurs="unbounded" />
+    </xsi:sequence>
+    <xsi:attribute name="RelationshipType" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackRelationship" use="required" />
+    <xsi:attribute name="TargetDimension" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackDimensionType" use="optional" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackRelationshipFactType" xsdgen:include="true">
+    <xsi:annotation>
+      <xsi:documentation>
+        Relationship Facts are autogenerated facts that track relationship of types associated with a single source type
+      </xsi:documentation>
+    </xsi:annotation>
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackBaseFactType">
+        <xsi:sequence>
+          <xsi:element name="Relationships" type="ManagementPackRelationshipFactTypeRelationships" minOccurs="1" maxOccurs="unbounded" />
+        </xsi:sequence>
+        <xsi:attribute name="SourceType" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackClass" use="required" />
+        <xsi:attribute name="SourceDimension" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackDimensionType" use="optional" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackWarehouseModuleType" xsdgen:include="true">
+    <xsi:annotation>
+      <xsi:documentation>
+        ManagementPackWarehouseModuleType represents any element in the DW that can be executed. The possible use of this can be in defining
+        ETL code etc.  The classification of what the module is represented by the attribute WarehouseModule Type        
+      </xsi:documentation>
+    </xsi:annotation>
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackWarehouseEntityType">
+        <xsi:sequence>
+          <xsi:element name="PredecessorEntity" type="ManagementPackIdentifierReference" minOccurs="0" maxOccurs="unbounded" xsdgen:reference="ManagementPackElement" />
+        </xsi:sequence>
+        <xsi:attribute name="EtlModule" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackDataWarehouseScript" use="required" />
+        <xsi:attribute name="WarehouseModuleType" type="ManagementPackScriptTypeEnum" />
+        <xsi:attribute name="TargetWarehouseEntity" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackWarehouseRelationalEntityType" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================Reporting Section ===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackDataWarehouseScript" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="InstallScript" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackResource" />
+          <xsi:element name="UninstallScript" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackResource" />
+          <xsi:choice>
+            <xsi:element name="UpgradeScript" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackResource" />
+            <xsi:element name="UpgradeUnsupported" type="xsi:boolean" />
+          </xsi:choice>
+        </xsi:sequence>
+        <xsi:attribute name="DataWarehouseDataSet" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackDataWarehouseDataSet" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDataWarehouseDataSet" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Dependencies" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="DataWarehouseScript" type="ManagementPackIdentifierReference" minOccurs="0" maxOccurs="unbounded" xsdgen:reference="ManagementPackDataWarehouseScript" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+          <xsi:element name="Configuration" type="ManagementPackConfigurationSchemaType" />
+          <xsi:element name="Install" type="xsi:string" />
+          <xsi:element name="Uninstall" type="xsi:string" />
+          <xsi:choice>
+            <xsi:element name="Upgrade" type="xsi:string" />
+            <xsi:element name="UpgradeUnsupported" type="xsi:boolean" />
+          </xsi:choice>
+        </xsi:sequence>
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackReportDataWarehouseScript">
+    <xsi:simpleContent>
+      <xsi:extension base="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackDataWarehouseScript">
+        <xsi:attribute name="Domain" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackEnumeration" />
+      </xsi:extension>
+    </xsi:simpleContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackReport" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Dependencies" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="Dimension" type="ManagementPackIdentifierReference" minOccurs="0" maxOccurs="unbounded" xsdgen:reference="ManagementPackDimensionType" />
+                <xsi:element name="Fact" type="ManagementPackIdentifierReference" minOccurs="0" maxOccurs="unbounded" xsdgen:reference="ManagementPackBaseFactType" />
+                <xsi:element name="DataWarehouseScript" type="ManagementPackReportDataWarehouseScript" minOccurs="0" maxOccurs="unbounded" />
+                <xsi:element name="DataWarehouseDataSet" type="ManagementPackIdentifierReference" minOccurs="0" maxOccurs="unbounded" xsdgen:reference="ManagementPackDataWarehouseDataSet" />
+                <xsi:element name="ReportResource" type="ManagementPackIdentifierReference" minOccurs="0" maxOccurs="unbounded" xsdgen:reference="ManagementPackReportResource" />
+                <xsi:element name="Report" type="ManagementPackIdentifierReference" minOccurs="0" maxOccurs="unbounded" xsdgen:reference="ManagementPackReport" />
+                <xsi:element name="ReportParameterControl" type="ManagementPackIdentifierReference" minOccurs="0" maxOccurs="unbounded" xsdgen:reference="ManagementPackReportParameterControl" />
+                <xsi:element name="Rule" type="ManagementPackIdentifierReference" minOccurs="0" maxOccurs="unbounded" xsdgen:reference="ManagementPackRule" />
+                <xsi:element name="Task" type="ManagementPackIdentifierReference" minOccurs="0" maxOccurs="unbounded" xsdgen:reference="ManagementPackTask" />
+                <xsi:element name="View" type="ManagementPackIdentifierReference" minOccurs="0" maxOccurs="unbounded" xsdgen:reference="ManagementPackView" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+          <xsi:element ref="reporting:ParameterBlock" minOccurs="0" />
+          <xsi:element name="ReportDefinition" type="ManagementPackIdentifierReference" xsdgen:reference="ManagementPackReportResource" />
+          <xsi:element name="ReportStrings" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="ReportString" type="ManagementPackReportString" minOccurs="0" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+        </xsi:sequence>
+        <xsi:attribute name="Visible" type="xsi:boolean" use="required" />
+        <xsi:attribute name="Target" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackClass" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackLinkedReport" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Dependencies" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="DataWarehouseScript" type="ManagementPackIdentifierReference" minOccurs="0" maxOccurs="unbounded" xsdgen:reference="ManagementPackDataWarehouseScript" />
+                <xsi:element name="ReportParameterControl" type="ManagementPackIdentifierReference" minOccurs="0" maxOccurs="unbounded" xsdgen:reference="ManagementPackReportParameterControl" />
+                <xsi:element name="Rule" type="ManagementPackIdentifierReference" minOccurs="0" maxOccurs="unbounded" xsdgen:reference="ManagementPackRule" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+          <xsi:element ref="reporting:ParameterBlock" minOccurs="0" />
+          <xsi:element name="Parameters" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="Parameter" type="ManagementPackLinkedReportParameter" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+          <xsi:element name="ReportStrings" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="ReportString" type="ManagementPackReportString" minOccurs="0" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+        </xsi:sequence>
+        <xsi:attribute name="Base" type="ManagementPackIdentifierReference" use="required" xsdgen:reference="ManagementPackReport" />
+        <xsi:attribute name="Visible" type="xsi:boolean" use="required" />
+        <xsi:attribute name="Target" type="ManagementPackIdentifierReference" use="optional" xsdgen:reference="ManagementPackClass" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackLinkedReportParameter" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="Value" type="xsi:string" minOccurs="0" maxOccurs="unbounded" />
+    </xsi:sequence>
+    <xsi:attribute name="Name" type="ManagementPackString" use="required" />
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackReportString" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackSubElement" />
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackReportParameterControl" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackAccessibleElement">
+        <xsi:sequence>
+          <xsi:element name="Implementation" type="ManagementPackReportParameterControlImplementation" maxOccurs="unbounded" />
+        </xsi:sequence>
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackReportParameterControlImplementation" xsdgen:include="true">
+    <xsi:sequence>
+      <xsi:element name="Assembly" type="ManagementPackString" />
+      <xsi:element name="Type" type="ManagementPackString" />
+    </xsi:sequence>
+    <xsi:attribute name="Platform" type="ManagementPackReportPlatform" use="required" xsdgen:reference="ManagementPackDataType" />
+  </xsi:complexType>
+  <xsi:simpleType name="ManagementPackReportPlatform">
+    <xsi:restriction base="xsi:string">
+      <xsi:enumeration value="WinForm" />
+      <xsi:enumeration value="WebForm" />
+    </xsi:restriction>
+  </xsi:simpleType>
+  <xsi:annotation>
+    <xsi:documentation>======================Language Pack Section===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackLanguagePack" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackLanguageIdentity">
+        <xsi:sequence>
+          <xsi:element name="DisplayStrings" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="DisplayString" type="ManagementPackDisplayString" minOccurs="0" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+            <xsi:unique name="DisplayStringUnique">
+              <xsi:selector xpath="./DisplayString" />
+              <xsi:field xpath="@ElementID" />
+              <xsi:field xpath="@SubElementID" />
+            </xsi:unique>
+          </xsi:element>
+          <xsi:element name="KnowledgeArticles" minOccurs="0">
+            <xsi:complexType>
+              <xsi:sequence>
+                <xsi:element name="KnowledgeArticle" type="ManagementPackKnowledgeArticle" minOccurs="0" maxOccurs="unbounded" />
+              </xsi:sequence>
+            </xsi:complexType>
+          </xsi:element>
+        </xsi:sequence>
+        <xsi:attribute name="IsDefault" type="xsd:boolean" use="optional" default="false" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackDisplayString" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackElementInfo">
+        <xsi:sequence>
+          <xsi:element name="Name">
+            <xsi:simpleType>
+              <xsi:restriction base="xsd:string">
+                <xsi:minLength value="0" />
+                <xsi:maxLength value="4000" />
+              </xsi:restriction>
+            </xsi:simpleType>
+          </xsi:element>
+          <xsi:element name="Description" minOccurs="0">
+            <xsi:simpleType>
+              <xsi:restriction base="xsd:string">
+                <xsi:minLength value="0" />
+                <xsi:maxLength value="4000" />
+              </xsi:restriction>
+            </xsi:simpleType>
+          </xsi:element>
+        </xsi:sequence>
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:complexType name="ManagementPackKnowledgeArticle" xsdgen:include="true">
+    <xsi:complexContent>
+      <xsi:extension base="ManagementPackElementInfo">
+        <xsi:sequence>
+          <xsi:choice>
+            <xsi:element name="MamlContent">
+              <xsi:complexType>
+                <xsi:complexContent>
+                  <xsi:restriction base="maml:sectionsType">
+                    <xsi:sequence maxOccurs="unbounded">
+                      <xsi:element ref="maml:section" />
+                    </xsi:sequence>
+                  </xsi:restriction>
+                </xsi:complexContent>
+              </xsi:complexType>
+            </xsi:element>
+            <xsi:element name="HtmlContent" type="xsi:string" />
+          </xsi:choice>
+        </xsi:sequence>
+        <xsi:attribute name="Visible" type="xsd:boolean" use="optional" default="true" />
+      </xsi:extension>
+    </xsi:complexContent>
+  </xsi:complexType>
+  <xsi:annotation>
+    <xsi:documentation>======================Deletions section===========================================</xsi:documentation>
+  </xsi:annotation>
+  <xsi:complexType name="ManagementPackDeletion">
+    <xsi:attribute name="ElementID" type="ManagementPackLocalIdentifierReference" use="required" />
+    <xsi:attribute name="ElementType" type="ManagementPackString" use="required" />
+  </xsi:complexType>
+</xsi:schema>
