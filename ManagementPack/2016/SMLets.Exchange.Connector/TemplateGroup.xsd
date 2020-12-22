@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="TemplateGroup">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Instances">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Instance" type="TemplateInstance" minOccurs="0" maxOccurs="unbounded" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="DefaultType" type="xs:string" /> 
+    </xs:complexType>
+  </xs:element>
+
+  <xs:simpleType name="TemplateInstanceID">
+    <xs:restriction base="xs:ID">
+      <xs:minLength value="1" />
+      <xs:maxLength value="256" />
+      <xs:pattern value="[A-Za-z0-9_\.]+" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TemplateType">
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1" />
+      <xs:maxLength value="256" />
+      <xs:pattern value="[A-Za-z0-9_\.]+" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TemplateVersion">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9]{1,10}\.[0-9]{1,10}\.[0-9]{1,10}\.[0-9]{1,10}" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="BaseTemplateInstance" abstract="true">
+    <xs:attribute name="ID" type="TemplateInstanceID" use="required" />
+    <xs:attribute name="Type" type="TemplateType" use="required" />
+    <xs:attribute name="Version" type="TemplateVersion" use="optional" />
+  </xs:complexType>
+  
+  <xs:complexType name="TemplateInstance">
+    <xs:complexContent>
+      <xs:extension base="BaseTemplateInstance">
+        <xs:sequence>
+          <xs:any namespace="##targetNamespace" processContents="lax" minOccurs="0" maxOccurs="unbounded" />
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+</xs:schema>
