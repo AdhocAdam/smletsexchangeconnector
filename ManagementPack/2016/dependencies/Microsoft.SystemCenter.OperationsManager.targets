@@ -1,0 +1,388 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildBinPath)\Microsoft.Common.targets"/>
+
+  <!-- Default values for output paths -->
+  <PropertyGroup>
+    <VSACInstallDir Condition ="'$(VSACInstallDir)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VSAC\@InstallDir)</VSACInstallDir>
+    <FragmentSchemaDir Condition ="'$(FragmentSchemaDir)' ==''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VSAC\@FragmentSchemaDir)</FragmentSchemaDir>
+
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <BaseIntermediateOutputPath Condition=" '$(BaseIntermediateOutputPath)' == '' ">obj\</BaseIntermediateOutputPath>
+    <BaseOutputPath Condition=" '$(BaseOutputPath)' == '' ">bin\</BaseOutputPath>
+    <IntermediateOutputPath Condition=" '$(IntermediateOutputPath)' == '' ">$(BaseIntermediateOutputPath)$(Configuration)\</IntermediateOutputPath>
+    <OutputPath Condition=" '$(OutputPath)' == '' ">$(BaseOutputPath)$(Configuration)\</OutputPath>
+    <OutputFileName Condition=" '$(OutputFileName)' == '' ">$(ManagementPackName).mpb</OutputFileName>
+    <Version Condition=" '$(Version)' == '' ">1.0.0.0</Version>
+    
+    <!-- default auto increment version to enabled -->
+    <DeploymentAutoIncrementVersion Condition=" '$(DeploymentAutoIncrementVersion)' == '' ">true</DeploymentAutoIncrementVersion>
+    
+    <!-- enable MP verification by default -->
+    <SkipVerification Condition=" '$(SkipVerification)' == '' ">false</SkipVerification>
+    
+    <!-- remove unused references by default -->
+    <RemoveUnusedReferences Condition=" '$(RemoveUnusedReferences)' == '' ">true</RemoveUnusedReferences>
+  </PropertyGroup>
+  
+  <!-- multitargeting properties -->
+  <PropertyGroup>
+    <MpFrameworkIdentifier>SCMPInfra</MpFrameworkIdentifier>
+    <MpFrameworkVersion Condition=" '$(MpFrameworkVersion)' == '' ">v7.0.2</MpFrameworkVersion>
+    <MpFrameworkProfile Condition=" '$(MpFrameworkProfile)' == '' ">OM</MpFrameworkProfile>
+    <MpFrameworkMoniker>$(MpFrameworkIdentifier),Version=$(MpFrameworkVersion),Profile=$(MpFrameworkProfile)</MpFrameworkMoniker>   
+  </PropertyGroup>
+
+  <!-- settings specific to SM 2012 R2 -->
+  <PropertyGroup Condition=" '$(MpFrameworkMoniker)' == 'SCMPInfra,Version=v7.0.2,Profile=SM' ">
+    <MpFrameworkShortName>SM2012R2</MpFrameworkShortName>
+    <MpFragmentSchemaFileName>FragmentSchemaSM20.xsd</MpFragmentSchemaFileName>
+    <PackageEnabled>true</PackageEnabled>
+    <SchemaConversionEnabled>false</SchemaConversionEnabled>
+    <TargetSchemaVersion>SM2.0</TargetSchemaVersion>
+    <MpFrameworkPath Condition=" $(MpFrameworkPath) == '' ">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VSAC\SM2012R2@References)</MpFrameworkPath>
+
+    <UseLegacyMpVerify>false</UseLegacyMpVerify>
+    <FastMpVerify Condition=" '$(FastMpVerify)' == '' ">false</FastMpVerify>
+  </PropertyGroup>
+  
+  <!-- settings specific to SM 2012 SP1 -->
+  <PropertyGroup Condition=" '$(MpFrameworkMoniker)' == 'SCMPInfra,Version=v7.0.1,Profile=SM' ">
+    <MpFrameworkShortName>SM2012SP1</MpFrameworkShortName>
+    <MpFragmentSchemaFileName>FragmentSchemaSM20.xsd</MpFragmentSchemaFileName>
+    <PackageEnabled>true</PackageEnabled>
+    <SchemaConversionEnabled>false</SchemaConversionEnabled>
+    <TargetSchemaVersion>SM2.0</TargetSchemaVersion>
+    <MpFrameworkPath Condition=" $(MpFrameworkPath) == '' ">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VSAC\SM2012SP1@References)</MpFrameworkPath>
+
+    <UseLegacyMpVerify>false</UseLegacyMpVerify>
+    <FastMpVerify Condition=" '$(FastMpVerify)' == '' ">false</FastMpVerify>
+  </PropertyGroup>
+  
+  <!-- settings specific to SM 2012 -->
+  <PropertyGroup Condition=" '$(MpFrameworkMoniker)' == 'SCMPInfra,Version=v7.0,Profile=SM' ">
+    <MpFrameworkShortName>SM2012</MpFrameworkShortName>
+    <MpFragmentSchemaFileName>FragmentSchemaSM20.xsd</MpFragmentSchemaFileName>
+    <PackageEnabled>true</PackageEnabled>
+    <SchemaConversionEnabled>false</SchemaConversionEnabled>
+    <TargetSchemaVersion>SM2.0</TargetSchemaVersion>
+    <MpFrameworkPath Condition=" $(MpFrameworkPath) == '' ">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VSAC\SM2012@References)</MpFrameworkPath>
+
+    <UseLegacyMpVerify>false</UseLegacyMpVerify>
+    <FastMpVerify Condition=" '$(FastMpVerify)' == '' ">false</FastMpVerify>
+  </PropertyGroup>
+
+  <!-- settings specific to OM 2016 -->
+  <PropertyGroup Condition=" '$(MpFrameworkMoniker)' == 'SCMPInfra,Version=v7.0.3,Profile=OM' ">
+    <MpFrameworkShortName>OM2016</MpFrameworkShortName>
+    <MpFragmentSchemaFileName>FragmentSchemaOM20.xsd</MpFragmentSchemaFileName>
+    <PackageEnabled>true</PackageEnabled>
+    <SchemaConversionEnabled>false</SchemaConversionEnabled>
+    <TargetSchemaVersion>2.0</TargetSchemaVersion>
+    <MpFrameworkPath Condition=" $(MpFrameworkPath) == '' ">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VSAC\OM2016@References)</MpFrameworkPath>
+
+    <UseLegacyMpVerify>false</UseLegacyMpVerify>
+    <FastMpVerify Condition=" '$(FastMpVerify)' == '' ">true</FastMpVerify>
+  </PropertyGroup>
+
+  <!-- settings specific to OM 2019 -->
+  <PropertyGroup Condition=" '$(MpFrameworkMoniker)' == 'SCMPInfra,Version=v7.0.4,Profile=OM' ">
+    <MpFrameworkShortName>OM2019</MpFrameworkShortName>
+    <MpFragmentSchemaFileName>FragmentSchemaOM20.xsd</MpFragmentSchemaFileName>
+    <PackageEnabled>true</PackageEnabled>
+    <SchemaConversionEnabled>false</SchemaConversionEnabled>
+    <TargetSchemaVersion>2.0</TargetSchemaVersion>
+    <MpFrameworkPath Condition=" $(MpFrameworkPath) == '' ">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VSAC\OM2019@References)</MpFrameworkPath>
+
+    <UseLegacyMpVerify>false</UseLegacyMpVerify>
+    <FastMpVerify Condition=" '$(FastMpVerify)' == '' ">true</FastMpVerify>
+  </PropertyGroup>
+  
+  <!-- settings specific to OM 2012 R2 -->
+  <PropertyGroup Condition=" '$(MpFrameworkMoniker)' == 'SCMPInfra,Version=v7.0.2,Profile=OM' ">
+    <MpFrameworkShortName>OM2012R2</MpFrameworkShortName>
+    <MpFragmentSchemaFileName>FragmentSchemaOM20.xsd</MpFragmentSchemaFileName>
+    <PackageEnabled>true</PackageEnabled>
+    <SchemaConversionEnabled>false</SchemaConversionEnabled>
+    <TargetSchemaVersion>2.0</TargetSchemaVersion>
+    <MpFrameworkPath Condition=" $(MpFrameworkPath) == '' ">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VSAC\OM2012R2@References)</MpFrameworkPath>
+
+    <UseLegacyMpVerify>false</UseLegacyMpVerify>
+    <FastMpVerify Condition=" '$(FastMpVerify)' == '' ">true</FastMpVerify>
+  </PropertyGroup>
+  
+  <!-- settings specific to OM 2012 SP1 -->
+  <PropertyGroup Condition=" '$(MpFrameworkMoniker)' == 'SCMPInfra,Version=v7.0.1,Profile=OM' ">
+    <MpFrameworkShortName>OM2012SP1</MpFrameworkShortName>
+    <MpFragmentSchemaFileName>FragmentSchemaOM20.xsd</MpFragmentSchemaFileName>
+    <PackageEnabled>true</PackageEnabled>
+    <SchemaConversionEnabled>false</SchemaConversionEnabled>
+    <TargetSchemaVersion>2.0</TargetSchemaVersion>
+    <MpFrameworkPath Condition=" $(MpFrameworkPath) == '' ">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VSAC\OM2012SP1@References)</MpFrameworkPath>
+    
+    <UseLegacyMpVerify>false</UseLegacyMpVerify>
+    <FastMpVerify Condition=" '$(FastMpVerify)' == '' ">true</FastMpVerify>
+  </PropertyGroup>
+  
+  <!-- settings specific to OM 2012 -->
+  <PropertyGroup Condition=" '$(MpFrameworkMoniker)' == 'SCMPInfra,Version=v7.0,Profile=OM' ">
+    <MpFrameworkShortName>OM2012</MpFrameworkShortName>
+    <MpFragmentSchemaFileName>FragmentSchemaOM20.xsd</MpFragmentSchemaFileName>
+    <PackageEnabled>true</PackageEnabled>
+    <SchemaConversionEnabled>false</SchemaConversionEnabled>
+    <TargetSchemaVersion>2.0</TargetSchemaVersion>
+    <MpFrameworkPath Condition=" $(MpFrameworkPath) == '' ">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VSAC\OM2012@References)</MpFrameworkPath>
+
+    <UseLegacyMpVerify>false</UseLegacyMpVerify>
+    <FastMpVerify Condition=" '$(FastMpVerify)' == '' ">true</FastMpVerify>
+  </PropertyGroup>
+  
+  <!-- settings specific to OM 2007 R2 -->
+  <PropertyGroup Condition=" '$(MpFrameworkMoniker)' == 'SCMPInfra,Version=v6.1,Profile=OM' ">
+    <MpFrameworkShortName>OM2007R2</MpFrameworkShortName>
+    <MpFragmentSchemaFileName>FragmentSchemaOM10.xsd</MpFragmentSchemaFileName>
+    <PackageEnabled>false</PackageEnabled>
+    <SchemaConversionEnabled>true</SchemaConversionEnabled>
+    <TargetSchemaVersion>1.0</TargetSchemaVersion>
+    <MpFrameworkPath Condition=" $(MpFrameworkPath) == '' ">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VSAC\OM2007R2@References)</MpFrameworkPath>
+
+    <UseLegacyMpVerify>true</UseLegacyMpVerify>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <MpFragmentSchemaFileName Condition=" '$(MpFragmentSchemaFileName)' == '' ">FullFragmentSchema.xsd</MpFragmentSchemaFileName>
+  </PropertyGroup>
+
+  <!-- Common location for tasks assembly-->
+  <PropertyGroup>
+    <MpBuildTasksAssemblyFile Condition=" '$(MpBuildTasksAssemblyFile)' == '' ">Microsoft.SystemCenter.Authoring.Build.dll</MpBuildTasksAssemblyFile>
+  </PropertyGroup>
+  <UsingTask TaskName="ComputeEffectiveVersion" AssemblyFile="$(MpBuildTasksAssemblyFile)"/>
+  <UsingTask TaskName="VerifyManagementPackFragment" AssemblyFile="$(MpBuildTasksAssemblyFile)"/>
+  <UsingTask TaskName="MergeFragments" AssemblyFile="$(MpBuildTasksAssemblyFile)" />
+  <UsingTask TaskName="VerifyMergedManagementPack" AssemblyFile="$(MpBuildTasksAssemblyFile)"/>
+  <UsingTask TaskName="PackageToBundle" AssemblyFile="$(MpBuildTasksAssemblyFile)"/>
+  <UsingTask TaskName="SealMp" AssemblyFile="$(MpBuildTasksAssemblyFile)"/>
+  <UsingTask TaskName="PreProcessManagementPack" AssemblyFile="$(MpBuildTasksAssemblyFile)"/>
+  <UsingTask TaskName="ResolveBuiltMps" AssemblyFile="$(MpBuildTasksAssemblyFile)"/>
+  <UsingTask TaskName="ConvertSchema" AssemblyFile="$(MpBuildTasksAssemblyFile)"/>
+  <UsingTask TaskName="ResolveManagementPackReferences" AssemblyFile="$(MpBuildTasksAssemblyFile)"/>
+  <UsingTask TaskName="ResolveResources" AssemblyFile="$(MpBuildTasksAssemblyFile)"/>
+  <UsingTask TaskName="LegacyMpVerify" AssemblyFile="$(MpBuildTasksAssemblyFile)"/>
+  <UsingTask TaskName="VerifyManagementPackCompatibility" AssemblyFile="$(MpBuildTasksAssemblyFile)"/>
+  <UsingTask TaskName="CheckIfManagementPackPresent" AssemblyFile="$(MpBuildTasksAssemblyFile)"/>
+
+  <PropertyGroup>
+    <MergedMp>$(IntermediateOutputPath)\$(ManagementPackName).xml</MergedMp>
+    <IntermediateSealedMp>$(IntermediateOutputPath)\$(ManagementPackName).mp</IntermediateSealedMp>
+    <VerifiedMp>$(OutputPath)\$(ManagementPackName).xml</VerifiedMp>
+    <SealedMp>$(OutputPath)\$(ManagementPackName).mp</SealedMp>
+    <PackagedMp>$(OutputPath)\$(ManagementPackName).mpb</PackagedMp>
+    <SymbolTable>$(OutputPath)\$(ManagementPackName).pdb</SymbolTable>
+  </PropertyGroup>
+
+  <Target Name="Clean">
+    <Message Text="Starting MP Build Clean for $(ManagementPackName)." Importance="high" />
+
+    <!-- remove obj\$(Configuration) and bin\$(Configuration) directories -->
+    <!--<RemoveDir Directories="$(IntermediateOutputPath)" />
+    <RemoveDir Directories="$(OutputPath)" />-->
+    <ItemGroup>
+      <_IntermediateFilesToDelete Include="$(MergedMp)"/>
+      <_FinalXmlFilesToDelete Include="$(OutputPath)\$(ManagementPackName).xml"/>
+      <_FinalMpFilesToDelete Include="$(OutputPath)\$(ManagementPackName).mp"/>
+      <_FinalMpFilesToDelete Include="$(IntermediateOutputPath)\$(ManagementPackName).mp"/>
+      <_FinalMPBFilesToDelete Include="$(OutputPath)\$(ManagementPackName).mpb"/>
+      <_FinalPdbFilesToDelete Include="$(OutputPath)\$(ManagementPackName).pdb"/>
+      
+    </ItemGroup>
+
+    <Delete Files="@(_IntermediateFilesToDelete)"/>
+    <Delete Files="@(_FinalXmlFilesToDelete)"/>
+    <Delete Files="@(_FinalMpFilesToDelete)"/>
+    <Delete Files="@(_FinalMPBFilesToDelete)"/>
+    <Delete Files="@(_FinalPdbFilesToDelete)"/>    
+  </Target>
+
+  <Target Name="ComputeEffectiveVersion" Returns="@(EffectiveMpVersion)">
+    <PropertyGroup>
+      <!-- only set override if building in VS and version auto increment is enabled -->
+      <VersionOverride></VersionOverride>
+      <VersionOverride Condition=" '$(BuildingInsideVisualStudio)' == 'true' and '$(DeploymentAutoIncrementVersion)' == 'true' ">$(DeploymentNextVersion)</VersionOverride>
+    </PropertyGroup>
+    <ComputeEffectiveVersion Name="$(ManagementPackName)" Version="$(Version)" VersionOverride="$(VersionOverride)">
+      <Output TaskParameter="EffectiveVersion" ItemName="EffectiveMpVersion" />
+    </ComputeEffectiveVersion>
+  </Target>
+  
+  <Target Name="MpBuildInitialize" DependsOnTargets="ComputeEffectiveVersion">
+    <Message Text="Starting MP Build for $(ManagementPackName)." Importance="high" />
+    
+    <MakeDir Directories="$(OutputPath)" />
+    <MakeDir Directories="$(IntermediateOutputPath)" />   
+  </Target>
+  
+  <Target Name="MpBuildReferences">
+    <!--Build project references -->
+    <MSBuild Projects="@(ProjectReference)" RebaseOutputs="true" RunEachTargetSeparately="true" Condition=" '$(BuildingInsideVisualStudio)' != 'true' ">
+    </MSBuild>
+
+    <MSBuild Projects="@(ProjectReference)" Targets="BuiltProjectOutputGroup">
+      <Output TaskParameter="TargetOutputs" ItemName="BuiltMpFiles" />
+    </MSBuild>
+  </Target>
+  
+  <Target Name="MpVerifyFragments">
+    <VerifyManagementPackFragment FragmentFiles="@(Compile)" SchemaLocation="$(FragmentSchemaDir)$(MpFragmentSchemaFileName)" RequiredSchemaVersion="$(TargetSchemaVersion)" />  
+  </Target>
+  
+  <Target Name="MpResolveBuiltMps">
+    <ResolveBuiltMps ProjectReferences="@(ProjectReference)" BuiltFiles="@(BuiltMpFiles)">
+      <Output TaskParameter="ResolvedMps" ItemName="BuiltProjectFiles" />
+      <Output TaskParameter="ResolvedFiles" ItemName="BuiltArbitraryFiles" />
+    </ResolveBuiltMps>
+  </Target>
+
+  <Target Name="ResolveManagementPackReferences" Returns="@(ResolvedManagementPackReference)">
+    <ResolveManagementPackReferences MpFrameworkPaths="$(MpFrameworkPath)" ManagementPackReferences="@(ManagementPackReference)">
+      <Output TaskParameter="ResolvedManagementPackReferences" ItemName="ResolvedManagementPackReference" />
+    </ResolveManagementPackReferences>
+  </Target>
+
+  <Target Name="ResolveManagementPackResources">
+    <ResolveResources ResourceFiles="@(EmbeddedResource)" ManagedAssemblies="@(Reference);@(BuiltArbitraryFiles)" ResourceSearchPaths="@(ResourcePath)" MergedMp="$(MergedMp)">
+      <Output TaskParameter="ResolvedResources" ItemName="ResolvedManagementPackResource" />
+    </ResolveResources>
+  </Target>
+
+  <Target Name="MpMergeFragments">
+    <PropertyGroup>
+      <EffectiveMpVersion>%(EffectiveMpVersion.Version)</EffectiveMpVersion>
+    </PropertyGroup>
+    <MergeFragments Name="$(ManagementPackName)"
+                  FriendlyName="$(Name)"
+                  ProjectReferences="@(BuiltProjectFiles)"
+                  SealedReferences="@(ResolvedManagementPackReference)"
+                  Version="$(EffectiveMpVersion)"
+                  FragmentFiles="@(Compile)"
+                  OutputFileName="$(MergedMp)"
+                  SymbolTableFileName="$(SymbolTable)"
+                  RemoveUnusedReferences="$(RemoveUnusedReferences)">
+    </MergeFragments>
+  </Target>
+  
+  <Target Name="MpPreprocessManagementPack">
+    <PreProcessManagementPack Condition ="'@(EmbeddedResource)' != ''" UnsealedMpFile="$(MergedMp)" ResourceFiles="@(EmbeddedResource)" />
+  </Target>
+
+  <Target Name="MpSchemaConvert" Condition=" $(SchemaConversionEnabled) == 'true' " DependsOnTargets="ResolveManagementPackResources">
+    <ConvertSchema Input="$(MergedMp)" Output="$(MergedMp)" TargetSchemaVersion="$(TargetSchemaVersion)" Resources="@(ResolvedManagementPackResource)" />
+  </Target>
+  
+  <Target Name="MpVerifyManagementPack" Condition=" '$(SkipVerification)' != 'true' ">
+    <VerifyMergedManagementPack InputPath="$(VerificationInput)" SealedReferences="@(ResolvedManagementPackReference)" SymbolTablePath="$(SymbolTable)" ProjectReferences="@(BuiltProjectFiles)" ExcludedWarnings="$(ExcludedWarnings)" FastVerify="$(FastMpVerify)" Condition=" $(UseLegacyMpVerify) != 'true' " />
+    <LegacyMpVerify InputPath="$(VerificationInput)" SealedReferences="@(ResolvedManagementPackReference)" SymbolTablePath="$(SymbolTable)" ProjectReferences="@(BuiltProjectFiles)" Condition=" $(UseLegacyMpVerify) == 'true' " />
+  </Target>
+
+  <Target Name="PostVerifyCopy">
+    <Copy SourceFiles="@(PostVerificationCopy)" DestinationFolder ="$(OutputPath)" />
+  </Target>
+  
+  <Target Name="MpSeal">
+    <Delete Files="$(IntermediateSealedMp)" />
+    
+    <SealMp Condition =" '$(GenerateSealed)' == 'True' "
+            FastSealDir="D:\a\smletsexchangeconnector\smletsexchangeconnector\ManagementPack\2016\dependencies\"
+            UnsealedMpFile="$(MergedMp)"
+            OutputDir="$(IntermediateOutputPath)"
+            KeyFile="$(AssemblyOriginatorKeyFile)"
+            DelaySign="$(DelaySigning)"
+            Company="$(Company)"
+            Copyright="$(Copyright)" />
+
+    <PropertyGroup>
+      <VerificationInput Condition="$(GenerateSealed) == 'true' ">$(IntermediateSealedMp)</VerificationInput>
+      <VerificationInput Condition="$(GenerateSealed) != 'true' ">$(MergedMp)</VerificationInput>
+    </PropertyGroup>
+
+    <!-- items to copy if verification succeeds -->
+    <ItemGroup>
+      <PostVerificationCopy Include="$(MergedMp)" />
+      <PostVerificationCopy Include="$(IntermediateSealedMp)" Condition="$(GenerateSealed) == 'true' " />
+    </ItemGroup>
+  </Target>
+  
+  <Target Name="MpPackage" Condition=" $(PackageEnabled) == 'true' and $(DelaySigning) != 'true' " DependsOnTargets="ResolveManagementPackResources">
+    <PackageToBundle Condition =" '$(GenerateSealed)' != 'true' " BundleName="$(ManagementPackName)" MpFile ="$(MergedMp)" OutputDir="$(OutputPath)" SealedReferences="@(ResolvedManagementPackReference)"
+                     ProjectReferences="@(BuiltProjectFiles)" ResolvedResources="@(ResolvedManagementPackResource)" />
+    <PackageToBundle Condition =" '$(GenerateSealed)' == 'true' " BundleName="$(ManagementPackName)" MpFile ="$(SealedMp)" OutputDir="$(OutputPath)" SealedReferences="@(ResolvedManagementPackReference)"
+                     ProjectReferences="@(BuiltProjectFiles)" ResolvedResources="@(ResolvedManagementPackResource)" />
+  </Target>
+  
+  <Target Name="MpBuild" 
+          DependsOnTargets="MpBuildInitialize;MpBuildReferences;MpVerifyFragments;MpResolveBuiltMps;ResolveManagementPackReferences;MpMergeFragments;MpPreprocessManagementPack;MpSchemaConvert;MpSeal;MpVerifyManagementPack;PostVerifyCopy;MpPackage">		  
+  </Target>
+  
+  <Target Name="Build" DependsOnTargets="MpBuild" Outputs="$(VerifiedMp);$(SealedMp);$(PackagedMp)" />  
+  <Target Name ="Rebuild" DependsOnTargets="Clean;Build" />
+
+  <Target Name="BuiltProjectOutputGroup" Returns="@(BuiltProjectOutputGroupOutput)">
+    <ItemGroup>
+      <_IntermediateBuiltProjectOutputGroupOutput Include="$(OutputPath)\$(ManagementPackName).xml" Condition="Exists('$(OutputPath)\$(ManagementPackName).xml')" />
+      <_IntermediateBuiltProjectOutputGroupOutput Include="$(OutputPath)\$(ManagementPackName).mp" Condition="Exists('$(OutputPath)\$(ManagementPackName).mp')" />
+      <_IntermediateBuiltProjectOutputGroupOutput Include="$(OutputPath)\$(ManagementPackName).mpb" Condition="Exists('$(OutputPath)\$(ManagementPackName).mpb')" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <BuiltProjectOutputGroupOutput Include="%(_IntermediateBuiltProjectOutputGroupOutput.FullPath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="DebugSymbolsProjectOutputGroup" Returns="@(DebugSymbolsProjectOutputGroupOutput)">
+    <ItemGroup>
+      <_IntermediateDebugSymbolsProjectOutputGroupOutput Include="$(OutputPath)\$(ManagementPackName).pdb" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <DebugSymbolsProjectOutputGroupOutput Include="%(_IntermediateDebugSymbolsProjectOutputGroupOutput.FullPath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="SourceFilesProjectOutputGroup" Returns="@(SourceFilesProjectOutputGroupOutput)">
+    <ItemGroup>
+      <SourceFilesProjectOutputGroupOutput Include="%(Compile.FullPath)" />
+      <SourceFilesProjectOutputGroupOutput Include="%(EmbeddedResource.FullPath)" />
+    </ItemGroup>
+  </Target>
+  
+  <Target Name="AllProjectOutputGroups" DependsOnTargets="SourceFilesProjectOutputGroup;DebugSymbolsProjectOutputGroup;BuiltProjectOutputGroup" />
+
+  <Target Name="BuiltProjectOutputGroupDependencies" Returns="@(BuiltProjectOutputGroupDependency)" DependsOnTargets="MpBuildReferences;ResolveManagementPackReferences">
+    <ItemGroup>
+      <BuiltProjectOutputGroupDependency Include="%(ReferencePath.FullPath)" />
+      <BuiltProjectOutputGroupDependency Include="%(ResolvedManagementPackReference.HintPath)" />
+      <BuiltProjectOutputGroupDependency Include="%(BuiltMpFiles.FullPath)" />
+    </ItemGroup>
+  </Target>
+  
+  <Target Name="AllProjectOutputGroupsDependencies" DependsOnTargets="BuiltProjectOutputGroupDependencies" />
+
+  <Target Name="_CheckForInvalidConfigurationAndPlatform" Condition=" '$(Configuration)' != 'System.__ComObject' ">
+    <PropertyGroup>
+      <_InvalidConfigurationMessageText>The OutputPath property is not set for project '$(MSBuildProjectFile)'.  Please check to make sure that you have specified a valid combination of Configuration and Platform for this project.  Configuration='$(_OriginalConfiguration)'  Platform='$(_OriginalPlatform)'.</_InvalidConfigurationMessageText>
+      <_InvalidConfigurationMessageText Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(_InvalidConfigurationMessageText)  This error may also appear if some other project is trying to follow a project-to-project reference to this project, this project has been unloaded or is not included in the solution, and the referencing project does not build using the same or an equivalent Configuration or Platform.</_InvalidConfigurationMessageText>
+      <_InvalidConfigurationMessageText Condition="'$(BuildingInsideVisualStudio)' != 'true'">$(_InvalidConfigurationMessageText)  You may be seeing this message because you are trying to build a project without a solution file, and have specified a non-default Configuration or Platform that doesn't exist for this project.</_InvalidConfigurationMessageText>
+    </PropertyGroup>
+
+    <Error Condition=" '$(_InvalidConfigurationError)' == 'true' " Text="$(_InvalidConfigurationMessageText)"/>
+    <Warning Condition=" '$(_InvalidConfigurationWarning)' == 'true' " Text="$(_InvalidConfigurationMessageText)"/>
+
+    <Message Text="Configuration=$(Configuration)" Importance="Low" />
+    <Message Text="Platform=$(Platform)" Importance="Low" />
+
+    <!-- Although we try to ensure a trailing slash, it's possible to circumvent this if the property is set on the command line -->
+    <Error Condition="'$(OutDir)' != '' and !HasTrailingSlash('$(OutDir)')" Text="The OutDir property must end with a trailing slash." />
+    <Error Condition="'$(BaseIntermediateOutputPath)' != '' and !HasTrailingSlash('$(BaseIntermediateOutputPath)')" Text="The BaseIntermediateOutputPath must end with a trailing slash." />
+    <Error Condition="'$(IntermediateOutputPath)' != '' and !HasTrailingSlash('$(IntermediateOutputPath)')" Text="The IntermediateOutputPath must end with a trailing slash." />
+  </Target>
+</Project>
