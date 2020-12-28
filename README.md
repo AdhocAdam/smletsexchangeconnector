@@ -3,6 +3,11 @@
 </p>
 
 # SCSM Exchange Connector via SMlets
+<p align="left">
+  <img src="https://github.com/AdhocAdam/smletsexchangeconnector/workflows/Primary%20Branch%20-%20Build/badge.svg" />
+  <img src="https://github.com/AdhocAdam/smletsexchangeconnector/workflows/Dev%20Branch%20-%20Build/badge.svg" />
+</p>
+
 This PowerShell script leverages the [SMlets module](https://www.powershellgallery.com/packages/SMLets/) to build an open and flexible Exchange Connector for controlling Microsoft System Center Service Manager 2016+
 
 
