@@ -2139,7 +2139,7 @@ function Attach-EmailToWorkItem ($message, $workItemID)
         $emailAttachment.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
         $emailAttachment.Item($fileAttachmentClass, "DisplayName").Value = "message.eml"
         $emailAttachment.Item($fileAttachmentClass, "Description").Value = "ExchangeConversationID:$($message.ConversationID);"
-        $emailAttachment.Item($fileAttachmentClass, "Extension").Value = "eml"
+        $emailAttachment.Item($fileAttachmentClass, "Extension").Value = ".eml"
         $emailAttachment.Item($fileAttachmentClass, "Size").Value = $MemoryStream.Length
         $emailAttachment.Item($fileAttachmentClass, "AddedDate").Value = [DateTime]::Now.ToUniversalTime()
         $emailAttachment.Item($fileAttachmentClass, "Content").Value = $MemoryStream
