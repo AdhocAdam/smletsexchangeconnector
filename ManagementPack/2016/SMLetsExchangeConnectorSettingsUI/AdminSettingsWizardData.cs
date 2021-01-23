@@ -45,6 +45,7 @@ namespace SMLetsExchangeConnectorSettingsUI
         private Boolean boolCreateUsersInCMDB = false;
         private Boolean boolIncludeWholeEmail = false;
         private Boolean boolAttachEmailToWorkItem = false;
+        private Boolean boolMoveToDeletedItemsAfterProcessing = false;
         private Boolean boolProcessADGroupVote = false;
         private Boolean boolProcessMergeReplies = false;
         private Boolean boolMailboxRedirection = false;
@@ -617,6 +618,21 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.boolAttachEmailToWorkItem != value)
                 {
                     this.boolAttachEmailToWorkItem = value;
+                }
+            }
+        }
+        
+        public Boolean MoveToDeletedItemsAfterProcessing
+        {
+            get
+            {
+                return this.boolMoveToDeletedItemsAfterProcessing;
+            }
+            set
+            {
+                if (this.boolMoveToDeletedItemsAfterProcessing != value)
+                {
+                    this.boolMoveToDeletedItemsAfterProcessing = value;
                 }
             }
         }
@@ -2604,6 +2620,10 @@ namespace SMLetsExchangeConnectorSettingsUI
             //Processing Logic - attach email to work item on the related items tab
             try { this.AttachEmailToWorkItem = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "AttachEmailToWorkItem"].ToString()); }
             catch { this.AttachEmailToWorkItem = false; }
+            
+            //Processing Logic - move message to deleted items after processing
+            try { this.MoveToDeletedItemsAfterProcessing = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "DeleteMessageAfterProcessing"].ToString()); }
+            catch { this.MoveToDeletedItemsAfterProcessing = false; }
 
             //Processing Logic - Mail processing
             try { this.ProcessCalendarAppointments = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "ProcessCalendarAppointments"].ToString()); }
@@ -3327,6 +3347,7 @@ namespace SMLetsExchangeConnectorSettingsUI
 
             //Processing Logic
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "VoteOnBehalfOfADGroup"].Value = this.ProcessADGroupVote;
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "DeleteMessageAfterProcessing"].Value = this.MoveToDeletedItemsAfterProcessing;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "TakeRequiresSupportGroupMembership"].Value = this.EnforceSupportGroupTake;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "RemovePII"].Value = this.RemovePII;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseMailboxRedirection"].Value = this.UseMailboxRedirection;
