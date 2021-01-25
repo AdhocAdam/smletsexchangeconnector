@@ -380,7 +380,7 @@ $attachEmailToWorkItem = $smexcoSettingsMP.AttachEmailToWorkItem
 $voteOnBehalfOfGroups = $smexcoSettingsMP.VoteOnBehalfOfADGroup
 $fromKeyword = "$($smexcoSettingsMP.SCSMKeywordFrom)"
 $UseMailboxRedirection = $smexcoSettingsMP.UseMailboxRedirection
-if ($smexcoSettingsMPMailboxes) {$Mailboxes += $smexcoSettingsMPMailboxes | foreach-object {@{$_.MailboxAddress = @{"DefaultWiType"="$($_.MailboxTemplateWorkItemType)";"IRTemplate"="$($_.MailboxIRTemplateGUID)";"SRTemplate"="$($_.MailboxSRTemplateGUID)";"PRTemplate"="$($_.MailboxPRTemplateGUID)";"CRTemplate"="$($_.MailboxCRTemplateGUID)"};}}}
+if ($smexcoSettingsMPMailboxes) {$smexcoSettingsMPMailboxes | foreach-object {$Mailboxes += @{$_.MailboxAddress = @{"DefaultWiType"="$($_.MailboxTemplateWorkItemType)";"IRTemplate"="$($_.MailboxIRTemplateGUID)";"SRTemplate"="$($_.MailboxSRTemplateGUID)";"PRTemplate"="$($_.MailboxPRTemplateGUID)";"CRTemplate"="$($_.MailboxCRTemplateGUID)"}}}}
 $CreateNewWorkItemWhenClosed = $smexcoSettingsMP.CreateNewWorkItemIfWorkItemClosed
 $takeRequiresGroupMembership = $smexcoSettingsMP.TakeRequiresSupportGroupMembership
 $crSupportGroupEnumGUID = "$($smexcoSettingsMP.CRSupportGroupGUID.Guid)"
