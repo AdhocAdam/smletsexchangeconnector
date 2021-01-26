@@ -980,6 +980,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
     
     if (($smexcoSettingsMP.UseMailboxRedirection -eq $true) -and ($smexcoSettingsMPMailboxes.Count -ge 1))
     {
+        if ($loggingLevel -ge 4){New-SMEXCOEvent -Source "Get-TemplatesByMailbox" -EventID 0 -Severity "Information" -LogMessage "Mailbox redirection is being used. Attempting to identify Template to use."}
         $TemplatesForThisMessage = Get-TemplatesByMailbox $message
     }
     
@@ -3049,11 +3050,11 @@ function Read-MIMEMessage ($message)
 
 # Get-TemplatesByMailbox returns a hashtable with DefaultWiType, IRTemplate, SRTemplate, PRTemplate, and CRTemplate
 function Get-TemplatesByMailbox ($message)
-{      
-    Write-Debug "To: $($message.To)"
+{     
+    if ($loggingLevel -ge 1){New-SMEXCOEvent -Source "Get-TemplatesByMailbox" -EventID 1 -Severity "Information" -LogMessage "To: $($message.To)"}
     # There could be more than one addressee--loop through and match to our list
     foreach ($recipient in $message.To) {
-        Write-Debug $recipient.Address
+        if ($loggingLevel -ge 1){New-SMEXCOEvent -Source "Get-TemplatesByMailbox" -EventID 2 -Severity "Information" -LogMessage "Recipient Address: $($recipient.Address)"}
         
         # Break on the first match
         if ($Mailboxes[$recipient.Address]) {
@@ -3063,7 +3064,7 @@ function Get-TemplatesByMailbox ($message)
     }
 
     if ($MailboxToUse) {
-        Write-Debug "Redirection from known mailbox: $mailboxToUse.  Using custom templates."
+        if ($loggingLevel -ge 1){New-SMEXCOEvent -Source "Get-TemplatesByMailbox" -EventID 3 -Severity "Information" -LogMessage "Redirection from known mailbox: $mailboxToUse.  Using custom templates."}
         return $Mailboxes[$MailboxToUse]
     }
     else {
@@ -3080,7 +3081,7 @@ function Get-TemplatesByMailbox ($message)
         }
         
         if ($MailboxToUse) {
-            Write-Debug "Redirection from known mailbox: $mailboxToUse.  Found in CC field.  Using custom templates."
+            if ($loggingLevel -ge 1){New-SMEXCOEvent -Source "Get-TemplatesByMailbox" -EventID 4 -Severity "Information" -LogMessage "Redirection from known mailbox: $mailboxToUse.  Found in CC field.  Using custom templates."}
             return $Mailboxes[$MailboxToUse]
         }
         else {
@@ -3094,11 +3095,11 @@ function Get-TemplatesByMailbox ($message)
             }
 
             if ($MailboxToUse) {
-                Write-Debug "Redirection from known mailbox: $mailboxToUse.  Found in Return-Path field.  Using custom templates."
+                if ($loggingLevel -ge 1){New-SMEXCOEvent -Source "Get-TemplatesByMailbox" -EventID 5 -Severity "Information" -LogMessage "Redirection from known mailbox: $mailboxToUse.  Found in Return-Path field.  Using custom templates."}
                 return $Mailboxes[$MailboxToUse]
             }
             else {
-                Write-Debug "No redirection from known mailbox.  Using Default templates"
+                if ($loggingLevel -ge 1){New-SMEXCOEvent -Source "Get-TemplatesByMailbox" -EventID 6 -Severity "Warning" -LogMessage "No redirection from known mailbox.  Using Default templates"}
                 return $Mailboxes[$workflowEmailAddress]
             }
         }
