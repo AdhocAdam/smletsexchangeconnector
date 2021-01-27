@@ -3099,7 +3099,7 @@ function Get-TemplatesByMailbox ($message)
                 return $Mailboxes[$MailboxToUse]
             }
             else {
-                if ($loggingLevel -ge 1){New-SMEXCOEvent -Source "Get-TemplatesByMailbox" -EventID 6 -Severity "Warning" -LogMessage "No redirection from known mailbox.  Using Default templates"}
+                if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Get-TemplatesByMailbox" -EventID 6 -Severity "Warning" -LogMessage "No redirection from known mailbox.  Using Default templates"}
                 return $Mailboxes[$workflowEmailAddress]
             }
         }
