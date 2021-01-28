@@ -377,6 +377,7 @@ $minFileSizeInKB = "$($smexcoSettingsMP.MinimumFileAttachmentSize)"
 $createUsersNotInCMDB = $smexcoSettingsMP.CreateUsersNotInCMDB
 $includeWholeEmail = $smexcoSettingsMP.IncludeWholeEmail
 $attachEmailToWorkItem = $smexcoSettingsMP.AttachEmailToWorkItem
+$deleteAfterProcessing = $smexcoSettingsMP.DeleteMessageAfterProcessing
 $voteOnBehalfOfGroups = $smexcoSettingsMP.VoteOnBehalfOfADGroup
 $fromKeyword = "$($smexcoSettingsMP.SCSMKeywordFrom)"
 $UseMailboxRedirection = $smexcoSettingsMP.UseMailboxRedirection
@@ -4225,7 +4226,7 @@ foreach ($message in $inbox)
         #mark the message as read on Exchange, move to deleted items
         $message.IsRead = $true
         $hideInVar01 = $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve)
-        $hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)
+        if ($deleteAfterProcessing){$hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)}
     }
 
     #### Process a Digitally Signed message ####
@@ -4325,7 +4326,7 @@ foreach ($message in $inbox)
         #mark the message as read on Exchange, move to deleted items
         $message.IsRead = $true
         $hideInVar01 = $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve)
-        $hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)
+        if ($deleteAfterProcessing){$hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)}
         
         # Custom Event Handler
         if ($ceScripts) { Invoke-AfterProcessSignedEmail }
@@ -4393,7 +4394,7 @@ foreach ($message in $inbox)
             #mark the message as read on Exchange, move to deleted items
             $message.IsRead = $true
             $hideInVar01 = $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve)
-            $hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)
+            if ($deleteAfterProcessing){$hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)}
             
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
@@ -4456,7 +4457,7 @@ foreach ($message in $inbox)
             #mark the message as read on Exchange, move to deleted items
             $message.IsRead = $true
             $hideInVar01 = $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve)
-            $hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)
+            if ($deleteAfterProcessing){$hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)}
             
             # Custom Event Handler
             if ($ceScripts) { Invoke-AfterProcessSignedEmail }
