@@ -11,7 +11,7 @@ enabling other organizational level processes via email
 .NOTES
 Author: Adam Dzyacky
 Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2, Justin Workman, Brad Zima, bennyguk
-Reviewers: Tom Hendricks, Brian Weist
+Reviewers: Tom Hendricks, Brian Wiest
 Inspiration: The Cireson Community, Anders Asp, Stefan Roth, and (of course) Travis Wright for SMlets examples
 Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installed on SCSM workflow server by virtue of stock Exchange Connector).
     3rd party option: If you're a Cireson customer and make use of their paid SCSM Portal with HTML Knowledge Base this will work as is
