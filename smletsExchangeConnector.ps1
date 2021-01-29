@@ -10,7 +10,7 @@ enabling other organizational level processes via email
 
 .NOTES
 Author: Adam Dzyacky
-Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2, Justin Workman, Brad Zima, bennyguk
+Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2, Justin Workman, Brad Zima, bennyguk, Jan Schulz, Peter Miklian
 Reviewers: Tom Hendricks, Brian Wiest
 Inspiration: The Cireson Community, Anders Asp, Stefan Roth, and (of course) Travis Wright for SMlets examples
 Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installed on SCSM workflow server by virtue of stock Exchange Connector).
@@ -20,6 +20,12 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 3.2.0 = #233 - Feature, Mail can optionally be left in the inbox after processing
+                #212 - Bug, MultiMailbox had issue processing due to an incorrect data type
+                #255 - Bug, Attached emails use "eml" instead of ".eml" as their extension
+                #234 - Bug, Depending on how the connector's PowerShell is opened it could render non UTF8 characters
+                #263 - Documentation, typo in a contributor name
+                #252 - Documentation, typo in Settings UI for Review Activities tooltip
 Version: 3.1.0 = #10 - Optimization, Unable to process digitally signed AND encrypted messages
                 #223 - Enhancement, Ability to ignore emails with invalid digital signature
                 #224 - Feature, [pwsh] keyword for use with digital signatures
