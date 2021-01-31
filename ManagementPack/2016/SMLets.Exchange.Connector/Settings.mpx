@@ -367,6 +367,10 @@
                 MinLength="0"
                 Required="false" />
 
+            <Property ID="DeleteMessageAfterProcessing"
+                Type="bool"
+                Key="false"
+                Required="false" />
           
           <!--File Attachment-->
           <Property ID="EnforceFileAttachmentSettings"
