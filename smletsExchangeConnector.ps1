@@ -2458,6 +2458,7 @@ function Get-AssignedToWorkItemVolume ($SCSMUser)
     $assignedToVolume = New-Object System.Object
     $assignedToVolume | Add-Member -type NoteProperty -name SCSMUser -value $SCSMUser
     $assignedToVolume | Add-Member -type NoteProperty -name AssignedCount -value $assignedCount
+    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-AssignedToWorkItemVolume" -EventID 0 -Severity "Information" -LogMessage "$($assignedToVolume.SCSMUser.DisplayName) : $($assignedToVolume.AssignedCount)"}
     return $assignedToVolume
 }
 
