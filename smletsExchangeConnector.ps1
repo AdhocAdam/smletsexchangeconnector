@@ -2415,16 +2415,21 @@ function Get-TierMembership ($UserSamAccountName, $TierId) {
 
 function Get-TierMembers ($TierEnumId)
 {
+    #logging
+    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 0 -Severity "Information" -LogMessage "Get AD Group Associated with enum: $TierEnumId"}
+    
     #define classes
     $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping"
 
     #pull the group based on support tier mapping
     $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierEnumId }
     $groupId = $mapping.AdGroupId
+    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 1 -Severity "Information" -LogMessage "Get SCSM object/Group for: $groupId"}
 
     #get the AD group object name
     $grpInScsm = (Get-ScsmObject @scsmMGMTParams -Id $groupId)
     $grpSamAccountName = $grpInScsm.UserName
+    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 2 -Severity "Information" -LogMessage "AD Group Name: $grpSamAccountName"}
     
     #determine which domain to query, in case of multiple domains and trusts
     $AdRoot = (Get-AdDomain @adParams -Identity $grpInScsm.Domain).DNSRoot
@@ -2433,6 +2438,10 @@ function Get-TierMembers ($TierEnumId)
     {
         # Get the group membership
         [array]$supportTierMembers = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive | foreach-object {Get-SCSMObject -Class $domainUserClass -filter "Username -eq '$($_.samaccountname)'"}
+        if ($loggingLevel -ge 4) {
+            $supportTierMembersLogString = $supportTierMembers.Name -join ","
+            New-SMEXCOEvent -Source "Get-TierMembers" -EventID 3 -Severity "Information" -LogMessage "AD Group Members: $supportTierMembersLogString"
+        }
     }
     return $supportTierMembers
 }
