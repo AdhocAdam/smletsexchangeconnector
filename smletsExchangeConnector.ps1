@@ -3534,8 +3534,19 @@ function Get-AzureEmailLanguage ($TextToEvaluate)
     $originalBytes = [Text.Encoding]::Default.GetBytes($TextToEvaluate)
     $TextToEvaluate = [Text.Encoding]::Utf8.GetString($originalBytes)
 
-    #Send text to Azure for translation
-    $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToEvaluate)]"
+    try
+    {
+        #Send text to Azure for translation
+        $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToEvaluate)]"
+        if ($loggingLevel -ge 4) {
+            $azureEmailIdentifiedLang = "Language Identified: $($RecoResponse.translations[0].text)"
+            New-SMEXCOEvent -Source "Get-AzureEmailLanguage" -EventID 0 -Severity "Information" -LogMessage $azureEmailIdentifiedLang
+        }
+    }
+    catch
+    {
+        if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Get-AzureEmailLanguage" -EventID 1 -Severity "Error" -LogMessage $_.Exception}
+    }
 
     #Return the language with the highest match score
     return $RecoResponse | sort-object score | select-object -first 1
