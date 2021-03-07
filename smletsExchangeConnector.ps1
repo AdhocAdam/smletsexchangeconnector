@@ -2538,7 +2538,7 @@ function Get-SCSMWorkItemParent
     }
 }
 
-#inspired and modified from Travis Wright here - https://blogs.technet.microsoft.com/servicemanager/2013/01/16/creating-membership-and-hosting-objectsrelationships-using-new-scsmobjectprojection-in-smlets/
+#inspired and modified from Travis Wright here - https://techcommunity.microsoft.com/t5/system-center-blog/creating-membership-and-hosting-objects-relationships-using-new/ba-p/347537
 function Create-UserInCMDB ($userEmail)
 {
     #The ID for external users appears to be a GUID, but it can't be identified by get-scsmobject
@@ -2573,7 +2573,7 @@ function Create-UserInCMDB ($userEmail)
 }
 
 #combined previous 4 individual comment functions featured from versions 1 to 1.4.3 into single function and introduced more Action Log functionality
-#inspired and modified from Travis Wright here - https://blogs.technet.microsoft.com/servicemanager/2013/01/16/creating-membership-and-hosting-objectsrelationships-using-new-scsmobjectprojection-in-smlets/
+#inspired and modified from Travis Wright here - https://techcommunity.microsoft.com/t5/system-center-blog/creating-membership-and-hosting-objects-relationships-using-new/ba-p/347537
 #inspired and modified from Anders Asp here - http://www.scsm.se/?p=1423
 #inspired and modified from Xapity here - http://www.xapity.com/single-post/2016/11/27/PowerShell-for-SCSM-Updating-the-Action-Log
 function Add-ActionLogEntry {
