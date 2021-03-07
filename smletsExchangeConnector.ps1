@@ -2502,17 +2502,17 @@ function Get-SCSMWorkItemParent
         {
             If ($PSBoundParameters['WorkItemGUID'])
             {
-                Write-Verbose -Message "[PROCESS] Retrieving WI with GUID"
+                if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 0 -Severity "Information" -LogMessage "[PROCESS] Retrieving WI with GUID"}
                 $ActivityObject = Get-SCSMObject -Id $WorkItemGUID @scsmMGMTParams
             }
         
             #Retrieve Parent
-            Write-Verbose -Message "[PROCESS] Activity: $($ActivityObject.Name)"
-            Write-Verbose -Message "[PROCESS] Retrieving WI Parent"
+            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 1 -Severity "Information" -LogMessage "[PROCESS] Activity: $($ActivityObject.Name)"}
+            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 2 -Severity "Information" -LogMessage "[PROCESS] Retrieving WI Parent"}
             $ParentRelatedObject = Get-SCSMRelationshipObject -ByTarget $ActivityObject @scsmMGMTParams | ?{$_.RelationshipID -eq $wiContainsActivityRelClass.id.Guid}
             $ParentObject = $ParentRelatedObject.SourceObject
 
-            Write-Verbose -Message "[PROCESS] Activity: $($ActivityObject.Name) - Parent: $($ParentObject.Name)"
+            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 3 -Severity "Information" -LogMessage "[PROCESS] Activity: $($ActivityObject.Name) - Parent: $($ParentObject.Name)"}
 
             If ($ParentObject.ClassName -eq 'System.WorkItem.ServiceRequest' `
             -or $ParentObject.ClassName -eq 'System.WorkItem.ChangeRequest' `
@@ -2520,14 +2520,14 @@ function Get-SCSMWorkItemParent
             -or $ParentObject.ClassName -eq 'System.WorkItem.Incident' `
             -or $ParentObject.ClassName -eq 'System.WorkItem.Problem')
             {
-                Write-Verbose -Message "[PROCESS] This is the top level parent"
+                if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 4 -Severity "Information" -LogMessage "[PROCESS] This is the top level parent"}
                 
                 #return parent object Work Item
                 Return $ParentObject
             }
             Else
             {
-                Write-Verbose -Message "[PROCESS] Not the top level parent. Running against this object"
+                if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 5 -Severity "Information" -LogMessage "[PROCESS] Not the top level parent. Running against this object"}
                 Get-SCSMWorkItemParent -WorkItemGUID $ParentObject.Id.GUID @scsmMGMTParams
             }
         }
