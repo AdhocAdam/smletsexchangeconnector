@@ -4251,18 +4251,14 @@ foreach ($message in $inbox)
         if ($ceScripts) { Invoke-BeforeProcessSignedEmail }
         
         $response = Read-MIMEMessage $message
-
-        #check to see if there are attachments besides the smime.p7s signature
-        $signedAttachments = $response.Attachments
-        $signedAttachments = $signedAttachments | ?{$_.filename -ne "smime.p7s"}
    
         $email = New-Object System.Object
         $email | Add-Member -type NoteProperty -name From -value $response.From.address
         $email | Add-Member -type NoteProperty -name To -value $response.To
         $email | Add-Member -type NoteProperty -name CC -value $response.Cc
         $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
-        $email | Add-Member -type NoteProperty -name Attachments -value $signedAttachments
-        $email | Add-Member -type NoteProperty -name Body -value $response.TextBody
+        $email | Add-Member -type NoteProperty -name Attachments -value ($response.Attachments | ?{$_.filename -ne "smime.p7s"})
+        $email | Add-Member -type NoteProperty -name Body -value $response.TextBody.Trim()
         $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
         $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
         $email | Add-Member -type NoteProperty -name ID -Value $message.Id
@@ -4356,7 +4352,7 @@ foreach ($message in $inbox)
         $response = Read-MIMEMessage $message
         try {$decryptedBody = $response.Body.Decrypt($certStore)} catch {if($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Cryptography" -EventID 4 -Severity "Error" -LogMessage $_.Exception}}
 
-        #Messaged is encrypted
+        #Messaged is encrypted and/or signed
         if ($decryptedBody.ContentType.MimeType -eq "multipart/alternative")
         {         
             #check to see if there are attachments
@@ -4414,16 +4410,16 @@ foreach ($message in $inbox)
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
         }
-        #Message is encrypted and signed
-        if ($decryptedBody.ContentType.MimeType -eq "application/x-pkcs7-mime")
+        #Message is encrypted and/or signed, has at least 1 attachment that is an Exchange object
+        if ($decryptedBody.ContentType.MimeType -eq "multipart/mixed")
         {
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
             
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessSignedEmail }
-            
-            $isVerifiedSig = $decryptedBody.Verify($certStore, [ref]$decryptedBody)
+
+            $decryptedAttachments = $decryptedBody | ?{$_.isattachment -eq $true}
             
             $email = New-Object System.Object
             $email | Add-Member -type NoteProperty -name From -value $response.From.Address
@@ -4431,7 +4427,7 @@ foreach ($message in $inbox)
             $email | Add-Member -type NoteProperty -name CC -value $response.Cc
             $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
             $email | Add-Member -type NoteProperty -name Attachments -value $decryptedAttachments
-            $email | Add-Member -type NoteProperty -name Body -value $decryptedBody.GetTextBody("Text")
+            $email | Add-Member -type NoteProperty -name Body -value $decryptedBody[0].GetTextBody("Text")
             $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
             $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
             $email | Add-Member -type NoteProperty -name ID -Value $message.Id
@@ -4479,6 +4475,66 @@ foreach ($message in $inbox)
             
             # Custom Event Handler
             if ($ceScripts) { Invoke-AfterProcessEncryptedEmail }
+        }
+        #Messaged is encrypted and/or signed
+        if ($decryptedBody.ContentType.MimeType -eq "application/x-pkcs7-mime")
+        {       
+            #check to see if there are attachments
+            $isVerifiedSig = $decryptedBody.Verify($certStore, [ref]$decryptedBody)
+            $decryptedBodyWOAttachments = $decryptedBody | ?{($_.isattachment -eq $false)}
+            $decryptedAttachments = if ($decryptedBody.ContentType.MimeType -eq "multipart/alternative") {$decryptedBody | ?{$_.isattachment -eq $true}} else {$decryptedBody | select -skip 1}
+
+            $email = New-Object System.Object
+            $email | Add-Member -type NoteProperty -name From -value $response.From.Address
+            $email | Add-Member -type NoteProperty -name To -value $response.To
+            $email | Add-Member -type NoteProperty -name CC -value $response.Cc
+            $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
+            $email | Add-Member -type NoteProperty -name Attachments -value $decryptedAttachments
+            $email | Add-Member -type NoteProperty -name Body -value $(try {$decryptedBodyWOAttachments.GetTextBody("Text").Trim()} catch {$decryptedBodyWOAttachments[0].Text.Trim()})
+            $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
+            $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
+            $email | Add-Member -type NoteProperty -name ID -Value $message.Id
+            $email | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationId
+            $email | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
+            $email | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
+            
+            # Custom Event Handler
+            if ($ceScripts) { Invoke-BeforeProcessEmail }
+            
+            switch -Regex ($email.subject)
+            {
+                #### primary work item types ####
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+ 
+                #### activities ####
+                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
+                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
+
+                #### 3rd party classes, work items, etc. add here ####
+                "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
+
+                #### Email is a Reply and does not contain a [Work Item ID]
+                # Check if Work Item (Title, Body, Sender, CC, etc.) exists
+                # and the user was replying too fast to receive Work Item ID notification
+                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Verify-WorkItem $email}else{new-workitem $email $defaultNewWorkItem}}}
+
+                #### default action, create work item ####
+                default {new-workitem $email $defaultNewWorkItem}
+            }
+            
+            # Custom Event Handler
+            if ($ceScripts) { Invoke-AfterProcessEmail }
+
+            #mark the message as read on Exchange, move to deleted items
+            $message.IsRead = $true
+            $hideInVar01 = $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve)
+            if ($deleteAfterProcessing){$hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)}
+            
+            # Custom Event Handler
+            if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
         }
     }
 
