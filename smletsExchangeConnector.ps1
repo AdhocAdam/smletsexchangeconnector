@@ -4045,6 +4045,13 @@ $exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeServic
 #figure out if the workflow should be used
 if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Connector.15d8b765a2f8b63ead14472f9b3c12f0")} | Select-Object Enabled -ExpandProperty Enabled)
 {
+    #validate the Run As Account format to ensure it is an email address
+    $isValid365Address = ($ewsUsername + "@" + $ewsDomain) -match "^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$"
+    if (!($isValid365Address))
+    {
+        New-SMEXCOEvent -Source "General" -EventId 4 -LogMessage "The address/SCSM Run As Account used to sign into 365 is not a valid email address and is currently entered as $($ewsUsername + "@" + $ewsDomain). This will prevent a successfull connection. To fix this, go to the Run As account in SCSM and for the username enter it as an email address like user@domain.tld" -Severity "Error"
+    }
+
     #the workflow exists and it is enabled, determine how to connect to Exchange
     if ($UseExchangeOnline)
     {
@@ -4052,7 +4059,7 @@ if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Co
         $ReqTokenBody = @{
             Grant_Type    = "Password"
             client_Id     = $AzureClientID
-            Username      = $ewsusername
+            Username      = $ewsUsername + "@" + $ewsDomain
             Password      = $ewspassword
             Scope         = "https://outlook.office.com/EWS.AccessAsUser.All"
         }
