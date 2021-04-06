@@ -227,9 +227,6 @@ namespace SMLetsExchangeConnectorSettingsUI
         //logging
         private String strLoggingLevel = String.Empty;
         private String strLoggingType = String.Empty;
-        
-        //history
-        private IList<EnterpriseManagementObjectHistoryTransaction> emoHistoryTransactions;
 
         //management pack guid
         private Guid guidEnterpriseManagementObjectID = Guid.Empty;
@@ -2512,21 +2509,6 @@ namespace SMLetsExchangeConnectorSettingsUI
                 }
             }
         }
-        
-        public IList<EnterpriseManagementObjectHistoryTransaction> SMExcoSettingsHistory
-        {
-            get
-            {
-                return this.emoHistoryTransactions;
-            }
-            set
-            {
-                if (this.emoHistoryTransactions != value)
-                {
-                    this.emoHistoryTransactions = value;
-                }
-            }
-        }
 
         //management pack guid
         public Guid EnterpriseManagementObjectID
@@ -3313,10 +3295,6 @@ namespace SMLetsExchangeConnectorSettingsUI
             //logging
             this.LoggingLevel = emoAdminSetting[smletsExchangeConnectorSettingsClass, "LogLevel"].ToString();
             this.LoggingType = emoAdminSetting[smletsExchangeConnectorSettingsClass, "LogType"].ToString();
-            
-            //smlets exchange connector settings history
-            EnterpriseManagementObject smletsSettings = emg.EntityObjects.GetObject<EnterpriseManagementObject>(smletsExchangeConnectorSettingsClass.Id, ObjectQueryOptions.Default);
-            this.SMExcoSettingsHistory = emg.EntityObjects.GetObjectHistoryTransactions(smletsSettings);
 
             //load the MP
             this.EnterpriseManagementObjectID = emoAdminSetting.Id;
