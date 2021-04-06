@@ -1,4 +1,4 @@
-<wpfwiz:WizardRegularPageBase
+﻿<wpfwiz:WizardRegularPageBase
             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
@@ -16,5 +16,40 @@
         <TextBlock Margin="10,58,10,0" VerticalAlignment="Top" Height="32" FontWeight="Light" FontSize="14" TextWrapping="Wrap">
             <Run Text="View changes made to SMLets Exchange Connector Settings"/>
         </TextBlock>
+        
+        <ListView Name="dgHistory" Margin="0,90,0,0">
+            <ListView.View>
+                <GridView >
+                    <!-- DateOccured and UserName we won't show as headers, because that's how we're performing GroupBy seen below -->
+                    <GridViewColumn Header="Property" Width="Auto" DisplayMemberBinding="{Binding Property}" />
+                    <GridViewColumn Header="Old Value" Width="Auto" DisplayMemberBinding="{Binding OldValue}" />
+                    <GridViewColumn Header="New Value" Width="Auto" DisplayMemberBinding="{Binding NewValue}" />
+                </GridView>
+            </ListView.View>
+
+            <!-- Having created a "PropertyGroupDescription" in the code-behind, use "Binding = Name" to reference the grouped value. In this case, DateOccured -->
+            <ListView.GroupStyle>
+                <GroupStyle>
+                    <GroupStyle.ContainerStyle>
+                        <Style TargetType="{x:Type GroupItem}">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate>
+                                        <Expander IsExpanded="True">
+                                            <Expander.Header>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="Black" FontSize="12" VerticalAlignment="Bottom" />
+                                                </StackPanel>
+                                            </Expander.Header>
+                                            <ItemsPresenter />
+                                        </Expander>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </GroupStyle.ContainerStyle>
+                </GroupStyle>
+            </ListView.GroupStyle>
+        </ListView>
     </Grid>
 </wpfwiz:WizardRegularPageBase>
