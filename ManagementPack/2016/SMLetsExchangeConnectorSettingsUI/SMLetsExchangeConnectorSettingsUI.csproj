@@ -89,9 +89,6 @@
     <Compile Include="Forms\AzureSpeech.xaml.cs">
       <DependentUpon>AzureSpeech.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Forms\HistoryForm.xaml.cs">
-      <DependentUpon>HistoryForm.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Forms\Logging.xaml.cs">
       <DependentUpon>Logging.xaml</DependentUpon>
     </Compile>
