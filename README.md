@@ -23,6 +23,15 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>History Pane (v3.3)</i></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src ="/FeatureScreenshots/history.png" /></td>
+    <td width="auto">Whether you're changing regex patterns, updating machine learning scores, or modifying any other configuration in the connector. Now just like any Work Item or Config Item you can view the complete history of changes you and your peers have set.</td>
+  </tr>
+</table>
+<table border="0">
+  <tr>
     <td colspan="3"><i>[pwsh] Keyword (v3.1)</i></td>
   </tr>
   <tr>
