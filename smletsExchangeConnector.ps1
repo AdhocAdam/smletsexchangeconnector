@@ -2424,16 +2424,21 @@ function Get-TierMembership ($UserSamAccountName, $TierId) {
 
 function Get-TierMembers ($TierEnumId)
 {
+    #logging
+    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 0 -Severity "Information" -LogMessage "Get AD Group Associated with enum: $TierEnumId"}
+    
     #define classes
     $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping"
 
     #pull the group based on support tier mapping
     $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierEnumId }
     $groupId = $mapping.AdGroupId
+    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 1 -Severity "Information" -LogMessage "Get SCSM object/Group for: $groupId"}
 
     #get the AD group object name
     $grpInScsm = (Get-ScsmObject @scsmMGMTParams -Id $groupId)
     $grpSamAccountName = $grpInScsm.UserName
+    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 2 -Severity "Information" -LogMessage "AD Group Name: $grpSamAccountName"}
     
     #determine which domain to query, in case of multiple domains and trusts
     $AdRoot = (Get-AdDomain @adParams -Identity $grpInScsm.Domain).DNSRoot
@@ -2442,6 +2447,10 @@ function Get-TierMembers ($TierEnumId)
     {
         # Get the group membership
         [array]$supportTierMembers = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive | foreach-object {Get-SCSMObject -Class $domainUserClass -filter "Username -eq '$($_.samaccountname)'"}
+        if ($loggingLevel -ge 4) {
+            $supportTierMembersLogString = $supportTierMembers.Name -join ","
+            New-SMEXCOEvent -Source "Get-TierMembers" -EventID 3 -Severity "Information" -LogMessage "AD Group Members: $supportTierMembersLogString"
+        }
     }
     return $supportTierMembers
 }
@@ -2458,6 +2467,7 @@ function Get-AssignedToWorkItemVolume ($SCSMUser)
     $assignedToVolume = New-Object System.Object
     $assignedToVolume | Add-Member -type NoteProperty -name SCSMUser -value $SCSMUser
     $assignedToVolume | Add-Member -type NoteProperty -name AssignedCount -value $assignedCount
+    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-AssignedToWorkItemVolume" -EventID 0 -Severity "Information" -LogMessage "$($assignedToVolume.SCSMUser.DisplayName) : $($assignedToVolume.AssignedCount)"}
     return $assignedToVolume
 }
 
@@ -2511,17 +2521,17 @@ function Get-SCSMWorkItemParent
         {
             If ($PSBoundParameters['WorkItemGUID'])
             {
-                Write-Verbose -Message "[PROCESS] Retrieving WI with GUID"
+                if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 0 -Severity "Information" -LogMessage "[PROCESS] Retrieving WI with GUID"}
                 $ActivityObject = Get-SCSMObject -Id $WorkItemGUID @scsmMGMTParams
             }
         
             #Retrieve Parent
-            Write-Verbose -Message "[PROCESS] Activity: $($ActivityObject.Name)"
-            Write-Verbose -Message "[PROCESS] Retrieving WI Parent"
+            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 1 -Severity "Information" -LogMessage "[PROCESS] Activity: $($ActivityObject.Name)"}
+            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 2 -Severity "Information" -LogMessage "[PROCESS] Retrieving WI Parent"}
             $ParentRelatedObject = Get-SCSMRelationshipObject -ByTarget $ActivityObject @scsmMGMTParams | ?{$_.RelationshipID -eq $wiContainsActivityRelClass.id.Guid}
             $ParentObject = $ParentRelatedObject.SourceObject
 
-            Write-Verbose -Message "[PROCESS] Activity: $($ActivityObject.Name) - Parent: $($ParentObject.Name)"
+            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 3 -Severity "Information" -LogMessage "[PROCESS] Activity: $($ActivityObject.Name) - Parent: $($ParentObject.Name)"}
 
             If ($ParentObject.ClassName -eq 'System.WorkItem.ServiceRequest' `
             -or $ParentObject.ClassName -eq 'System.WorkItem.ChangeRequest' `
@@ -2529,14 +2539,14 @@ function Get-SCSMWorkItemParent
             -or $ParentObject.ClassName -eq 'System.WorkItem.Incident' `
             -or $ParentObject.ClassName -eq 'System.WorkItem.Problem')
             {
-                Write-Verbose -Message "[PROCESS] This is the top level parent"
+                if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 4 -Severity "Information" -LogMessage "[PROCESS] This is the top level parent"}
                 
                 #return parent object Work Item
                 Return $ParentObject
             }
             Else
             {
-                Write-Verbose -Message "[PROCESS] Not the top level parent. Running against this object"
+                if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 5 -Severity "Information" -LogMessage "[PROCESS] Not the top level parent. Running against this object"}
                 Get-SCSMWorkItemParent -WorkItemGUID $ParentObject.Id.GUID @scsmMGMTParams
             }
         }
@@ -3543,8 +3553,19 @@ function Get-AzureEmailLanguage ($TextToEvaluate)
     $originalBytes = [Text.Encoding]::Default.GetBytes($TextToEvaluate)
     $TextToEvaluate = [Text.Encoding]::Utf8.GetString($originalBytes)
 
-    #Send text to Azure for translation
-    $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToEvaluate)]"
+    try
+    {
+        #Send text to Azure for translation
+        $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToEvaluate)]"
+        if ($loggingLevel -ge 4) {
+            $azureEmailIdentifiedLang = "Language Identified: $($RecoResponse.translations[0].text)"
+            New-SMEXCOEvent -Source "Get-AzureEmailLanguage" -EventID 0 -Severity "Information" -LogMessage $azureEmailIdentifiedLang
+        }
+    }
+    catch
+    {
+        if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Get-AzureEmailLanguage" -EventID 1 -Severity "Error" -LogMessage $_.Exception}
+    }
 
     #Return the language with the highest match score
     return $RecoResponse | sort-object score | select-object -first 1
