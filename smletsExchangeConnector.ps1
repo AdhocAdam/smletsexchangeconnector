@@ -2476,6 +2476,9 @@ function Get-AssignedToWorkItemVolume ($SCSMUser)
 
 function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
 {
+    #log how Dynamic Analyst Assignment will be executed
+    if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 0 -Severity "Information" -LogMessage "Using Dynamic Analyst Assignment: $DynamicWorkItemAssignment"}
+
     #get the template's support group members
     $supportGroupMembers = Get-TierMembers -TierEnumID $SupportGroupID
 
@@ -2499,6 +2502,7 @@ function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
         else
         {
             <#the config variable has a value that wasn't part of the set#>
+            if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 1 -Severity "Error" -LogMessage "$DynamicWorkItemAssignment is not supported. No user will be assigned to $($WorkItem.Name). Please use the Settings UI to properly set this value."}
         }
     
         #assign the work item to the selected user and set the first assigned date
@@ -2506,6 +2510,7 @@ function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
         {
             New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $userToAssign -Bulk @scsmMGMTParams
             Set-SCSMObject -SMObject $WorkItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams
+            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 2 -Severity "Information" -LogMessage "Assigned $($WorkItem.Name) to $($userToAssign.Name)"}
         }
 }
 
