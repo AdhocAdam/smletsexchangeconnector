@@ -63,8 +63,8 @@ namespace SMLetsExchangeConnectorSettingsUI
                             //Simplify properties to variables
                             propertyName = hpc.Key.Name;
                             // propertyName = hpc.Key.DisplayName;
-                            oldVal = hpc.Value.First.Value.ToString();
-                            newVal = hpc.Value.Second.Value.ToString();
+                            try { oldVal = hpc.Value.First.Value.ToString(); } catch { oldVal = ""; }
+                            try { newVal = hpc.Value.Second.Value.ToString(); } catch { newVal = ""; }
 
                             //Create a new custom history object
                             smexcoConfigHistory.Add(new CustomHistoryObject()
