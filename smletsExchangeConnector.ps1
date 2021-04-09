@@ -20,6 +20,9 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 3.3.0 = #90 - Bug, Cannot Convert null object to base 64 in Attach-FileToWorkItem
+                #265 - Feature, Settings History
+                #174 - Bug, Merge Reply Logic to handle subjects with multiple RE: patterns
 Version: 3.2.0 = #233 - Feature, Mail can optionally be left in the inbox after processing
                 #212 - Bug, MultiMailbox had issue processing due to an incorrect data type
                 #255 - Bug, Attached emails use "eml" instead of ".eml" as their extension
@@ -2190,161 +2193,170 @@ function Attach-FileToWorkItem ($message, $workItemId)
     
     foreach ($attachment in $message.Attachments)
     {
-
-        if ($attachment.gettype().BaseType.Name -like "Mime*")
+        #determine if a File Attachment
+        if ($attachment.GetType().Name -eq "FileAttachment")
         {
-            $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
-            $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
-            $AttachmentContent = [convert]::FromBase64String($base64attachment)
-    
-            #Create a new MemoryStream object out of the attachment data
-            $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
-    
-            if ($MemoryStream.Length -gt $minFileSizeInKB+"kb" -and ($checkAttachmentSettings -eq $false `
-                -or ($existingAttachmentsCount -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
+            $attachment.Load()
+            if ($attachment.GetType().BaseType.Name -like "Mime*")
             {
-                #Create the attachment object itself and set its properties for SCSM
-                $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
-                $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
-                $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.FileName
-                #optional, use Azure Cognitive Services Vision, OCR, or Speech to set the Description property on the file
-                try
-                {
-                    $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
-                    $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
-                    if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
-                    {
-                        $azureVisionResult = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
-                        $azureVisionTags = $azureVisionResult.tags.name | select-object -first 5
-                        $azureVisionTags = $azureVisionTags -join ','
-                        #if one of the Tags is "text" then attempt to extract text from the image through OCR as long as the confidence is greater than 90
-                        if ($azureVisionTags.contains("text"))
-                        {
-                            $AzureOCRConfidence = [math]::round((($azureVisionTags.tags | select-object name, confidence | ?{$_.name -eq "text"} | select-object confidence -ExpandProperty confidence) * 100), 2)
-                            if ($AzureOCRConfidence -ge 90)
-                            {
-                                $azureImageText = Get-AzureEmailImageText -imageToEvalute $AttachmentContent
-                                $ocrResult = $azureImageText.regions.Lines.words.text -join " "
-                                if ($ocrResult.length -ge 256){$ocrResult = $ocrResult.Substring(0,255)}
-                                #set the Description on the File Attachment with the Tags + OCR result
-                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags);Desc:$ocrResult"
-                            }
-                            else
-                            {
-                                #The OCR confidence wasn't high enough to test
-                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
-                            }
-                        }
-                        else
-                        {
-                            #The returned Azure Vision Tags don't contain the word "text"
-                            $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
-                        }
-                    }
-                    if (((".wav", ".ogg") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureSpeech))
-                    {
-                        $NewFile.Item($fileAttachmentClass, "Description").Value = (Get-AzureSpeechEmailAudioText -audioFileToEvaluate $attachmentContent).DisplayText
-                    }
-                }
-                catch
-                {
-                    #file doesn't have a parseable extension or the call to Azure Vision/Speech failed
-                }
-                $NewFile.Item($fileAttachmentClass, "Size").Value = $MemoryStream.Length
-                $NewFile.Item($fileAttachmentClass, "AddedDate").Value = [DateTime]::Now.ToUniversalTime()
-                $NewFile.Item($fileAttachmentClass, "Content").Value = $MemoryStream
-        
-                #Add the attachment to the work item and commit the changes
-                $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemId'" @scsmMGMTParams
-                $WorkItemProjection.__base.Add($NewFile, $fileAttachmentRelClass.Target)
-                $WorkItemProjection.__base.Commit()
+                #This is a signed/encrypted attachment
+                $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
+                $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
+                $AttachmentContent = [convert]::FromBase64String($base64attachment)
     
-                #create the Attached By relationship if possible
-                $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
-                if ($attachedByUser)
+                #Create a new MemoryStream object out of the attachment data
+                $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
+            }
+            else
+            {
+                #this is a regular File Attachment
+                $base64attachment = [System.Convert]::ToBase64String($attachment.Content)
+                $AttachmentContent = [convert]::FromBase64String($base64attachment)
+    
+                #Create a new MemoryStream object out of the attachment data
+                $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
+            }
+        }
+        #determine if an Item Attachment
+        elseif ($attachment.GetType().Name -eq "ItemAttachment")
+        {
+            if ($attachment.GetType().BaseType.Name -like "Mime*")
+            {
+                #This is a signed/encrypted attachment
+                $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
+                $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
+                $AttachmentContent = [convert]::FromBase64String($base64attachment)
+    
+                #Create a new MemoryStream object out of the attachment data
+                $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
+            }
+            else
+            {
+                $attachment.Load($mimeContentSchema)
+                $base64attachment = [System.Convert]::ToBase64String($attachment.Item.MimeContent.Content)
+                $AttachmentContent = [convert]::FromBase64String($base64attachment)
+                   
+                #Create a new MemoryStream object out of the attachment data
+                $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
+
+                #update the $attachment variable's name
+                if ($attachment.Item.GetType().Name -eq "EmailMessage")
                 {
-                    New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
-                    $existingAttachmentsCount += 1
+                    $attachment | Add-Member -NotePropertyName DisplayName -NotePropertyValue ($attachment.Name + ".eml")
+                    $attachment | Add-Member -NotePropertyName Extension -NotePropertyValue ".eml"
                 }
             }
         }
+        #must be part of a digitally signed/encrypted message, determine Mime Object type
         else
         {
-            $attachment.Load()
-            $base64attachment = [System.Convert]::ToBase64String($attachment.Content)
-    
-            #Convert the Base64String back to bytes
-            $AttachmentContent = [convert]::FromBase64String($base64attachment)
-    
-            #Create a new MemoryStream object out of the attachment data
-            $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
-    
-            if ($MemoryStream.Length -gt $minFileSizeInKB+"kb" -and ($checkAttachmentSettings -eq $false `
-                -or ($existingAttachmentsCount -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
+            #generic mime attachment
+            if ($attachment.GetType().Name -eq "MimePart")
+            {   
+                #Create a new MemoryStream object out of the attachment data
+                $MemoryStream = New-Object System.IO.MemoryStream #($signedAttachArray,0,$signedAttachArray.Length)
+                $attachment.Content.DecodeTo($MemoryStream)
+
+                #update the $attachment variable's name
+                $attachment | Add-Member -NotePropertyName Name -NotePropertyValue $attachment.FileName
+            }
+            #exchange object that is a mime type
+            if ($attachment.GetType().Name -eq "MessagePart")
             {
-                #Create the attachment object itself and set its properties for SCSM
-                $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
-                $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
+                #This is an attached email
+                $MemoryStream = New-Object System.IO.MemoryStream
+                $attachment.WriteTo($MemoryStream)
+
+                #$attachment.Load($mimeContentSchema)
+                $base64attachment = [System.Convert]::ToBase64String($MemoryStream.ToArray())
+                $AttachmentContent = [convert]::FromBase64String($base64attachment)
+                   
+                #Create a new MemoryStream object out of the attachment data
+                $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
+
+                #update the $attachment variable's name
+                $attachment | Add-Member -NotePropertyName Name -NotePropertyValue "message.eml"
+                $attachment | Add-Member -NotePropertyName Extension -NotePropertyValue ".eml"
+            }
+        }
+
+        #create the File Attachment object for SCSM
+        if ($MemoryStream.Length -gt $minFileSizeInKB+"kb" -and ($checkAttachmentSettings -eq $false -or ($existingAttachmentsCount -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
+        {
+            #Create the attachment object itself and set its properties for SCSM
+            $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
+            $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
+            if (!($attachment.DisplayName))
+            {
                 $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name
-                #optional, use Azure Cognitive Services Vision, OCR, or Speech to set the Description property on the file
-                try
+            }
+            else
+            {
+                $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.DisplayName
+            }
+            #optional, use Azure Cognitive Services Vision, OCR, or Speech to set the Description property on the file
+            try
+            {
+                if (!($attachment.Extension))
                 {
                     $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
                     $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
-                    if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
+                }
+                $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
+                $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
+                if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
+                {
+                    $azureVisionResult = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
+                    $azureVisionTags = $azureVisionResult.tags.name | select-object -first 5
+                    $azureVisionTags = $azureVisionTags -join ','
+                    #if one of the Tags is "text" then attempt to extract text from the image through OCR as long as the confidence is greater than 90
+                    if ($azureVisionTags.contains("text"))
                     {
-                        $azureVisionResult = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
-                        $azureVisionTags = $azureVisionResult.tags.name | select-object -first 5
-                        $azureVisionTags = $azureVisionTags -join ','
-                        #if one of the Tags is "text" then attempt to extract text from the image through OCR as long as the confidence is greater than 90
-                        if ($azureVisionTags.contains("text"))
+                        $AzureOCRConfidence = [math]::round((($azureVisionTags.tags | select-object name, confidence | ?{$_.name -eq "text"} | select-object confidence -ExpandProperty confidence) * 100), 2)
+                        if ($AzureOCRConfidence -ge 90)
                         {
-                            $AzureOCRConfidence = [math]::round((($azureVisionTags.tags | select-object name, confidence | ?{$_.name -eq "text"} | select-object confidence -ExpandProperty confidence) * 100), 2)
-                            if ($AzureOCRConfidence -ge 90)
-                            {
-                                $azureImageText = Get-AzureEmailImageText -imageToEvalute $AttachmentContent
-                                $ocrResult = $azureImageText.regions.Lines.words.text -join " "
-                                if ($ocrResult.length -ge 256){$ocrResult = $ocrResult.Substring(0,255)}
-                                #set the Description on the File Attachment with the Tags + OCR result
-                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags);Desc:$ocrResult"
-                            }
-                            else
-                            {
-                                #The OCR confidence wasn't high enough to test
-                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
-                            }
+                            $azureImageText = Get-AzureEmailImageText -imageToEvalute $AttachmentContent
+                            $ocrResult = $azureImageText.regions.Lines.words.text -join " "
+                            if ($ocrResult.length -ge 256){$ocrResult = $ocrResult.Substring(0,255)}
+                            #set the Description on the File Attachment with the Tags + OCR result
+                            $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags);Desc:$ocrResult"
                         }
                         else
                         {
-                            #The returned Azure Vision Tags don't contain the word "text"
+                            #The OCR confidence wasn't high enough to test
                             $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
                         }
                     }
-                    if (((".wav", ".ogg") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureSpeech))
+                    else
                     {
-                        $NewFile.Item($fileAttachmentClass, "Description").Value = (Get-AzureSpeechEmailAudioText -audioFileToEvaluate $attachmentContent).DisplayText
+                        #The returned Azure Vision Tags don't contain the word "text"
+                        $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
                     }
                 }
-                catch
+                if (((".wav", ".ogg") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureSpeech))
                 {
-                    #file doesn't have a parseable extension or the call to Azure Vision/Speech failed
+                    $NewFile.Item($fileAttachmentClass, "Description").Value = (Get-AzureSpeechEmailAudioText -audioFileToEvaluate $attachmentContent).DisplayText
                 }
-                $NewFile.Item($fileAttachmentClass, "Size").Value = $MemoryStream.Length
-                $NewFile.Item($fileAttachmentClass, "AddedDate").Value = [DateTime]::Now.ToUniversalTime()
-                $NewFile.Item($fileAttachmentClass, "Content").Value = $MemoryStream
+            }
+            catch
+            {
+                #file doesn't have a parseable extension or the call to Azure Vision/Speech failed
+            }
+            $NewFile.Item($fileAttachmentClass, "Size").Value = $MemoryStream.Length
+            $NewFile.Item($fileAttachmentClass, "AddedDate").Value = [DateTime]::Now.ToUniversalTime()
+            $NewFile.Item($fileAttachmentClass, "Content").Value = $MemoryStream
         
-                #Add the attachment to the work item and commit the changes
-                $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemId'" @scsmMGMTParams
-                $WorkItemProjection.__base.Add($NewFile, $fileAttachmentRelClass.Target)
-                $WorkItemProjection.__base.Commit()
+            #Add the attachment to the work item and commit the changes
+            $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemId'" @scsmMGMTParams
+            $WorkItemProjection.__base.Add($NewFile, $fileAttachmentRelClass.Target)
+            $WorkItemProjection.__base.Commit()
     
-                #create the Attached By relationship if possible
-                $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
-                if ($attachedByUser)
-                {
-                    New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
-                    $existingAttachmentsCount += 1
-                }
+            #create the Attached By relationship if possible
+            $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
+            if ($attachedByUser)
+            {
+                New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
+                $existingAttachmentsCount += 1
             }
         }
     }
@@ -2415,16 +2427,21 @@ function Get-TierMembership ($UserSamAccountName, $TierId) {
 
 function Get-TierMembers ($TierEnumId)
 {
+    #logging
+    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 0 -Severity "Information" -LogMessage "Get AD Group Associated with enum: $TierEnumId"}
+    
     #define classes
     $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping"
 
     #pull the group based on support tier mapping
     $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierEnumId }
     $groupId = $mapping.AdGroupId
+    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 1 -Severity "Information" -LogMessage "Get SCSM object/Group for: $groupId"}
 
     #get the AD group object name
     $grpInScsm = (Get-ScsmObject @scsmMGMTParams -Id $groupId)
     $grpSamAccountName = $grpInScsm.UserName
+    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 2 -Severity "Information" -LogMessage "AD Group Name: $grpSamAccountName"}
     
     #determine which domain to query, in case of multiple domains and trusts
     $AdRoot = (Get-AdDomain @adParams -Identity $grpInScsm.Domain).DNSRoot
@@ -2433,6 +2450,10 @@ function Get-TierMembers ($TierEnumId)
     {
         # Get the group membership
         [array]$supportTierMembers = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive | foreach-object {Get-SCSMObject -Class $domainUserClass -filter "Username -eq '$($_.samaccountname)'"}
+        if ($loggingLevel -ge 4) {
+            $supportTierMembersLogString = $supportTierMembers.Name -join ","
+            New-SMEXCOEvent -Source "Get-TierMembers" -EventID 3 -Severity "Information" -LogMessage "AD Group Members: $supportTierMembersLogString"
+        }
     }
     return $supportTierMembers
 }
@@ -2449,11 +2470,15 @@ function Get-AssignedToWorkItemVolume ($SCSMUser)
     $assignedToVolume = New-Object System.Object
     $assignedToVolume | Add-Member -type NoteProperty -name SCSMUser -value $SCSMUser
     $assignedToVolume | Add-Member -type NoteProperty -name AssignedCount -value $assignedCount
+    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-AssignedToWorkItemVolume" -EventID 0 -Severity "Information" -LogMessage "$($assignedToVolume.SCSMUser.DisplayName) : $($assignedToVolume.AssignedCount)"}
     return $assignedToVolume
 }
 
 function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
 {
+    #log how Dynamic Analyst Assignment will be executed
+    if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 0 -Severity "Information" -LogMessage "Using Dynamic Analyst Assignment: $DynamicWorkItemAssignment"}
+
     #get the template's support group members
     $supportGroupMembers = Get-TierMembers -TierEnumID $SupportGroupID
 
@@ -2477,6 +2502,7 @@ function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
         else
         {
             <#the config variable has a value that wasn't part of the set#>
+            if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 1 -Severity "Error" -LogMessage "$DynamicWorkItemAssignment is not supported. No user will be assigned to $($WorkItem.Name). Please use the Settings UI to properly set this value."}
         }
     
         #assign the work item to the selected user and set the first assigned date
@@ -2484,6 +2510,7 @@ function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
         {
             New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $userToAssign -Bulk @scsmMGMTParams
             Set-SCSMObject -SMObject $WorkItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams
+            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 2 -Severity "Information" -LogMessage "Assigned $($WorkItem.Name) to $($userToAssign.Name)"}
         }
 }
 
@@ -2502,17 +2529,17 @@ function Get-SCSMWorkItemParent
         {
             If ($PSBoundParameters['WorkItemGUID'])
             {
-                Write-Verbose -Message "[PROCESS] Retrieving WI with GUID"
+                if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 0 -Severity "Information" -LogMessage "[PROCESS] Retrieving WI with GUID"}
                 $ActivityObject = Get-SCSMObject -Id $WorkItemGUID @scsmMGMTParams
             }
         
             #Retrieve Parent
-            Write-Verbose -Message "[PROCESS] Activity: $($ActivityObject.Name)"
-            Write-Verbose -Message "[PROCESS] Retrieving WI Parent"
+            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 1 -Severity "Information" -LogMessage "[PROCESS] Activity: $($ActivityObject.Name)"}
+            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 2 -Severity "Information" -LogMessage "[PROCESS] Retrieving WI Parent"}
             $ParentRelatedObject = Get-SCSMRelationshipObject -ByTarget $ActivityObject @scsmMGMTParams | ?{$_.RelationshipID -eq $wiContainsActivityRelClass.id.Guid}
             $ParentObject = $ParentRelatedObject.SourceObject
 
-            Write-Verbose -Message "[PROCESS] Activity: $($ActivityObject.Name) - Parent: $($ParentObject.Name)"
+            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 3 -Severity "Information" -LogMessage "[PROCESS] Activity: $($ActivityObject.Name) - Parent: $($ParentObject.Name)"}
 
             If ($ParentObject.ClassName -eq 'System.WorkItem.ServiceRequest' `
             -or $ParentObject.ClassName -eq 'System.WorkItem.ChangeRequest' `
@@ -2520,14 +2547,14 @@ function Get-SCSMWorkItemParent
             -or $ParentObject.ClassName -eq 'System.WorkItem.Incident' `
             -or $ParentObject.ClassName -eq 'System.WorkItem.Problem')
             {
-                Write-Verbose -Message "[PROCESS] This is the top level parent"
+                if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 4 -Severity "Information" -LogMessage "[PROCESS] This is the top level parent"}
                 
                 #return parent object Work Item
                 Return $ParentObject
             }
             Else
             {
-                Write-Verbose -Message "[PROCESS] Not the top level parent. Running against this object"
+                if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 5 -Severity "Information" -LogMessage "[PROCESS] Not the top level parent. Running against this object"}
                 Get-SCSMWorkItemParent -WorkItemGUID $ParentObject.Id.GUID @scsmMGMTParams
             }
         }
@@ -2538,7 +2565,7 @@ function Get-SCSMWorkItemParent
     }
 }
 
-#inspired and modified from Travis Wright here - https://blogs.technet.microsoft.com/servicemanager/2013/01/16/creating-membership-and-hosting-objectsrelationships-using-new-scsmobjectprojection-in-smlets/
+#inspired and modified from Travis Wright here - https://techcommunity.microsoft.com/t5/system-center-blog/creating-membership-and-hosting-objects-relationships-using-new/ba-p/347537
 function Create-UserInCMDB ($userEmail)
 {
     #The ID for external users appears to be a GUID, but it can't be identified by get-scsmobject
@@ -2573,7 +2600,7 @@ function Create-UserInCMDB ($userEmail)
 }
 
 #combined previous 4 individual comment functions featured from versions 1 to 1.4.3 into single function and introduced more Action Log functionality
-#inspired and modified from Travis Wright here - https://blogs.technet.microsoft.com/servicemanager/2013/01/16/creating-membership-and-hosting-objectsrelationships-using-new-scsmobjectprojection-in-smlets/
+#inspired and modified from Travis Wright here - https://techcommunity.microsoft.com/t5/system-center-blog/creating-membership-and-hosting-objects-relationships-using-new/ba-p/347537
 #inspired and modified from Anders Asp here - http://www.scsm.se/?p=1423
 #inspired and modified from Xapity here - http://www.xapity.com/single-post/2016/11/27/PowerShell-for-SCSM-Updating-the-Action-Log
 function Add-ActionLogEntry {
@@ -3534,8 +3561,19 @@ function Get-AzureEmailLanguage ($TextToEvaluate)
     $originalBytes = [Text.Encoding]::Default.GetBytes($TextToEvaluate)
     $TextToEvaluate = [Text.Encoding]::Utf8.GetString($originalBytes)
 
-    #Send text to Azure for translation
-    $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToEvaluate)]"
+    try
+    {
+        #Send text to Azure for translation
+        $RecoResponse = Invoke-RestMethod -Method POST -Uri $translationServiceURI -Headers $RecoRequestHeader -Body "[$($TextToEvaluate)]"
+        if ($loggingLevel -ge 4) {
+            $azureEmailIdentifiedLang = "Language Identified: $($RecoResponse.translations[0].text)"
+            New-SMEXCOEvent -Source "Get-AzureEmailLanguage" -EventID 0 -Severity "Information" -LogMessage $azureEmailIdentifiedLang
+        }
+    }
+    catch
+    {
+        if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Get-AzureEmailLanguage" -EventID 1 -Severity "Error" -LogMessage $_.Exception}
+    }
 
     #Return the language with the highest match score
     return $RecoResponse | sort-object score | select-object -first 1
@@ -4036,6 +4074,13 @@ $exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeServic
 #figure out if the workflow should be used
 if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Connector.15d8b765a2f8b63ead14472f9b3c12f0")} | Select-Object Enabled -ExpandProperty Enabled)
 {
+    #validate the Run As Account format to ensure it is an email address
+    $isValid365Address = ($ewsUsername + "@" + $ewsDomain) -match "^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$"
+    if (!($isValid365Address))
+    {
+        New-SMEXCOEvent -Source "General" -EventId 4 -LogMessage "The address/SCSM Run As Account used to sign into 365 is not a valid email address and is currently entered as $($ewsUsername + "@" + $ewsDomain). This will prevent a successfull connection. To fix this, go to the Run As account in SCSM and for the username enter it as an email address like user@domain.tld" -Severity "Error"
+    }
+
     #the workflow exists and it is enabled, determine how to connect to Exchange
     if ($UseExchangeOnline)
     {
@@ -4043,7 +4088,7 @@ if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Co
         $ReqTokenBody = @{
             Grant_Type    = "Password"
             client_Id     = $AzureClientID
-            Username      = $ewsusername
+            Username      = $ewsUsername + "@" + $ewsDomain
             Password      = $ewspassword
             Scope         = "https://outlook.office.com/EWS.AccessAsUser.All"
         }
@@ -4182,6 +4227,9 @@ foreach ($message in $inbox)
     #load the entire message
     $message.Load($propertySet)
 
+    #initialize a variable to determine if valid update
+    $isUpdate = $null
+
     #Process an Email
     if ($message.ItemClass -eq "IPM.Note")
     {
@@ -4205,14 +4253,14 @@ foreach ($message in $inbox)
         switch -Regex ($email.subject)
         {
             #### primary work item types ####
-            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id}else {new-workitem $email $defaultNewWorkItem}}
-            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id}else {new-workitem $email $defaultNewWorkItem}}
-            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id}else {new-workitem $email $defaultNewWorkItem}}
+            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id}else {new-workitem $email $defaultNewWorkItem}}
+            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id}else {new-workitem $email $defaultNewWorkItem}}
+            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id}else {new-workitem $email $defaultNewWorkItem}}
  
             #### activities ####
-            "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
-            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
+            "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
+            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
 
             #### 3rd party classes, work items, etc. add here ####
             "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
@@ -4220,7 +4268,7 @@ foreach ($message in $inbox)
             #### Email is a Reply and does not contain a [Work Item ID]
             # Check if Work Item (Title, Body, Sender, CC, etc.) exists
             # and the user was replying too fast to receive Work Item ID notification
-            "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
+            "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Verify-WorkItem $email}else{new-workitem $email $defaultNewWorkItem}}}
 
             #### default action, create work item ####
             default {new-workitem $email $defaultNewWorkItem}
@@ -4242,18 +4290,14 @@ foreach ($message in $inbox)
         if ($ceScripts) { Invoke-BeforeProcessSignedEmail }
         
         $response = Read-MIMEMessage $message
-
-        #check to see if there are attachments besides the smime.p7s signature
-        $signedAttachments = $response.Attachments
-        $signedAttachments = $signedAttachments | ?{$_.filename -ne "smime.p7s"}
    
         $email = New-Object System.Object
         $email | Add-Member -type NoteProperty -name From -value $response.From.address
         $email | Add-Member -type NoteProperty -name To -value $response.To
         $email | Add-Member -type NoteProperty -name CC -value $response.Cc
         $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
-        $email | Add-Member -type NoteProperty -name Attachments -value $signedAttachments
-        $email | Add-Member -type NoteProperty -name Body -value $response.TextBody
+        $email | Add-Member -type NoteProperty -name Attachments -value ($response.Attachments | ?{$_.filename -ne "smime.p7s"})
+        $email | Add-Member -type NoteProperty -name Body -value $response.TextBody.Trim()
         $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
         $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
         $email | Add-Member -type NoteProperty -name ID -Value $message.Id
@@ -4289,14 +4333,14 @@ foreach ($message in $inbox)
             switch -Regex ($email.subject)
             { 
                 #### primary work item types ####
-                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
     
                 #### activities ####
-                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
-                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
+                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
+                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
 
                 #### 3rd party classes, work items, etc. add here ####
                 "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
@@ -4304,7 +4348,7 @@ foreach ($message in $inbox)
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
+                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Verify-WorkItem $email}else{new-workitem $email $defaultNewWorkItem}}}
                 
                 #### Email is going to invoke a custom action. The signature MUST be valid to proceed
                 "\[$powershellKeyword]" {if ($validSig -and $ceScripts)
@@ -4347,7 +4391,7 @@ foreach ($message in $inbox)
         $response = Read-MIMEMessage $message
         try {$decryptedBody = $response.Body.Decrypt($certStore)} catch {if($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Cryptography" -EventID 4 -Severity "Error" -LogMessage $_.Exception}}
 
-        #Messaged is encrypted
+        #Messaged is encrypted and/or signed
         if ($decryptedBody.ContentType.MimeType -eq "multipart/alternative")
         {         
             #check to see if there are attachments
@@ -4373,14 +4417,14 @@ foreach ($message in $inbox)
             switch -Regex ($email.subject)
             {
                 #### primary work item types ####
-                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
  
                 #### activities ####
-                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
-                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
+                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
+                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
 
                 #### 3rd party classes, work items, etc. add here ####
                 "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
@@ -4388,7 +4432,7 @@ foreach ($message in $inbox)
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
+                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Verify-WorkItem $email}else{new-workitem $email $defaultNewWorkItem}}}
 
                 #### default action, create work item ####
                 default {new-workitem $email $defaultNewWorkItem}
@@ -4405,16 +4449,16 @@ foreach ($message in $inbox)
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
         }
-        #Message is encrypted and signed
-        if ($decryptedBody.ContentType.MimeType -eq "application/x-pkcs7-mime")
+        #Message is encrypted and/or signed, has at least 1 attachment that is an Exchange object
+        if ($decryptedBody.ContentType.MimeType -eq "multipart/mixed")
         {
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
             
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessSignedEmail }
-            
-            $isVerifiedSig = $decryptedBody.Verify($certStore, [ref]$decryptedBody)
+
+            $decryptedAttachments = $decryptedBody | ?{$_.isattachment -eq $true}
             
             $email = New-Object System.Object
             $email | Add-Member -type NoteProperty -name From -value $response.From.Address
@@ -4422,7 +4466,7 @@ foreach ($message in $inbox)
             $email | Add-Member -type NoteProperty -name CC -value $response.Cc
             $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
             $email | Add-Member -type NoteProperty -name Attachments -value $decryptedAttachments
-            $email | Add-Member -type NoteProperty -name Body -value $decryptedBody.GetTextBody("Text")
+            $email | Add-Member -type NoteProperty -name Body -value $decryptedBody[0].GetTextBody("Text")
             $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
             $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
             $email | Add-Member -type NoteProperty -name ID -Value $message.Id
@@ -4436,14 +4480,14 @@ foreach ($message in $inbox)
             switch -Regex ($email.subject)
             {
                 #### primary work item types ####
-                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
  
                 #### activities ####
-                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){update-workitem $email "ra" $result.id}}
-                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){update-workitem $email "ma" $result.id}}
+                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
+                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
 
                 #### 3rd party classes, work items, etc. add here ####
                 "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
@@ -4451,7 +4495,7 @@ foreach ($message in $inbox)
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){Verify-WorkItem $email} else{new-workitem $email $defaultNewWorkItem}}
+                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Verify-WorkItem $email}else{new-workitem $email $defaultNewWorkItem}}}
 
                 #### default action, create work item ####
                 default {new-workitem $email $defaultNewWorkItem}
@@ -4470,6 +4514,66 @@ foreach ($message in $inbox)
             
             # Custom Event Handler
             if ($ceScripts) { Invoke-AfterProcessEncryptedEmail }
+        }
+        #Messaged is encrypted and/or signed
+        if ($decryptedBody.ContentType.MimeType -eq "application/x-pkcs7-mime")
+        {       
+            #check to see if there are attachments
+            $isVerifiedSig = $decryptedBody.Verify($certStore, [ref]$decryptedBody)
+            $decryptedBodyWOAttachments = $decryptedBody | ?{($_.isattachment -eq $false)}
+            $decryptedAttachments = if ($decryptedBody.ContentType.MimeType -eq "multipart/alternative") {$decryptedBody | ?{$_.isattachment -eq $true}} else {$decryptedBody | select -skip 1}
+
+            $email = New-Object System.Object
+            $email | Add-Member -type NoteProperty -name From -value $response.From.Address
+            $email | Add-Member -type NoteProperty -name To -value $response.To
+            $email | Add-Member -type NoteProperty -name CC -value $response.Cc
+            $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
+            $email | Add-Member -type NoteProperty -name Attachments -value $decryptedAttachments
+            $email | Add-Member -type NoteProperty -name Body -value $(try {$decryptedBodyWOAttachments.GetTextBody("Text").Trim()} catch {$decryptedBodyWOAttachments[0].Text.Trim()})
+            $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
+            $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
+            $email | Add-Member -type NoteProperty -name ID -Value $message.Id
+            $email | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationId
+            $email | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
+            $email | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
+            
+            # Custom Event Handler
+            if ($ceScripts) { Invoke-BeforeProcessEmail }
+            
+            switch -Regex ($email.subject)
+            {
+                #### primary work item types ####
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+ 
+                #### activities ####
+                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
+                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
+
+                #### 3rd party classes, work items, etc. add here ####
+                "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
+
+                #### Email is a Reply and does not contain a [Work Item ID]
+                # Check if Work Item (Title, Body, Sender, CC, etc.) exists
+                # and the user was replying too fast to receive Work Item ID notification
+                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Verify-WorkItem $email}else{new-workitem $email $defaultNewWorkItem}}}
+
+                #### default action, create work item ####
+                default {new-workitem $email $defaultNewWorkItem}
+            }
+            
+            # Custom Event Handler
+            if ($ceScripts) { Invoke-AfterProcessEmail }
+
+            #mark the message as read on Exchange, move to deleted items
+            $message.IsRead = $true
+            $hideInVar01 = $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve)
+            if ($deleteAfterProcessing){$hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)}
+            
+            # Custom Event Handler
+            if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
         }
     }
 
@@ -4543,17 +4647,17 @@ foreach ($message in $inbox)
         switch -Regex ($appointment.subject)
         {
             #### primary work item types ####
-            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){schedule-workitem $appointment "ir" $result; Update-WorkItem -message $appointment -wiType "ir" -workItemID $result.name}}
-            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){schedule-workitem $appointment "sr" $result; Update-WorkItem -message $appointment -wiType "sr" -workItemID $result.name}}
-            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){schedule-workitem $appointment "pr" $result; Update-WorkItem -message $appointment -wiType "pr" -workItemID $result.name}}
-            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){schedule-workitem $appointment "cr" $result; Update-WorkItem -message $appointment -wiType "cr" -workItemID $result.name}}
-            "\[$rrRegex[0-9]+\]" {$result = get-workitem $matches[0] $rrClass; if ($result){schedule-workitem $appointment "rr" $result; Update-WorkItem -message $appointment -wiType "rr" -workItemID $result.name}}
+            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){schedule-workitem $appointment "ir" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "ir" -workItemID $result.name}}
+            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){schedule-workitem $appointment "sr" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "sr" -workItemID $result.name}}
+            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){schedule-workitem $appointment "pr" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "pr" -workItemID $result.name}}
+            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){schedule-workitem $appointment "cr" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "cr" -workItemID $result.name}}
+            "\[$rrRegex[0-9]+\]" {$result = get-workitem $matches[0] $rrClass; if ($result){schedule-workitem $appointment "rr" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "rr" -workItemID $result.name}}
 
             #### activities ####
-            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){schedule-workitem $appointment "ma" $result; Update-WorkItem -message $appointment -wiType "ma" -workItemID $result.name}}
-            "\[$paRegex[0-9]+\]" {$result = get-workitem $matches[0] $paClass; if ($result){schedule-workitem $appointment "pa" $result; Update-WorkItem -message $appointment -wiType "pa" -workItemID $result.name}}
-            "\[$saRegex[0-9]+\]" {$result = get-workitem $matches[0] $saClass; if ($result){schedule-workitem $appointment "sa" $result; Update-WorkItem -message $appointment -wiType "sa" -workItemID $result.name}}
-            "\[$daRegex[0-9]+\]" {$result = get-workitem $matches[0] $daClass; if ($result){schedule-workitem $appointment "da" $result; Update-WorkItem -message $appointment -wiType "da" -workItemID $result.name}}
+            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){schedule-workitem $appointment "ma" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "ma" -workItemID $result.name}}
+            "\[$paRegex[0-9]+\]" {$result = get-workitem $matches[0] $paClass; if ($result){schedule-workitem $appointment "pa" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "pa" -workItemID $result.name}}
+            "\[$saRegex[0-9]+\]" {$result = get-workitem $matches[0] $saClass; if ($result){schedule-workitem $appointment "sa" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "sa" -workItemID $result.name}}
+            "\[$daRegex[0-9]+\]" {$result = get-workitem $matches[0] $daClass; if ($result){schedule-workitem $appointment "da" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "da" -workItemID $result.name}}
 
             #### 3rd party classes, work items, etc. add here ####
             "([C][a][n][c][e][l][e][d][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){$result = Verify-WorkItem $appointment -returnWorkItem $true; schedule-workitem $appointment $defaultNewWorkItem $result} else{new-workitem $appointment $defaultNewWorkItem}}

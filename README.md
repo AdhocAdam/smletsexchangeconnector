@@ -7,6 +7,9 @@
   <img src="https://github.com/AdhocAdam/smletsexchangeconnector/workflows/Primary%20Branch%20-%20Build/badge.svg?branch=primary" />
   <img src="https://github.com/AdhocAdam/smletsexchangeconnector/workflows/Dev%20Branch%20-%20Build/badge.svg?branch=dev" />
 </p>
+<p align="left">
+  <a href="https://securitylab.github.com/tools/codeql"><img src="https://github.com/AdhocAdam/smletsexchangeconnector/actions/workflows/codeql-analysis.yml/badge.svg" /></a>
+</p>
 
 This PowerShell script leverages the [SMlets module](https://www.powershellgallery.com/packages/SMLets/) to build an open and flexible Exchange Connector for controlling Microsoft System Center Service Manager 2016+
 
@@ -18,6 +21,15 @@ The stock Exchange Connector is a seperate download that enables SCSM deployment
 This is aimed at SCSM administrators looking to further push the automation limits of what their SCSM deployment can do with inbound email processing. As such, you should be comfortable with PowerShell and navigating SCSM via SMlets.
 
 ## What new things can it do?
+<table border="0">
+  <tr>
+    <td colspan="3"><i>History Pane (v3.3)</i></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src ="/FeatureScreenshots/history.png" /></td>
+    <td width="auto">Whether you're changing regex patterns, updating machine learning scores, or modifying any other configuration in the connector. Now just like any Work Item or Config Item you can view the complete history of changes you and your peers have set.</td>
+  </tr>
+</table>
 <table border="0">
   <tr>
     <td colspan="3"><i>[pwsh] Keyword (v3.1)</i></td>

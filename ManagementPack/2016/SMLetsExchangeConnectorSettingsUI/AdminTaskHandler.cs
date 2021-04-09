@@ -79,6 +79,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             wizard.AddLast(new WizardStep("Transcription", typeof(AzureSpeech), wizard.WizardData));
             wizard.AddLast(new WizardStep("Workflow", typeof(WorkflowSettings), wizard.WizardData));
             wizard.AddLast(new WizardStep("Logging", typeof(Logging), wizard.WizardData));
+            wizard.AddLast(new WizardStep("History", typeof(HistoryForm), wizard.WizardData));
             wizard.AddLast(new WizardStep("About", typeof(AboutForm), wizard.WizardData));
 
             //Show the property page 
