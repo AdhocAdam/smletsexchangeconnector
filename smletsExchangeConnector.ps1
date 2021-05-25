@@ -2398,7 +2398,7 @@ function Get-TierMembership ($UserSamAccountName, $TierId) {
     $isMember = $false
 
     #define classes
-    $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping"
+    $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping$"
 
     #pull the group based on support tier mapping
     $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierId.Guid }
@@ -2431,7 +2431,7 @@ function Get-TierMembers ($TierEnumId)
     if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 0 -Severity "Information" -LogMessage "Get AD Group Associated with enum: $TierEnumId"}
     
     #define classes
-    $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping"
+    $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping$"
 
     #pull the group based on support tier mapping
     $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierEnumId }
