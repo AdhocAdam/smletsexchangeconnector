@@ -2376,6 +2376,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
         catch
         {
             #file could not be added
+            if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Attach-FileToWorkItem" -EventID 0 -Severity "Warning" -LogMessage "A File Attachment from $($message.From) could not be added to $workItemId. $($_.Exception)"}
         }
     }
     # Custom Event Handler
