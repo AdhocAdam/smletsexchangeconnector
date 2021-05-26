@@ -2204,6 +2204,8 @@ function Attach-FileToWorkItem ($message, $workItemId)
     
     foreach ($attachment in $message.Attachments)
     {
+        try
+        {
         #determine if a File Attachment
         if ($attachment.GetType().Name -eq "FileAttachment")
         {
@@ -2369,6 +2371,11 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
                 $existingAttachmentsCount += 1
             }
+        }
+        }
+        catch
+        {
+            #file could not be added
         }
     }
     # Custom Event Handler
