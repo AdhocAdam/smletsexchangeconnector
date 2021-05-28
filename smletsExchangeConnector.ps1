@@ -893,7 +893,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
     $relatedUsers = @()
     $affectedUser = Get-SCSMUserByEmailAddress -EmailAddress "$from"
     if ((!$affectedUser) -and ($createUsersNotInCMDB -eq $true)) {$affectedUser = create-userincmdb "$from"}
-    else {<# the user wasn't found or $createUsersNotInCMDB is false #>}
+    else {$affectedUser = create-userincmdb $from -NoCommit}
 
     #find Related Users (To)       
     if ($to.count -gt 0)
@@ -1049,8 +1049,8 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     if ($affectedUser)
                     {
-                        New-SCSMRelationshipObject -Relationship $createdByUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams
-                        New-SCSMRelationshipObject -Relationship $affectedUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams
+                        try {New-SCSMRelationshipObject -Relationship $createdByUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams} catch {<#logging#>}
+                        try {New-SCSMRelationshipObject -Relationship $affectedUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams} catch {<#logging#>}
                     }
                     if ($relatedUsers)
                     {
@@ -1138,7 +1138,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                         {
                             if($amlProbability.AffectedConfigItem.IndexOf(",") -gt 1) 
                             {
-                                $amlProbability.AffectedConfigItem.Split(",") | %{New-SCSMRelationshipObject -Relationship $wiAboutCIRelClass -Source $newWorkItem -Target $_ -Bulk @scsmMGMTParams}
+                                $amlProbability.AffectedConfigItem.Split(",") | %{try{New-SCSMRelationshipObject -Relationship $wiAboutCIRelClass -Source $newWorkItem -Target $_ -Bulk @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 10 -Severity "Error" -LogMessage $_.Exception}}
                             }
                             else
                             {
@@ -1196,8 +1196,8 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     if ($affectedUser)
                     {
-                        New-SCSMRelationshipObject -Relationship $createdByUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams
-                        New-SCSMRelationshipObject -Relationship $affectedUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams
+                        try {New-SCSMRelationshipObject -Relationship $createdByUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams} catch {<#logging#>}
+                        try {New-SCSMRelationshipObject -Relationship $affectedUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams} catch {<#logging#>}
                     }
                     if ($relatedUsers)
                     {
@@ -1343,7 +1343,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     #no Affected User to set on a Problem, set Created By using the Affected User object if it exists
                     if ($affectedUser)
                     {
-                        New-SCSMRelationshipObject -Relationship $createdByUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams
+                        try {New-SCSMRelationshipObject -Relationship $createdByUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams} catch {<#logging#>}
                     }
                     if ($relatedUsers)
                     {
@@ -1374,7 +1374,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     #Set Created By using the Affected User object if it exists
                     if ($affectedUser)
                     {
-                        New-SCSMRelationshipObject -Relationship $createdByUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams
+                        try {New-SCSMRelationshipObject -Relationship $createdByUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams} catch {<#logging#>}
                         #New-SCSMRelationshipObject -Relationship $affectedUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams
                     }
                     if ($relatedUsers)
