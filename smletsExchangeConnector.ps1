@@ -1138,7 +1138,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                         {
                             if($amlProbability.AffectedConfigItem.IndexOf(",") -gt 1) 
                             {
-                                $amlProbability.AffectedConfigItem.Split(",") | %{try{New-SCSMRelationshipObject -Relationship $wiAboutCIRelClass -Source $newWorkItem -Target $_ -Bulk @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 10 -Severity "Error" -LogMessage $_.Exception}}
+                                $amlProbability.AffectedConfigItem.Split(",") | %{New-SCSMRelationshipObject -Relationship $wiAboutCIRelClass -Source $newWorkItem -Target $_ -Bulk @scsmMGMTParams}
                             }
                             else
                             {
