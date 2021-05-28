@@ -2397,31 +2397,39 @@ function Get-SCSMUserByEmailAddress ($EmailAddress)
 function Get-TierMembership ($UserSamAccountName, $TierId) {
     $isMember = $false
 
-    #define classes
-    $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping$"
+    try
+    {
+        #define classes
+        $mapCls = {Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping$"}
 
-    #pull the group based on support tier mapping
-    $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierId.Guid }
-    $groupId = $mapping.AdGroupId
+        #pull the group based on support tier mapping
+        $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierId.Guid }
+        $groupId = $mapping.AdGroupId
 
-    #get the AD group object name
-    $grpInScsm = (Get-ScsmObject @scsmMGMTParams -Id $groupId)
-    $grpSamAccountName = $grpInScsm.UserName
-    
-    #determine which domain to query, in case of multiple domains and trusts
-    $AdRoot = (Get-AdDomain @adParams -Identity $grpInScsm.Domain).DNSRoot
+        #get the AD group object name
+        $grpInScsm = (Get-ScsmObject @scsmMGMTParams -Id $groupId)
+        $grpSamAccountName = $grpInScsm.UserName
+        
+        #determine which domain to query, in case of multiple domains and trusts
+        $AdRoot = (Get-AdDomain @adParams -Identity $grpInScsm.Domain).DNSRoot
 
-    if ($grpSamAccountName) {
-        # Get the group membership
-        [array]$members = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive
+        if ($grpSamAccountName) {
+            # Get the group membership
+            [array]$members = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive
 
-        # loop through the members of the AD group that underpins this support group, and look for the user
-        $members | % {
-            if ($_.objectClass -eq "user" -and $_.Name -match $UserSamAccountName) {
-                $isMember = $true
+            # loop through the members of the AD group that underpins this support group, and look for the user
+            $members | % {
+                if ($_.objectClass -eq "user" -and $_.Name -match $UserSamAccountName) {
+                    $isMember = $true
+                }
             }
         }
     }
+    catch
+    {
+        New-SMEXCOEvent -Source "Get-TierMembership" -Severity "Warning" -EventID 0 -LogMessage $_.Exception
+    }
+
     return $isMember
 }
 
