@@ -2568,8 +2568,14 @@ function Get-SCSMWorkItemParent
 }
 
 #inspired and modified from Travis Wright here - https://techcommunity.microsoft.com/t5/system-center-blog/creating-membership-and-hosting-objects-relationships-using-new/ba-p/347537
-function Create-UserInCMDB ($userEmail)
+function Create-UserInCMDB
 {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$userEmail,
+        [Parameter(Mandatory=$false)]
+        [switch]$NoCommit
+    )
     #The ID for external users appears to be a GUID, but it can't be identified by get-scsmobject
     #The ID for internal domain users takes the form of domain_username_SMTP
     #It's unclear how this ID should be generated. Opted to take the form of an internal domain for the ID
@@ -2580,7 +2586,7 @@ function Create-UserInCMDB ($userEmail)
     $newID = $domain + "_" + $username + "_SMTP"
 
     #create the new user
-    $newUser = New-SCSMObject -Class $domainUserClass -PropertyHashtable @{"domain" = "$domainAndTLD"; "username" = "$username"; "displayname" = "$userEmail"} @scsmMGMTParams -PassThru
+    $newUser = New-SCSMObject -Class $domainUserClass -PropertyHashtable @{"domain" = "$domainAndTLD"; "username" = "$username"; "displayname" = "$userEmail"} @scsmMGMTParams -PassThru -NoCommit:$NoCommit
     if (($loggingLevel -ge 1) -and ($newUser)){New-SMEXCOEvent -Source "Create-UserInCMDB" -EventId 0 -LogMessage "New User created in SCSM. Username: $username" -Severity "Information"}
 
     #create the user notification projection
@@ -2592,7 +2598,7 @@ function Create-UserInCMDB ($userEmail)
                                 }
 
     #create the user's email notification channel
-    $userHasNotification = New-SCSMObjectProjection -Type "$($userHasPrefProjection.Name)" -Projection $userNoticeProjection -PassThru @scsmMGMTParams
+    $userHasNotification = New-SCSMObjectProjection -Type "$($userHasPrefProjection.Name)" -Projection $userNoticeProjection -PassThru -NoCommit:$NoCommit @scsmMGMTParams
     if (($loggingLevel -ge 1) -and ($userHasNotification)){New-SMEXCOEvent -Source "Create-UserInCMDB" -EventId 1 -LogMessage "New User: $username successfully related to their new Notification: $userEmail" -Severity "Information"}
     
     # Custom Event Handler
