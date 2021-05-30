@@ -3160,7 +3160,7 @@ function Get-TemplatesByMailbox ($message)
 function Get-SCSMWorkItemSettings ($WorkItemClass) {   
     switch ($WorkItemClass) {
         "System.WorkItem.Incident" {
-            $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.WorkItem.Incident.GeneralSetting"
+            $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.WorkItem.Incident.GeneralSetting$"
             $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
             $maxAttach = $settings.MaxAttachments
             $maxSize = $settings.MaxAttachmentSize
@@ -3169,7 +3169,7 @@ function Get-SCSMWorkItemSettings ($WorkItemClass) {
             foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
         }
         "System.WorkItem.ServiceRequest" {
-            $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ServiceRequestSettings"
+            $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ServiceRequestSettings$"
             $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
             $maxAttach = $settings.MaxFileAttachmentsCount
             $maxSize = $settings.MaxFileAttachmentSizeinKB
@@ -3178,7 +3178,7 @@ function Get-SCSMWorkItemSettings ($WorkItemClass) {
             foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
         }
         "System.WorkItem.ChangeRequest" {
-            $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ChangeSettings"
+            $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ChangeSettings$"
             $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
             $maxAttach = $settings.MaxFileAttachmentsCount
             $maxSize = $settings.MaxFileAttachmentSizeinKB
@@ -3187,7 +3187,7 @@ function Get-SCSMWorkItemSettings ($WorkItemClass) {
             foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
         }
         "System.WorkItem.Problem" {
-            $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ProblemSettings"
+            $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ProblemSettings$"
             $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
             $maxAttach = $settings.MaxFileAttachmentsCount
             $maxSize = $settings.MaxFileAttachmentSizeinKB
@@ -3196,7 +3196,7 @@ function Get-SCSMWorkItemSettings ($WorkItemClass) {
             foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
         }
         "System.WorkItem.Release" {
-            $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ReleaseSettings"
+            $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.GlobalSetting.ReleaseSettings$"
             $settings = $settingCls | Get-ScsmObject @scsmMGMTParams
             $maxAttach = $settings.MaxFileAttachmentsCount
             $maxSize = $settings.MaxFileAttachmentSizeinKB
@@ -3905,7 +3905,7 @@ function Apply-SCSMTemplate
  
     #Get alias from system.workitem.library managementpack to set id property
     $templateMP = $Template.GetManagementPack() 
-    $alias = $templateMP.References.GetAlias((Get-SCSMManagementPack system.workitem.library @scsmMGMTParams))
+    $alias = $templateMP.References.GetAlias((Get-SCSMManagementPack "System.WorkItem.Library$" @scsmMGMTParams))
     
     #Update Activities in template
     foreach ($TemplateObject in $Template.ObjectCollection)
