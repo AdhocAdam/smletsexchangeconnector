@@ -2174,7 +2174,7 @@ function Attach-EmailToWorkItem ($message, $workItemID)
         }
         else
         {
-                if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Attach-EmailToWorkItem" -EventID 0 -Severity "Warning" -LogMessage "Email from $($message.From) on $workItemID was not attached. Current Attachment Count: $existingAttachmentsCount/$($workItemSettings["MaxAttachments"]). File Size/Allowed Size: $($MemoryStream.Length/1024)/$($workItemSettings["MaxAttachmentSize"])"}
+            if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Attach-EmailToWorkItem" -EventID 0 -Severity "Warning" -LogMessage "Email from $($message.From) on $workItemID was not attached. Current Attachment Count: $existingAttachmentsCount/$($workItemSettings["MaxAttachments"]). File Size/Allowed Size: $($MemoryStream.Length/1024)/$($workItemSettings["MaxAttachmentSize"])"}
         }
     }
     catch
