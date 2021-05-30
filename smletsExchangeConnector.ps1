@@ -2400,18 +2400,18 @@ function Get-TierMembership ($UserSamAccountName, $TierId) {
     try
     {
         #define classes
-        $mapCls = {Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping$"}
+        $mapCls = Get-SCSMClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping$"
 
         #pull the group based on support tier mapping
-        $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierId.Guid }
+        $mapping = $mapCls | Get-SCSMObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierId.Guid }
         $groupId = $mapping.AdGroupId
 
         #get the AD group object name
-        $grpInScsm = (Get-ScsmObject @scsmMGMTParams -Id $groupId)
+        $grpInScsm = (Get-SCSMObject @scsmMGMTParams -Id $groupId)
         $grpSamAccountName = $grpInScsm.UserName
         
         #determine which domain to query, in case of multiple domains and trusts
-        $AdRoot = (Get-AdDomain @adParams -Identity $grpInScsm.Domain).DNSRoot
+        $AdRoot = (Get-ADDomain @adParams -Identity $grpInScsm.Domain).DNSRoot
 
         if ($grpSamAccountName) {
             # Get the group membership
