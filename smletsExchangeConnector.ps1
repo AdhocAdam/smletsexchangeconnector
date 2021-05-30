@@ -2397,63 +2397,80 @@ function Get-SCSMUserByEmailAddress ($EmailAddress)
 function Get-TierMembership ($UserSamAccountName, $TierId) {
     $isMember = $false
 
-    #define classes
-    $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping$"
+    try
+    {
+        #define classes
+        $mapCls = Get-SCSMClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping$"
 
-    #pull the group based on support tier mapping
-    $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierId.Guid }
-    $groupId = $mapping.AdGroupId
+        #pull the group based on support tier mapping
+        $mapping = $mapCls | Get-SCSMObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierId.Guid }
+        $groupId = $mapping.AdGroupId
 
-    #get the AD group object name
-    $grpInScsm = (Get-ScsmObject @scsmMGMTParams -Id $groupId)
-    $grpSamAccountName = $grpInScsm.UserName
-    
-    #determine which domain to query, in case of multiple domains and trusts
-    $AdRoot = (Get-AdDomain @adParams -Identity $grpInScsm.Domain).DNSRoot
+        #get the AD group object name
+        $grpInScsm = (Get-SCSMObject @scsmMGMTParams -Id $groupId)
+        $grpSamAccountName = $grpInScsm.UserName
+        
+        #determine which domain to query, in case of multiple domains and trusts
+        $AdRoot = (Get-ADDomain @adParams -Identity $grpInScsm.Domain).DNSRoot
 
-    if ($grpSamAccountName) {
-        # Get the group membership
-        [array]$members = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive
+        if ($grpSamAccountName) {
+            # Get the group membership
+            [array]$members = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive
 
-        # loop through the members of the AD group that underpins this support group, and look for the user
-        $members | % {
-            if ($_.objectClass -eq "user" -and $_.Name -match $UserSamAccountName) {
-                $isMember = $true
+            # loop through the members of the AD group that underpins this support group, and look for the user
+            $members | % {
+                if ($_.objectClass -eq "user" -and $_.Name -match $UserSamAccountName) {
+                    $isMember = $true
+                }
             }
         }
     }
+    catch
+    {
+        New-SMEXCOEvent -Source "Get-TierMembership" -Severity "Warning" -EventID 0 -LogMessage $_.Exception
+    }
+
     return $isMember
 }
 
 function Get-TierMembers ($TierEnumId)
 {
-    #logging
-    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 0 -Severity "Information" -LogMessage "Get AD Group Associated with enum: $TierEnumId"}
+    $supportTierMembers = $null
     
-    #define classes
-    $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping$"
-
-    #pull the group based on support tier mapping
-    $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierEnumId }
-    $groupId = $mapping.AdGroupId
-    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 1 -Severity "Information" -LogMessage "Get SCSM object/Group for: $groupId"}
-
-    #get the AD group object name
-    $grpInScsm = (Get-ScsmObject @scsmMGMTParams -Id $groupId)
-    $grpSamAccountName = $grpInScsm.UserName
-    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 2 -Severity "Information" -LogMessage "AD Group Name: $grpSamAccountName"}
-    
-    #determine which domain to query, in case of multiple domains and trusts
-    $AdRoot = (Get-AdDomain @adParams -Identity $grpInScsm.Domain).DNSRoot
-
-    if ($grpSamAccountName)
+    try
     {
-        # Get the group membership
-        [array]$supportTierMembers = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive | foreach-object {Get-SCSMObject -Class $domainUserClass -filter "Username -eq '$($_.samaccountname)'"}
-        if ($loggingLevel -ge 4) {
-            $supportTierMembersLogString = $supportTierMembers.Name -join ","
-            New-SMEXCOEvent -Source "Get-TierMembers" -EventID 3 -Severity "Information" -LogMessage "AD Group Members: $supportTierMembersLogString"
-        }
+        #logging
+        if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 0 -Severity "Information" -LogMessage "Get AD Group Associated with enum: $TierEnumId"}
+        
+        #define classes
+        $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping$"
+
+        #pull the group based on support tier mapping
+        $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierEnumId }
+        $groupId = $mapping.AdGroupId
+        if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 1 -Severity "Information" -LogMessage "Get SCSM object/Group for: $groupId"}
+
+        #get the AD group object name
+        $grpInScsm = (Get-ScsmObject @scsmMGMTParams -Id $groupId)
+        $grpSamAccountName = $grpInScsm.UserName
+        if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 2 -Severity "Information" -LogMessage "AD Group Name: $grpSamAccountName"}
+        
+        #determine which domain to query, in case of multiple domains and trusts
+        $AdRoot = (Get-AdDomain @adParams -Identity $grpInScsm.Domain).DNSRoot
+
+        if ($grpSamAccountName)
+        {
+            # Get the group membership
+            [array]$supportTierMembers = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive | foreach-object {Get-SCSMObject -Class $domainUserClass -filter "Username -eq '$($_.samaccountname)'"}
+            if ($loggingLevel -ge 4) {
+                $supportTierMembersLogString = $supportTierMembers.Name -join ","
+                New-SMEXCOEvent -Source "Get-TierMembers" -EventID 3 -Severity "Information" -LogMessage "AD Group Members: $supportTierMembersLogString"
+            }
+        }    
+    }
+    catch
+    {
+        New-SMEXCOEvent -Source "Get-TierMembers" -EventID 4 -Severity "Warning" -LogMessage $_.Exception
     }
     return $supportTierMembers
 }
