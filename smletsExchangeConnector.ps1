@@ -2166,17 +2166,17 @@ function Attach-EmailToWorkItem ($message, $workItemID)
             $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
             if ($attachedByUser)
             {
-                    New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
+                New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
             }
                 
             # Custom Event Handler
-                if ($ceScripts) { Invoke-AfterAttachEmail }
+            if ($ceScripts) { Invoke-AfterAttachEmail }
         }
         else
         {
                 if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Attach-EmailToWorkItem" -EventID 0 -Severity "Warning" -LogMessage "Email from $($message.From) on $workItemID was not attached. Current Attachment Count: $existingAttachmentsCount/$($workItemSettings["MaxAttachments"]). File Size/Allowed Size: $($MemoryStream.Length/1024)/$($workItemSettings["MaxAttachmentSize"])"}
         }
-        }
+    }
     catch
     {
         if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Attach-EmailToWorkItem" -EventID 1 -Severity "Warning" -LogMessage "Email from $($message.From) on $workItemID could not be attached. $($_.Exception)"}
