@@ -2146,36 +2146,36 @@ function Attach-EmailToWorkItem ($message, $workItemID)
         # if #checkAttachmentSettings -eq $true, test whether the email size (IN KB!) exceeds the limit and if the number of existing attachments is under the limit
         if ($checkAttachmentSettings -eq $false -or `
             (($MemoryStream.Length / 1024) -le $($workItemSettings["MaxAttachmentSize"]) -and $existingAttachmentsCount -le $($workItemSettings["MaxAttachments"])))
-            {
-                #Create the attachment object itself and set its properties for SCSM
-                $emailAttachment = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
-                $emailAttachment.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
-                $emailAttachment.Item($fileAttachmentClass, "DisplayName").Value = "message.eml"
-                $emailAttachment.Item($fileAttachmentClass, "Description").Value = "ExchangeConversationID:$($message.ConversationID);"
-                $emailAttachment.Item($fileAttachmentClass, "Extension").Value = ".eml"
-                $emailAttachment.Item($fileAttachmentClass, "Size").Value = $MemoryStream.Length
-                $emailAttachment.Item($fileAttachmentClass, "AddedDate").Value = [DateTime]::Now.ToUniversalTime()
-                $emailAttachment.Item($fileAttachmentClass, "Content").Value = $MemoryStream
+        {
+            #Create the attachment object itself and set its properties for SCSM
+            $emailAttachment = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
+            $emailAttachment.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
+            $emailAttachment.Item($fileAttachmentClass, "DisplayName").Value = "message.eml"
+            $emailAttachment.Item($fileAttachmentClass, "Description").Value = "ExchangeConversationID:$($message.ConversationID);"
+            $emailAttachment.Item($fileAttachmentClass, "Extension").Value = ".eml"
+            $emailAttachment.Item($fileAttachmentClass, "Size").Value = $MemoryStream.Length
+            $emailAttachment.Item($fileAttachmentClass, "AddedDate").Value = [DateTime]::Now.ToUniversalTime()
+            $emailAttachment.Item($fileAttachmentClass, "Content").Value = $MemoryStream
                 
-                #Add the attachment to the work item and commit the changes
-                $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemID'" @scsmMGMTParams
-                $WorkItemProjection.__base.Add($emailAttachment, $fileAttachmentRelClass.Target)
-                $WorkItemProjection.__base.Commit()
+            #Add the attachment to the work item and commit the changes
+            $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemID'" @scsmMGMTParams
+            $WorkItemProjection.__base.Add($emailAttachment, $fileAttachmentRelClass.Target)
+            $WorkItemProjection.__base.Commit()
                         
-                #create the Attached By relationship if possible
-                $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
-                if ($attachedByUser)
-                {
-                    New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
-                }
-                
-                # Custom Event Handler
-                if ($ceScripts) { Invoke-AfterAttachEmail }
-            }
-            else
+            #create the Attached By relationship if possible
+            $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
+            if ($attachedByUser)
             {
-                if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Attach-EmailToWorkItem" -EventID 0 -Severity "Warning" -LogMessage "Email from $($message.From) on $workItemID was not attached. Current Attachment Count: $existingAttachmentsCount/$($workItemSettings["MaxAttachments"]). File Size/Allowed Size: $($MemoryStream.Length/1024)/$($workItemSettings["MaxAttachmentSize"])"}
+                    New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
             }
+                
+            # Custom Event Handler
+                if ($ceScripts) { Invoke-AfterAttachEmail }
+        }
+        else
+        {
+                if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Attach-EmailToWorkItem" -EventID 0 -Severity "Warning" -LogMessage "Email from $($message.From) on $workItemID was not attached. Current Attachment Count: $existingAttachmentsCount/$($workItemSettings["MaxAttachments"]). File Size/Allowed Size: $($MemoryStream.Length/1024)/$($workItemSettings["MaxAttachmentSize"])"}
+        }
         }
     catch
     {
