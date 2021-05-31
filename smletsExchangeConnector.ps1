@@ -2151,40 +2151,51 @@ function Attach-EmailToWorkItem ($message, $workItemID)
         try {$existingAttachmentsCount = (Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $fileAttachmentRelClass).Count} catch {$existingAttachmentsCount = 0}
     }
     
-    $messageMime = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
-    $MemoryStream = New-Object System.IO.MemoryStream($messageMime.MimeContent.Content,0,$messageMime.MimeContent.Content.Length)
-    
-    # Custom Event Handler
-    if ($ceScripts) { Invoke-BeforeAttachEmail }
-    
-    # if #checkAttachmentSettings -eq $true, test whether the email size (IN KB!) exceeds the limit and if the number of existing attachments is under the limit
-    if ($checkAttachmentSettings -eq $false -or `
-        (($MemoryStream.Length / 1024) -le $($workItemSettings["MaxAttachmentSize"]) -and $existingAttachmentsCount -le $($workItemSettings["MaxAttachments"])))
+    try
     {
-        #Create the attachment object itself and set its properties for SCSM
-        $emailAttachment = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
-        $emailAttachment.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
-        $emailAttachment.Item($fileAttachmentClass, "DisplayName").Value = "message.eml"
-        $emailAttachment.Item($fileAttachmentClass, "Description").Value = "ExchangeConversationID:$($message.ConversationID);"
-        $emailAttachment.Item($fileAttachmentClass, "Extension").Value = ".eml"
-        $emailAttachment.Item($fileAttachmentClass, "Size").Value = $MemoryStream.Length
-        $emailAttachment.Item($fileAttachmentClass, "AddedDate").Value = [DateTime]::Now.ToUniversalTime()
-        $emailAttachment.Item($fileAttachmentClass, "Content").Value = $MemoryStream
-        
-        #Add the attachment to the work item and commit the changes
-        $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemID'" @scsmMGMTParams
-        $WorkItemProjection.__base.Add($emailAttachment, $fileAttachmentRelClass.Target)
-        $WorkItemProjection.__base.Commit()
-                
-        #create the Attached By relationship if possible
-        $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
-        if ($attachedByUser)
-        {
-            New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
-        }
+        $messageMime = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
+        $MemoryStream = New-Object System.IO.MemoryStream($messageMime.MimeContent.Content,0,$messageMime.MimeContent.Content.Length)
         
         # Custom Event Handler
-        if ($ceScripts) { Invoke-AfterAttachEmail }
+        if ($ceScripts) { Invoke-BeforeAttachEmail }
+        
+        # if #checkAttachmentSettings -eq $true, test whether the email size (IN KB!) exceeds the limit and if the number of existing attachments is under the limit
+        if ($checkAttachmentSettings -eq $false -or `
+            (($MemoryStream.Length / 1024) -le $($workItemSettings["MaxAttachmentSize"]) -and $existingAttachmentsCount -le $($workItemSettings["MaxAttachments"])))
+        {
+            #Create the attachment object itself and set its properties for SCSM
+            $emailAttachment = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
+            $emailAttachment.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
+            $emailAttachment.Item($fileAttachmentClass, "DisplayName").Value = "message.eml"
+            $emailAttachment.Item($fileAttachmentClass, "Description").Value = "ExchangeConversationID:$($message.ConversationID);"
+            $emailAttachment.Item($fileAttachmentClass, "Extension").Value = ".eml"
+            $emailAttachment.Item($fileAttachmentClass, "Size").Value = $MemoryStream.Length
+            $emailAttachment.Item($fileAttachmentClass, "AddedDate").Value = [DateTime]::Now.ToUniversalTime()
+            $emailAttachment.Item($fileAttachmentClass, "Content").Value = $MemoryStream
+                
+            #Add the attachment to the work item and commit the changes
+            $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemID'" @scsmMGMTParams
+            $WorkItemProjection.__base.Add($emailAttachment, $fileAttachmentRelClass.Target)
+            $WorkItemProjection.__base.Commit()
+                        
+            #create the Attached By relationship if possible
+            $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
+            if ($attachedByUser)
+            {
+                New-SCSMRelationshipObject -Source $emailAttachment -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
+            }
+                
+            # Custom Event Handler
+            if ($ceScripts) { Invoke-AfterAttachEmail }
+        }
+        else
+        {
+            if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Attach-EmailToWorkItem" -EventID 0 -Severity "Warning" -LogMessage "Email from $($message.From) on $workItemID was not attached. Current Attachment Count: $existingAttachmentsCount/$($workItemSettings["MaxAttachments"]). File Size/Allowed Size: $($MemoryStream.Length/1024)/$($workItemSettings["MaxAttachmentSize"])"}
+        }
+    }
+    catch
+    {
+        if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Attach-EmailToWorkItem" -EventID 1 -Severity "Warning" -LogMessage "Email from $($message.From) on $workItemID could not be attached. $($_.Exception)"}
     }
 }
 
@@ -2209,171 +2220,179 @@ function Attach-FileToWorkItem ($message, $workItemId)
     
     foreach ($attachment in $message.Attachments)
     {
-        #determine if a File Attachment
-        if ($attachment.GetType().Name -eq "FileAttachment")
+        try
         {
-            $attachment.Load()
-            if ($attachment.GetType().BaseType.Name -like "Mime*")
+            #determine if a File Attachment
+            if ($attachment.GetType().Name -eq "FileAttachment")
             {
-                #This is a signed/encrypted attachment
-                $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
-                $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
-                $AttachmentContent = [convert]::FromBase64String($base64attachment)
-    
-                #Create a new MemoryStream object out of the attachment data
-                $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
-            }
-            else
-            {
-                #this is a regular File Attachment
-                $base64attachment = [System.Convert]::ToBase64String($attachment.Content)
-                $AttachmentContent = [convert]::FromBase64String($base64attachment)
-    
-                #Create a new MemoryStream object out of the attachment data
-                $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
-            }
-        }
-        #determine if an Item Attachment
-        elseif ($attachment.GetType().Name -eq "ItemAttachment")
-        {
-            if ($attachment.GetType().BaseType.Name -like "Mime*")
-            {
-                #This is a signed/encrypted attachment
-                $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
-                $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
-                $AttachmentContent = [convert]::FromBase64String($base64attachment)
-    
-                #Create a new MemoryStream object out of the attachment data
-                $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
-            }
-            else
-            {
-                $attachment.Load($mimeContentSchema)
-                $base64attachment = [System.Convert]::ToBase64String($attachment.Item.MimeContent.Content)
-                $AttachmentContent = [convert]::FromBase64String($base64attachment)
-                   
-                #Create a new MemoryStream object out of the attachment data
-                $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
-
-                #update the $attachment variable's name
-                if ($attachment.Item.GetType().Name -eq "EmailMessage")
+                $attachment.Load()
+                if ($attachment.GetType().BaseType.Name -like "Mime*")
                 {
-                    $attachment | Add-Member -NotePropertyName DisplayName -NotePropertyValue ($attachment.Name + ".eml")
+                    #This is a signed/encrypted attachment
+                    $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
+                    $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
+                    $AttachmentContent = [convert]::FromBase64String($base64attachment)
+        
+                    #Create a new MemoryStream object out of the attachment data
+                    $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
+                }
+                else
+                {
+                    #this is a regular File Attachment
+                    $base64attachment = [System.Convert]::ToBase64String($attachment.Content)
+                    $AttachmentContent = [convert]::FromBase64String($base64attachment)
+        
+                    #Create a new MemoryStream object out of the attachment data
+                    $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
+                }
+            }
+            #determine if an Item Attachment
+            elseif ($attachment.GetType().Name -eq "ItemAttachment")
+            {
+                if ($attachment.GetType().BaseType.Name -like "Mime*")
+                {
+                    #This is a signed/encrypted attachment
+                    $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
+                    $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
+                    $AttachmentContent = [convert]::FromBase64String($base64attachment)
+        
+                    #Create a new MemoryStream object out of the attachment data
+                    $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
+                }
+                else
+                {
+                    $attachment.Load($mimeContentSchema)
+                    $base64attachment = [System.Convert]::ToBase64String($attachment.Item.MimeContent.Content)
+                    $AttachmentContent = [convert]::FromBase64String($base64attachment)
+                    
+                    #Create a new MemoryStream object out of the attachment data
+                    $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
+
+                    #update the $attachment variable's name
+                    if ($attachment.Item.GetType().Name -eq "EmailMessage")
+                    {
+                        $attachment | Add-Member -NotePropertyName DisplayName -NotePropertyValue ($attachment.Name + ".eml")
+                        $attachment | Add-Member -NotePropertyName Extension -NotePropertyValue ".eml"
+                    }
+                }
+            }
+            #must be part of a digitally signed/encrypted message, determine Mime Object type
+            else
+            {
+                #generic mime attachment
+                if ($attachment.GetType().Name -eq "MimePart")
+                {   
+                    #Create a new MemoryStream object out of the attachment data
+                    $MemoryStream = New-Object System.IO.MemoryStream #($signedAttachArray,0,$signedAttachArray.Length)
+                    $attachment.Content.DecodeTo($MemoryStream)
+
+                    #update the $attachment variable's name
+                    $attachment | Add-Member -NotePropertyName Name -NotePropertyValue $attachment.FileName
+                }
+                #exchange object that is a mime type
+                if ($attachment.GetType().Name -eq "MessagePart")
+                {
+                    #This is an attached email
+                    $MemoryStream = New-Object System.IO.MemoryStream
+                    $attachment.WriteTo($MemoryStream)
+
+                    #$attachment.Load($mimeContentSchema)
+                    $base64attachment = [System.Convert]::ToBase64String($MemoryStream.ToArray())
+                    $AttachmentContent = [convert]::FromBase64String($base64attachment)
+                    
+                    #Create a new MemoryStream object out of the attachment data
+                    $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
+
+                    #update the $attachment variable's name
+                    $attachment | Add-Member -NotePropertyName Name -NotePropertyValue "message.eml"
                     $attachment | Add-Member -NotePropertyName Extension -NotePropertyValue ".eml"
                 }
             }
-        }
-        #must be part of a digitally signed/encrypted message, determine Mime Object type
-        else
-        {
-            #generic mime attachment
-            if ($attachment.GetType().Name -eq "MimePart")
-            {   
-                #Create a new MemoryStream object out of the attachment data
-                $MemoryStream = New-Object System.IO.MemoryStream #($signedAttachArray,0,$signedAttachArray.Length)
-                $attachment.Content.DecodeTo($MemoryStream)
 
-                #update the $attachment variable's name
-                $attachment | Add-Member -NotePropertyName Name -NotePropertyValue $attachment.FileName
-            }
-            #exchange object that is a mime type
-            if ($attachment.GetType().Name -eq "MessagePart")
+            #create the File Attachment object for SCSM
+            if ($MemoryStream.Length -gt $minFileSizeInKB+"kb" -and ($checkAttachmentSettings -eq $false -or ($existingAttachmentsCount -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
             {
-                #This is an attached email
-                $MemoryStream = New-Object System.IO.MemoryStream
-                $attachment.WriteTo($MemoryStream)
-
-                #$attachment.Load($mimeContentSchema)
-                $base64attachment = [System.Convert]::ToBase64String($MemoryStream.ToArray())
-                $AttachmentContent = [convert]::FromBase64String($base64attachment)
-                   
-                #Create a new MemoryStream object out of the attachment data
-                $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
-
-                #update the $attachment variable's name
-                $attachment | Add-Member -NotePropertyName Name -NotePropertyValue "message.eml"
-                $attachment | Add-Member -NotePropertyName Extension -NotePropertyValue ".eml"
-            }
-        }
-
-        #create the File Attachment object for SCSM
-        if ($MemoryStream.Length -gt $minFileSizeInKB+"kb" -and ($checkAttachmentSettings -eq $false -or ($existingAttachmentsCount -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
-        {
-            #Create the attachment object itself and set its properties for SCSM
-            $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
-            $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
-            if (!($attachment.DisplayName))
-            {
-                $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name
-            }
-            else
-            {
-                $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.DisplayName
-            }
-            #optional, use Azure Cognitive Services Vision, OCR, or Speech to set the Description property on the file
-            try
-            {
-                if (!($attachment.Extension))
+                #Create the attachment object itself and set its properties for SCSM
+                $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
+                $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
+                if (!($attachment.DisplayName))
                 {
+                    $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name
+                }
+                else
+                {
+                    $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.DisplayName
+                }
+                #optional, use Azure Cognitive Services Vision, OCR, or Speech to set the Description property on the file
+                try
+                {
+                    if (!($attachment.Extension))
+                    {
+                        $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
+                        $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
+                    }
                     $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
                     $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
-                }
-                $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
-                $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
-                if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
-                {
-                    $azureVisionResult = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
-                    $azureVisionTags = $azureVisionResult.tags.name | select-object -first 5
-                    $azureVisionTags = $azureVisionTags -join ','
-                    #if one of the Tags is "text" then attempt to extract text from the image through OCR as long as the confidence is greater than 90
-                    if ($azureVisionTags.contains("text"))
+                    if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
                     {
-                        $AzureOCRConfidence = [math]::round((($azureVisionTags.tags | select-object name, confidence | ?{$_.name -eq "text"} | select-object confidence -ExpandProperty confidence) * 100), 2)
-                        if ($AzureOCRConfidence -ge 90)
+                        $azureVisionResult = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
+                        $azureVisionTags = $azureVisionResult.tags.name | select-object -first 5
+                        $azureVisionTags = $azureVisionTags -join ','
+                        #if one of the Tags is "text" then attempt to extract text from the image through OCR as long as the confidence is greater than 90
+                        if ($azureVisionTags.contains("text"))
                         {
-                            $azureImageText = Get-AzureEmailImageText -imageToEvalute $AttachmentContent
-                            $ocrResult = $azureImageText.regions.Lines.words.text -join " "
-                            if ($ocrResult.length -ge 256){$ocrResult = $ocrResult.Substring(0,255)}
-                            #set the Description on the File Attachment with the Tags + OCR result
-                            $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags);Desc:$ocrResult"
+                            $AzureOCRConfidence = [math]::round((($azureVisionTags.tags | select-object name, confidence | ?{$_.name -eq "text"} | select-object confidence -ExpandProperty confidence) * 100), 2)
+                            if ($AzureOCRConfidence -ge 90)
+                            {
+                                $azureImageText = Get-AzureEmailImageText -imageToEvalute $AttachmentContent
+                                $ocrResult = $azureImageText.regions.Lines.words.text -join " "
+                                if ($ocrResult.length -ge 256){$ocrResult = $ocrResult.Substring(0,255)}
+                                #set the Description on the File Attachment with the Tags + OCR result
+                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags);Desc:$ocrResult"
+                            }
+                            else
+                            {
+                                #The OCR confidence wasn't high enough to test
+                                $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
+                            }
                         }
                         else
                         {
-                            #The OCR confidence wasn't high enough to test
+                            #The returned Azure Vision Tags don't contain the word "text"
                             $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
                         }
                     }
-                    else
+                    if (((".wav", ".ogg") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureSpeech))
                     {
-                        #The returned Azure Vision Tags don't contain the word "text"
-                        $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
+                        $NewFile.Item($fileAttachmentClass, "Description").Value = (Get-AzureSpeechEmailAudioText -audioFileToEvaluate $attachmentContent).DisplayText
                     }
                 }
-                if (((".wav", ".ogg") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureSpeech))
+                catch
                 {
-                    $NewFile.Item($fileAttachmentClass, "Description").Value = (Get-AzureSpeechEmailAudioText -audioFileToEvaluate $attachmentContent).DisplayText
+                    #file doesn't have a parseable extension or the call to Azure Vision/Speech failed
+                }
+                $NewFile.Item($fileAttachmentClass, "Size").Value = $MemoryStream.Length
+                $NewFile.Item($fileAttachmentClass, "AddedDate").Value = [DateTime]::Now.ToUniversalTime()
+                $NewFile.Item($fileAttachmentClass, "Content").Value = $MemoryStream
+            
+                #Add the attachment to the work item and commit the changes
+                $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemId'" @scsmMGMTParams
+                $WorkItemProjection.__base.Add($NewFile, $fileAttachmentRelClass.Target)
+                $WorkItemProjection.__base.Commit()
+        
+                #create the Attached By relationship if possible
+                $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
+                if ($attachedByUser)
+                {
+                    New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
+                    $existingAttachmentsCount += 1
                 }
             }
-            catch
-            {
-                #file doesn't have a parseable extension or the call to Azure Vision/Speech failed
-            }
-            $NewFile.Item($fileAttachmentClass, "Size").Value = $MemoryStream.Length
-            $NewFile.Item($fileAttachmentClass, "AddedDate").Value = [DateTime]::Now.ToUniversalTime()
-            $NewFile.Item($fileAttachmentClass, "Content").Value = $MemoryStream
-        
-            #Add the attachment to the work item and commit the changes
-            $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemId'" @scsmMGMTParams
-            $WorkItemProjection.__base.Add($NewFile, $fileAttachmentRelClass.Target)
-            $WorkItemProjection.__base.Commit()
-    
-            #create the Attached By relationship if possible
-            $attachedByUser = Get-SCSMUserByEmailAddress -EmailAddress "$($message.from)"
-            if ($attachedByUser)
-            {
-                New-SCSMRelationshipObject -Source $NewFile -Relationship $fileAddedByUserRelClass -Target $attachedByUser @scsmMGMTParams -Bulk
-                $existingAttachmentsCount += 1
-            }
+        }
+        catch
+        {
+            #file could not be added
+            if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Attach-FileToWorkItem" -EventID 0 -Severity "Warning" -LogMessage "A File Attachment from $($message.From) could not be added to $workItemId. $($_.Exception)"}
         }
     }
     # Custom Event Handler
