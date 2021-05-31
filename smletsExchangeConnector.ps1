@@ -1267,24 +1267,24 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     if ($enableAzureMachineLearning -eq $true)
                     {
                         #write confidence scores into Work Item
-                        if ($amlWITypeServiceRequestStringClassExtensionName) {try{Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeServiceRequestStringClassExtensionName" = $amlProbability.WorkItemType} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 11 -Severity "Error" -LogMessage $_.Exception}}
-                        if ($amlWITypeServiceRequestScoreClassExtensionName) {try{Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeServiceRequestScoreClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 12 -Severity "Error" -LogMessage $_.Exception}}
-                        if ($amlServiceRequestAreaScoreClassExtensionName) {try{Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestAreaScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 13 -Severity "Error" -LogMessage $_.Exception}}
-                        if ($amlServiceRequestSupportGroupScoreClassExtensionName) {try{Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestSupportGroupScoreClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 14 -Severity "Error" -LogMessage $_.Exception}}
-                        if ($amlServiceRequestSupportGroupEnumPredictionExtName) {try{Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestSupportGroupEnumPredictionExtName" = $amlProbability.WorkItemSupportGroup} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 15 -Severity "Error" -LogMessage $_.Exception}}
-                        if ($amlServiceRequestAreaEnumPredictionExtName) {try{Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestAreaEnumPredictionExtName" = $amlProbability.WorkItemClassification} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 16 -Severity "Error" -LogMessage $_.Exception}}
+                        if ($amlWITypeServiceRequestStringClassExtensionName) {try{Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeServiceRequestStringClassExtensionName" = $amlProbability.WorkItemType} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 2 -Severity "Error" -LogMessage $_.Exception}}
+                        if ($amlWITypeServiceRequestScoreClassExtensionName) {try{Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlWITypeServiceRequestScoreClassExtensionName" = $amlProbability.WorkItemTypeConfidence} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 3 -Severity "Error" -LogMessage $_.Exception}}
+                        if ($amlServiceRequestAreaScoreClassExtensionName) {try{Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestAreaScoreClassExtensionName" = $amlProbability.WorkItemClassificationConfidence} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 4 -Severity "Error" -LogMessage $_.Exception}}
+                        if ($amlServiceRequestSupportGroupScoreClassExtensionName) {try{Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestSupportGroupScoreClassExtensionName" = $amlProbability.WorkItemSupportGroupConfidence} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 5 -Severity "Error" -LogMessage $_.Exception}}
+                        if ($amlServiceRequestSupportGroupEnumPredictionExtName) {try{Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestSupportGroupEnumPredictionExtName" = $amlProbability.WorkItemSupportGroup} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 6 -Severity "Error" -LogMessage $_.Exception}}
+                        if ($amlServiceRequestAreaEnumPredictionExtName) {try{Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"$amlServiceRequestAreaEnumPredictionExtName" = $amlProbability.WorkItemClassification} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 7 -Severity "Error" -LogMessage $_.Exception}}
 
 
                         #when scores exceed thresholds, further define Work Item
                         if ($amlProbability.WorkItemSupportGroupConfidence -ge $amlWorkItemSupportGroupMinPercentConfidence)
                         {
                             try{Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"SupportGroup" = $amlProbability.WorkItemSupportGroup} @scsmMGMTParams}
-                            catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 17 -Severity "Error" -LogMessage $_.Exception}
+                            catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 8 -Severity "Error" -LogMessage $_.Exception}
                         }
                         if ($amlProbability.WorkItemClassificationConfidence -ge $amlWorkItemClassificationMinPercentConfidence)
                         {
                             try{Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Classification" = $amlProbability.WorkItemClassification} @scsmMGMTParams}
-                            catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 18 -Severity "Error" -LogMessage $_.Exception}
+                            catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 9 -Severity "Error" -LogMessage $_.Exception}
                         }
                         if($amlProbability.AffectedConfigItemConfidence -ge $amlImpactedConfigItemMinPercentConfidence)
                         {
@@ -1295,7 +1295,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                             else
                             {
                                 try{New-SCSMRelationshipObject -Relationship $wiAboutCIRelClass -Source $newWorkItem -Target $amlProbability.AffectedConfigItem -Bulk @scsmMGMTParams}
-                                catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 20 -Severity "Error" -LogMessage $_.Exception}
+                                catch {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 10 -Severity "Error" -LogMessage $_.Exception}
                             }  
                         }
                     }
