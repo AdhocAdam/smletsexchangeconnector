@@ -2468,7 +2468,7 @@ function Get-TierMembership ($UserSamAccountName, $TierId) {
     }
     catch
     {
-        if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Get-TierMembership" -Severity "Warning" -EventID 0 -LogMessage $_.Exception}
+        if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Get-TierMembership" -EventID 0 -Severity "Warning" -LogMessage $_.Exception}
     }
 
     return $isMember
