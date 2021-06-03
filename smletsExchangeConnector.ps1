@@ -177,7 +177,7 @@ function New-SMEXCOEvent
             "Set-CiresonPortalAnnouncement", "Get-AzureEmailLanguage", "Get-SCOMAuthorizedRequester", "Get-SCOMDistributedAppHealth",
             "Send-EmailFromWorkflowAccount", "Test-KeywordsFoundInMessage", "Get-AMLWorkItemProbability", "Get-AzureEmailTranslation",
             "Get-AzureEmailKeywords", "Get-AzureEmailSentiment", "Get-AzureEmailImageAnalysis", "Get-AzureSpeechEmailAudioText",
-            "Get-AzureEmailImageText")] 
+            "Get-AzureEmailImageText", "Get-ACSWorkItemPriority")] 
         [string] $Source,
         [parameter(Mandatory=$true, Position=3)] 
         [ValidateSet("Information","Warning","Error")] 
@@ -256,6 +256,7 @@ function New-SMEXCOEvent
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailImageAnalysis" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureSpeechEmailAudioText" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailImageText" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-ACSWorkItemPriority" -ErrorAction SilentlyContinue
 
             #Attempt to write to the Windows Event Log
             $evtObject = New-Object System.Diagnostics.EventLog
@@ -3688,14 +3689,25 @@ function Get-AzureEmailTranslation ($TextToTranslate, $SourceLanguage, $TargetLa
 }
 
 function Get-ACSWorkItemPriority ($score, $wiClass)
-{  
+{
+    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-ACSWorkItemPriority" -EventId 0 -Severity "Information" -LogMessage "Fetching Boundary for $wiClass with a score of $($score.ToString())"}
     $wiClass = $wiClass.Replace("System.WorkItem.Incident", "IR").Replace("System.WorkItem.ServiceRequest", "SR")
     [xml]$acsXMLBoundaries = $smexcoSettingsMP.ACSPriorityScoringBoundaries
     $priorityCalc = $acsXMLBoundaries.ACSPriorityBoundaries.ACSPriorityBoundary | foreach-object {if (($score -ge $_.Min) -and ($score -le $_.Max) -and ($wiClass -eq $_.WorkItemType)) {$_.IRImpactSRUrgencyEnum, $_.IRUrgencySRPriorityEnum}}
     $priorityCalc = $priorityCalc | foreach-object {Get-SCSMEnumeration -id $_ | select-object name -ExpandProperty name } | foreach-object {$_ + "$"}
-        
+
+    if ($loggingLevel -ge 4)
+    {
+        switch ($wiClass)
+        {
+            "IR" {New-SMEXCOEvent -Source "Get-ACSWorkItemPriority" -EventId 1 -Severity "Information" -LogMessage "Incident Impact: $($priorityCalc[0]). Urgency: $($priorityCalc[1])"}
+            "SR" {New-SMEXCOEvent -Source "Get-ACSWorkItemPriority" -EventId 1 -Severity "Information" -LogMessage "Service Request Urgency: $($priorityCalc[0]). Priority: $($priorityCalc[1])"}
+        }
+    }
+
     return $priorityCalc
 }
+
 function Get-AzureEmailKeywords ($messageToEvaluate)
 {
     #define cognitive services URLs
