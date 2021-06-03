@@ -177,7 +177,7 @@ function New-SMEXCOEvent
             "Set-CiresonPortalAnnouncement", "Get-AzureEmailLanguage", "Get-SCOMAuthorizedRequester", "Get-SCOMDistributedAppHealth",
             "Send-EmailFromWorkflowAccount", "Test-KeywordsFoundInMessage", "Get-AMLWorkItemProbability", "Get-AzureEmailTranslation",
             "Get-AzureEmailKeywords", "Get-AzureEmailSentiment", "Get-AzureEmailImageAnalysis", "Get-AzureSpeechEmailAudioText",
-            "Get-AzureEmailImageText")] 
+            "Get-AzureEmailImageText", "Get-ACSWorkItemPriority")] 
         [string] $Source,
         [parameter(Mandatory=$true, Position=3)] 
         [ValidateSet("Information","Warning","Error")] 
@@ -256,6 +256,7 @@ function New-SMEXCOEvent
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailImageAnalysis" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureSpeechEmailAudioText" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailImageText" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-ACSWorkItemPriority" -ErrorAction SilentlyContinue
 
             #Attempt to write to the Windows Event Log
             $evtObject = New-Object System.Diagnostics.EventLog
