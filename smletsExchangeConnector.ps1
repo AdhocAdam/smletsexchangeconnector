@@ -4393,13 +4393,13 @@ foreach ($message in $inbox)
                 if ($sigResult -eq $true)
                 {
                     $validSig = $true
-                    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Cryptography" -Severity "Information" -EventID 2 -LogMessage "Digital signature is valid"}
+                    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Cryptography" -EventID 2 -Severity "Information" -LogMessage "Digital signature is valid"}
                 }
             }
             catch
             {
                 $validSig = $false
-                if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Cryptography" -Severity "Warning" -EventID 3 -LogMessage "Digital signature could not be verified"}
+                if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Cryptography" -EventID 3 -Severity "Warning" -LogMessage "Digital signature could not be verified"}
             }
         }
 
