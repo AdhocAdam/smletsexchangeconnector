@@ -2541,36 +2541,23 @@ function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
     #get the template's support group members
     $supportGroupMembers = Get-TierMembers -TierEnumID $SupportGroupID
 
-        #based on how Dynamic Work Item assignment was configured, set the Assigned To User
-        if ($DynamicWorkItemAssignment -eq "volume")
-        {
-            $userToAssign = $supportGroupMembers | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1 
-        }
-        elseif ($DynamicWorkItemAssignment -eq "OOOvolume")
-        {
-            $userToAssign = $supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1
-        }
-        elseif ($DynamicWorkItemAssignment -eq "random")
-        {
-            $userToAssign = $supportGroupMembers | Get-Random
-        }
-        elseif ($DynamicWorkItemAssignment -eq "OOOrandom")
-        {
-            $userToAssign = $supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | Get-Random
-        }
-        else
-        {
-            <#the config variable has a value that wasn't part of the set#>
-            if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 1 -Severity "Error" -LogMessage "$DynamicWorkItemAssignment is not supported. No user will be assigned to $($WorkItem.Name). Please use the Settings UI to properly set this value."}
-        }
+    #based on how Dynamic Work Item assignment was configured, set the Assigned To User
+    switch ($DynamicWorkItemAssignment)
+    {
+        "volume" {$userToAssign = $supportGroupMembers | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1 }
+        "OOOvolume" {$userToAssign = $supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1}
+        "random" {$userToAssign = $supportGroupMembers | Get-Random}
+        "OOOrandom" {$userToAssign = $supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | Get-Random}
+        default {if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 1 -Severity "Error" -LogMessage "$DynamicWorkItemAssignment is not supported. No user will be assigned to $($WorkItem.Name). Please use the Settings UI to properly set this value."}}
+    }
     
-        #assign the work item to the selected user and set the first assigned date
-        if ($userToAssign)
-        {
-            New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $userToAssign -Bulk @scsmMGMTParams
-            Set-SCSMObject -SMObject $WorkItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams
-            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 2 -Severity "Information" -LogMessage "Assigned $($WorkItem.Name) to $($userToAssign.Name)"}
-        }
+    #assign the work item to the selected user and set the first assigned date
+    if ($userToAssign)
+    {
+        New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $userToAssign -Bulk @scsmMGMTParams
+        Set-SCSMObject -SMObject $WorkItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams
+        if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 2 -Severity "Information" -LogMessage "Assigned $($WorkItem.Name) to $($userToAssign.Name)"}
+    }
 }
 
 #courtesy of Leigh Kilday. Modified.
