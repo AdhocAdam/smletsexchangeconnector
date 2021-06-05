@@ -4050,33 +4050,14 @@ function Get-SCOMDistributedAppHealth ($message)
         #create, define, and load custom PS Object from SCOM DA Objects
         foreach ($distributedApp in $distributedApps)
         {
-            #Healthy app - Green Agent state
-            if ($distributedApp.HealthState -eq "Success")
+            $scomDAObject = New-Object System.Object
+            switch ($distributedApp.HealthState)
             {
-                $scomDAObject = New-Object System.Object
-                $scomDAObject | Add-Member -Type NoteProperty Name -Name -Value $distributedApp.displayname
-                $scomDAObject | Add-Member -Type NoteProperty Name -Status -Value "Healthy"
-                $healthySCOMApps += $scomDAObject
-                $emailBody += $scomDAObject.Name + " is " + $scomDAObject.Status + "<br />"
+                "Success" {$scomDAObject | Add-Member -Type NoteProperty -Name "Name" -Value $distributedApp.displayname; $scomDAObject | Add-Member -Type NoteProperty -Name "Status" -Value "Healthy"; $healthySCOMApps += $scomDAObject}
+                "Error" {$scomDAObject | Add-Member -Type NoteProperty -Name "Name" -Value $distributedApp.displayname; $scomDAObject | Add-Member -Type NoteProperty -Name "Status" -Value "Critical"; $unhealthySCOMApps += $scomDAObject}
+                "Uninitialized" {$scomDAObject | Add-Member -Type NoteProperty -Name "Name" -Value $distributedApp.displayname; $scomDAObject | Add-Member -Type NoteProperty -Name "Status" -Value "Not Monitored"; $notMonitoredSCOMApps += $scomDAObject}
             }
-            #Unhealthy App - Red Agent state
-            elseif ($result.HealthState -eq "Error")
-            {
-                $scomDAObject = New-Object System.Object
-                $scomDAObject | Add-Member -Type NoteProperty -Name Name -Value $distributedApp.displayname
-                $scomDAObject | Add-Member -Type NoteProperty -Name Status -Value "Critical"
-                $unhealthySCOMApps += $scomDAObject
-                $emailBody += $scomDAObject.Name + " is " + $scomDAObject.Status + "<br />"
-            }
-            #Gray Agent state
-            elseif ($result.HealthState -eq "Uninitialized")
-            {
-                $scomDAObject = New-Object System.Object
-                $scomDAObject | Add-Member -Type NoteProperty -Name Name -Value $distributedApp.displayname
-                $scomDAObject | Add-Member -Type NoteProperty -Name Status -Value "Not Monitored"
-                $notMonitoredSCOMApps += $scomDAObject
-                $emailBody += $scomDAObject.Name + " is " + $scomDAObject.Status + "<br />"
-            } 
+            $emailBody += $scomDAObject.Name + " is " + $scomDAObject.Status + "<br />"
         }
 
         #if there are unhealthy apps/red agent states, get their Active alerts in SCOM
