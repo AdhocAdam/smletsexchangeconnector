@@ -2541,36 +2541,23 @@ function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
     #get the template's support group members
     $supportGroupMembers = Get-TierMembers -TierEnumID $SupportGroupID
 
-        #based on how Dynamic Work Item assignment was configured, set the Assigned To User
-        if ($DynamicWorkItemAssignment -eq "volume")
-        {
-            $userToAssign = $supportGroupMembers | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1 
-        }
-        elseif ($DynamicWorkItemAssignment -eq "OOOvolume")
-        {
-            $userToAssign = $supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1
-        }
-        elseif ($DynamicWorkItemAssignment -eq "random")
-        {
-            $userToAssign = $supportGroupMembers | Get-Random
-        }
-        elseif ($DynamicWorkItemAssignment -eq "OOOrandom")
-        {
-            $userToAssign = $supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | Get-Random
-        }
-        else
-        {
-            <#the config variable has a value that wasn't part of the set#>
-            if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 1 -Severity "Error" -LogMessage "$DynamicWorkItemAssignment is not supported. No user will be assigned to $($WorkItem.Name). Please use the Settings UI to properly set this value."}
-        }
+    #based on how Dynamic Work Item assignment was configured, set the Assigned To User
+    switch ($DynamicWorkItemAssignment)
+    {
+        "volume" {$userToAssign = $supportGroupMembers | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1 }
+        "OOOvolume" {$userToAssign = $supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | foreach-object {Get-AssignedToWorkItemVolume -SCSMUser $_} | Sort-Object AssignedCount | Select-Object SCSMUser -ExpandProperty SCSMUser -first 1}
+        "random" {$userToAssign = $supportGroupMembers | Get-Random}
+        "OOOrandom" {$userToAssign = $supportGroupMembers | Where-Object {$_.OutOfOffice -ne $true} | Get-Random}
+        default {if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 1 -Severity "Error" -LogMessage "$DynamicWorkItemAssignment is not supported. No user will be assigned to $($WorkItem.Name). Please use the Settings UI to properly set this value."}}
+    }
     
-        #assign the work item to the selected user and set the first assigned date
-        if ($userToAssign)
-        {
-            New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $userToAssign -Bulk @scsmMGMTParams
-            Set-SCSMObject -SMObject $WorkItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams
-            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 2 -Severity "Information" -LogMessage "Assigned $($WorkItem.Name) to $($userToAssign.Name)"}
-        }
+    #assign the work item to the selected user and set the first assigned date
+    if ($userToAssign)
+    {
+        New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $WorkItem -Target $userToAssign -Bulk @scsmMGMTParams
+        Set-SCSMObject -SMObject $WorkItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams
+        if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 2 -Severity "Information" -LogMessage "Assigned $($WorkItem.Name) to $($userToAssign.Name)"}
+    }
 }
 
 #courtesy of Leigh Kilday. Modified.
@@ -3051,49 +3038,15 @@ function Send-EmailFromWorkflowAccount ($subject, $body, $bodyType, $toRecipient
 
 function Schedule-WorkItem ($calAppt, $wiType, $workItem)
 {
-    if ($calAppt.ItemClass -eq "IPM.Schedule.Meeting.Request")
+    switch ($calAppt.ItemClass)
     {
-        #set the Scheduled Start/End dates on the Work Item
-        $scheduledHashTable =  @{"ScheduledStartDate" = $calAppt.StartTime.ToUniversalTime(); "ScheduledEndDate" = $calAppt.EndTime.ToUniversalTime()}    
-        
-        switch ($wiType)
-        {
-            "ir" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-            "sr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-            "pr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-            "cr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-            "rr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-
-            #activities
-            "ma" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-            "pa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-            "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-            "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-        }
-        if ($loggingLevel -ge 1){New-SMEXCOEvent -Source "Schedule-WorkItem" -EventId 0 -LogMessage "Meeting scheduled for $($workItem.Name). Scheduled Start/End Times have been set." -Severity "Information"}
+        "IPM.Schedule.Meeting.Request" {Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $calAppt.StartTime.ToUniversalTime(); "ScheduledEndDate" = $calAppt.EndTime.ToUniversalTime()} @scsmMGMTParams}
+        "IPM.Schedule.Meeting.Canceled" {Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $null; "ScheduledEndDate" = $null} @scsmMGMTParams}
     }
 
-    #the meeting request is a cancelation, null the values out of the Schedule Start/End Time
-    elseif ($calAppt.ItemClass -eq "IPM.Schedule.Meeting.Canceled")
+    if ($loggingLevel -ge 1)
     {
-        #set the Scheduled Start/End dates on the Work Item
-        $scheduledHashTable =  @{"ScheduledStartDate" = $null; "ScheduledEndDate" = $null}    
-        
-        switch ($wiType)
-        {
-            "ir" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-            "sr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-            "pr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-            "cr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-            "rr" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-
-            #activities
-            "ma" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-            "pa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-            "sa" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-            "da" {Set-SCSMObject -SMObject $workItem -propertyhashtable $scheduledHashTable @scsmMGMTParams}
-        }
-        if ($loggingLevel -ge 1){New-SMEXCOEvent -Source "Schedule-WorkItem" -EventId 1 -LogMessage "Meeting cancelled for $($workItem.Name). Scheduled Start/End Times have been cleared." -Severity "Information"}
+        New-SMEXCOEvent -Source "Schedule-WorkItem" -EventId 0 -LogMessage "Meeting $($calAppt.ItemClass.Split(".")[3]) for $($workItem.Name). Scheduled Start/End Times have been updated." -Severity "Information"
     }
 }
 
@@ -4050,33 +4003,14 @@ function Get-SCOMDistributedAppHealth ($message)
         #create, define, and load custom PS Object from SCOM DA Objects
         foreach ($distributedApp in $distributedApps)
         {
-            #Healthy app - Green Agent state
-            if ($distributedApp.HealthState -eq "Success")
+            $scomDAObject = New-Object System.Object
+            switch ($distributedApp.HealthState)
             {
-                $scomDAObject = New-Object System.Object
-                $scomDAObject | Add-Member -Type NoteProperty Name -Name -Value $distributedApp.displayname
-                $scomDAObject | Add-Member -Type NoteProperty Name -Status -Value "Healthy"
-                $healthySCOMApps += $scomDAObject
-                $emailBody += $scomDAObject.Name + " is " + $scomDAObject.Status + "<br />"
+                "Success" {$scomDAObject | Add-Member -Type NoteProperty -Name "Name" -Value $distributedApp.displayname; $scomDAObject | Add-Member -Type NoteProperty -Name "Status" -Value "Healthy"; $healthySCOMApps += $scomDAObject}
+                "Error" {$scomDAObject | Add-Member -Type NoteProperty -Name "Name" -Value $distributedApp.displayname; $scomDAObject | Add-Member -Type NoteProperty -Name "Status" -Value "Critical"; $unhealthySCOMApps += $scomDAObject}
+                "Uninitialized" {$scomDAObject | Add-Member -Type NoteProperty -Name "Name" -Value $distributedApp.displayname; $scomDAObject | Add-Member -Type NoteProperty -Name "Status" -Value "Not Monitored"; $notMonitoredSCOMApps += $scomDAObject}
             }
-            #Unhealthy App - Red Agent state
-            elseif ($result.HealthState -eq "Error")
-            {
-                $scomDAObject = New-Object System.Object
-                $scomDAObject | Add-Member -Type NoteProperty -Name Name -Value $distributedApp.displayname
-                $scomDAObject | Add-Member -Type NoteProperty -Name Status -Value "Critical"
-                $unhealthySCOMApps += $scomDAObject
-                $emailBody += $scomDAObject.Name + " is " + $scomDAObject.Status + "<br />"
-            }
-            #Gray Agent state
-            elseif ($result.HealthState -eq "Uninitialized")
-            {
-                $scomDAObject = New-Object System.Object
-                $scomDAObject | Add-Member -Type NoteProperty -Name Name -Value $distributedApp.displayname
-                $scomDAObject | Add-Member -Type NoteProperty -Name Status -Value "Not Monitored"
-                $notMonitoredSCOMApps += $scomDAObject
-                $emailBody += $scomDAObject.Name + " is " + $scomDAObject.Status + "<br />"
-            } 
+            $emailBody += $scomDAObject.Name + " is " + $scomDAObject.Status + "<br />"
         }
 
         #if there are unhealthy apps/red agent states, get their Active alerts in SCOM
