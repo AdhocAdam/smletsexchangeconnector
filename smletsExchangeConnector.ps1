@@ -1571,7 +1571,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                                     #TODO: Send an email to let them know it failed?
                                 }
                             }
-                            "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {<# null res cat/desc #> Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Active$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
+                            "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Reactivate-WorkItem -WorkItem $workItem; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
                             "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
                             "\[$addWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($addWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Add-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                             "\[$removeWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($removeWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Remove-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
@@ -1604,7 +1604,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                                     #TODO: Send an email to let them know it failed?
                                 }
                             }
-                            "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {<# null res cat/desc #> Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Active$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
+                            "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Reactivate-WorkItem -WorkItem $workItem; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
                             "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
                             "\[$addWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($addWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Add-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                             "\[$removeWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($removeWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Remove-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
@@ -1638,7 +1638,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                                     #TODO: Send an email to let them know it failed?
                                 }
                             }
-                            "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {<# null res cat/desc #> Set-SCSMObject -SMObject $workItem -Property Status -Value "IncidentStatusEnum.Active$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
+                            "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Reactivate-WorkItem -WorkItem $workItem; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
                             "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
                             "\[$addWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($addWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Add-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                             "\[$removeWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($removeWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Remove-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
@@ -1824,7 +1824,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                                         #TODO: Send an email to let them know it failed?
                                     }
                                 }
-                                "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "ProblemStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Active$" @scsmMGMTParams}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}
+                                "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "ProblemStatusEnum.Resolved") {Reactivate-WorkItem -WorkItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}
                                 "\[$addWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($addWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Add-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                                 "\[$removeWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($removeWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Remove-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                                 {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false}
@@ -1853,7 +1853,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                                         #TODO: Send an email to let them know it failed?
                                     }
                                 }
-                                "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "ProblemStatusEnum.Resolved") {Set-SCSMObject -SMObject $workItem -Property Status -Value "ProblemStatusEnum.Active$" @scsmMGMTParams}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}
+                                "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "ProblemStatusEnum.Resolved") {Reactivate-WorkItem -WorkItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}
                                 "\[$addWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($addWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Add-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                                 "\[$removeWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($removeWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Remove-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                                 {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -sender $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false}
@@ -3088,6 +3088,16 @@ function Verify-WorkItem ($message, $returnWorkItem)
     {
         #will never engage as Verify-WorkItem currently only works when attaching emails to work items 
     }
+}
+
+function Reactivate-WorkItem ($WorkItem)
+{
+    switch ($WorkItem.ClassName)
+    {
+        "System.WorkItem.Incident" {$enumValue = "IncidentStatusenum.Active$"; $resName = "ResolutionCategory"}
+        "System.WorkItem.Problem" {$enumValue = "ProblemStatusEnum.Active$"; $resName = "Resolution"}
+    }
+    Set-SCSMObject -SMObject $WorkItem -propertyhashtable @{"Status" = $enumValue; $resName = $null; "ResolutionDescription" = $null; "ResolvedDate" = $null} @scsmMGMTParams;
 }
 
 function Read-MIMEMessage ($message)
