@@ -2751,6 +2751,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             */
             //Order By, How-To via C# = https://docs.microsoft.com/en-us/dotnet/api/system.linq.enumerable.orderby?view=netframework-4.7.2
             this.IncidentStatusEnums = emg.EntityTypes.GetChildEnumerations(new Guid("89b34802-671e-e422-5e38-7dae9a413ef8"), TraversalDepth.Recursive);
+            this.IncidentStatusEnums = this.IncidentStatusEnums.Where(enumItem => enumItem.Name != "IncidentStatusEnum.Resolved" && enumItem.Name != "IncidentStatusEnum.Closed").ToList();
             this.IncidentStatusEnums = this.IncidentStatusEnums.OrderBy(enumitem => enumitem.DisplayName).ToList();
 
             //Processing Logic - get the currently defined Incident Statuses by Reply
