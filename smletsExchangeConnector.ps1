@@ -893,7 +893,8 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
     #find Affected User from the From Address
     $relatedUsers = @()
     $affectedUser = Get-SCSMUserByEmailAddress -EmailAddress "$from"
-    if ((!$affectedUser) -and ($createUsersNotInCMDB -eq $true)) {$affectedUser = create-userincmdb "$from"}
+    if (($affectedUser)) {<#no change required#>}
+    elseif ((!$affectedUser) -and ($createUsersNotInCMDB -eq $true)) {$affectedUser = create-userincmdb "$from"}
     else {$affectedUser = create-userincmdb $from -NoCommit}
 
     #find Related Users (To)       
@@ -1482,7 +1483,8 @@ function Update-WorkItem ($message, $wiType, $workItemID)
     
     #determine who left the comment
     $commentLeftBy = Get-SCSMUserByEmailAddress -EmailAddress "$($message.From)"
-    if ((!$commentLeftBy) -and ($createUsersNotInCMDB -eq $true) ){$commentLeftBy = create-userincmdb $message.From}
+    if ($commentLeftBy) {<#no change required#>}
+    elseif ((!$commentLeftBy) -and ($createUsersNotInCMDB -eq $true) ){$commentLeftBy = create-userincmdb $message.From}
     else {$commentLeftBy = create-userincmdb $message.From -NoCommit}
 
     #add any attachments
