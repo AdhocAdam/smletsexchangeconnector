@@ -20,7 +20,7 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
-Version: 3.x.x = 289 - Enhancement, Class naming precision
+Version: 3.3.1 = #289 - Enhancement, Class naming precision
                 #295 - Enhancement, Support Group functions have logging
                 #294 - Bug, Users not found and not created in the CMDB when using Workflows can't be used in New-WorkItem or Update-WorkItem
                 #291 - Enhancement, Dynamic Analyst Assignment related features have logging
