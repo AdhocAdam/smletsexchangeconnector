@@ -4096,16 +4096,14 @@ $exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeServic
 #figure out if the workflow should be used
 if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Connector.15d8b765a2f8b63ead14472f9b3c12f0")} | Select-Object Enabled -ExpandProperty Enabled)
 {
-    #validate the Run As Account format to ensure it is an email address
-    $isValid365Address = ($ewsUsername + "@" + $ewsDomain) -match "^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$"
-    if (!($isValid365Address))
-    {
-        New-SMEXCOEvent -Source "General" -EventId 4 -LogMessage "The address/SCSM Run As Account used to sign into 365 is not a valid email address and is currently entered as $($ewsUsername + "@" + $ewsDomain). This will prevent a successfull connection. To fix this, go to the Run As account in SCSM and for the username enter it as an email address like user@domain.tld" -Severity "Error"
-    }
-
     #the workflow exists and it is enabled, determine how to connect to Exchange
     if ($UseExchangeOnline)
     {
+        #validate the Run As Account format to ensure it is an email address
+        if (!(($ewsUsername + "@" + $ewsDomain) -match "^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$"))
+        {
+            New-SMEXCOEvent -Source "General" -EventId 4 -LogMessage "The address/SCSM Run As Account used to sign into 365 is not a valid email address and is currently entered as $($ewsUsername + "@" + $ewsDomain). This will prevent a successful connection. To fix this, go to the Run As account in SCSM and for the username enter it as an email address like user@domain.tld" -Severity "Error"
+        }
         #request an access token from Azure
         $ReqTokenBody = @{
             Grant_Type    = "Password"
@@ -4144,6 +4142,11 @@ else
     #the workflow either doesn't exist or it's not enabled, determine how to connect to Exchange
     if ($UseExchangeOnline)
     {
+        #validate the Run As Account format to ensure it is an email address
+        if (!(($username + "@" + $password) -match "^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$"))
+        {
+            New-SMEXCOEvent -Source "General" -EventId 4 -LogMessage "The address/SCSM Run As Account used to sign into 365 is not a valid email address and is currently entered as $($username + "@" + $password). This will prevent a successful connection. To fix this, go to the Run As account in SCSM and for the username enter it as an email address like user@domain.tld" -Severity "Error"
+        }
         #request an access token from Azure
         $ReqTokenBody = @{
             Grant_Type    = "Password"
