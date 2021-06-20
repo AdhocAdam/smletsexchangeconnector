@@ -3049,12 +3049,19 @@ function Send-EmailFromWorkflowAccount ($subject, $body, $bodyType, $toRecipient
     }
 }
 
-function Schedule-WorkItem ($calAppt, $wiType, $workItem)
+function Schedule-WorkItem ($calAppt, $workItem)
 {
-    switch ($calAppt.ItemClass)
+    try
     {
-        "IPM.Schedule.Meeting.Request" {Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $calAppt.StartTime.ToUniversalTime(); "ScheduledEndDate" = $calAppt.EndTime.ToUniversalTime()} @scsmMGMTParams}
-        "IPM.Schedule.Meeting.Canceled" {Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $null; "ScheduledEndDate" = $null} @scsmMGMTParams}
+        switch ($calAppt.ItemClass)
+        {
+            "IPM.Schedule.Meeting.Request" {Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $calAppt.StartTime.ToUniversalTime(); "ScheduledEndDate" = $calAppt.EndTime.ToUniversalTime()} @scsmMGMTParams}
+            "IPM.Schedule.Meeting.Canceled" {Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $null; "ScheduledEndDate" = $null} @scsmMGMTParams}
+        }
+    }
+    catch
+    {
+        if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Schedule-WorkItem" -EventId 1 -LogMessage "Meeting $($calAppt.ItemClass.Split(".")[3]) for $($workItem.Name). Scheduled Start/End Times could not be updated." -Severity "Warning"}
     }
 
     if ($loggingLevel -ge 1)
@@ -4637,22 +4644,22 @@ foreach ($message in $inbox)
         switch -Regex ($appointment.subject)
         {
             #### primary work item types ####
-            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){schedule-workitem $appointment "ir" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "ir" -workItemID $result.name}}
-            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){schedule-workitem $appointment "sr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "sr" -workItemID $result.name}}
-            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){schedule-workitem $appointment "pr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "pr" -workItemID $result.name}}
-            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){schedule-workitem $appointment "cr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "cr" -workItemID $result.name}}
-            "\[$rrRegex[0-9]+\]" {$result = get-workitem $matches[0] $rrClass; if ($result){schedule-workitem $appointment "rr" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "rr" -workItemID $result.name}}
+            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "ir" -workItemID $result.name}}
+            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "sr" -workItemID $result.name}}
+            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "pr" -workItemID $result.name}}
+            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "cr" -workItemID $result.name}}
+            "\[$rrRegex[0-9]+\]" {$result = get-workitem $matches[0] $rrClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "rr" -workItemID $result.name}}
 
             #### activities ####
-            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){schedule-workitem $appointment "ma" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "ma" -workItemID $result.name}}
-            "\[$paRegex[0-9]+\]" {$result = get-workitem $matches[0] $paClass; if ($result){schedule-workitem $appointment "pa" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "pa" -workItemID $result.name}}
-            "\[$saRegex[0-9]+\]" {$result = get-workitem $matches[0] $saClass; if ($result){schedule-workitem $appointment "sa" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "sa" -workItemID $result.name}}
-            "\[$daRegex[0-9]+\]" {$result = get-workitem $matches[0] $daClass; if ($result){schedule-workitem $appointment "da" $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "da" -workItemID $result.name}}
+            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "ma" -workItemID $result.name}}
+            "\[$paRegex[0-9]+\]" {$result = get-workitem $matches[0] $paClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "pa" -workItemID $result.name}}
+            "\[$saRegex[0-9]+\]" {$result = get-workitem $matches[0] $saClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "sa" -workItemID $result.name}}
+            "\[$daRegex[0-9]+\]" {$result = get-workitem $matches[0] $daClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "da" -workItemID $result.name}}
 
             #### 3rd party classes, work items, etc. add here ####
 
             #### default action, create/schedule a new default work item ####
-            default {$returnedNewWorkItemToSchedule = new-workitem $appointment $defaultNewWorkItem $true; schedule-workitem -calAppt $appointment -wiType $defaultNewWorkItem -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)}
+            default {$returnedNewWorkItemToSchedule = new-workitem $appointment $defaultNewWorkItem $true; schedule-workitem -calAppt $appointment -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)}
         }
         
         # Custom Event Handler
@@ -4683,23 +4690,23 @@ foreach ($message in $inbox)
         switch -Regex ($appointment.subject)
         {
             #### primary work item types ####
-            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){schedule-workitem $appointment "ir" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "ir" -workItemID $result.name}}
-            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){schedule-workitem $appointment "sr" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "sr" -workItemID $result.name}}
-            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){schedule-workitem $appointment "pr" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "pr" -workItemID $result.name}}
-            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){schedule-workitem $appointment "cr" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "cr" -workItemID $result.name}}
-            "\[$rrRegex[0-9]+\]" {$result = get-workitem $matches[0] $rrClass; if ($result){schedule-workitem $appointment "rr" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "rr" -workItemID $result.name}}
+            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "ir" -workItemID $result.name}}
+            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "sr" -workItemID $result.name}}
+            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "pr" -workItemID $result.name}}
+            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "cr" -workItemID $result.name}}
+            "\[$rrRegex[0-9]+\]" {$result = get-workitem $matches[0] $rrClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "rr" -workItemID $result.name}}
 
             #### activities ####
-            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){schedule-workitem $appointment "ma" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "ma" -workItemID $result.name}}
-            "\[$paRegex[0-9]+\]" {$result = get-workitem $matches[0] $paClass; if ($result){schedule-workitem $appointment "pa" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "pa" -workItemID $result.name}}
-            "\[$saRegex[0-9]+\]" {$result = get-workitem $matches[0] $saClass; if ($result){schedule-workitem $appointment "sa" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "sa" -workItemID $result.name}}
-            "\[$daRegex[0-9]+\]" {$result = get-workitem $matches[0] $daClass; if ($result){schedule-workitem $appointment "da" $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "da" -workItemID $result.name}}
+            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "ma" -workItemID $result.name}}
+            "\[$paRegex[0-9]+\]" {$result = get-workitem $matches[0] $paClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "pa" -workItemID $result.name}}
+            "\[$saRegex[0-9]+\]" {$result = get-workitem $matches[0] $saClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "sa" -workItemID $result.name}}
+            "\[$daRegex[0-9]+\]" {$result = get-workitem $matches[0] $daClass; if ($result){schedule-workitem -calAppt $appointment -workItem $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "da" -workItemID $result.name}}
 
             #### 3rd party classes, work items, etc. add here ####
-            "([C][a][n][c][e][l][e][d][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){$result = Verify-WorkItem $appointment -returnWorkItem $true; schedule-workitem $appointment $defaultNewWorkItem $result} else{new-workitem $appointment $defaultNewWorkItem}}
+            "([C][a][n][c][e][l][e][d][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){$result = Verify-WorkItem $appointment -returnWorkItem $true; schedule-workitem -calAppt $appointment -workItem $result} else{new-workitem $appointment $defaultNewWorkItem}}
 
             #### default action, create/schedule a new default work item ####
-            default {$returnedNewWorkItemToSchedule = new-workitem $appointment $defaultNewWorkItem $true; schedule-workitem -calAppt $appointment -wiType $defaultNewWorkItem -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)}
+            default {$returnedNewWorkItemToSchedule = new-workitem $appointment $defaultNewWorkItem $true; schedule-workitem -calAppt $appointment -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)}
         }
         
         # Custom Event Handler
