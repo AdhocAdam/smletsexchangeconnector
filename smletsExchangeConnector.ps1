@@ -1470,22 +1470,29 @@ function Update-WorkItem ($message, $wiType, $workItemID)
     }
     else
     {
-        $fromKeywordPosition = $message.Body.IndexOf("$fromKeyword" + ":")
-        if (($fromKeywordPosition -eq $null) -or ($fromKeywordPosition -eq -1))
+        try
         {
-            $commentToAdd = $message.body
-            if ($commentToAdd.length -ge "4000")
+            $fromKeywordPosition = $message.Body.IndexOf("$fromKeyword" + ":")
+            if (($fromKeywordPosition -eq $null) -or ($fromKeywordPosition -eq -1))
             {
-                $commentToAdd.substring(0, 4000)
+                $commentToAdd = $message.body
+                if ($commentToAdd.length -ge "4000")
+                {
+                    $commentToAdd.substring(0, 4000)
+                }
+            }
+            else
+            {
+                $commentToAdd = $message.Body.substring(0, $fromKeywordPosition)
+                if ($commentToAdd.length -ge "4000")
+                {
+                    $commentToAdd.substring(0, 4000)
+                }
             }
         }
-        else
+        catch
         {
-            $commentToAdd = $message.Body.substring(0, $fromKeywordPosition)
-            if ($commentToAdd.length -ge "4000")
-            {
-                $commentToAdd.substring(0, 4000)
-            }
+            $commentToAdd = $null
         }
     }
     
@@ -2675,7 +2682,7 @@ function Add-ActionLogEntry {
         [parameter(Mandatory=$true, Position=1)] 
         [ValidateSet("Assign","AnalystComment","Closed","Escalated","EmailSent","EndUserComment","FileAttached","FileDeleted","Reactivate","Resolved","TemplateApplied")] 
         [string] $Action,
-        [parameter(Mandatory=$true, Position=2)]
+        [parameter(Mandatory=$false, Position=2)]
         [string] $Comment,
         [parameter(Mandatory=$true, Position=3)]
         [string] $EnteredBy,
