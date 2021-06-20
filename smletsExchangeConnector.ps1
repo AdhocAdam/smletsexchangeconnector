@@ -31,6 +31,7 @@ Version: 3.3.1 = #289 - Enhancement, Class naming precision
                 #302 - Enhancement, Set-AssignedToPerSupportGroup, Get-SCOMDistributedAppHealth, and Schedule-WorkItem functions have been made more efficient
                 #303 - Bug, Incident/Problem Reactivation does not null neccesary values. Changing Incident Status based on replies no longer evaluates "Resolved" status
                 #307 - Bug, Logging that validates the Run as Account email address for Exchange Online was used in on premise configurations
+                #311 - Bug, A message that has no body would cause Add-ActionLogEntry to throw an error as the Comment would be null
 Version: 3.3.0 = #90 - Bug, Cannot Convert null object to base 64 in Attach-FileToWorkItem
                 #265 - Feature, Settings History
                 #174 - Bug, Merge Reply Logic to handle subjects with multiple RE: patterns
