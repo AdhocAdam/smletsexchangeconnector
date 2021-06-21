@@ -1113,19 +1113,19 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     if (($enableAzureCognitiveServicesForNewWI -eq $true) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
                     {
                         $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.Incident"
-                        try {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-ACSWorkItemPriority" -EventID 2 -Severity "Warning" -LogMessage $_.Exception}
+                        try {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Get-ACSWorkItemPriority" -EventID 2 -Severity "Warning" -LogMessage $_.Exception}}
                     }
                     elseif (($enableAzureCognitiveServicesForNewWI -eq $false) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
                     {
                         $sentimentScore = Get-AzureEmailSentiment -messageToEvaluate $newWorkItem.description
                         $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.Incident"
-                        try {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-ACSWorkItemPriority" -EventID 2 -Severity "Warning" -LogMessage $_.Exception}
+                        try {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Impact" = $priorityEnumArray[0]; "Urgency" = $priorityEnumArray[1]} @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Get-ACSWorkItemPriority" -EventID 2 -Severity "Warning" -LogMessage $_.Exception}}
                     }
 
                     #write the sentiment score into the custom Work Item extension
                     if ($acsSentimentScoreIRClassExtensionName)
                     {
-                        try {Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreIRClassExtensionName -value $sentimentScore @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-ACSWorkItemPriority" -EventID 3 -Severity "Warning" -LogMessage $_.Exception}
+                        try {Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreIRClassExtensionName -value $sentimentScore @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Get-ACSWorkItemPriority" -EventID 3 -Severity "Warning" -LogMessage $_.Exception}}
                     }
 
                     #update the Support Group and Classification if Azure Machine Learning is being used
@@ -1178,7 +1178,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                         }
                         else
                         {
-                            New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 3 -Severity "Warning" -LogMessage "The Assigned To User could not be set on $($newWorkItem.Name). Using Template: $($IRTemplate.DisplayName). This Template either does not have a Support Group defined that corresponds to a mapped Cireson Portal Group Mapping OR the Template being used/was copied from an OOB SCSM Template"
+                            if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 3 -Severity "Warning" -LogMessage "The Assigned To User could not be set on $($newWorkItem.Name). Using Template: $($IRTemplate.DisplayName). This Template either does not have a Support Group defined that corresponds to a mapped Cireson Portal Group Mapping OR the Template being used/was copied from an OOB SCSM Template"}
                         }
                     }
                     
@@ -1270,19 +1270,19 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     if (($enableAzureCognitiveServicesForNewWI -eq $true) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
                     {
                         $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.ServiceRequest"
-                        try {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-ACSWorkItemPriority" -EventID 2 -Severity "Warning" -LogMessage $_.Exception}
+                        try {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Get-ACSWorkItemPriority" -EventID 2 -Severity "Warning" -LogMessage $_.Exception}}
                     }
                     elseif (($enableAzureCognitiveServicesForNewWI -eq $false) -and ($enableAzureCognitiveServicesPriorityScoring -eq $true))
                     {
                         $sentimentScore = Get-AzureEmailSentiment -messageToEvaluate $newWorkItem.description
                         $priorityEnumArray = Get-ACSWorkItemPriority -score $sentimentScore -wiClass "System.WorkItem.ServiceRequest"
-                        try {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-ACSWorkItemPriority" -EventID 2 -Severity "Warning" -LogMessage $_.Exception}
+                        try {Set-SCSMObject -SMObject $newWorkItem -PropertyHashtable @{"Urgency" = $priorityEnumArray[0]; "Priority" = $priorityEnumArray[1]} @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Get-ACSWorkItemPriority" -EventID 2 -Severity "Warning" -LogMessage $_.Exception}}
                     }
 
                     #write the sentiment score into the custom Work Item extension
                     if ($acsSentimentScoreSRClassExtensionName)
                     {
-                        try {Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreSRClassExtensionName -value $sentimentScore @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Get-ACSWorkItemPriority" -EventID 3 -Severity "Warning" -LogMessage $_.Exception}
+                        try {Set-SCSMObject -SMObject $newWorkItem -Property $acsSentimentScoreSRClassExtensionName -value $sentimentScore @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Get-ACSWorkItemPriority" -EventID 3 -Severity "Warning" -LogMessage $_.Exception}}
                     }
 
                     #update the Support Group and Classification if Azure Machine Learning is being used
@@ -1336,7 +1336,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                         }
                         else
                         {
-                            New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 3 -Severity "Warning" -LogMessage "The Assigned To User could not be set on $($newWorkItem.Name). Using Template: $($SRTemplate.DisplayName). This Template either does not have a Support Group defined that corresponds to a mapped Cireson Portal Group Mapping OR the Template being used/was copied from an OOB SCSM Template"
+                            if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 3 -Severity "Warning" -LogMessage "The Assigned To User could not be set on $($newWorkItem.Name). Using Template: $($SRTemplate.DisplayName). This Template either does not have a Support Group defined that corresponds to a mapped Cireson Portal Group Mapping OR the Template being used/was copied from an OOB SCSM Template"}
                         }
                     }
                     
@@ -1568,7 +1568,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                 switch ($message.From)
                 {
                     $affectedUserSMTP.TargetAddress {
-                        if ($changeIncidentStatusOnReply -and (($workitem.Status.Name -ne "IncidentStatusEnum.Closed") -and ($workitem.Status.Name -ne "IncidentStatusEnum.Resolved"))) {try {Set-SCSMObject -SMObject $workItem -Property Status -Value "$changeIncidentStatusOnReplyAffectedUser" @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 6 -LogMessage "Attempting to change $($workItem.Name) to a Status of $($changeIncidentStatusOnReplyAffectedUser.DisplayName) due to Affected User Reply could not be performed. $($_.Exception)" -Severity "Warning"}}
+                        if ($changeIncidentStatusOnReply -and (($workitem.Status.Name -ne "IncidentStatusEnum.Closed") -and ($workitem.Status.Name -ne "IncidentStatusEnum.Resolved"))) {try {Set-SCSMObject -SMObject $workItem -Property Status -Value "$changeIncidentStatusOnReplyAffectedUser" @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 6 -LogMessage "Attempting to change $($workItem.Name) to a Status of $($changeIncidentStatusOnReplyAffectedUser.DisplayName) due to Affected User Reply could not be performed. $($_.Exception)" -Severity "Warning"}}}
                         switch -Regex ($commentToAdd) {
                             "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterAcknowledge }}}
                             "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ResolvedDate" = (Get-Date).ToUniversalTime(); "Status" = "IncidentStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; try {New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 3 -LogMessage "$($newWorkItem.Name) could not be Resolved By $($affectedUser.DisplayName)." -Severity "Warning"}}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Resolved" -IsPrivate $false; if ($defaultIncidentResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property ResolutionCategory -Value $defaultIncidentResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}
@@ -1601,7 +1601,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                         }
                     }
                     $assignedToSMTP.TargetAddress {
-                        if ($changeIncidentStatusOnReply -and (($workitem.Status.Name -ne "IncidentStatusEnum.Closed") -and ($workitem.Status.Name -ne "IncidentStatusEnum.Resolved"))) {try {Set-SCSMObject -SMObject $workItem -Property Status -Value "$changeIncidentStatusOnReplyAssignedTo" @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 6 -LogMessage "Attempting to change $($workItem.Name) to a Status of $($changeIncidentStatusOnReplyAssignedTo.DisplayName) due to Assigned User Reply could not be performed. $($_.Exception)" -Severity "Warning"}}
+                        if ($changeIncidentStatusOnReply -and (($workitem.Status.Name -ne "IncidentStatusEnum.Closed") -and ($workitem.Status.Name -ne "IncidentStatusEnum.Resolved"))) {try {Set-SCSMObject -SMObject $workItem -Property Status -Value "$changeIncidentStatusOnReplyAssignedTo" @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 6 -LogMessage "Attempting to change $($workItem.Name) to a Status of $($changeIncidentStatusOnReplyAssignedTo.DisplayName) due to Assigned User Reply could not be performed. $($_.Exception)" -Severity "Warning"}}}
                         switch -Regex ($commentToAdd) {
                             "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterAcknowledge }}}
                             "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ResolvedDate" = (Get-Date).ToUniversalTime(); "Status" = "IncidentStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; try {New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 3 -LogMessage "$($newWorkItem.Name) could not be Resolved By $($affectedUser.DisplayName)." -Severity "Warning"}}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Resolved" -IsPrivate $false; if ($defaultIncidentResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property ResolutionCategory -Value $defaultIncidentResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}
@@ -1635,7 +1635,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                         }
                     }
                     default {
-                        if ($changeIncidentStatusOnReply -and (($workitem.Status.Name -ne "IncidentStatusEnum.Closed") -and ($workitem.Status.Name -ne "IncidentStatusEnum.Resolved"))) {try {Set-SCSMObject -SMObject $workItem -Property Status -Value "$changeIncidentStatusOnReplyRelatedUser" @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 6 -LogMessage "Attempting to change $($workItem.Name) to a Status of $($changeIncidentStatusOnReplyRelatedUser.DisplayName) due to Related User Reply could not be performed. $($_.Exception)" -Severity "Warning"}}
+                        if ($changeIncidentStatusOnReply -and (($workitem.Status.Name -ne "IncidentStatusEnum.Closed") -and ($workitem.Status.Name -ne "IncidentStatusEnum.Resolved"))) {try {Set-SCSMObject -SMObject $workItem -Property Status -Value "$changeIncidentStatusOnReplyRelatedUser" @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 6 -LogMessage "Attempting to change $($workItem.Name) to a Status of $($changeIncidentStatusOnReplyRelatedUser.DisplayName) due to Related User Reply could not be performed. $($_.Exception)" -Severity "Warning"}}}
                         switch -Regex ($commentToAdd) {
                             "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterAcknowledge }}}
                             "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ResolvedDate" = (Get-Date).ToUniversalTime(); "Status" = "IncidentStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; try {New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 3 -LogMessage "$($newWorkItem.Name) could not be Resolved By $($affectedUser.DisplayName)." -Severity "Warning"}}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Resolved" -IsPrivate $false; if ($defaultIncidentResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property ResolutionCategory -Value $defaultIncidentResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}
