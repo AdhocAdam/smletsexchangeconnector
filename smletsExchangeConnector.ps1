@@ -896,6 +896,12 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
         $description = remove-PII $description
     }
     
+    #if the subject is longer than 200 characters take only the first 200.
+    if ($title.length -ge "200")
+    {
+        $title = $title.substring(0,200)
+    }
+    
     #if the message is longer than 4000 characters take only the first 4000.
     if ($description.length -ge "4000")
     {
