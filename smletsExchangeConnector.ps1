@@ -1509,9 +1509,28 @@ function Update-WorkItem ($message, $wiType, $workItemID)
     #add any attachments
     if ($message.Attachments)
     {
-        Attach-FileToWorkItem $message $workItemID
+        if ($loggingLevel -ge 4)
+        {
+            $logMessage = "Attaching File
+            From: $($message.From)
+            Title: $($message.Subject)"
+            New-SMEXCOEvent -Source "Update-WorkItem" -EventId 0 -LogMessage $logMessage -Severity "Information"
+        }
+        switch ($wiType)
+        {
+            "ma" {
+                    $workItem = get-scsmobject -class $maClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
+                    $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Guid
+                    Attach-FileToWorkItem $message $parentWorkItem
+                 }
+            "ra" {
+                    $workItem = get-scsmobject -class $raClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
+                    $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Guid
+                    Attach-FileToWorkItem $message $parentWorkItem
+                 }
+            default { Attach-FileToWorkItem $message $workItemID }
+       }
     }
-
     #show the user who will perform the update and the [action] they are taking. If there is no [action] it's just a comment
     if ($loggingLevel -ge 4)
     {
