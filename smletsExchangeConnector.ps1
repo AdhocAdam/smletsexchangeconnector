@@ -1521,12 +1521,12 @@ function Update-WorkItem ($message, $wiType, $workItemID)
             "ma" {
                     $workItem = Get-SCSMObject -class $maClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
                     $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Get_Id().Guid
-                    Attach-FileToWorkItem $message $parentWorkItem
+                    Attach-FileToWorkItem $message $parentWorkItem.Name
                  }
             "ra" {
                     $workItem = Get-SCSMObject -class $raClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
                     $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Get_Id().Guid
-                    Attach-FileToWorkItem $message $parentWorkItem
+                    Attach-FileToWorkItem $message $parentWorkItem.Name
                  }
             default { Attach-FileToWorkItem $message $workItemID }
        }
