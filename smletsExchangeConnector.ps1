@@ -1509,13 +1509,6 @@ function Update-WorkItem ($message, $wiType, $workItemID)
     #add any attachments
     if ($message.Attachments)
     {
-        if ($loggingLevel -ge 4)
-        {
-            $logMessage = "Attaching File
-            From: $($message.From)
-            Title: $($message.Subject)"
-            New-SMEXCOEvent -Source "Update-WorkItem" -EventId 0 -LogMessage $logMessage -Severity "Information"
-        }
         switch ($wiType)
         {
             "ma" {
@@ -2267,6 +2260,15 @@ function Attach-FileToWorkItem ($message, $workItemId)
     
     foreach ($attachment in $message.Attachments)
     {
+        #file attachment logging
+        if ($loggingLevel -ge 4)
+        {
+            $logMessage = "Attaching File
+            From: $($message.From)
+            Title: $($message.Subject)"
+            New-SMEXCOEvent -Source "Attach-FileToWorkItem" -EventId 1 -LogMessage $logMessage -Severity "Information"
+        }
+        
         try
         {
             #determine if a File Attachment
