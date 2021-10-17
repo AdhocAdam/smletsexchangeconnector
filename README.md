@@ -23,6 +23,15 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>File Attachments for Activities (v3.4)</i></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src ="/FeatureScreenshots/activityFileAttachments.png" /></td>
+    <td width="auto">Whether you choose to Complete, Fail, Approve, Reject, or just leave notes on an Activity. Emails for Activities that have File Attachments, will now make their way to the parent Work Item.</td>
+  </tr>
+</table>
+<table border="0">
+  <tr>
     <td colspan="3"><i>History Pane (v3.3)</i></td>
   </tr>
   <tr>
