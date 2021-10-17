@@ -26,7 +26,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
     <td colspan="3"><i>File Attachments for Activities (v3.4)</i></td>
   </tr>
   <tr>
-    <td width="50%"><img src ="/FeatureScreenshots/activityFileAttachments.png" /></td>
+    <td align="center" width="200"><img src ="/FeatureScreenshots/activityFileAttachments.png" /></td>
     <td width="auto">Whether you choose to Complete, Fail, Approve, Reject, or just leave notes on an Activity. Emails for Activities that have File Attachments, will now make their way to the parent Work Item.</td>
   </tr>
 </table>
