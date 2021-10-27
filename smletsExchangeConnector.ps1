@@ -2900,9 +2900,9 @@ function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUse
 }
 
 #search the Cireson KB based on content from a New Work Item and notify the Affected User
-function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
+function Search-CiresonKnowledgeBase ($searchQuery)
 {
-    $kbAPIurl = "api/V3/KnowledgeBase/GetHTMLArticlesFullTextSearch?userId=$($ciresonPortalUser.Id)&searchValue=$searchQuery&isManager=$([bool]$ciresonPortalUser.KnowledgeManager)&userLanguageCode=$($ciresonPortalUser.LanguageCode)"
+    $kbAPIurl = "api/V3/Article/FullTextSearch?&searchValue=$searchQuery"
     if ($ciresonPortalWindowsAuth -eq $true)
     {
         $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$kbAPIurl) -UseDefaultCredentials
@@ -2992,7 +2992,7 @@ function Get-CiresonSuggestionURL
     #call the Suggestion functions passing the search query (work item description/keywords) per the enabled features
     switch ($isSuggestionFeatureUsed)
     {
-        "SuggestKA" {$kbURLs = Search-CiresonKnowledgeBase -searchQuery $($searchQueriesHash["AzureKA"]) -ciresonPortalUser $portalUser}
+        "SuggestKA" {$kbURLs = Search-CiresonKnowledgeBase -searchQuery $($searchQueriesHash["AzureKA"])}
         "SuggestRO" {$requestURLs = Search-AvailableCiresonPortalOfferings -searchQuery $($searchQueriesHash["AzureRO"]) -ciresonPortalUser $portalUser}
     }
     return $kbURLs, $requestURLs
