@@ -2959,17 +2959,29 @@ function Get-CiresonSuggestionURL
     {
         return $null
     }
+
+    #check string length
+    $wiTitle = if ($WorkItem.title.length -ge 1) {$WorkItem.title.trim()} else {$null}
+    $wiDesc = if ($WorkItem.description.length -ge 1) {$WorkItem.description.trim()} else {$null}
+    if (($wiTitle -eq $null) -and ($wiDesc -eq $null))
+    {
+        return $null
+    }
+    else
+    {
+        $searchQuery = ("$($wiTitle) $($wiDesc)").Trim()
+    }
     
     #retrieve the cireson portal user
-    $portalUser = Get-CiresonPortalUser -username $AffectedUser.UserName -domain $AffectedUser.Domain
+    $portalUser = Get-CiresonPortalUser -username $AffectedUser.UserName -domain $AffectedUser.Domain 
 
     #Define the initial keyword hashtable to use against the Cireson Web API
-    $searchQueriesHash = @{"AzureRO" = "$($WorkItem.title.trim()) $($WorkItem.description)"; "AzureKA" = "$($WorkItem.title.trim()) $($WorkItem.description)"}
+    $searchQueriesHash = @{"AzureRO" = "$searchQuery"; "AzureKA" = "$searchQuery"}
 
     #if at least 1 ACS feature is being used, retrieve the keywords from ACS
     if ($AzureKA -or $AzureRO)
     {
-        $acsKeywordsToSet = (Get-AzureEmailKeywords -messageToEvaluate "$($WorkItem.title.trim()) $($WorkItem.description)") -join " "
+        $acsKeywordsToSet = (Get-AzureEmailKeywords -messageToEvaluate "$searchQuery")
     }
 
     #update the hashtable to set the ACS Keywords on the relevant feature(s)
@@ -2992,9 +3004,10 @@ function Get-CiresonSuggestionURL
     #call the Suggestion functions passing the search query (work item description/keywords) per the enabled features
     switch ($isSuggestionFeatureUsed)
     {
-        "SuggestKA" {$kbURLs = Search-CiresonKnowledgeBase -searchQuery $($searchQueriesHash["AzureKA"])}
-        "SuggestRO" {$requestURLs = Search-AvailableCiresonPortalOfferings -searchQuery $($searchQueriesHash["AzureRO"]) -ciresonPortalUser $portalUser}
+        "SuggestKA" {$kbURLs = Search-CiresonKnowledgeBase -searchQuery $($searchQueriesHash["AzureKA"]); if ($kbURLs -eq $null) {$kbURLs = ""}}
+        "SuggestRO" {$requestURLs = Search-AvailableCiresonPortalOfferings -searchQuery $($searchQueriesHash["AzureRO"]) -ciresonPortalUser $portalUser; if ($requestURLs -eq $null) {$requestURLs = ""}}
     }
+
     return $kbURLs, $requestURLs
 }
 
