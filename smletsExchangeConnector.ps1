@@ -1993,7 +1993,10 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                     $reviewers = Get-SCSMRelatedObject -SMObject $workItem -Relationship $raHasReviewerRelClass @scsmMGMTParams
                     foreach ($reviewer in $reviewers)
                     {
-                        $reviewingUser = get-scsmobject -class $userClass -filter "id -eq '$((Get-SCSMRelatedObject -SMObject $reviewer -Relationship $raReviewerIsUserRelClass @scsmMGMTParams).id)'" @scsmMGMTParams
+                        $reviewingUser = Get-SCSMRelatedObject -SMObject $reviewer -Relationship $raReviewerIsUserRelClass @scsmMGMTParams
+                        if ($reviewingUser)
+                        {
+                        $reviewingUser = Get-SCSMObject -Id $reviewingUser.Id @scsmMGMTParams
                         $reviewingUserName = $reviewingUser.UserName #it is necessary to store this in its own variable for the AD filters to work correctly
                         $reviewingUserSMTP = Get-SCSMRelatedObject -SMObject $reviewingUser @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress
 
@@ -2122,6 +2125,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                             {
                                 #not a user or a group
                             }
+                        }
                         }
                     }
                     
