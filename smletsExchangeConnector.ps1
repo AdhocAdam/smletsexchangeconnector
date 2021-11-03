@@ -20,6 +20,12 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 3.4.0 = #320 - Feature, File Attachments on Activities are pushed to the Parent Work Item
+                #321 - Enhancement, Moved Cireson Search KB to a supported endpoint
+                #318 - Enhancement, Searching Cireson Knowledge Base/Service Catalog could include a line break and produce erroneous results
+                #325 - Enhancement, Get-CiresonSuggestionURL function performs more validation before invoking a search
+                #327 - Bug, Null Reviewers on Review Activities cause the workflow to error when processing votes
+                #315 - Bug, Emails with Subjects greater than 200 character cause the workflow to error
 Version: 3.3.1 = #289 - Enhancement, Class naming precision
                 #295 - Enhancement, Support Group functions have logging
                 #294 - Bug, Users not found and not created in the CMDB when using Workflows can't be used in New-WorkItem or Update-WorkItem
