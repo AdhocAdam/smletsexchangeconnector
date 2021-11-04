@@ -23,6 +23,15 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>File Attachments for Activities (v3.4)</i></td>
+  </tr>
+  <tr>
+    <td align="center" width="200"><img src ="/FeatureScreenshots/activityFileAttachments.png" /></td>
+    <td width="auto">Whether you choose to Complete, Fail, Approve, Reject, or just leave notes on an Activity. Emails for Activities that have File Attachments, will now make their way to the parent Work Item.</td>
+  </tr>
+</table>
+<table border="0">
+  <tr>
     <td colspan="3"><i>History Pane (v3.3)</i></td>
   </tr>
   <tr>
@@ -205,7 +214,7 @@ Ready to go? Get started over <a href="https://github.com/AdhocAdam/smletsexchan
     <td colspan="3"><i>Microsoft Azure Cognitive Services integration (v1.4)</i></td>
   </tr>
   <tr>
-    <td width="200"><img src ="https://msdnshared.blob.core.windows.net/media/2017/03/Azure-Cognitive-Services-e1489079006258.png" /></td>
+    <td width="200"><img src ="/FeatureScreenshots/ACSBrain.png" /></td>
     <td width="auto">Ever wish you could create an Incident or Service Request based on the nature of the email? How about using the suggested Knowledge Article/Request Offering feature of this connector, but achieve even faster processing times? Leveraging the power of Azure Cognitive Services emails can now be optionally run through Keyword Analysis for more concise search results and/or Sentiment Analysis for dynamic creation of an Incident or Service Request based on the Affected User's perceived attitude. <a href="https://azure.microsoft.com/en-us/pricing/details/cognitive-services/text-analytics/">Microsoft pricing information can be found here.</a> Not ready for Azure? You can alternatively define a list of keywords that will control whether or not an Incident or Service Request is created.
     </td>
   </tr>

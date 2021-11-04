@@ -20,6 +20,12 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 3.4.0 = #320 - Feature, File Attachments on Activities are pushed to the Parent Work Item
+                #321 - Enhancement, Moved Cireson Search KB to a supported endpoint
+                #318 - Enhancement, Searching Cireson Knowledge Base/Service Catalog could include a line break and produce erroneous results
+                #325 - Enhancement, Get-CiresonSuggestionURL function performs more validation before invoking a search
+                #327 - Bug, Null Reviewers on Review Activities cause the workflow to error when processing votes
+                #315 - Bug, Emails with Subjects greater than 200 character cause the workflow to error
 Version: 3.3.1 = #289 - Enhancement, Class naming precision
                 #295 - Enhancement, Support Group functions have logging
                 #294 - Bug, Users not found and not created in the CMDB when using Workflows can't be used in New-WorkItem or Update-WorkItem
@@ -896,6 +902,12 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
         $description = remove-PII $description
     }
     
+    #if the subject is longer than 200 characters take only the first 200.
+    if ($title.length -ge "200")
+    {
+        $title = $title.substring(0,200)
+    }
+    
     #if the message is longer than 4000 characters take only the first 4000.
     if ($description.length -ge "4000")
     {
@@ -1509,9 +1521,21 @@ function Update-WorkItem ($message, $wiType, $workItemID)
     #add any attachments
     if ($message.Attachments)
     {
-        Attach-FileToWorkItem $message $workItemID
+        switch ($wiType)
+        {
+            "ma" {
+                    $workItem = Get-SCSMObject -class $maClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
+                    $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Get_Id().Guid
+                    Attach-FileToWorkItem $message $parentWorkItem.Name
+                 }
+            "ra" {
+                    $workItem = Get-SCSMObject -class $raClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
+                    $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Get_Id().Guid
+                    Attach-FileToWorkItem $message $parentWorkItem.Name
+                 }
+            default { Attach-FileToWorkItem $message $workItemID }
+       }
     }
-
     #show the user who will perform the update and the [action] they are taking. If there is no [action] it's just a comment
     if ($loggingLevel -ge 4)
     {
@@ -1975,7 +1999,10 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                     $reviewers = Get-SCSMRelatedObject -SMObject $workItem -Relationship $raHasReviewerRelClass @scsmMGMTParams
                     foreach ($reviewer in $reviewers)
                     {
-                        $reviewingUser = get-scsmobject -class $userClass -filter "id -eq '$((Get-SCSMRelatedObject -SMObject $reviewer -Relationship $raReviewerIsUserRelClass @scsmMGMTParams).id)'" @scsmMGMTParams
+                        $reviewingUser = Get-SCSMRelatedObject -SMObject $reviewer -Relationship $raReviewerIsUserRelClass @scsmMGMTParams
+                        if ($reviewingUser)
+                        {
+                        $reviewingUser = Get-SCSMObject -Id $reviewingUser.Id @scsmMGMTParams
                         $reviewingUserName = $reviewingUser.UserName #it is necessary to store this in its own variable for the AD filters to work correctly
                         $reviewingUserSMTP = Get-SCSMRelatedObject -SMObject $reviewingUser @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress
 
@@ -2104,6 +2131,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                             {
                                 #not a user or a group
                             }
+                        }
                         }
                     }
                     
@@ -2248,6 +2276,15 @@ function Attach-FileToWorkItem ($message, $workItemId)
     
     foreach ($attachment in $message.Attachments)
     {
+        #file attachment logging
+        if ($loggingLevel -ge 4)
+        {
+            $logMessage = "Attaching File
+            From: $($message.From)
+            Title: $($message.Subject)"
+            New-SMEXCOEvent -Source "Attach-FileToWorkItem" -EventId 1 -LogMessage $logMessage -Severity "Information"
+        }
+        
         try
         {
             #determine if a File Attachment
@@ -2856,7 +2893,7 @@ function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUse
         $matchingRequestURLs = @()
         foreach ($serviceCatalogResult in $serviceCatalogResults)
         {
-            $wordsMatched = ($searchQuery.Split() | ?{($serviceCatalogResult.RequestOfferingTitle -match "\b$_\b") -or ($serviceCatalogResult.RequestOfferingDescription -match "\b$_\b")}).count
+            $wordsMatched = ($searchQuery.Trim().Split() | ?{($serviceCatalogResult.RequestOfferingTitle -match "\b$_\b") -or ($serviceCatalogResult.RequestOfferingDescription -match "\b$_\b")}).count
             if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToRO)
             {
                 $ciresonPortalRequestURL = "`"" + $ciresonPortalServer + "SC/ServiceCatalog/RequestOffering/" + $serviceCatalogResult.RequestOfferingId + "," + $serviceCatalogResult.ServiceOfferingId + "`""
@@ -2873,9 +2910,9 @@ function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUse
 }
 
 #search the Cireson KB based on content from a New Work Item and notify the Affected User
-function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
+function Search-CiresonKnowledgeBase ($searchQuery)
 {
-    $kbAPIurl = "api/V3/KnowledgeBase/GetHTMLArticlesFullTextSearch?userId=$($ciresonPortalUser.Id)&searchValue=$searchQuery&isManager=$([bool]$ciresonPortalUser.KnowledgeManager)&userLanguageCode=$($ciresonPortalUser.LanguageCode)"
+    $kbAPIurl = "api/V3/Article/FullTextSearch?&searchValue=$searchQuery"
     if ($ciresonPortalWindowsAuth -eq $true)
     {
         $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$kbAPIurl) -UseDefaultCredentials
@@ -2892,7 +2929,7 @@ function Search-CiresonKnowledgeBase ($searchQuery, $ciresonPortalUser)
         $matchingKBURLs = @()
         foreach ($kbResult in $kbResults)
         {
-            $wordsMatched = ($searchQuery.Split() | ?{($kbResult.title -match "\b$_\b")}).count
+            $wordsMatched = ($searchQuery.Trim().Split() | ?{($kbResult.title -match "\b$_\b")}).count
             if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToKA)
             {
                 $knowledgeSuggestion = New-Object System.Object
@@ -2932,17 +2969,29 @@ function Get-CiresonSuggestionURL
     {
         return $null
     }
+
+    #check string length
+    $wiTitle = if ($WorkItem.title.length -ge 1) {$WorkItem.title.trim()} else {$null}
+    $wiDesc = if ($WorkItem.description.length -ge 1) {$WorkItem.description.trim()} else {$null}
+    if (($wiTitle -eq $null) -and ($wiDesc -eq $null))
+    {
+        return $null
+    }
+    else
+    {
+        $searchQuery = ("$($wiTitle) $($wiDesc)").Trim()
+    }
     
     #retrieve the cireson portal user
-    $portalUser = Get-CiresonPortalUser -username $AffectedUser.UserName -domain $AffectedUser.Domain
+    $portalUser = Get-CiresonPortalUser -username $AffectedUser.UserName -domain $AffectedUser.Domain 
 
     #Define the initial keyword hashtable to use against the Cireson Web API
-    $searchQueriesHash = @{"AzureRO" = "$($WorkItem.title.trim()) $($WorkItem.description)"; "AzureKA" = "$($WorkItem.title.trim()) $($WorkItem.description)"}
+    $searchQueriesHash = @{"AzureRO" = "$searchQuery"; "AzureKA" = "$searchQuery"}
 
     #if at least 1 ACS feature is being used, retrieve the keywords from ACS
     if ($AzureKA -or $AzureRO)
     {
-        $acsKeywordsToSet = (Get-AzureEmailKeywords -messageToEvaluate "$($WorkItem.title.trim()) $($WorkItem.description)") -join " "
+        $acsKeywordsToSet = (Get-AzureEmailKeywords -messageToEvaluate "$searchQuery")
     }
 
     #update the hashtable to set the ACS Keywords on the relevant feature(s)
@@ -2965,9 +3014,10 @@ function Get-CiresonSuggestionURL
     #call the Suggestion functions passing the search query (work item description/keywords) per the enabled features
     switch ($isSuggestionFeatureUsed)
     {
-        "SuggestKA" {$kbURLs = Search-CiresonKnowledgeBase -searchQuery $($searchQueriesHash["AzureKA"]) -ciresonPortalUser $portalUser}
-        "SuggestRO" {$requestURLs = Search-AvailableCiresonPortalOfferings -searchQuery $($searchQueriesHash["AzureRO"]) -ciresonPortalUser $portalUser}
+        "SuggestKA" {$kbURLs = Search-CiresonKnowledgeBase -searchQuery $($searchQueriesHash["AzureKA"]); if ($kbURLs -eq $null) {$kbURLs = ""}}
+        "SuggestRO" {$requestURLs = Search-AvailableCiresonPortalOfferings -searchQuery $($searchQueriesHash["AzureRO"]) -ciresonPortalUser $portalUser; if ($requestURLs -eq $null) {$requestURLs = ""}}
     }
+
     return $kbURLs, $requestURLs
 }
 
