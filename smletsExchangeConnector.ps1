@@ -2382,11 +2382,11 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 if (!($attachment.DisplayName))
                 {
-                    $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name
+                    $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name.Split([IO.Path]::GetInvalidFileNameChars()) -join ""
                 }
                 else
                 {
-                    $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.DisplayName
+                    $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.DisplayName.Split([IO.Path]::GetInvalidFileNameChars()) -join ""
                 }
                 #optional, use Azure Cognitive Services Vision, OCR, or Speech to set the Description property on the file
                 try
