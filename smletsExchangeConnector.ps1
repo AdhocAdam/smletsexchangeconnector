@@ -2382,22 +2382,36 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 if (!($attachment.DisplayName))
                 {
-                    $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name
+                    $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name.Split([IO.Path]::GetInvalidFileNameChars()) -join ""
                 }
                 else
                 {
-                    $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.DisplayName
+                    $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.DisplayName.Split([IO.Path]::GetInvalidFileNameChars()) -join ""
                 }
                 #optional, use Azure Cognitive Services Vision, OCR, or Speech to set the Description property on the file
                 try
                 {
+                    #The $Attachment does not have an Extension property, attempt to generate one for the SCSM File Object from the $Attachment.Name
                     if (!($attachment.Extension))
                     {
                         $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
                         $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
                     }
-                    $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
-                    $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
+                    #The $Attachment has a Extension defined, set the SCSM File Attachment object's Extension property based on the Attachment's Extension
+                    else
+                    {
+                        if ($attachment.Extension.StartsWith("."))
+                        {
+                            $NewFile.Item($fileAttachmentClass, "Extension").Value = $attachment.Extension
+                        }
+                        else
+                        {
+                            $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Extension
+                        }
+                        
+                    }
+
+                    #See if the File Extension is a known image type and if Azure Vision is being used
                     if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
                     {
                         $azureVisionResult = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
@@ -2427,6 +2441,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                             $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
                         }
                     }
+                    #See if the File Extension is a known audio type and if Azure Speech is being used
                     if (((".wav", ".ogg") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureSpeech))
                     {
                         $NewFile.Item($fileAttachmentClass, "Description").Value = (Get-AzureSpeechEmailAudioText -audioFileToEvaluate $attachmentContent).DisplayText
