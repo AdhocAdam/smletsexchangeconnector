@@ -20,6 +20,7 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 3.4.1 = #324 - Bug, File attachments allow illegal path characters
 Version: 3.4.0 = #320 - Feature, File Attachments on Activities are pushed to the Parent Work Item
                 #321 - Enhancement, Moved Cireson Search KB to a supported endpoint
                 #318 - Enhancement, Searching Cireson Knowledge Base/Service Catalog could include a line break and produce erroneous results
@@ -2382,22 +2383,36 @@ function Attach-FileToWorkItem ($message, $workItemId)
                 $NewFile.Item($fileAttachmentClass, "Id").Value = [Guid]::NewGuid().ToString()
                 if (!($attachment.DisplayName))
                 {
-                    $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name
+                    $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.Name.Split([IO.Path]::GetInvalidFileNameChars()) -join ""
                 }
                 else
                 {
-                    $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.DisplayName
+                    $NewFile.Item($fileAttachmentClass, "DisplayName").Value = $attachment.DisplayName.Split([IO.Path]::GetInvalidFileNameChars()) -join ""
                 }
                 #optional, use Azure Cognitive Services Vision, OCR, or Speech to set the Description property on the file
                 try
                 {
+                    #The $Attachment does not have an Extension property, attempt to generate one for the SCSM File Object from the $Attachment.Name
                     if (!($attachment.Extension))
                     {
                         $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
                         $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
                     }
-                    $fileExtensionArrayPosition = $attachment.Name.Split(".").Length - 1
-                    $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Name.Split(".")[$fileExtensionArrayPosition]
+                    #The $Attachment has a Extension defined, set the SCSM File Attachment object's Extension property based on the Attachment's Extension
+                    else
+                    {
+                        if ($attachment.Extension.StartsWith("."))
+                        {
+                            $NewFile.Item($fileAttachmentClass, "Extension").Value = $attachment.Extension
+                        }
+                        else
+                        {
+                            $NewFile.Item($fileAttachmentClass, "Extension").Value = "." + $attachment.Extension
+                        }
+                        
+                    }
+
+                    #See if the File Extension is a known image type and if Azure Vision is being used
                     if (((".png", ".jpg", ".jpeg", ".bmp", ".gif") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureVision))
                     {
                         $azureVisionResult = Get-AzureEmailImageAnalysis -imageToEvalute $AttachmentContent
@@ -2427,6 +2442,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                             $NewFile.Item($fileAttachmentClass, "Description").Value = "Tags:$($azureVisionTags)"
                         }
                     }
+                    #See if the File Extension is a known audio type and if Azure Speech is being used
                     if (((".wav", ".ogg") -contains $NewFile.Item($fileAttachmentClass, "Extension").Value) -and ($enableAzureSpeech))
                     {
                         $NewFile.Item($fileAttachmentClass, "Description").Value = (Get-AzureSpeechEmailAudioText -audioFileToEvaluate $attachmentContent).DisplayText
