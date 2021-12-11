@@ -1197,7 +1197,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
                     $ciresonSuggestionURLs = Get-CiresonSuggestionURL -SuggestKA:$searchCiresonHTMLKB -AzureKA:$enableAzureCognitiveServicesForKA -SuggestRO:$searchAvailableCiresonPortalOfferings -AzureRO:$enableAzureCognitiveServicesForRO -WorkItem $newWorkItem -AffectedUser $affectedUser
-                    if ($ciresonSuggestionURLs -ne $null)
+                    if ($null -ne $ciresonSuggestionURLs)
                     {
                         if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
                         {
@@ -1355,7 +1355,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     
                     #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
                     $ciresonSuggestionURLs = Get-CiresonSuggestionURL -SuggestKA:$searchCiresonHTMLKB -AzureKA:$enableAzureCognitiveServicesForKA -SuggestRO:$searchAvailableCiresonPortalOfferings -AzureRO:$enableAzureCognitiveServicesForRO -WorkItem $newWorkItem -AffectedUser $affectedUser
-                    if ($ciresonSuggestionURLs -ne $null)
+                    if ($null -ne $ciresonSuggestionURLs)
                     {
                         if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
                         {
@@ -1487,7 +1487,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
         try
         {
             $fromKeywordPosition = $message.Body.IndexOf("$fromKeyword" + ":")
-            if (($fromKeywordPosition -eq $null) -or ($fromKeywordPosition -eq -1))
+            if (($null -eq $fromKeywordPosition) -or ($fromKeywordPosition -eq -1))
             {
                 $commentToAdd = $message.body
                 if ($commentToAdd.length -ge "4000")
@@ -1595,21 +1595,21 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                     $affectedUserSMTP.TargetAddress {
                         if ($changeIncidentStatusOnReply -and (($workitem.Status.Name -ne "IncidentStatusEnum.Closed") -and ($workitem.Status.Name -ne "IncidentStatusEnum.Resolved"))) {try {Set-SCSMObject -SMObject $workItem -Property Status -Value "$changeIncidentStatusOnReplyAffectedUser" @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 6 -LogMessage "Attempting to change $($workItem.Name) to a Status of $($changeIncidentStatusOnReplyAffectedUser.DisplayName) due to Affected User Reply could not be performed. $($_.Exception)" -Severity "Warning"}}}
                         switch -Regex ($commentToAdd) {
-                            "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterAcknowledge }}}
+                            "\[$acknowledgedKeyword]" {if ($null -eq $workItem.FirstResponseDate){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterAcknowledge }}}
                             "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ResolvedDate" = (Get-Date).ToUniversalTime(); "Status" = "IncidentStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; try {New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 3 -LogMessage "$($newWorkItem.Name) could not be Resolved By $($affectedUser.DisplayName)." -Severity "Warning"}}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Resolved" -IsPrivate $false; if ($defaultIncidentResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property ResolutionCategory -Value $defaultIncidentResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}
                             "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ClosedDate" = (Get-Date).ToUniversalTime(); "Status" = "IncidentStatusEnum.Closed$"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Closed" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}
                             "\[$takeKeyword]" { 
                                 if ($takeRequiresGroupMembership -eq $false) {
                                     try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                     Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Assign" -IsPrivate $false
-                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterTake }
                                 }
                                 elseif (($takeRequiresGroupMembership -eq $true) -and (Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.TierQueue.Id)) {
                                     try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                     Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Assign" -IsPrivate $false
-                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterTake }
                                 }
@@ -1628,21 +1628,21 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                     $assignedToSMTP.TargetAddress {
                         if ($changeIncidentStatusOnReply -and (($workitem.Status.Name -ne "IncidentStatusEnum.Closed") -and ($workitem.Status.Name -ne "IncidentStatusEnum.Resolved"))) {try {Set-SCSMObject -SMObject $workItem -Property Status -Value "$changeIncidentStatusOnReplyAssignedTo" @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 6 -LogMessage "Attempting to change $($workItem.Name) to a Status of $($changeIncidentStatusOnReplyAssignedTo.DisplayName) due to Assigned User Reply could not be performed. $($_.Exception)" -Severity "Warning"}}}
                         switch -Regex ($commentToAdd) {
-                            "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterAcknowledge }}}
+                            "\[$acknowledgedKeyword]" {if ($null -eq $workItem.FirstResponseDate){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterAcknowledge }}}
                             "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ResolvedDate" = (Get-Date).ToUniversalTime(); "Status" = "IncidentStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; try {New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 3 -LogMessage "$($newWorkItem.Name) could not be Resolved By $($affectedUser.DisplayName)." -Severity "Warning"}}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Resolved" -IsPrivate $false; if ($defaultIncidentResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property ResolutionCategory -Value $defaultIncidentResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}
                             "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ClosedDate" = (Get-Date).ToUniversalTime(); "Status" = "IncidentStatusEnum.Closed$"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Closed" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}
                             "\[$takeKeyword]" { 
                                 if ($takeRequiresGroupMembership -eq $false) {
                                     try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                     Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Assign" -IsPrivate $false
-                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterTake }
                                 }
                                 elseif (($takeRequiresGroupMembership -eq $true) -and (Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.TierQueue.Id)) {
                                     try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                     Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Assign" -IsPrivate $false
-                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterTake }
                                 }
@@ -1662,21 +1662,21 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                     default {
                         if ($changeIncidentStatusOnReply -and (($workitem.Status.Name -ne "IncidentStatusEnum.Closed") -and ($workitem.Status.Name -ne "IncidentStatusEnum.Resolved"))) {try {Set-SCSMObject -SMObject $workItem -Property Status -Value "$changeIncidentStatusOnReplyRelatedUser" @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 6 -LogMessage "Attempting to change $($workItem.Name) to a Status of $($changeIncidentStatusOnReplyRelatedUser.DisplayName) due to Related User Reply could not be performed. $($_.Exception)" -Severity "Warning"}}}
                         switch -Regex ($commentToAdd) {
-                            "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterAcknowledge }}}
+                            "\[$acknowledgedKeyword]" {if ($null -eq $workItem.FirstResponseDate){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterAcknowledge }}}
                             "\[$resolvedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ResolvedDate" = (Get-Date).ToUniversalTime(); "Status" = "IncidentStatusEnum.Resolved$"; "ResolutionDescription" = "$commentToAdd"} @scsmMGMTParams; try {New-SCSMRelationshipObject -Relationship $workResolvedByUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 3 -LogMessage "$($newWorkItem.Name) could not be Resolved By $($affectedUser.DisplayName)." -Severity "Warning"}}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Resolved" -IsPrivate $false; if ($defaultIncidentResolutionCategory) {Set-SCSMObject -SMObject $workItem -Property ResolutionCategory -Value $defaultIncidentResolutionCategory}; if ($ceScripts) { Invoke-AfterResolved }}
                             "\[$closedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"ClosedDate" = (Get-Date).ToUniversalTime(); "Status" = "IncidentStatusEnum.Closed$"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Closed" -IsPrivate $false; if ($ceScripts) { Invoke-AfterClosed }}
                             "\[$takeKeyword]" { 
                                 if ($takeRequiresGroupMembership -eq $false) {
                                     try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                     Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false
-                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterTake }
                                 }
                                 elseif (($takeRequiresGroupMembership -eq $true) -and (Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.TierQueue.Id)) {
                                     try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                     Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false
-                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterTake }
                                 }
@@ -1737,20 +1737,20 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                     $affectedUserSMTP.TargetAddress {
                         switch -Regex ($commentToAdd)
                         {
-                            "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false}}
+                            "\[$acknowledgedKeyword]" {if ($null -eq $workItem.FirstResponseDate){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false}}
                             "\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.OnHold$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterHold }}
                             "\[$takeKeyword]" {
                                 if ($takeRequiresGroupMembership -eq $false) {
                                     try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                     Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Assign" -IsPrivate $false
-                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterTake }
                                 }
                                 elseif (($takeRequiresGroupMembership -eq $true) -and (Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.SupportGroup.Id)) {
                                     try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                     Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Assign" -IsPrivate $false
-                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterTake }
                                 }
@@ -1769,20 +1769,20 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                     $assignedToSMTP.TargetAddress {
                         switch -Regex ($commentToAdd)
                         {
-                            "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false}}
+                            "\[$acknowledgedKeyword]" {if ($null -eq $workItem.FirstResponseDate){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false}}
                             "\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.OnHold$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterHold }}
                             "\[$takeKeyword]" {
                                 if ($takeRequiresGroupMembership -eq $false) {
                                     try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                     Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Assign" -IsPrivate $false
-                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterTake }
                                 }
                                 elseif (($takeRequiresGroupMembership -eq $true) -and (Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.SupportGroup.Id)) {
                                     try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                     Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Assign" -IsPrivate $false
-                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterTake }
                                 }
@@ -1802,20 +1802,20 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                     default {
                         switch -Regex ($commentToAdd)
                         {
-                            "\[$acknowledgedKeyword]" {if ($workItem.FirstResponseDate -eq $null){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false}}
+                            "\[$acknowledgedKeyword]" {if ($null -eq $workItem.FirstResponseDate){Set-SCSMObject -SMObject $workItem -Property FirstResponseDate -Value $message.DateTimeSent.ToUniversalTime() @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false}}
                             "\[$holdKeyword]" {Set-SCSMObject -SMObject $workItem -Property Status -Value "ServiceRequestStatusEnum.OnHold$" @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($ceScripts) { Invoke-AfterHold }}
                             "\[$takeKeyword]" {
                                 if ($takeRequiresGroupMembership -eq $false) {
                                     try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                     Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false
-                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterTake }
                                 }
                                 elseif (($takeRequiresGroupMembership -eq $true) -and (Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.SupportGroup.Id)) {
                                     try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                     Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false
-                                    if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                    if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                     # Custom Event Handler
                                     if ($ceScripts) { Invoke-AfterTake }
                                 }
@@ -1857,13 +1857,13 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                                     if ($takeRequiresGroupMembership -eq $false) {
                                         try {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                         Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false;
-                                        if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                        if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                         if ($ceScripts){ Invoke-AfterTake }
                                     }
                                     elseif (($takeRequiresGroupMembership -eq $true) -and (Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.$prSupportGroupPropertyName.Id)) {
                                         try {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                         Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false;
-                                        if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                        if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                         if ($ceScripts){ Invoke-AfterTake }
                                     }
                                     else {
@@ -1886,13 +1886,13 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                                     if ($takeRequiresGroupMembership -eq $false) {
                                         try {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                         Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false;
-                                        if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                        if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                         if ($ceScripts){ Invoke-AfterTake }
                                     }
                                     elseif (($takeRequiresGroupMembership -eq $true) -and (Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.$prSupportGroupPropertyName.Id)) {
                                         try {New-SCSMRelationshipObject -relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk;} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                         Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false;
-                                        if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                        if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                         if ($ceScripts){ Invoke-AfterTake }
                                     }
                                     else {
@@ -1931,14 +1931,14 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                                     if ($takeRequiresGroupMembership -eq $false) {
                                         try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                         Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Assign" -IsPrivate $false
-                                        if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                        if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                         # Custom Event Handler
                                         if ($ceScripts) { Invoke-AfterTake }
                                     }
                                     elseif (($takeRequiresGroupMembership -eq $true) -and (Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.$crSupportGroupPropertyName.Id)) {
                                         try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                         Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Assign" -IsPrivate $false
-                                        if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                        if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                         # Custom Event Handler
                                         if ($ceScripts) { Invoke-AfterTake }
                                     }
@@ -1962,14 +1962,14 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                                     if ($takeRequiresGroupMembership -eq $false) {
                                         try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                         Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false
-                                        if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                        if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                         # Custom Event Handler
                                         if ($ceScripts) { Invoke-AfterTake }
                                     }
                                     elseif (($takeRequiresGroupMembership -eq $true) -and (Get-TierMembership -UserSamAccountName $commentLeftBy.UserName -TierId $workItem.$crSupportGroupPropertyName.Id)) {
                                         try {New-SCSMRelationshipObject -Relationship $assignedToUserRelClass -Source $workItem -Target $commentLeftBy @scsmMGMTParams -bulk} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 4 -LogMessage "$($newWorkItem.Name) could not be taken by $($commentLeftBy.DisplayName)." -Severity "Warning"}}
                                         Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Assign" -IsPrivate $false
-                                        if ($workItem.FirstAssignedDate -eq $null) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
+                                        if ($null -eq $workItem.FirstAssignedDate) {Set-SCSMObject -SMObject $workItem -Property FirstAssignedDate -Value (Get-Date).ToUniversalTime() @scsmMGMTParams}
                                         # Custom Event Handler
                                         if ($ceScripts) { Invoke-AfterTake }
                                     }
@@ -2989,7 +2989,7 @@ function Get-CiresonSuggestionURL
     #check string length
     $wiTitle = if ($WorkItem.title.length -ge 1) {$WorkItem.title.trim()} else {$null}
     $wiDesc = if ($WorkItem.description.length -ge 1) {$WorkItem.description.trim()} else {$null}
-    if (($wiTitle -eq $null) -and ($wiDesc -eq $null))
+    if (($null -eq $wiTitle) -and ($null -eq $wiDesc))
     {
         return $null
     }
@@ -3030,8 +3030,8 @@ function Get-CiresonSuggestionURL
     #call the Suggestion functions passing the search query (work item description/keywords) per the enabled features
     switch ($isSuggestionFeatureUsed)
     {
-        "SuggestKA" {$kbURLs = Search-CiresonKnowledgeBase -searchQuery $($searchQueriesHash["AzureKA"]); if ($kbURLs -eq $null) {$kbURLs = ""}}
-        "SuggestRO" {$requestURLs = Search-AvailableCiresonPortalOfferings -searchQuery $($searchQueriesHash["AzureRO"]) -ciresonPortalUser $portalUser; if ($requestURLs -eq $null) {$requestURLs = ""}}
+        "SuggestKA" {$kbURLs = Search-CiresonKnowledgeBase -searchQuery $($searchQueriesHash["AzureKA"]); if ($null -eq $kbURLs) {$kbURLs = ""}}
+        "SuggestRO" {$requestURLs = Search-AvailableCiresonPortalOfferings -searchQuery $($searchQueriesHash["AzureRO"]) -ciresonPortalUser $portalUser; if ($null -eq $requestURLs) {$requestURLs = ""}}
     }
 
     return $kbURLs, $requestURLs
@@ -3431,7 +3431,7 @@ function Set-CoreSCSMAnnouncement ($message, $workItem)
         $scsmPriorityName = "Low"
         $announcementBody = $message.Body -replace "\[$announcementKeyword\]", ""
         $announcementBody = $announcementBody -replace "\#$lowAnnouncemnentPriorityKeyword", ""
-        if ($message.EndTime -eq $null) {$message.EndTime = $message.StartTime.AddHours($lowAnnouncemnentExpirationInHours)}
+        if ($null -eq $message.EndTime) {$message.EndTime = $message.StartTime.AddHours($lowAnnouncemnentExpirationInHours)}
     }
     elseif ($message.body -match [Regex]::Escape("#$criticalAnnouncemnentPriorityKeyword"))
     {
@@ -3439,14 +3439,14 @@ function Set-CoreSCSMAnnouncement ($message, $workItem)
         $scsmPriorityName = "Critical"
         $announcementBody = $message.Body -replace "\[$announcementKeyword\]", ""
         $announcementBody = $announcementBody -replace "#$criticalAnnouncemnentPriorityKeyword", ""
-        if ($message.EndTime -eq $null) {$message.EndTime = $message.StartTime.AddHours($criticalAnnouncemnentExpirationInHours)}
+        if ($null -eq $message.EndTime) {$message.EndTime = $message.StartTime.AddHours($criticalAnnouncemnentExpirationInHours)}
     }
     else
     {
         #normal priority
         $scsmPriorityName = "Medium"
         $announcementBody = $message.Body -replace "\[$announcementKeyword\]", ""
-        if ($message.EndTime -eq $null) {$message.EndTime = $message.StartTime.AddHours($normalAnnouncemnentExpirationInHours)}
+        if ($null -eq $message.EndTime) {$message.EndTime = $message.StartTime.AddHours($normalAnnouncemnentExpirationInHours)}
     }
 
     $announcementClass = get-scsmclass -name "System.Announcement.Item$" @scsmMGMTParams
@@ -3498,7 +3498,7 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
         $ciresonPortalPriorityEnum = "F860661B-D9D6-41CB-A501-467B4DD81A7B"
         $announcementBody = $message.Body -replace "\[$announcementKeyword\]", ""
         $announcementBody = $announcementBody -replace "\#$lowAnnouncemnentPriorityKeyword", ""
-        if ($message.EndTime -eq $null) {$message.EndTime = $message.StartTime.AddHours($lowAnnouncemnentExpirationInHours)}
+        if ($null -eq $message.EndTime) {$message.EndTime = $message.StartTime.AddHours($lowAnnouncemnentExpirationInHours)}
     }
     elseif ($message.body -match [Regex]::Escape("#$criticalAnnouncemnentPriorityKeyword"))
     {
@@ -3506,14 +3506,14 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
         $ciresonPortalPriorityEnum = "F10A51C2-C569-4E64-8237-2B117D63DDB8"
         $announcementBody = $message.Body -replace "\[$announcementKeyword\]", ""
         $announcementBody = $announcementBody -replace "#$criticalAnnouncemnentPriorityKeyword", ""
-        if ($message.EndTime -eq $null) {$message.EndTime = $message.StartTime.AddHours($criticalAnnouncemnentExpirationInHours)}
+        if ($null -eq $message.EndTime) {$message.EndTime = $message.StartTime.AddHours($criticalAnnouncemnentExpirationInHours)}
     }
     else
     {
         #normal priority
         $ciresonPortalPriorityEnum = "64096F7F-F8E0-491C-A7FE-94FEDDED4715"
         $announcementBody = $message.Body -replace "\[$announcementKeyword\]", ""
-        if ($message.EndTime -eq $null) {$message.EndTime = $message.StartTime.AddHours($normalAnnouncemnentExpirationInHours)}
+        if ($null -eq $message.EndTime) {$message.EndTime = $message.StartTime.AddHours($normalAnnouncemnentExpirationInHours)}
     }
 
     #Extract the groups that the message was sent to
@@ -3542,10 +3542,10 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
 
         #### combine the announcement objects and group objects together and group by GroupAccessID, then find object groups that don't have an announcement id ####
         #Announcement array has an AccessGroupID that does not match a group from the message. create announcement for that group
-        $groupsToCreateAnnouncements = ($portalGroups + $allPortalAnnouncements) | Group-Object -Property AccessGroupId | Where-Object{$_.Count -eq 1} | Select-Object -Expand Group | Where-Object{$_.Id -eq $null}
+        $groupsToCreateAnnouncements = ($portalGroups + $allPortalAnnouncements) | Group-Object -Property AccessGroupId | Where-Object{$_.Count -eq 1} | Select-Object -Expand Group | Where-Object{$null -eq $_.Id}
 
         #Announcement array has an AccessGroupID that contains a current group from the message.
-        $groupsToUpdateAnnouncements = ($portalGroups + $allPortalAnnouncements) | Group-Object -Property AccessGroupId | Select-Object -Expand Group | Where-Object{$_.Id -ne $null}
+        $groupsToUpdateAnnouncements = ($portalGroups + $allPortalAnnouncements) | Group-Object -Property AccessGroupId | Select-Object -Expand Group | Where-Object{$null -ne $_.Id}
 
         # create announcement for new group
         foreach ($groupsToCreateAnnouncement in $groupsToCreateAnnouncements)
