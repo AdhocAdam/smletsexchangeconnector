@@ -1316,6 +1316,17 @@
                     Scale="0" />
         </ClassType>
       </ClassTypes>
+      
+      <!-- LIST: Messages Types -->
+      <EnumerationTypes>
+        <EnumerationValue ID="SMLets.Exchange.Connector.MessageClassEnum" Accessibility="Public" />
+        <EnumerationValue ID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Note" Accessibility="Public" Parent="SMLets.Exchange.Connector.MessageClassEnum" Ordinal="0" />
+        <EnumerationValue ID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Note.SMIME" Accessibility="Public" Parent="SMLets.Exchange.Connector.MessageClassEnum" Ordinal="1" />
+        <EnumerationValue ID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Note.SMIME.MultipartSigned" Accessibility="Public" Parent="SMLets.Exchange.Connector.MessageClassEnum" Ordinal="2" />
+        <EnumerationValue ID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Schedule.Meeting.Request" Accessibility="Public" Parent="SMLets.Exchange.Connector.MessageClassEnum" Ordinal="3" />
+        <EnumerationValue ID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Schedule.Meeting.Canceled" Accessibility="Public" Parent="SMLets.Exchange.Connector.MessageClassEnum" Ordinal="4" />
+      </EnumerationTypes>
+      
     </EntityTypes>
   </TypeDefinitions>
   <Categories>
@@ -1325,6 +1336,9 @@
       <ManagementPackPublicKeyToken>446c13d5880992f3</ManagementPackPublicKeyToken>
     </Category>
     <Category ID="Category.DoubleClickEditAdminSetting" Target="SMLets.Exchange.Connector.AdminSettings.Edit" Value="Console!Microsoft.EnterpriseManagement.ServiceManager.UI.Console.DoubleClickTask" />
+    <!-- Make the Message Class Enum/list accessible and visible in the console -->
+    <Category ID="SMLets.Exchange.Connector.MessageClassEnum.Category" Target="SMLets.Exchange.Connector.MessageClassEnum" Value="Authoring!Microsoft.EnterpriseManagement.ServiceManager.UI.Authoring.EnumerationViewTasks" />
+    <Category ID="SMLets.Exchange.Connector.MessageClassEnum.Visible.Category" Target="SMLets.Exchange.Connector.MessageClassEnum" Value="System!VisibleToUser" />
   </Categories>
   <Presentation>
     <ConsoleTasks>
@@ -1346,6 +1360,7 @@
   <LanguagePacks>
     <LanguagePack ID="ENU" IsDefault="true">
       <DisplayStrings>
+        <!-- Display Strings for MP Name, Description, and Settings description -->
         <DisplayString ElementID="SMLets.Exchange.Connector">
           <Name>SMLets Exchange Connector</Name>
           <Description>Provides centralized, persistent settings for the Powershell based SMLets Exchange Connector</Description>
@@ -1358,9 +1373,37 @@
           <Name>Additional Mailbox</Name>
           <Description>Defines additional mailboxes within the SMLets Exchange Connector</Description>
         </DisplayString>
+        
+        <!-- Admin Tasks -->
         <DisplayString ElementID="SMLets.Exchange.Connector.AdminSettings.Edit">
           <Name>Edit</Name>
           <Description>View or edit the settings for the open source SMLets based Exchange Connector</Description>
+        </DisplayString>
+        
+        <!-- Display Strings for Message Type Enum -->
+        <DisplayString ElementID="SMLets.Exchange.Connector.MessageClassEnum">
+          <Name>Message Class</Name>
+          <Description>Defines a list of known message classes to process</Description>
+        </DisplayString>
+        <DisplayString ElementID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Note">
+          <Name>IPM.Note</Name>
+          <Description>An email message</Description>
+        </DisplayString>
+        <DisplayString ElementID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Note.SMIME">
+          <Name>IPM.Note.SMIME</Name>
+          <Description>An encrypted email message</Description>
+        </DisplayString>
+        <DisplayString ElementID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Note.SMIME.MultipartSigned">
+          <Name>IPM.Note.SMIME.MultipartSigned</Name>
+          <Description>A digitally email message</Description>
+        </DisplayString>
+        <DisplayString ElementID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Schedule.Meeting.Request">
+          <Name>IPM.Schedule.Meeting.Request</Name>
+          <Description>A meeting request</Description>
+        </DisplayString>
+        <DisplayString ElementID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Schedule.Meeting.Canceled">
+          <Name>IPM.Schedule.Meeting.Canceled</Name>
+          <Description>A meeting cancellation</Description>
         </DisplayString>
       </DisplayStrings>
       <KnowledgeArticles></KnowledgeArticles>
