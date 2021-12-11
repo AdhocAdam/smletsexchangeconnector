@@ -1110,7 +1110,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                         }
 
                         #if the detected language scores identical to the top alternative, use source language that isn't the default target language
-                        $primaryAlternativeLang = $detectedLanguage.alternatives | select -first 1
+                        $primaryAlternativeLang = $detectedLanguage.alternatives | Select-Object -first 1
                         if (($detectedLanguage.score -eq $primaryAlternativeLang.score) -and ($detectedLanguage.isTranslationSupported -eq $true) -and ($primaryAlternativeLang.isTranslationSupported -eq $true))
                         {
                             if (($detectedLanguage.language -eq $defaultAzureTranslateLanguage) -and ($primaryAlternativeLang.language -ne $defaultAzureTranslateLanguage))
@@ -1167,7 +1167,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                         {
                             if($amlProbability.AffectedConfigItem.IndexOf(",") -gt 1) 
                             {
-                                $amlProbability.AffectedConfigItem.Split(",") | %{try{New-SCSMRelationshipObject -Relationship $wiAboutCIRelClass -Source $newWorkItem -Target $_ -Bulk @scsmMGMTParams} catch {if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 10 -Severity "Error" -LogMessage $_.Exception}}}
+                                $amlProbability.AffectedConfigItem.Split(",") | ForEach-Object{try{New-SCSMRelationshipObject -Relationship $wiAboutCIRelClass -Source $newWorkItem -Target $_ -Bulk @scsmMGMTParams} catch {if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 10 -Severity "Error" -LogMessage $_.Exception}}}
                             }
                             else
                             {
@@ -1267,7 +1267,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                         }
 
                         #if the detected language scores identical to the top alternative, use source language that isn't the default target language
-                        $primaryAlternativeLang = $detectedLanguage.alternatives | select -first 1
+                        $primaryAlternativeLang = $detectedLanguage.alternatives | Select-Object -first 1
                         if (($detectedLanguage.score -eq $primaryAlternativeLang.score) -and ($detectedLanguage.isTranslationSupported -eq $true) -and ($primaryAlternativeLang.isTranslationSupported -eq $true))
                         {
                             if (($detectedLanguage.language -eq $defaultAzureTranslateLanguage) -and ($primaryAlternativeLang.language -ne $defaultAzureTranslateLanguage))
@@ -1325,7 +1325,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                         {
                             if($amlProbability.AffectedConfigItem.IndexOf(",") -gt 1) 
                             {
-                                $amlProbability.AffectedConfigItem.Split(",") | %{try{New-SCSMRelationshipObject -Relationship $wiAboutCIRelClass -Source $newWorkItem -Target $_ -Bulk @scsmMGMTParams} catch {if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 10 -Severity "Error" -LogMessage $_.Exception}}}
+                                $amlProbability.AffectedConfigItem.Split(",") | ForEach-Object{try{New-SCSMRelationshipObject -Relationship $wiAboutCIRelClass -Source $newWorkItem -Target $_ -Bulk @scsmMGMTParams} catch {if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Get-AMLWorkItemProbability" -EventID 10 -Severity "Error" -LogMessage $_.Exception}}}
                             }
                             else
                             {
@@ -1585,9 +1585,9 @@ function Update-WorkItem ($message, $wiType, $workItemID)
             }
             else {
                 try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
-                if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+                if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                 try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
-                if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+                if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                 if ($assignedToSMTP.TargetAddress -eq $affectedUserSMTP.TargetAddress){$assignedToSMTP = $null}
                 #write to the Action log and take action on the Work Item if neccesary
                 switch ($message.From)
@@ -1728,9 +1728,9 @@ function Update-WorkItem ($message, $wiType, $workItemID)
             }
             else {
                 try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
-                if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+                if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                 try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
-                if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+                if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                 if ($assignedToSMTP.TargetAddress -eq $affectedUserSMTP.TargetAddress){$assignedToSMTP = $null}
                 switch ($message.From)
                 {
@@ -1844,7 +1844,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
         "pr" {
                     $workItem = get-scsmobject -class $prClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
                     try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
-                    if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+                    if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                     #write to the Action log
                     switch ($message.From)
                     {
@@ -1918,7 +1918,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
         "cr" {
                     $workItem = get-scsmobject -class $crClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
                     try{$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
-                    if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+                    if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                     #write to the Action log and take action on the Work Item if neccesary
                     switch ($message.From)
                     {
@@ -2005,7 +2005,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                         {
                         $reviewingUser = Get-SCSMObject -Id $reviewingUser.Id @scsmMGMTParams
                         $reviewingUserName = $reviewingUser.UserName #it is necessary to store this in its own variable for the AD filters to work correctly
-                        $reviewingUserSMTP = Get-SCSMRelatedObject -SMObject $reviewingUser @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress
+                        $reviewingUserSMTP = Get-SCSMRelatedObject -SMObject $reviewingUser @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress
 
                         if ($commentToAdd.length -gt 256) { $decisionComment = $commentToAdd.substring(0,253)+"..." } else { $decisionComment = $commentToAdd }
                         
@@ -2071,7 +2071,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                                 #determine which domain to query, in case of multiple domains and trusts
                                 $AdRoot = (Get-AdDomain @adParams -Identity $reviewingUser.Domain).DNSRoot
 
-                                $isReviewerGroupMember = Get-ADGroupMember -Server $AdRoot -Identity $reviewingUser.UserName -recursive @adParams | ? { $_.objectClass -eq "user" -and $_.name -eq $votedOnBehalfOfUser.UserName }
+                                $isReviewerGroupMember = Get-ADGroupMember -Server $AdRoot -Identity $reviewingUser.UserName -recursive @adParams | Where-Object { $_.objectClass -eq "user" -and $_.name -eq $votedOnBehalfOfUser.UserName }
 
                                 #approved on behalf of
                                 if (($isReviewerGroupMember) -and ($commentToAdd -match "\[$approvedKeyword]"))
@@ -2142,7 +2142,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
         "ma" {
                     $workItem = get-scsmobject -class $maClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
                     try {$activityImplementer = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
-                    if ($activityImplementer){$activityImplementerSMTP = Get-SCSMRelatedObject -SMObject $activityImplementer @scsmMGMTParams | ?{$_.displayname -like "*SMTP"} | select-object TargetAddress}
+                    if ($activityImplementer){$activityImplementerSMTP = Get-SCSMRelatedObject -SMObject $activityImplementer @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                     switch ($message.From)
                     {
                         $activityImplementerSMTP.TargetAddress {
@@ -2421,7 +2421,7 @@ function Attach-FileToWorkItem ($message, $workItemId)
                         #if one of the Tags is "text" then attempt to extract text from the image through OCR as long as the confidence is greater than 90
                         if ($azureVisionTags.contains("text"))
                         {
-                            $AzureOCRConfidence = [math]::round((($azureVisionTags.tags | select-object name, confidence | ?{$_.name -eq "text"} | select-object confidence -ExpandProperty confidence) * 100), 2)
+                            $AzureOCRConfidence = [math]::round((($azureVisionTags.tags | select-object name, confidence | Where-Object{$_.name -eq "text"} | select-object confidence -ExpandProperty confidence) * 100), 2)
                             if ($AzureOCRConfidence -ge 90)
                             {
                                 $azureImageText = Get-AzureEmailImageText -imageToEvalute $AttachmentContent
@@ -2519,7 +2519,7 @@ function Get-TierMembership ($UserSamAccountName, $TierId) {
         $mapCls = Get-SCSMClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping$"
 
         #pull the group based on support tier mapping
-        $mapping = $mapCls | Get-SCSMObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierId.Guid }
+        $mapping = $mapCls | Get-SCSMObject @scsmMGMTParams | Where-Object { $_.SupportGroupId.Guid -eq $TierId.Guid }
         $groupId = $mapping.AdGroupId
 
         #get the AD group object name
@@ -2534,7 +2534,7 @@ function Get-TierMembership ($UserSamAccountName, $TierId) {
             [array]$members = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive
 
             # loop through the members of the AD group that underpins this support group, and look for the user
-            $members | % {
+            $members | ForEach-Object {
                 if ($_.objectClass -eq "user" -and $_.Name -match $UserSamAccountName) {
                     $isMember = $true
                 }
@@ -2562,7 +2562,7 @@ function Get-TierMembers ($TierEnumId)
         $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping$"
 
         #pull the group based on support tier mapping
-        $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | ? { $_.SupportGroupId.Guid -eq $TierEnumId }
+        $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | Where-Object { $_.SupportGroupId.Guid -eq $TierEnumId }
         $groupId = $mapping.AdGroupId
         if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 1 -Severity "Information" -LogMessage "Get SCSM object/Group for: $groupId"}
 
@@ -2596,7 +2596,7 @@ function Get-AssignedToWorkItemVolume ($SCSMUser)
     #initialize the counter, get the user's assigned Work Items that aren't in some form of "Done"
     $assignedCount = 0
     $assignedWorkItemRelationships = Get-SCSMRelationshipObject -TargetRelationship $assignedToUserRelClass -TargetObject $SCSMUser @scsmMGMTParams
-    $assignedWorkItemRelationships = $assignedWorkItemRelationships | select-object SourceObject -ExpandProperty SourceObject | select-object -ExpandProperty values | ?{($_.type.name -eq "Status") -and (($_.value -notlike "*Resolve*") -and ($_.value -notlike "*Close*") -and ($_.value -notlike "*Complete*") -and ($_.value -notlike "*Skip*") -and ($_.value -notlike "*Cancel*"))}
+    $assignedWorkItemRelationships = $assignedWorkItemRelationships | select-object SourceObject -ExpandProperty SourceObject | select-object -ExpandProperty values | Where-Object{($_.type.name -eq "Status") -and (($_.value -notlike "*Resolve*") -and ($_.value -notlike "*Close*") -and ($_.value -notlike "*Complete*") -and ($_.value -notlike "*Skip*") -and ($_.value -notlike "*Cancel*"))}
     $assignedWorkItemRelationships | foreach-object {$assignedCount++}
     
     #build Assigned To Volume object
@@ -2656,7 +2656,7 @@ function Get-SCSMWorkItemParent
             #Retrieve Parent
             if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 1 -Severity "Information" -LogMessage "[PROCESS] Activity: $($ActivityObject.Name)"}
             if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 2 -Severity "Information" -LogMessage "[PROCESS] Retrieving WI Parent"}
-            $ParentRelatedObject = Get-SCSMRelationshipObject -ByTarget $ActivityObject @scsmMGMTParams | ?{$_.RelationshipID -eq $wiContainsActivityRelClass.id.Guid}
+            $ParentRelatedObject = Get-SCSMRelationshipObject -ByTarget $ActivityObject @scsmMGMTParams | Where-Object{$_.RelationshipID -eq $wiContainsActivityRelClass.id.Guid}
             $ParentObject = $ParentRelatedObject.SourceObject
 
             if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 3 -Severity "Information" -LogMessage "[PROCESS] Activity: $($ActivityObject.Name) - Parent: $($ParentObject.Name)"}
@@ -2870,7 +2870,7 @@ function Get-CiresonPortalGroup ($groupEmail)
     {
         $cwpGroupResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($adGroup.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
     }
-    $ciresonPortalGroup = $cwpGroupResponse | select-object @{Name='AccessGroupId'; Expression={$_.Id}}, name | ?{$_.name -eq $($adGroup.Name)}
+    $ciresonPortalGroup = $cwpGroupResponse | select-object @{Name='AccessGroupId'; Expression={$_.Id}}, name | Where-Object{$_.name -eq $($adGroup.Name)}
     return $ciresonPortalGroup
 }
 
@@ -2909,7 +2909,7 @@ function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUse
         $matchingRequestURLs = @()
         foreach ($serviceCatalogResult in $serviceCatalogResults)
         {
-            $wordsMatched = ($searchQuery.Trim().Split() | ?{($serviceCatalogResult.RequestOfferingTitle -match "\b$_\b") -or ($serviceCatalogResult.RequestOfferingDescription -match "\b$_\b")}).count
+            $wordsMatched = ($searchQuery.Trim().Split() | Where-Object{($serviceCatalogResult.RequestOfferingTitle -match "\b$_\b") -or ($serviceCatalogResult.RequestOfferingDescription -match "\b$_\b")}).count
             if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToRO)
             {
                 $ciresonPortalRequestURL = "`"" + $ciresonPortalServer + "SC/ServiceCatalog/RequestOffering/" + $serviceCatalogResult.RequestOfferingId + "," + $serviceCatalogResult.ServiceOfferingId + "`""
@@ -2938,14 +2938,14 @@ function Search-CiresonKnowledgeBase ($searchQuery)
         $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$kbAPIurl) -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
     }
 
-    $kbResults =  $kbResults | ?{$_.endusercontent -ne ""} | select-object articleid, title
+    $kbResults =  $kbResults | Where-Object{$_.endusercontent -ne ""} | select-object articleid, title
     
     if ($kbResults)
     {
         $matchingKBURLs = @()
         foreach ($kbResult in $kbResults)
         {
-            $wordsMatched = ($searchQuery.Trim().Split() | ?{($kbResult.title -match "\b$_\b")}).count
+            $wordsMatched = ($searchQuery.Trim().Split() | Where-Object{($kbResult.title -match "\b$_\b")}).count
             if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToKA)
             {
                 $knowledgeSuggestion = New-Object System.Object
@@ -3519,8 +3519,8 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
     #Extract the groups that the message was sent to
     #rename the GroupID property to "AccessGroupID" so as to compare the difference later
     $groupEmails = @()
-    $groupEmails += $message.To | ?{$_.MailboxType -ne "Mailbox"}
-    $groupEmails += $message.Cc | ?{$_.MailboxType -ne "Mailbox"}
+    $groupEmails += $message.To | Where-Object{$_.MailboxType -ne "Mailbox"}
+    $groupEmails += $message.Cc | Where-Object{$_.MailboxType -ne "Mailbox"}
     $portalGroups = @()
     foreach ($groupEmail in $groupEmails)
     {
@@ -3533,7 +3533,7 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
 
     #Get any announcements that already exist for the Work Item
     $allPortalAnnouncements = Get-CiresonPortalAnnouncements -languageCode $ciresonPortalAnnouncer.LanguageCode
-    $allPortalAnnouncements = $allPortalAnnouncements | ?{$_.title -match "\[" + $workitem.name + "\]"}
+    $allPortalAnnouncements = $allPortalAnnouncements | Where-Object{$_.title -match "\[" + $workitem.name + "\]"}
 
     #determine authentication to use (windows/forms)
     if ($allPortalAnnouncements)
@@ -3542,10 +3542,10 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
 
         #### combine the announcement objects and group objects together and group by GroupAccessID, then find object groups that don't have an announcement id ####
         #Announcement array has an AccessGroupID that does not match a group from the message. create announcement for that group
-        $groupsToCreateAnnouncements = ($portalGroups + $allPortalAnnouncements) | Group-Object -Property AccessGroupId | ?{$_.Count -eq 1} | Select-Object -Expand Group | ?{$_.Id -eq $null}
+        $groupsToCreateAnnouncements = ($portalGroups + $allPortalAnnouncements) | Group-Object -Property AccessGroupId | Where-Object{$_.Count -eq 1} | Select-Object -Expand Group | Where-Object{$_.Id -eq $null}
 
         #Announcement array has an AccessGroupID that contains a current group from the message.
-        $groupsToUpdateAnnouncements = ($portalGroups + $allPortalAnnouncements) | Group-Object -Property AccessGroupId | Select-Object -Expand Group | ?{$_.Id -ne $null}
+        $groupsToUpdateAnnouncements = ($portalGroups + $allPortalAnnouncements) | Group-Object -Property AccessGroupId | Select-Object -Expand Group | Where-Object{$_.Id -ne $null}
 
         # create announcement for new group
         foreach ($groupsToCreateAnnouncement in $groupsToCreateAnnouncements)
@@ -4122,7 +4122,7 @@ function Get-SCOMDistributedAppHealth ($message)
         {
             foreach ($unhealthySCOMApp in $unhealthySCOMApps)
             {
-                $unhealthySCOMAppsAlerts += invoke-command -scriptblock {Get-SCOMClass | Where-Object {$_.displayname -like "$($unhealthySCOMApp.displayname)"} | Get-SCOMClassInstance | %{$_.GetRelatedMonitoringObjects()} | Get-SCOMAlert -ResolutionState 0} -computername $scomMGMTServer
+                $unhealthySCOMAppsAlerts += invoke-command -scriptblock {Get-SCOMClass | Where-Object {$_.displayname -like "$($unhealthySCOMApp.displayname)"} | Get-SCOMClassInstance | ForEach-Object{$_.GetRelatedMonitoringObjects()} | Get-SCOMAlert -ResolutionState 0} -computername $scomMGMTServer
             }
         }
         
@@ -4413,7 +4413,7 @@ foreach ($message in $inbox)
         $email | Add-Member -type NoteProperty -name To -value $response.To
         $email | Add-Member -type NoteProperty -name CC -value $response.Cc
         $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
-        $email | Add-Member -type NoteProperty -name Attachments -value ($response.Attachments | ?{$_.filename -ne "smime.p7s"})
+        $email | Add-Member -type NoteProperty -name Attachments -value ($response.Attachments | Where-Object{$_.filename -ne "smime.p7s"})
         $email | Add-Member -type NoteProperty -name Body -value $response.TextBody.Trim()
         $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
         $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
@@ -4512,7 +4512,7 @@ foreach ($message in $inbox)
         if ($decryptedBody.ContentType.MimeType -eq "multipart/alternative")
         {         
             #check to see if there are attachments
-            $decryptedAttachments = $decryptedBody | ?{$_.isattachment -eq $true}
+            $decryptedAttachments = $decryptedBody | Where-Object{$_.isattachment -eq $true}
 
             $email = New-Object System.Object
             $email | Add-Member -type NoteProperty -name From -value $response.From.Address
@@ -4575,7 +4575,7 @@ foreach ($message in $inbox)
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessSignedEmail }
 
-            $decryptedAttachments = $decryptedBody | ?{$_.isattachment -eq $true}
+            $decryptedAttachments = $decryptedBody | Where-Object{$_.isattachment -eq $true}
             
             $email = New-Object System.Object
             $email | Add-Member -type NoteProperty -name From -value $response.From.Address
@@ -4637,8 +4637,8 @@ foreach ($message in $inbox)
         {       
             #check to see if there are attachments
             $isVerifiedSig = $decryptedBody.Verify($certStore, [ref]$decryptedBody)
-            $decryptedBodyWOAttachments = $decryptedBody | ?{($_.isattachment -eq $false)}
-            $decryptedAttachments = if ($decryptedBody.ContentType.MimeType -eq "multipart/alternative") {$decryptedBody | ?{$_.isattachment -eq $true}} else {$decryptedBody | select -skip 1}
+            $decryptedBodyWOAttachments = $decryptedBody | Where-Object{($_.isattachment -eq $false)}
+            $decryptedAttachments = if ($decryptedBody.ContentType.MimeType -eq "multipart/alternative") {$decryptedBody | Where-Object{$_.isattachment -eq $true}} else {$decryptedBody | Select-Object -skip 1}
 
             $email = New-Object System.Object
             $email | Add-Member -type NoteProperty -name From -value $response.From.Address
