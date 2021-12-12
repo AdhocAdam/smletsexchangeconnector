@@ -169,6 +169,11 @@
                 Type="bool"
                 Key="false"
                 Required="false" />
+                
+            <Property ID="UseCustomRules"
+              Type="bool"
+              Key="false"
+              Required="false" />
 
             <Property ID="CreateNewWorkItemIfWorkItemClosed"
                 Type="bool"
@@ -1315,6 +1320,82 @@
                     Required="false"
                     Scale="0" />
         </ClassType>
+        
+        <!-- CLASS: Custom Rule -->
+        <ClassType ID="SMLets.Exchange.Connector.AdminSettings.CustomRule"
+              Accessibility="Public"
+              Abstract="false"
+              Base="SAL!System.GlobalSetting"
+              Hosted="false"
+              Singleton="false"
+              Extension="false">
+
+          <Property ID="CustomRuleID"
+                    Type="guid"
+                    AutoIncrement="false"
+                    Key="true"
+                    CaseSensitive="false"
+                    MaxLength="256"
+                    MinLength="0"
+                    Required="true" />
+
+          <Property ID="CustomRuleDisplayName"
+                  Type="string"
+                  AutoIncrement="false"
+                  Key="false"
+                  CaseSensitive="false"
+                  MaxLength="256"
+                  MinLength="0"
+                  Required="false" />
+
+          <Property ID="CustomRuleMessageClassEnum"
+                  Type="enum"
+                  AutoIncrement="false"
+                  Key="false"
+                  CaseSensitive="false"
+                  MaxLength="256"
+                  MinLength="0"
+                  Scale="0"
+                  Required="false"
+                  EnumType="SMLets.Exchange.Connector.MessageClassEnum" />
+
+          <Property ID="CustomRuleMessagePart"
+                  Type="string"
+                  AutoIncrement="false"
+                  Key="false"
+                  CaseSensitive="false"
+                  MaxLength="256"
+                  MinLength="0"
+                  Required="false" />
+
+          <Property ID="CustomRuleRegex"
+                  Type="string"
+                  AutoIncrement="false"
+                  Key="false"
+                  CaseSensitive="false"
+                  MaxLength="256"
+                  MinLength="0"
+                  Required="false" />
+
+          <Property ID="CustomRuleItemType"
+                  Type="string"
+                  AutoIncrement="false"
+                  Key="false"
+                  CaseSensitive="false"
+                  MaxLength="256"
+                  MinLength="0"
+                  Required="false" />
+
+          <Property ID="CustomRuleRegexMatchProperty"
+                  Type="string"
+                  AutoIncrement="false"
+                  Key="false"
+                  CaseSensitive="false"
+                  MaxLength="256"
+                  MinLength="0"
+                  Required="false" />
+
+        </ClassType>
       </ClassTypes>
       
       <!-- LIST: Messages Types -->
@@ -1372,6 +1453,10 @@
         <DisplayString ElementID="SMLets.Exchange.Connector.AdminSettings.AdditionalMailbox">
           <Name>Additional Mailbox</Name>
           <Description>Defines additional mailboxes within the SMLets Exchange Connector</Description>
+        </DisplayString>
+        <DisplayString ElementID="SMLets.Exchange.Connector.AdminSettings.CustomRule">
+          <Name>Custom Rule</Name>
+          <Description>Defines matching criteria for patterns beyond core SCSM Work Items</Description>
         </DisplayString>
         
         <!-- Admin Tasks -->
