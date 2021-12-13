@@ -69,6 +69,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             wizard.AddLast(new WizardStep("File Attachments", typeof(FileAttachmentForm), wizard.WizardData));
             wizard.AddLast(new WizardStep("Templates", typeof(TemplateForm), wizard.WizardData));
             wizard.AddLast(new WizardStep("Multi-Mailbox", typeof(MultipleMailboxes), wizard.WizardData));
+            wizard.AddLast(new WizardStep("Custom Rules", typeof(CustomRules), wizard.WizardData));
             wizard.AddLast(new WizardStep("Parsing Keywords", typeof(KeywordsForm), wizard.WizardData));
             wizard.AddLast(new WizardStep("Cireson", typeof(CiresonIntegrationForm), wizard.WizardData));
             wizard.AddLast(new WizardStep("Announcements", typeof(AnnouncementsForm), wizard.WizardData));
@@ -85,7 +86,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             //Show the property page 
             PropertySheetDialog wizardWindow = new PropertySheetDialog(wizard);
             wizardWindow.Width = 1100;
-            wizardWindow.Height = 700;
+            wizardWindow.Height = 750;
 
             //Update the view when done so the new values are shown 
             bool? dialogResult = wizardWindow.ShowDialog();
