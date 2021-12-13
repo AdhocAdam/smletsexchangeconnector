@@ -275,3 +275,8 @@ function Invoke-AfterSetPortalAnnouncement {
   # This function occurs after an announcement is created in the Cireson Portal.
   
 }
+
+function Invoke-CustomRuleAction {
+  # This function occurs when Custom Rule's are enabled and the Custom Rule's Item Type is not IR, SR, CR, PR, RR
+  
+}
