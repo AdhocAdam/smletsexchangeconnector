@@ -23,6 +23,15 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>External Ticketing (v4.0)</i></td>
+  </tr>
+  <tr>
+    <td align="center" width="200"><img src ="/FeatureScreenshots/customRules.png" /></td>
+    <td width="auto">placeholder text</td>
+  </tr>
+</table>
+<table border="0">
+  <tr>
     <td colspan="3"><i>File Attachments for Activities (v3.4)</i></td>
   </tr>
   <tr>
