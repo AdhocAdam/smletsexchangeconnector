@@ -2600,9 +2600,10 @@ function Get-AssignedToWorkItemVolume ($SCSMUser)
     $assignedWorkItemRelationships | foreach-object {$assignedCount++}
     
     #build Assigned To Volume object
-    $assignedToVolume = New-Object System.Object
-    $assignedToVolume | Add-Member -type NoteProperty -name SCSMUser -value $SCSMUser
-    $assignedToVolume | Add-Member -type NoteProperty -name AssignedCount -value $assignedCount
+    $assignedToVolume = [pscustomobject] {
+        SCSMUser      = $SCSMUser
+        AssignedCount = $assignedCount
+    }
     if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-AssignedToWorkItemVolume" -EventID 0 -Severity "Information" -LogMessage "$($assignedToVolume.SCSMUser.DisplayName) : $($assignedToVolume.AssignedCount)"}
     return $assignedToVolume
 }
@@ -2914,9 +2915,10 @@ function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUse
             {
                 $ciresonPortalRequestURL = "`"" + $ciresonPortalServer + "SC/ServiceCatalog/RequestOffering/" + $serviceCatalogResult.RequestOfferingId + "," + $serviceCatalogResult.ServiceOfferingId + "`""
                 $RequestOfferingURL = "<a href=$ciresonPortalRequestURL/>$($serviceCatalogResult.RequestOfferingTitle)</a><br />"
-                $requestOfferingSuggestion = New-Object System.Object
-                $requestOfferingSuggestion | Add-Member -type NoteProperty -name RequestOfferingURL -value $RequestOfferingURL
-                $requestOfferingSuggestion | Add-Member -type NoteProperty -name WordsMatched -value $wordsMatched
+                $requestOfferingSuggestion = [pscustomobject] {
+                    RequestOfferingURL = $RequestOfferingURL
+                    WordsMatched       = $wordsMatched
+                }
                 $matchingRequestURLs += $requestOfferingSuggestion
             }
         }
@@ -2948,10 +2950,11 @@ function Search-CiresonKnowledgeBase ($searchQuery)
             $wordsMatched = ($searchQuery.Trim().Split() | ?{($kbResult.title -match "\b$_\b")}).count
             if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToKA)
             {
-                $knowledgeSuggestion = New-Object System.Object
                 $KnowledgeArticleURL = "<a href=$ciresonPortalServer" + "KnowledgeBase/View/$($kbResult.articleid)#/>$($kbResult.title)</a><br />"
-                $knowledgeSuggestion | Add-Member -type NoteProperty -name KnowledgeArticleURL -value $KnowledgeArticleURL
-                $knowledgeSuggestion | Add-Member -type NoteProperty -name WordsMatched -value $wordsMatched
+                $knowledgeSuggestion = [pscustomobject] {
+                    KnowledgeArticleURL = $KnowledgeArticleURL
+                    WordsMatched        = $wordsMatched
+                }
                 $matchingKBURLs += $knowledgeSuggestion
             }
         }
