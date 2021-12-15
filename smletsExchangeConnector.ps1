@@ -920,7 +920,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
     $affectedUser = Get-SCSMUserByEmailAddress -EmailAddress "$from"
     if (($affectedUser)) {<#no change required#>}
     elseif ((!$affectedUser) -and ($createUsersNotInCMDB -eq $true)) {$affectedUser = New-CMDBUser "$from"}
-    else {$affectedUser = New-CMDBUser $from -NoCommit}
+    else {$affectedUser = New-CMDBUser -UserEmail $from -NoCommit}
 
     #find Related Users (To)       
     if ($to.count -gt 0)
@@ -936,7 +936,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
             {
                 if ($createUsersNotInCMDB -eq $true)
                 {
-                    $relatedUser = New-CMDBUser $to.address
+                    $relatedUser = New-CMDBUser -UserEmail $to.address
                     $relatedUsers += $relatedUser
                 }
             }
@@ -956,7 +956,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                 {
                     if ($createUsersNotInCMDB -eq $true)
                     {
-                        $relatedUser = New-CMDBUser $ToSMTP.address
+                        $relatedUser = New-CMDBUser -UserEmail $ToSMTP.address
                         $relatedUsers += $relatedUser
                     }
                 }
@@ -979,7 +979,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
             {
                 if ($createUsersNotInCMDB -eq $true)
                 {
-                    $relatedUser = New-CMDBUser $cced.address
+                    $relatedUser = New-CMDBUser -UserEmail $cced.address
                     $relatedUsers += $relatedUser
                 }
             }
@@ -999,7 +999,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                 {
                     if ($createUsersNotInCMDB -eq $true)
                     {
-                        $relatedUser = New-CMDBUser $ccSMTP.address
+                        $relatedUser = New-CMDBUser -UserEmail $ccSMTP.address
                         $relatedUsers += $relatedUser
                     }
                 }
@@ -1516,8 +1516,8 @@ function Update-WorkItem ($message, $wiType, $workItemID)
     #determine who left the comment
     $commentLeftBy = Get-SCSMUserByEmailAddress -EmailAddress "$($message.From)"
     if ($commentLeftBy) {<#no change required#>}
-    elseif ((!$commentLeftBy) -and ($createUsersNotInCMDB -eq $true) ){$commentLeftBy = New-CMDBUser $message.From}
-    else {$commentLeftBy = New-CMDBUser $message.From -NoCommit}
+    elseif ((!$commentLeftBy) -and ($createUsersNotInCMDB -eq $true) ){$commentLeftBy = New-CMDBUser -UserEmail $message.From}
+    else {$commentLeftBy = New-CMDBUser -UserEmail $message.From -NoCommit}
 
     #add any attachments
     if ($message.Attachments)
