@@ -4406,7 +4406,7 @@ foreach ($message in $inbox)
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessSignedEmail }
         
-        $response = Read-MIMEMessage $message
+        $response = Read-MIMEMessage -message $message
    
         $email = New-Object System.Object
         $email | Add-Member -type NoteProperty -name From -value $response.From.address
@@ -4505,7 +4505,7 @@ foreach ($message in $inbox)
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
         
-        $response = Read-MIMEMessage $message
+        $response = Read-MIMEMessage -message $message
         try {$decryptedBody = $response.Body.Decrypt($certStore)} catch {if($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Cryptography" -EventID 4 -Severity "Error" -LogMessage $_.Exception}}
 
         #Messaged is encrypted and/or signed
