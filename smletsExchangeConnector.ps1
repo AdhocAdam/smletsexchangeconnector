@@ -4087,7 +4087,7 @@ function Get-SCOMAuthorizedRequester ($EmailAddress)
 function Get-SCOMDistributedAppHealth ($message)
 {
     #determine if the sender is authorized to make SCOM Health requests
-    $isAuthorized = Get-SCOMAuthorizedRequester $message.From.Address
+    $isAuthorized = Get-SCOMAuthorizedRequester -EmailAddress $message.From.Address
 
     if (($isAuthorized -eq $true))
     {
