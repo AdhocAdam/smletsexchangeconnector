@@ -4370,14 +4370,14 @@ foreach ($message in $inbox)
         switch -Regex ($email.subject)
         {
             #### primary work item types ####
-            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
-            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id}else {new-workitem -message $email -wiType $defaultNewWorkItem}}
-            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id}else {new-workitem -message $email -wiType $defaultNewWorkItem}}
-            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id}else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "ir" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "sr" -workItemID $result.id}else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "pr" -workItemID $result.id}else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "cr" -workItemID $result.id}else {new-workitem -message $email -wiType $defaultNewWorkItem}}
  
             #### activities ####
-            "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
-            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
+            "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "ra" -workItemID $result.id}}
+            "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "ma" -workItemID $result.id}}
 
             #### 3rd party classes, work items, etc. add here ####
             "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem -message $email -wiType $defaultNewWorkItem}}}
@@ -4450,14 +4450,14 @@ foreach ($message in $inbox)
             switch -Regex ($email.subject)
             { 
                 #### primary work item types ####
-                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
-                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
-                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
-                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "ir" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "sr" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "pr" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "cr" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
     
                 #### activities ####
-                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
-                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
+                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "ra" -workItemID $result.id}}
+                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "ma" -workItemID $result.id}}
 
                 #### 3rd party classes, work items, etc. add here ####
                 "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem -message $email -wiType $defaultNewWorkItem}}}
@@ -4534,14 +4534,14 @@ foreach ($message in $inbox)
             switch -Regex ($email.subject)
             {
                 #### primary work item types ####
-                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
-                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
-                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
-                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "ir" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "sr" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "pr" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "cr" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
  
                 #### activities ####
-                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
-                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
+                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "ra" -workItemID $result.id}}
+                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "ma" -workItemID $result.id}}
 
                 #### 3rd party classes, work items, etc. add here ####
                 "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem -message $email -wiType $defaultNewWorkItem}}}
@@ -4597,14 +4597,14 @@ foreach ($message in $inbox)
             switch -Regex ($email.subject)
             {
                 #### primary work item types ####
-                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
-                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
-                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
-                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "ir" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "sr" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "pr" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "cr" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
  
                 #### activities ####
-                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
-                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
+                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "ra" -workItemID $result.id}}
+                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "ma" -workItemID $result.id}}
 
                 #### 3rd party classes, work items, etc. add here ####
                 "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem -message $email -wiType $defaultNewWorkItem}}}
@@ -4660,14 +4660,14 @@ foreach ($message in $inbox)
             switch -Regex ($email.subject)
             {
                 #### primary work item types ####
-                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
-                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
-                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
-                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "ir" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "sr" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "pr" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "cr" -workItemID $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
  
                 #### activities ####
-                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
-                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
+                "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "ra" -workItemID $result.id}}
+                "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem -message $email -wiType "ma" -workItemID $result.id}}
 
                 #### 3rd party classes, work items, etc. add here ####
                 "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem -message $email -wiType $defaultNewWorkItem}}}
