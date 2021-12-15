@@ -1618,7 +1618,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                                 }
                             }
                             "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Undo-WorkItemResolution -WorkItem $workItem; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
-                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
+                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem -message $message -wiType "ir" -returnWIBool $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
                             "\[$addWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($addWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Add-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                             "\[$removeWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($removeWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Remove-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                             {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -EmailAddress $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false}
@@ -1651,7 +1651,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                                 }
                             }
                             "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Undo-WorkItemResolution -WorkItem $workItem; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
-                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
+                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem -message $message - wiType "ir" -returnWIBool $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
                             "\[$addWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($addWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Add-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                             "\[$removeWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($removeWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Remove-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                             {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -EmailAddress $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false}
@@ -1685,7 +1685,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                                 }
                             }
                             "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Undo-WorkItemResolution -WorkItem $workItem; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
-                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem $message "ir" $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
+                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem -message $message -wiType "ir" -returnWIBool $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
                             "\[$addWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($addWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Add-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                             "\[$removeWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($removeWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Remove-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                             {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -EmailAddress $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false}
@@ -3168,14 +3168,14 @@ function Confirm-WorkItem ($message, $returnWorkItem)
             {
                 if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Confirm-WorkItem" -EventId 3 -LogMessage "A File Attachment was found to merge this email with a known Work Item. But the Work Item could not be found." -Severity "Warning"}
                 #the File Attachment (email) was found, but the related Work Item was not, Create a New Work Item
-                New-WorkItem $message $defaultNewWorkItem
+                New-WorkItem -message $message -wiType $defaultNewWorkItem
             }
         }
         else
         {
             if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Confirm-WorkItem" -EventId 4 -LogMessage "A File Attachment was not found to merge this email with a known Work Item" -Severity "Warning"}
             #the File Attachment (email) was not found, Create a New Work Item
-            New-WorkItem $message $defaultNewWorkItem
+            New-WorkItem -message $message -wiType $defaultNewWorkItem
         }
     }
     else
@@ -4370,25 +4370,25 @@ foreach ($message in $inbox)
         switch -Regex ($email.subject)
         {
             #### primary work item types ####
-            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id}else {new-workitem $email $defaultNewWorkItem}}
-            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id}else {new-workitem $email $defaultNewWorkItem}}
-            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id}else {new-workitem $email $defaultNewWorkItem}}
+            "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+            "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id}else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+            "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id}else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+            "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id}else {new-workitem -message $email -wiType $defaultNewWorkItem}}
  
             #### activities ####
             "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
             "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
 
             #### 3rd party classes, work items, etc. add here ####
-            "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
+            "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
             #### Email is a Reply and does not contain a [Work Item ID]
             # Check if Work Item (Title, Body, Sender, CC, etc.) exists
             # and the user was replying too fast to receive Work Item ID notification
-            "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem $email}else{new-workitem $email $defaultNewWorkItem}}}
+            "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
             #### default action, create work item ####
-            default {new-workitem $email $defaultNewWorkItem}
+            default {new-workitem -message $email -wiType $defaultNewWorkItem}
         }
         
         # Custom Event Handler
@@ -4450,22 +4450,22 @@ foreach ($message in $inbox)
             switch -Regex ($email.subject)
             { 
                 #### primary work item types ####
-                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
     
                 #### activities ####
                 "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
                 "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
 
                 #### 3rd party classes, work items, etc. add here ####
-                "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
+                "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem $email}else{new-workitem $email $defaultNewWorkItem}}}
+                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
                 
                 #### Email is going to invoke a custom action. The signature MUST be valid to proceed
                 "\[$powershellKeyword]" {if ($validSig -and $ceScripts)
@@ -4477,7 +4477,7 @@ foreach ($message in $inbox)
                 }}
                 
                 #### default action, create work item ####
-                default {new-workitem $email $defaultNewWorkItem} 
+                default {new-workitem -message $email -wiType $defaultNewWorkItem} 
             }
         }
         #the signature is not valid and invalid signatures should not be processed, call custom actions if enabled
@@ -4534,22 +4534,22 @@ foreach ($message in $inbox)
             switch -Regex ($email.subject)
             {
                 #### primary work item types ####
-                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
  
                 #### activities ####
                 "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
                 "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
 
                 #### 3rd party classes, work items, etc. add here ####
-                "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
+                "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem $email}else{new-workitem $email $defaultNewWorkItem}}}
+                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### default action, create work item ####
                 default {new-workitem $email $defaultNewWorkItem}
@@ -4597,22 +4597,22 @@ foreach ($message in $inbox)
             switch -Regex ($email.subject)
             {
                 #### primary work item types ####
-                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
  
                 #### activities ####
                 "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
                 "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
 
                 #### 3rd party classes, work items, etc. add here ####
-                "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
+                "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem $email}else{new-workitem $email $defaultNewWorkItem}}}
+                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### default action, create work item ####
                 default {new-workitem $email $defaultNewWorkItem}
@@ -4660,25 +4660,25 @@ foreach ($message in $inbox)
             switch -Regex ($email.subject)
             {
                 #### primary work item types ####
-                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
-                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem $email $defaultNewWorkItem}}
+                "\[$irRegex[0-9]+\]" {$result = get-workitem $matches[0] $irClass; if ($result){$isUpdate = $true; update-workitem $email "ir" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$srRegex[0-9]+\]" {$result = get-workitem $matches[0] $srClass; if ($result){$isUpdate = $true; update-workitem $email "sr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$prRegex[0-9]+\]" {$result = get-workitem $matches[0] $prClass; if ($result){$isUpdate = $true; update-workitem $email "pr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
+                "\[$crRegex[0-9]+\]" {$result = get-workitem $matches[0] $crClass; if ($result){$isUpdate = $true; update-workitem $email "cr" $result.id} else {new-workitem -message $email -wiType $defaultNewWorkItem}}
  
                 #### activities ####
                 "\[$raRegex[0-9]+\]" {$result = get-workitem $matches[0] $raClass; if ($result){$isUpdate = $true; update-workitem $email "ra" $result.id}}
                 "\[$maRegex[0-9]+\]" {$result = get-workitem $matches[0] $maClass; if ($result){$isUpdate = $true; update-workitem $email "ma" $result.id}}
 
                 #### 3rd party classes, work items, etc. add here ####
-                "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem $email $defaultNewWorkItem}}}
+                "\[$distributedApplicationHealthKeyword]" {if($enableSCOMIntegration -eq $true){$result = Get-SCOMDistributedAppHealth -message $email; if ($result -eq $false){new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem $email}else{new-workitem $email $defaultNewWorkItem}}}
+                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### default action, create work item ####
-                default {new-workitem $email $defaultNewWorkItem}
+                default {new-workitem -message $email -wiType $defaultNewWorkItem}
             }
             
             # Custom Event Handler
@@ -4733,7 +4733,7 @@ foreach ($message in $inbox)
             #### 3rd party classes, work items, etc. add here ####
 
             #### default action, create/schedule a new default work item ####
-            default {$returnedNewWorkItemToSchedule = new-workitem $appointment $defaultNewWorkItem $true; Set-WorkItemScheduledTime -calAppt $appointment -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)}
+            default {$returnedNewWorkItemToSchedule = new-workitem -message $appointment -wiType $defaultNewWorkItem $true; Set-WorkItemScheduledTime -calAppt $appointment -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)}
         }
         
         # Custom Event Handler
@@ -4777,10 +4777,10 @@ foreach ($message in $inbox)
             "\[$daRegex[0-9]+\]" {$result = get-workitem $matches[0] $daClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $isUpdate = $true; Update-WorkItem -message $appointment -wiType "da" -workItemID $result.name}}
 
             #### 3rd party classes, work items, etc. add here ####
-            "([C][a][n][c][e][l][e][d][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){$result = Confirm-WorkItem $appointment -returnWorkItem $true; Set-WorkItemScheduledTime -calAppt $appointment -workItem $result} else{new-workitem $appointment $defaultNewWorkItem}}
+            "([C][a][n][c][e][l][e][d][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){$result = Confirm-WorkItem $appointment -returnWorkItem $true; Set-WorkItemScheduledTime -calAppt $appointment -workItem $result} else{new-workitem -message $appointment -wiType $defaultNewWorkItem}}
 
             #### default action, create/schedule a new default work item ####
-            default {$returnedNewWorkItemToSchedule = new-workitem $appointment $defaultNewWorkItem $true; Set-WorkItemScheduledTime -calAppt $appointment -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)}
+            default {$returnedNewWorkItemToSchedule = new-workitem -message $appointment -wiType $defaultNewWorkItem $true; Set-WorkItemScheduledTime -calAppt $appointment -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)}
         }
         
         # Custom Event Handler
