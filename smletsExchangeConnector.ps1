@@ -900,7 +900,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
     #removes PII if RedactPiiFromMessage is enabled
     if ($redactPiiFromMessage -eq $true)
     {
-        $description = remove-PII $description
+        $description = remove-PII -body $description
     }
     
     #if the subject is longer than 200 characters take only the first 200.
@@ -1470,7 +1470,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
     #removes PII if RedactPiiFromMessage is enable
     if ($redactPiiFromMessage -eq $true)
     {
-        $message.body = remove-PII $message.body
+        $message.body = remove-PII -body $message.body
     }
       
     #determine the comment to add and ensure it's less than 4000 characters
