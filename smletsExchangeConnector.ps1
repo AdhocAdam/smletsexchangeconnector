@@ -1070,7 +1070,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     $newWorkItem = New-SCSMObject -Class $irClass -PropertyHashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Incident")["Prefix"] + "{0}"; "Status" = $irActiveStatus; "Title" = $title; "Description" = $description; "Classification" = $null; "Impact" = $irLowImpact; "Urgency" = $irLowUrgency; "Source" = "IncidentSourceEnum.Email$"} -PassThru @scsmMGMTParams
                     $irProjection = Get-SCSMObjectProjection -ProjectionName $irTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     if($message.Attachments){Add-FileToSCSMObject $message $newWorkItem.ID}
-                    if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem $message $newWorkItem.ID}
+                    if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $newWorkItem.ID}
                     Set-SCSMTemplate -Projection $irProjection -Template $IRTemplate
                     #Set-SCSMObjectTemplate -Projection $irProjection -Template $IRTemplate @scsmMGMTParams
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
@@ -1227,7 +1227,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     $newWorkItem = new-scsmobject -class $srClass -propertyhashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.ServiceRequest")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ServiceRequestStatusEnum.New$"} -PassThru @scsmMGMTParams
                     $srProjection = Get-SCSMObjectProjection -ProjectionName $srTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     if($message.Attachments){Add-FileToSCSMObject $message $newWorkItem.ID}
-                    if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem $message $newWorkItem.ID}
+                    if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $newWorkItem.ID}
                     Set-SCSMTemplate -Projection $srProjection -Template $SRTemplate
                     #Set-SCSMObjectTemplate -projection $srProjection -Template $SRTemplate @scsmMGMTParams
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
@@ -1384,7 +1384,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     $newWorkItem = new-scsmobject -class $prClass -propertyhashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Problem")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ProblemStatusEnum.Active$"} -PassThru @scsmMGMTParams
                     $prProjection = Get-SCSMObjectProjection -ProjectionName $prTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     if($message.Attachments){Add-FileToSCSMObject $message $newWorkItem.ID}
-                    if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem $message $newWorkItem.ID}
+                    if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $newWorkItem.ID}
                     Set-SCSMObjectTemplate -Projection $prProjection -Template $defaultPRTemplate @scsmMGMTParams
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     #no Affected User to set on a Problem, set Created By using the Affected User object if it exists
@@ -1697,7 +1697,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                 #relate the user to the work item
                 try {New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 5 -LogMessage "$($commentLeftBy.DisplayName) could not be related to $($newWorkItem.Name)" -Severity "Warning"}}
                 #add any new attachments
-                if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem $message $workItem.ID}
+                if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $workItem.ID}
             }
 
             # Custom Event Handler
@@ -1836,7 +1836,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                 #relate the user to the work item
                 try {New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 5 -LogMessage "$($commentLeftBy.DisplayName) could not be related to $($newWorkItem.Name)" -Severity "Warning"}}
                 #add any new attachments
-                if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem $message $workItem.ID}
+                if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $workItem.ID}
             }
             # Custom Event Handler
             if ($ceScripts) { Invoke-AfterUpdateSR }
@@ -1910,7 +1910,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                     #relate the user to the work item
                     try {New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 5 -LogMessage "$($commentLeftBy.DisplayName) could not be related to $($newWorkItem.Name)" -Severity "Warning"}}
                     #add any new attachments
-                    if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem $message $workItem.ID}
+                    if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $workItem.ID}
                     
                     # Custom Event Handler
                     if ($ceScripts) { Invoke-AfterUpdatePR }
@@ -1988,7 +1988,7 @@ function Update-WorkItem ($message, $wiType, $workItemID)
                     #relate the user to the work item
                     try {New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 5 -LogMessage "$($commentLeftBy.DisplayName) could not be related to $($newWorkItem.Name)" -Severity "Warning"}}
                     #add any new attachments
-                    if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem $message $workItem.ID}
+                    if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $workItem.ID}
                     
                     # Custom Event Handler
                     if ($ceScripts) { Invoke-AfterUpdateCR }
