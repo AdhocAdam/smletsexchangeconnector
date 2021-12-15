@@ -1039,7 +1039,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
             $workItemType = "ir"
         }
     }
-    elseif ($enableKeywordMatchForNewWI -eq $true -and $(Test-KeywordsFoundInMessage $message) -eq $true) {
+    elseif ($enableKeywordMatchForNewWI -eq $true -and $(Test-KeywordsFoundInMessage -message $message) -eq $true) {
         #Keyword override is true and keyword(s) found in message
         $workItemType = $workItemOverrideType
     }
