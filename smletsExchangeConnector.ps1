@@ -1019,7 +1019,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
     if (($smexcoSettingsMP.UseMailboxRedirection -eq $true) -and ($smexcoSettingsMPMailboxes.Count -ge 1))
     {
         if ($loggingLevel -ge 4){New-SMEXCOEvent -Source "Get-TemplatesByMailbox" -EventID 0 -Severity "Information" -LogMessage "Mailbox redirection is being used. Attempting to identify Template to use."}
-        $TemplatesForThisMessage = Get-TemplatesByMailbox $message
+        $TemplatesForThisMessage = Get-TemplatesByMailbox -message $message
     }
     
     # Use the global default work item type or, if mailbox redirection is used, use the default work item type for the
