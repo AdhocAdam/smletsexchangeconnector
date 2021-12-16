@@ -1436,6 +1436,7 @@
       <ImageReference ElementID="SMLets.Exchange.Connector.AdminSettings.Edit" ImageID="settingsIcon"></ImageReference>
       <ImageReference ElementID="SMLets.Exchange.Connector.AdminSettings" ImageID="settingsIcon"></ImageReference>
       <ImageReference ElementID="SMLets.Exchange.Connector.AdminSettings.AdditionalMailbox" ImageID="exchangeMailboxIcon"></ImageReference>
+      <ImageReference ElementID="SMLets.Exchange.Connector.AdminSettings.CustomRule" ImageID="customRule"></ImageReference>
     </ImageReferences>
   </Presentation>
   <LanguagePacks>
@@ -1498,5 +1499,6 @@
     <Assembly ID="SMLetsExchangeConnectorSettingsUI.Assembly" Accessibility="Public" FileName="SMLetsExchangeConnectorSettingsUI.dll" HasNullStream="false" QualifiedName="SMLetsExchangeConnectorSettingsUI, Version=1.0.0.0, Culture=neutral" />
     <Image ID="settingsIcon" Accessibility="Public" FileName="16x16.png" HasNullStream="false"/>
     <Image ID="exchangeMailboxIcon" Accessibility="Public" FileName="exchangeMailbox16x16.png" HasNullStream="false"/>
+    <Image ID="customRule" Accessibility="Public" FileName="customRouting16x16.png" HasNullStream="false"/>
   </Resources>
 </ManagementPackFragment>
