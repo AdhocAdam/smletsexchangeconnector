@@ -790,6 +790,7 @@ $sysUserHasPrefRelClass = Get-SCSMRelationshipClass -name "System.UserHasPrefere
 
 $fileAttachmentClass = Get-SCSMClass -Name "System.FileAttachment$" @scsmMGMTParams
 $wiHasFileAttachRelClass = Get-SCSMRelationshipClass -name "System.WorkItemHasFileAttachment$" @scsmMGMTParams
+$ciHasFileAttachRelClass = Get-SCSMRelationshipClass -name "System.ConfigItemHasFileAttachment$" @scsmMGMTParams
 $fileAddedByUserRelClass = Get-SCSMRelationshipClass -name "System.FileAttachmentAddedByUser$" @scsmMGMTParams
 $managementGroup = New-Object Microsoft.EnterpriseManagement.EnterpriseManagementGroup $scsmMGMTServer
 
@@ -2204,7 +2205,7 @@ function Add-EmailToWorkItem ($message, $workItemID)
         $workItem = Get-ScsmObject @scsmMGMTParams -class $wiClass -filter "Name -eq $workItemID"
         $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $workItem.ClassName
 
-        # Get count of attachents already in ticket
+        # Get count of attachments already in ticket
         try {$existingAttachmentsCount = (Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $wiHasFileAttachRelClass).Count} catch {$existingAttachmentsCount = 0}
     }
     
@@ -2257,20 +2258,27 @@ function Add-EmailToWorkItem ($message, $workItemID)
 }
 
 #inspired and modified from Stefan Roth here - https://stefanroth.net/2015/03/28/scsm-passing-attachments-via-web-service-e-g-sma-web-service/
-function Add-FileToSCSMObject ($message, $workItemId)
+function Add-FileToSCSMObject ($message, $smobject)
 {
-    # Get attachment limits and attachment count in ticket, if configured to
-    if ($checkAttachmentSettings -eq $true) {
-        $workItem = Get-ScsmObject @scsmMGMTParams -class $wiClass -filter "Name -eq $workItemID"
-        $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $workItem.ClassName
-        $attachMaxSize = $workItemSettings["MaxAttachmentSize"]
-        $attachMaxCount = $workItemSettings["MaxAttachments"]
+    #determine if the incoming object is a WorkItem or ConfigItem
+    if ($smobject.ClassName -like "*WorkItem*")
+    {
+        $itemType = "WorkItem"
 
-        # Get count of attachents already in ticket
-        $existingAttachments = Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $fileAttachmentRelClass
-        # Only use at before the loop
-        try {$existingAttachmentsCount = $existingAttachments.Count } catch { $existingAttachmentsCount = 0 }
+        # Get attachment limits and attachment count in ticket, if configured to
+        if ($checkAttachmentSettings -eq $true) {
+            $workItem = Get-ScsmObject @scsmMGMTParams -class $wiClass -filter "Name -eq $($smobject.Name)"
+            $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $workItem.ClassName
+            $attachMaxSize = $workItemSettings["MaxAttachmentSize"]
+            $attachMaxCount = $workItemSettings["MaxAttachments"]
+    
+            # Get count of attachments already in ticket
+            $existingAttachments = Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $wiHasFileAttachRelClass
+            # Only use at before the loop
+            try {$existingAttachmentsCount = $existingAttachments.Count } catch { $existingAttachmentsCount = 0 }
+        }
     }
+    else {$itemType = "ConfigItem"}
     
     # Custom Event Handler
     if ($ceScripts) { Invoke-BeforeAttachFiles }
@@ -2456,9 +2464,13 @@ function Add-FileToSCSMObject ($message, $workItemId)
                 $NewFile.Item($fileAttachmentClass, "AddedDate").Value = [DateTime]::Now.ToUniversalTime()
                 $NewFile.Item($fileAttachmentClass, "Content").Value = $MemoryStream
             
-                #Add the attachment to the work item and commit the changes
-                $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemId'" @scsmMGMTParams
-                $WorkItemProjection.__base.Add($NewFile, $fileAttachmentRelClass.Target)
+                #Add the attachment to the work/config item and commit the changes
+                $WorkItemProjection = Get-SCSMObjectProjection "System.$itemType.Projection" -Filter "id -eq '$($smObject.Id)'" @scsmMGMTParams
+                switch ($itemType)
+                {
+                    "WorkItem" {$WorkItemProjection.__base.Add($NewFile, $wiHasFileAttachRelClass.Target)}
+                    "ConfigItem" {$WorkItemProjection.__base.Add($NewFile, $ciHasFileAttachRelClass.Target)}
+                }
                 $WorkItemProjection.__base.Commit()
         
                 #create the Attached By relationship if possible
@@ -2473,7 +2485,7 @@ function Add-FileToSCSMObject ($message, $workItemId)
         catch
         {
             #file could not be added
-            if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Add-FileToSCSMObject" -EventID 0 -Severity "Warning" -LogMessage "A File Attachment from $($message.From) could not be added to $workItemId. $($_.Exception)"}
+            if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Add-FileToSCSMObject" -EventID 0 -Severity "Warning" -LogMessage "A File Attachment from $($message.From) could not be added to $($smObject.Name). $($_.Exception)"}
         }
     }
     # Custom Event Handler
