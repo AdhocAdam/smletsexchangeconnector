@@ -789,7 +789,7 @@ $wiContainsActivityRelClass = Get-SCSMRelationshipClass -name "System.WorkItemCo
 $sysUserHasPrefRelClass = Get-SCSMRelationshipClass -name "System.UserHasPreference$" @scsmMGMTParams
 
 $fileAttachmentClass = Get-SCSMClass -Name "System.FileAttachment$" @scsmMGMTParams
-$fileAttachmentRelClass = Get-SCSMRelationshipClass -name "System.WorkItemHasFileAttachment$" @scsmMGMTParams
+$wiHasFileAttachRelClass = Get-SCSMRelationshipClass -name "System.WorkItemHasFileAttachment$" @scsmMGMTParams
 $fileAddedByUserRelClass = Get-SCSMRelationshipClass -name "System.FileAttachmentAddedByUser$" @scsmMGMTParams
 $managementGroup = New-Object Microsoft.EnterpriseManagement.EnterpriseManagementGroup $scsmMGMTServer
 
@@ -2205,7 +2205,7 @@ function Add-EmailToWorkItem ($message, $workItemID)
         $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $workItem.ClassName
 
         # Get count of attachents already in ticket
-        try {$existingAttachmentsCount = (Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $fileAttachmentRelClass).Count} catch {$existingAttachmentsCount = 0}
+        try {$existingAttachmentsCount = (Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $wiHasFileAttachRelClass).Count} catch {$existingAttachmentsCount = 0}
     }
     
     try
@@ -2232,7 +2232,7 @@ function Add-EmailToWorkItem ($message, $workItemID)
                 
             #Add the attachment to the work item and commit the changes
             $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemID'" @scsmMGMTParams
-            $WorkItemProjection.__base.Add($emailAttachment, $fileAttachmentRelClass.Target)
+            $WorkItemProjection.__base.Add($emailAttachment, $wiHasFileAttachRelClass.Target)
             $WorkItemProjection.__base.Commit()
                         
             #create the Attached By relationship if possible
