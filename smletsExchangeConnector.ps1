@@ -2600,9 +2600,10 @@ function Get-AssignedToWorkItemVolume ($SCSMUser)
     $assignedWorkItemRelationships | foreach-object {$assignedCount++}
     
     #build Assigned To Volume object
-    $assignedToVolume = New-Object System.Object
-    $assignedToVolume | Add-Member -type NoteProperty -name SCSMUser -value $SCSMUser
-    $assignedToVolume | Add-Member -type NoteProperty -name AssignedCount -value $assignedCount
+    $assignedToVolume = [PSCustomObject] @{
+        SCSMUser      = $SCSMUser
+        AssignedCount = $assignedCount
+    }
     if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-AssignedToWorkItemVolume" -EventID 0 -Severity "Information" -LogMessage "$($assignedToVolume.SCSMUser.DisplayName) : $($assignedToVolume.AssignedCount)"}
     return $assignedToVolume
 }
@@ -2914,9 +2915,10 @@ function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUse
             {
                 $ciresonPortalRequestURL = "`"" + $ciresonPortalServer + "SC/ServiceCatalog/RequestOffering/" + $serviceCatalogResult.RequestOfferingId + "," + $serviceCatalogResult.ServiceOfferingId + "`""
                 $RequestOfferingURL = "<a href=$ciresonPortalRequestURL/>$($serviceCatalogResult.RequestOfferingTitle)</a><br />"
-                $requestOfferingSuggestion = New-Object System.Object
-                $requestOfferingSuggestion | Add-Member -type NoteProperty -name RequestOfferingURL -value $RequestOfferingURL
-                $requestOfferingSuggestion | Add-Member -type NoteProperty -name WordsMatched -value $wordsMatched
+                $requestOfferingSuggestion = [PSCustomObject] @{
+                    RequestOfferingURL = $RequestOfferingURL
+                    WordsMatched       = $wordsMatched
+                }
                 $matchingRequestURLs += $requestOfferingSuggestion
             }
         }
@@ -2948,10 +2950,11 @@ function Search-CiresonKnowledgeBase ($searchQuery)
             $wordsMatched = ($searchQuery.Trim().Split() | ?{($kbResult.title -match "\b$_\b")}).count
             if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToKA)
             {
-                $knowledgeSuggestion = New-Object System.Object
                 $KnowledgeArticleURL = "<a href=$ciresonPortalServer" + "KnowledgeBase/View/$($kbResult.articleid)#/>$($kbResult.title)</a><br />"
-                $knowledgeSuggestion | Add-Member -type NoteProperty -name KnowledgeArticleURL -value $KnowledgeArticleURL
-                $knowledgeSuggestion | Add-Member -type NoteProperty -name WordsMatched -value $wordsMatched
+                $knowledgeSuggestion = [PSCustomObject] @{
+                    KnowledgeArticleURL = $KnowledgeArticleURL
+                    WordsMatched        = $wordsMatched
+                }
                 $matchingKBURLs += $knowledgeSuggestion
             }
         }
@@ -4107,12 +4110,11 @@ function Get-SCOMDistributedAppHealth ($message)
         #create, define, and load custom PS Object from SCOM DA Objects
         foreach ($distributedApp in $distributedApps)
         {
-            $scomDAObject = New-Object System.Object
             switch ($distributedApp.HealthState)
             {
-                "Success" {$scomDAObject | Add-Member -Type NoteProperty -Name "Name" -Value $distributedApp.displayname; $scomDAObject | Add-Member -Type NoteProperty -Name "Status" -Value "Healthy"; $healthySCOMApps += $scomDAObject}
-                "Error" {$scomDAObject | Add-Member -Type NoteProperty -Name "Name" -Value $distributedApp.displayname; $scomDAObject | Add-Member -Type NoteProperty -Name "Status" -Value "Critical"; $unhealthySCOMApps += $scomDAObject}
-                "Uninitialized" {$scomDAObject | Add-Member -Type NoteProperty -Name "Name" -Value $distributedApp.displayname; $scomDAObject | Add-Member -Type NoteProperty -Name "Status" -Value "Not Monitored"; $notMonitoredSCOMApps += $scomDAObject}
+                "Success" {$scomDAObject = [PSCustomObject] @{Name = $distributedApp.displayname; Status = "Healthy"}; $healthySCOMApps += $scomDAObject}
+                "Error" {$scomDAObject = [PSCustomObject] @{Name = $distributedApp.displayname; Status = "Critical"}; $unhealthySCOMApps += $scomDAObject}
+                "Uninitialized" {$scomDAObject = [PSCustomObject] @{Name = $distributedApp.displayname; Status = "Not Monitored"}; $notMonitoredSCOMApps += $scomDAObject}
             }
             $emailBody += $scomDAObject.Name + " is " + $scomDAObject.Status + "<br />"
         }
@@ -4350,19 +4352,20 @@ foreach ($message in $inbox)
     #Process an Email
     if ($message.ItemClass -eq "IPM.Note")
     {
-        $email = New-Object System.Object
-        $email | Add-Member -type NoteProperty -name From -value $message.From.Address
-        $email | Add-Member -type NoteProperty -name To -value $message.ToRecipients
-        $email | Add-Member -type NoteProperty -name CC -value $message.CcRecipients
-        $email | Add-Member -type NoteProperty -name Subject -value $message.Subject
-        $email | Add-Member -type NoteProperty -name Attachments -value $message.Attachments
-        $email | Add-Member -type NoteProperty -name Body -value $message.Body.Text
-        $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
-        $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
-        $email | Add-Member -type NoteProperty -name ID -Value $message.ID
-        $email | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationID
-        $email | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
-        $email | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
+        $email = [PSCustomObject] @{
+            From                = $message.From.Address
+            To                  = $message.ToRecipients
+            CC                  = $message.CcRecipients
+            Subject             = $message.Subject
+            Attachments         = $message.Attachments
+            Body                = $message.Body.Text
+            DateTimeSent        = $message.DateTimeSent
+            DateTimeReceived    = $message.DateTimeReceived
+            ID                  = $message.ID
+            ConversationID      = $message.ConversationID
+            ConversationTopic   = $message.ConversationTopic
+            ItemClass           = $message.ItemClass
+        }
         
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessEmail }
@@ -4408,19 +4411,20 @@ foreach ($message in $inbox)
         
         $response = Read-MIMEMessage $message
    
-        $email = New-Object System.Object
-        $email | Add-Member -type NoteProperty -name From -value $response.From.address
-        $email | Add-Member -type NoteProperty -name To -value $response.To
-        $email | Add-Member -type NoteProperty -name CC -value $response.Cc
-        $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
-        $email | Add-Member -type NoteProperty -name Attachments -value ($response.Attachments | ?{$_.filename -ne "smime.p7s"})
-        $email | Add-Member -type NoteProperty -name Body -value $response.TextBody.Trim()
-        $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
-        $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
-        $email | Add-Member -type NoteProperty -name ID -Value $message.Id
-        $email | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationId
-        $email | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
-        $email | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
+        $email = [PSCustomObject] @{
+            From              = $response.From.address
+            To                = $response.To
+            CC                = $response.Cc
+            Subject           = $response.Subject
+            Attachments       = ($response.Attachments | Where-Object { $_.filename -ne "smime.p7s" })
+            Body              = $response.TextBody.Trim()
+            DateTimeSent      = $message.DateTimeSent
+            DateTimeReceived  = $message.DateTimeReceived
+            ID                = $message.ID
+            ConversationID    = $message.ConversationID
+            ConversationTopic = $message.ConversationTopic
+            ItemClass         = $message.ItemClass
+        }
         
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessEmail }
@@ -4514,19 +4518,20 @@ foreach ($message in $inbox)
             #check to see if there are attachments
             $decryptedAttachments = $decryptedBody | ?{$_.isattachment -eq $true}
 
-            $email = New-Object System.Object
-            $email | Add-Member -type NoteProperty -name From -value $response.From.Address
-            $email | Add-Member -type NoteProperty -name To -value $response.To
-            $email | Add-Member -type NoteProperty -name CC -value $response.Cc
-            $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
-            $email | Add-Member -type NoteProperty -name Attachments -value $decryptedAttachments
-            $email | Add-Member -type NoteProperty -name Body -value $decryptedBody.GetTextBody("Text")
-            $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
-            $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
-            $email | Add-Member -type NoteProperty -name ID -Value $message.Id
-            $email | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationId
-            $email | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
-            $email | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
+            $email = [PSCustomObject] @{
+                From              = $response.From.address
+                To                = $response.To
+                CC                = $response.Cc
+                Subject           = $response.Subject
+                Attachments       = $decryptedAttachments
+                Body              = $decryptedBody.GetTextBody("Text")
+                DateTimeSent      = $message.DateTimeSent
+                DateTimeReceived  = $message.DateTimeReceived
+                ID                = $message.ID
+                ConversationID    = $message.ConversationID
+                ConversationTopic = $message.ConversationTopic
+                ItemClass         = $message.ItemClass
+            }
             
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEmail }
@@ -4577,19 +4582,20 @@ foreach ($message in $inbox)
 
             $decryptedAttachments = $decryptedBody | ?{$_.isattachment -eq $true}
             
-            $email = New-Object System.Object
-            $email | Add-Member -type NoteProperty -name From -value $response.From.Address
-            $email | Add-Member -type NoteProperty -name To -value $response.To
-            $email | Add-Member -type NoteProperty -name CC -value $response.Cc
-            $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
-            $email | Add-Member -type NoteProperty -name Attachments -value $decryptedAttachments
-            $email | Add-Member -type NoteProperty -name Body -value $decryptedBody[0].GetTextBody("Text")
-            $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
-            $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
-            $email | Add-Member -type NoteProperty -name ID -Value $message.Id
-            $email | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationId
-            $email | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
-            $email | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
+            $email = [PSCustomObject] @{
+                From              = $response.From.address
+                To                = $response.To
+                CC                = $response.Cc
+                Subject           = $response.Subject
+                Attachments       = $decryptedAttachments
+                Body              = $decryptedBody[0].GetTextBody("Text")
+                DateTimeSent      = $message.DateTimeSent
+                DateTimeReceived  = $message.DateTimeReceived
+                ID                = $message.ID
+                ConversationID    = $message.ConversationID
+                ConversationTopic = $message.ConversationTopic
+                ItemClass         = $message.ItemClass
+            }
             
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEmail }
@@ -4640,19 +4646,20 @@ foreach ($message in $inbox)
             $decryptedBodyWOAttachments = $decryptedBody | ?{($_.isattachment -eq $false)}
             $decryptedAttachments = if ($decryptedBody.ContentType.MimeType -eq "multipart/alternative") {$decryptedBody | ?{$_.isattachment -eq $true}} else {$decryptedBody | select -skip 1}
 
-            $email = New-Object System.Object
-            $email | Add-Member -type NoteProperty -name From -value $response.From.Address
-            $email | Add-Member -type NoteProperty -name To -value $response.To
-            $email | Add-Member -type NoteProperty -name CC -value $response.Cc
-            $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
-            $email | Add-Member -type NoteProperty -name Attachments -value $decryptedAttachments
-            $email | Add-Member -type NoteProperty -name Body -value $(try {$decryptedBodyWOAttachments.GetTextBody("Text").Trim()} catch {$decryptedBodyWOAttachments[0].Text.Trim()})
-            $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
-            $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
-            $email | Add-Member -type NoteProperty -name ID -Value $message.Id
-            $email | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationId
-            $email | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
-            $email | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
+            $email = [PSCustomObject] @{
+                From              = $response.From.address
+                To                = $response.To
+                CC                = $response.Cc
+                Subject           = $response.Subject
+                Attachments       = $decryptedAttachments
+                Body              = $(try { $decryptedBodyWOAttachments.GetTextBody("Text").Trim() } catch { $decryptedBodyWOAttachments[0].Text.Trim() })
+                DateTimeSent      = $message.DateTimeSent
+                DateTimeReceived  = $message.DateTimeReceived
+                ID                = $message.ID
+                ConversationID    = $message.ConversationID
+                ConversationTopic = $message.ConversationTopic
+                ItemClass         = $message.ItemClass
+            }
             
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEmail }
@@ -4697,20 +4704,21 @@ foreach ($message in $inbox)
     #Process a Calendar Meeting
     elseif ($message.ItemClass -eq "IPM.Schedule.Meeting.Request")
     {
-        $appointment = New-Object System.Object
-        $appointment | Add-Member -type NoteProperty -name StartTime -value $message.Start
-        $appointment | Add-Member -type NoteProperty -name EndTime -value $message.End
-        $appointment | Add-Member -type NoteProperty -name To -value $message.ToRecipients
-        $appointment | Add-Member -type NoteProperty -name From -value $message.From.Address
-        $appointment | Add-Member -type NoteProperty -name Attachments -value $message.Attachments
-        $appointment | Add-Member -type NoteProperty -name Subject -value $message.Subject
-        $appointment | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
-        $appointment | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
-        $appointment | Add-Member -type NoteProperty -name Body -value $message.Body.Text
-        $appointment | Add-Member -type NoteProperty -name ID -Value $message.ID
-        $appointment | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationID
-        $appointment | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
-        $appointment | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
+        $appointment = [PSCustomObject] @{
+            StartTime         = $message.Start
+            EndTime           = $message.End
+            To                = $message.ToRecipients
+            From              = $message.From.Address
+            Attachments       = $message.Attachments
+            Subject           = $message.Subject
+            DateTimeReceived  = $message.DateTimeReceived
+            DateTimeSent      = $message.DateTimeSent
+            Body              = $message.Body.Text
+            ID                = $message.ID
+            ConversationID    = $message.ConversationID
+            ConversationTopic = $message.ConversationTopic
+            ItemClass         = $message.ItemClass
+        }
         
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessAppointment }
@@ -4743,20 +4751,21 @@ foreach ($message in $inbox)
     #Process a Calendar Meeting Cancellation
     elseif ($message.ItemClass -eq "IPM.Schedule.Meeting.Canceled")
     {
-        $appointment = New-Object System.Object
-        $appointment | Add-Member -type NoteProperty -name StartTime -value $message.Start
-        $appointment | Add-Member -type NoteProperty -name EndTime -value $message.End
-        $appointment | Add-Member -type NoteProperty -name To -value $message.ToRecipients
-        $appointment | Add-Member -type NoteProperty -name From -value $message.From.Address
-        $appointment | Add-Member -type NoteProperty -name Attachments -value $message.Attachments
-        $appointment | Add-Member -type NoteProperty -name Subject -value $message.Subject
-        $appointment | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
-        $appointment | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
-        $appointment | Add-Member -type NoteProperty -name Body -value $message.Body.Text
-        $appointment | Add-Member -type NoteProperty -name ID -Value $message.ID
-        $appointment | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationID
-        $appointment | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
-        $appointment | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
+        $appointment = [PSCustomObject] @{
+            StartTime         = $message.Start
+            EndTime           = $message.End
+            To                = $message.ToRecipients
+            From              = $message.From.Address
+            Attachments       = $message.Attachments
+            Subject           = $message.Subject
+            DateTimeReceived  = $message.DateTimeReceived
+            DateTimeSent      = $message.DateTimeSent
+            Body              = $message.Body.Text
+            ID                = $message.ID
+            ConversationID    = $message.ConversationID
+            ConversationTopic = $message.ConversationTopic
+            ItemClass         = $message.ItemClass
+        }
         
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessCancelMeeting }
