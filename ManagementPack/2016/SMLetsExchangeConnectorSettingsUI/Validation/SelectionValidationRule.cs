@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows;
 using System.Windows.Data;
+using System.Globalization;
 
 namespace SMLetsExchangeConnectorSettingsUI.Validation
 {
@@ -49,6 +50,22 @@ namespace SMLetsExchangeConnectorSettingsUI.Validation
         public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
             return value;
+        }
+    }
+
+    //textbox validation "By Using ValidationRules"
+    //https://www.codeproject.com/Tips/1113391/Validation-in-WPF-Various-WPF-Validation-Ways
+    public class TextBoxValidationRule : ValidationRule
+    {
+        public override ValidationResult Validate(object value, CultureInfo cultureInfo)
+        {
+            string valueToValidate = value as string;
+            if (valueToValidate.Length < 1)
+            {
+                return new ValidationResult(false, "A value is required");
+            }
+
+            return new ValidationResult(true, null);
         }
     }
 }

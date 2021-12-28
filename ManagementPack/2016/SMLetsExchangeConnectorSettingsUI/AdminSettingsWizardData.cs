@@ -100,6 +100,13 @@ namespace SMLetsExchangeConnectorSettingsUI
         private String[] multipleMailboxesToAdd;
         private String[] multipleMailboxesToRemove;
 
+        //custom rules
+        private Boolean boolCustomRules = false;
+        private String[] multipleCustomRulesToAdd;
+        private String[] multipleCustomRulesToRemove;
+        public IList<EnterpriseManagementObject> CustomRules { get; set; }
+        ManagementPackEnumeration messageClassEnums;
+
         //keywords
         private String strFromKW = String.Empty;
         private String strAcknowledgeKW = String.Empty;
@@ -1069,6 +1076,51 @@ namespace SMLetsExchangeConnectorSettingsUI
                 }
             }
         }
+
+        //custom rules
+        public Boolean UseCustomRules
+        {
+            get
+            {
+                return this.boolCustomRules;
+            }
+            set
+            {
+                if (this.boolCustomRules != value)
+                {
+                    this.boolCustomRules = value;
+                }
+            }
+        }
+        public String[] MultipleCustomRulesToAdd
+        {
+            get
+            {
+                return this.multipleCustomRulesToAdd;
+            }
+            set
+            {
+                if (this.multipleCustomRulesToAdd != value)
+                {
+                    this.multipleCustomRulesToAdd = value;
+                }
+            }
+        }
+        public String[] MultipleCustomRulesToRemove
+        {
+            get
+            {
+                return this.multipleCustomRulesToRemove;
+            }
+            set
+            {
+                if (this.multipleCustomRulesToRemove != value)
+                {
+                    this.multipleCustomRulesToRemove = value;
+                }
+            }
+        }
+        public IList<ManagementPackEnumeration> MessageClassEnums  { get; set; }
 
         //keywords
         public String KeywordFrom
@@ -2562,7 +2614,8 @@ namespace SMLetsExchangeConnectorSettingsUI
             */
             ManagementPackClass smletsExchangeConnectorSettingsClass = emg.EntityTypes.GetClass(new Guid("a0022e87-75a8-65ee-4581-d923ff06a564"));
             ManagementPackClass smletsExchangeConnectorAdditionalMailboxClass = emg.EntityTypes.GetClass(new Guid("8b132799-638b-cc6f-469a-8f0638f917c0"));
-            
+            ManagementPackClass smletsExchangeConnectorCustomRuleClass = emg.EntityTypes.GetClass(new Guid("ad77ed70-b730-89f4-ef96-104f7ef8fa11"));
+
             //attempt to find the Cireson Portal MP. In doing so, a variable now exists in memory to identify the MPs existance.
             try
             {
@@ -2917,6 +2970,15 @@ namespace SMLetsExchangeConnectorSettingsUI
                 Get-SCSMObject -class $additionalMailboxClass
             */
             this.AdditionalMailboxes = emg.EntityObjects.GetObjectReader<EnterpriseManagementObject>(smletsExchangeConnectorAdditionalMailboxClass, ObjectQueryOptions.Default).ToList();
+
+            //Custom Rules
+            //Get-SCSMObject -class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings.CustomRule$") | Sort-Object TimeAdded
+            //Get-SCSMEnumeration -Name "SMLets.Exchange.Connector.MessageClassEnum$" | Get-SCSMChildEnumeration -Depth "Recursive" | Sort-Object DisplayName
+            try { this.UseCustomRules = Boolean.Parse(emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseCustomRules"].ToString()); }
+            catch { this.UseCustomRules = false; }
+            this.CustomRules = emg.EntityObjects.GetObjectReader<EnterpriseManagementObject>(smletsExchangeConnectorCustomRuleClass, ObjectQueryOptions.Default).OrderBy(enumitem => enumitem.TimeAdded).ToList();
+            this.MessageClassEnums = emg.EntityTypes.GetChildEnumerations(new Guid("05ae5bf5-f0b7-5a2e-efe4-297cb0503536"), TraversalDepth.Recursive);
+            this.MessageClassEnums = this.MessageClassEnums.OrderBy(enumitem => enumitem.DisplayName).ToList();
 
             //Keywords
             this.KeywordFrom = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordFrom"].ToString();
@@ -3334,6 +3396,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             //Get the SMLets Settings class and Additional Mailbox class by GUID
             ManagementPackClass smletsExchangeConnectorSettingsClass = emg.EntityTypes.GetClass(new Guid("a0022e87-75a8-65ee-4581-d923ff06a564"));
             ManagementPackClass smletsExchangeConnectorAdditionalMailboxClass = emg.EntityTypes.GetClass(new Guid("8b132799-638b-cc6f-469a-8f0638f917c0"));
+            ManagementPackClass smletsExchangeConnectorCustomRuleClass = emg.EntityTypes.GetClass(new Guid("ad77ed70-b730-89f4-ef96-104f7ef8fa11"));
 
             //Get the SMLets Exchange Connector Settings object using the object GUID 
             EnterpriseManagementObject emoAdminSetting = emg.EntityObjects.GetObject<EnterpriseManagementObject>(this.EnterpriseManagementObjectID, ObjectQueryOptions.Default);
@@ -3508,6 +3571,94 @@ namespace SMLetsExchangeConnectorSettingsUI
                         }
                     }
                     //delete the mailbox object(s)
+                    idd.Commit(emg);
+                }
+                catch
+                {
+
+                }
+            }
+
+            //Use Custom Rules
+            emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseCustomRules"].Value = this.UseCustomRules;
+
+            //Custom Rule matching - foreach entry returned from the form either Create or Update
+            if (MultipleCustomRulesToAdd != null)
+            {
+                foreach (string customRuleObject in MultipleCustomRulesToAdd)
+                {
+                    string[] sections = customRuleObject.Split(';');
+                    try
+                    {
+                        //retrieve the custom rule in the loop by its GUID
+                        EnterpriseManagementObject customRuleExists = emg.EntityObjects.GetObject<EnterpriseManagementObject>(new Guid(sections[0]), ObjectQueryOptions.Default);
+
+                        /*update the custom rule
+                        ##PowerShell SMlets equivalent:
+                            $customRuleClass = Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings.CustomRule"
+                            $customRule = Get-SCSMObject -Class $customRuleClass -filter "CustomRuleDisplayName -eq 'Hardware Vendor'"
+                            Set-SCSMObject -SMObject $customRule -Property CustomRuleRegex -Value "\[[C][A][S][E][#][0-9]+\]"
+                        */
+                        customRuleExists[smletsExchangeConnectorCustomRuleClass, "CustomRuleDisplayName"].Value = sections[1].ToString();
+                        customRuleExists[smletsExchangeConnectorCustomRuleClass, "CustomRuleMessageClassEnum"].Value = sections[2];
+                        customRuleExists[smletsExchangeConnectorCustomRuleClass, "CustomRuleRegex"].Value = sections[3].ToString();
+                        customRuleExists[smletsExchangeConnectorCustomRuleClass, "CustomRuleMessagePart"].Value = sections[4].ToString();
+                        customRuleExists[smletsExchangeConnectorCustomRuleClass, "CustomRuleItemType"].Value = sections[5].ToString().Trim();
+                        customRuleExists[smletsExchangeConnectorCustomRuleClass, "CustomRuleRegexMatchProperty"].Value = sections[6].ToString().Trim();
+                        customRuleExists.Commit();
+                    }
+                    catch
+                    {
+                        /*custom rule doesn't exist, create it
+                        ##PowerShell SMlets equivalent:
+                            $customRuleClass = Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings.CustomRule$"
+                            New-SCSMObject -Class $customRuleClass -propertyhashtable @{
+                                "CustomRuleID" = New-Guid
+                                "CustomRuleDisplayName" = "hardware;
+                                "CustomRuleMessageClassEnum" = "SMLets.Exchange.Connector.MessageClassEnum.IPM.Note$")
+                                "CustomRuleMessagePart" = "Body";
+                                "CustomRuleRegex" = "\[[C][A][S][E][#][0-9]+\]";
+                                "CustomRuleItemType" = "SR";
+                                "CustomRuleRegexMatchProperty" = "ExternalTicketID"
+                            }
+                        */
+                        CreatableEnterpriseManagementObject emoCustomRuleObject = new CreatableEnterpriseManagementObject(emg, smletsExchangeConnectorCustomRuleClass);
+                        emoCustomRuleObject[smletsExchangeConnectorCustomRuleClass, "CustomRuleID"].Value = new Guid(sections[0]);
+                        emoCustomRuleObject[smletsExchangeConnectorCustomRuleClass, "CustomRuleDisplayName"].Value = sections[1].ToString();
+                        emoCustomRuleObject[smletsExchangeConnectorCustomRuleClass, "CustomRuleMessageClassEnum"].Value = emg.EntityTypes.GetEnumeration(new Guid(sections[2]));
+                        emoCustomRuleObject[smletsExchangeConnectorCustomRuleClass, "CustomRuleRegex"].Value = sections[3].ToString();
+                        emoCustomRuleObject[smletsExchangeConnectorCustomRuleClass, "CustomRuleMessagePart"].Value = sections[4].ToString();
+                        emoCustomRuleObject[smletsExchangeConnectorCustomRuleClass, "CustomRuleItemType"].Value = sections[5].ToString().Trim();
+                        emoCustomRuleObject[smletsExchangeConnectorCustomRuleClass, "CustomRuleRegexMatchProperty"].Value = sections[6].ToString().Trim();
+                        emoCustomRuleObject.Commit();
+                    }
+                }
+            }
+
+            //Custom Rule matching - foreach entry returned from the form Delete
+            if (MultipleCustomRulesToRemove != null)
+            {
+                try
+                {
+                    /*SMLets - Remove-SCSMObject
+                     SMLets requires the -Force parameter when the object in question does not derive from the Configuration Item class
+                    ##PowerShell SMlets equivalent:
+                        $customRuleClass = Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings.CustomRule$"
+                        $customRule = Get-SCSMObject -Class $customRuleClass -filter "CustomRuleDisplayName -eq 'some vendor'"
+                        $customRule | Remove-SCSMObject -Force
+                        https://github.com/SMLets/SMLets/blob/55f1bac3bc7a7011a461b24f6d7787ba89fe2624/SMLets.Shared/Code/EntityObjects.cs#L1402
+                    */
+                    IncrementalDiscoveryData idd = new IncrementalDiscoveryData();
+                    foreach (string customRuleToDeleteGuid in MultipleCustomRulesToRemove)
+                    {
+                        EnterpriseManagementObject customRuleToDelete = emg.EntityObjects.GetObject<EnterpriseManagementObject>(new Guid(customRuleToDeleteGuid), ObjectQueryOptions.Default);
+                        if (customRuleToDelete != null)
+                        {
+                            //mark the object for deletion
+                            idd.Remove(customRuleToDelete);
+                        }
+                    }
+                    //delete the custom rule object(s)
                     idd.Commit(emg);
                 }
                 catch
