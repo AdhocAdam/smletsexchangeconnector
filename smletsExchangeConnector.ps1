@@ -3187,6 +3187,11 @@ function Confirm-WorkItem ($message, $returnWorkItem)
     }
 }
 
+function Test-EmailPattern
+{
+
+}
+
 function Undo-WorkItemResolution ($WorkItem)
 {
     switch ($WorkItem.ClassName)
