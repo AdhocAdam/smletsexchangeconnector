@@ -4408,19 +4408,20 @@ foreach ($message in $inbox)
         
         $response = Read-MIMEMessage -message $message
    
-        $email = New-Object System.Object
-        $email | Add-Member -type NoteProperty -name From -value $response.From.address
-        $email | Add-Member -type NoteProperty -name To -value $response.To
-        $email | Add-Member -type NoteProperty -name CC -value $response.Cc
-        $email | Add-Member -type NoteProperty -name Subject -value $response.Subject
-        $email | Add-Member -type NoteProperty -name Attachments -value ($response.Attachments | Where-Object{$_.filename -ne "smime.p7s"})
-        $email | Add-Member -type NoteProperty -name Body -value $response.TextBody.Trim()
-        $email | Add-Member -type NoteProperty -name DateTimeSent -Value $message.DateTimeSent
-        $email | Add-Member -type NoteProperty -name DateTimeReceived -Value $message.DateTimeReceived
-        $email | Add-Member -type NoteProperty -name ID -Value $message.Id
-        $email | Add-Member -type NoteProperty -name ConversationID -Value $message.ConversationId
-        $email | Add-Member -type NoteProperty -name ConversationTopic -Value $message.ConversationTopic
-        $email | Add-Member -type NoteProperty -name ItemClass -Value $message.ItemClass
+        $email = [PSCustomObject] @{
+            From              = $response.From.address
+            To                = $response.To
+            CC                = $response.Cc
+            Subject           = $response.Subject
+            Attachments       = ($response.Attachments | Where-Object { $_.filename -ne "smime.p7s" })
+            Body              = $response.TextBody.Trim()
+            DateTimeSent      = $message.DateTimeSent
+            DateTimeReceived  = $message.DateTimeReceived
+            ID                = $message.ID
+            ConversationID    = $message.ConversationID
+            ConversationTopic = $message.ConversationTopic
+            ItemClass         = $message.ItemClass
+        }
         
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessEmail }
