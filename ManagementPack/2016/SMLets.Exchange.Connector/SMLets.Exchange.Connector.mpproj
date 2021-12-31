@@ -55,6 +55,17 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <ManagementPackReference Include="Microsoft.EnterpriseManagement.ServiceManager.UI.Authoring">
+      <HintPath>..\dependencies\Authoring.mpb</HintPath>
+      <Alias>Authoring</Alias>
+      <MinVersion>7.5.7487.0</MinVersion>
+      <PackageToBundle>False</PackageToBundle>
+    </ManagementPackReference>
+    <ManagementPackReference Include="Microsoft.EnterpriseManagement.ServiceManager.UI.Authoring.Help">
+      <HintPath>..\dependencies\Authoring.mpb</HintPath>
+      <Alias>MESUAH</Alias>
+      <MinVersion>7.5.7487.0</MinVersion>
+    </ManagementPackReference>
     <ManagementPackReference Include="Microsoft.EnterpriseManagement.ServiceManager.UI.Console">
       <HintPath>..\dependencies\Microsoft.EnterpriseManagement.ServiceManager.UI.Console.mp</HintPath>
       <Alias>Console</Alias>
