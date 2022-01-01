@@ -187,7 +187,7 @@ function New-SMEXCOEvent
         [parameter(Mandatory=$true, Position=1)]
         [string] $LogMessage,
         [parameter(Mandatory=$true, Position=2)]
-        [ValidateSet("General", "CustomEvents", "Cryptography", "New-WorkItem","Update-WorkItem","Add-EmailToWorkItem", "Add-FileToSCSMObject", "Confirm-WorkItem",
+        [ValidateSet("General", "CustomEvents", "Cryptography", "Test-EmailPattern", "New-WorkItem","Update-WorkItem","Add-EmailToWorkItem", "Add-FileToSCSMObject", "Confirm-WorkItem",
             "Set-WorkItemScheduledTime", "Get-SCSMUserByEmailAddress", "Get-TierMembership", "Get-TierMembers", "Get-AssignedToWorkItemVolume",
             "Set-AssignedToPerSupportGroup", "Get-SCSMWorkItemParent", "New-CMDBUser", "Add-ActionLogEntry", "Get-CiresonPortalAPIToken",
             "Get-CiresonPortalUser", "Get-CiresonPortalGroup", "Get-CiresonPortalAnnouncements", "Search-AvailableCiresonPortalOfferings",
@@ -234,6 +234,7 @@ function New-SMEXCOEvent
             New-EventLog -LogName "SMLets Exchange Connector" -Source "General" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "CustomEvents" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Cryptography" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Test-EmailPattern" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "New-WorkItem" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Update-WorkItem" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Add-EmailToWorkItem" -ErrorAction SilentlyContinue
@@ -306,6 +307,7 @@ function New-SMEXCOEvent
 #retrieve the SMLets Exchange Connector MP to define configuration
 $smexcoSettingsMP = ((Get-SCSMObject -Class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings$")))
 $smexcoSettingsMPMailboxes = ((Get-SCSMObject -Class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings.AdditionalMailbox$")))
+$smexcoSettingsCustomRules = ((Get-SCSMObject -Class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings.CustomRule$")))
 $scsmLFXConfigMP = Get-SCSMManagementPack -Id "50daaf82-06ce-cacb-8cf5-3950aebae0b0"
 
 #define the SCSM management server, this could be a remote name or localhost
@@ -3202,7 +3204,168 @@ function Confirm-WorkItem ($message, $returnWorkItem)
 
 function Test-EmailPattern
 {
+    param (
+        [Parameter(Mandatory=$true)]
+        $MessageClass,
+        [Parameter(Mandatory=$true)]
+        $Email
+    )
+    
+    #log that we've entered Custom Rules function
+    if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 0 -Severity "Information" -LogMessage "No out of box Work Item match found. Attempting to reconcile against custom defined matching patterns."}
+    
+    #initialize variables, null the switch string/content block
+    $searchBody = $false
+    $searchSubject = $false
+    $subjectSwitchBlockContent = [String]::Empty
+    $bodySwitchBlockContent = [String]::Empty
+    $smexcoSettingsCustomRulesMessageClass = $smexcoSettingsCustomRules | Where-Object {($_.CustomRuleMessageClassEnum.DisplayName -eq "$MessageClass")}
+    $smexcoSettingsCustomRulesKnownMessageClass = $smexcoSettingsCustomRulesMessageClass | Where-Object {($_.CustomRuleItemType -eq "IR") -or ($_.CustomRuleItemType -eq "SR") -or ($_.CustomRuleItemType -eq "CR") -or ($_.CustomRuleItemType -eq "PR") -or ($_.CustomRuleItemType -eq "RR")}
+    $smexcoSettingsCustomRulesUnknownMessageClass = $smexcoSettingsCustomRulesMessageClass | Where-Object {($_.CustomRuleItemType -ne "IR") -and ($_.CustomRuleItemType -ne "SR") -and ($_.CustomRuleItemType -ne "CR") -and ($_.CustomRuleItemType -ne "PR") -and ($_.CustomRuleItemType -ne "RR")}
+    $workItemMatch = $null
+    $customItemMatch = $null
 
+    #evaluate Work Items first
+    if ($smexcoSettingsCustomRulesKnownMessageClass.Count -ge 1)
+    {
+        #log that we're about to evaluate out of box Work Item conditions - IR, SR, CR, PR, RR
+        if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 1 -Severity "Information" -LogMessage "Evaluating Work Item Patterns."}
+
+        #{0} = IR, SR, PR, CR, RR
+        #{1} = the Class Extension that was defined in the Settings MP to write the matched value to
+        $wiActionStatement = '$result = get-scsmobject -class ${0}Class -filter "{1} -eq $($matches[0])"; if ($result) {$isUpdate = $true; update-workitem -message $email -wiType "{0}" -workItemID $result; return $isUpdate} else {return $matches[0]}'          
+
+        #loop through and load custom patterns defined within the Settings MP to construct the dynamic switch statements
+        foreach ($customWIPattern in $smexcoSettingsCustomRulesKnownMessageClass)
+        {
+            #build a switch statement just for the Email Subject
+            if ($customWIPattern.CustomRuleMessagePart -eq "Subject")
+            {
+                $searchSubject = $true
+                $subjectActionStatement = $wiActionStatement.Replace("{0}", $($customWIPattern.CustomRuleItemType))
+                $subjectActionStatement = $subjectActionStatement.Replace("{1}", $($customWIPattern.CustomRuleRegexMatchProperty))
+                $subjectSwitchBlockContent += '"' + $($customWIPattern.CustomRuleRegex) + '" { ' + $subjectActionStatement + " }`r`n"
+
+                #log that we're evaluating Subject patterns
+                if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 2 -Severity "Information" -LogMessage "Building Email Subject Switch Pattern: $subjectSwitchBlockContent"}
+            }
+            #build a switch statement just for the Email Body
+            if ($customWIPattern.CustomRuleMessagePart -eq "Body")
+            {
+                $searchBody = $true
+                $bodyActionStatement = $wiActionStatement.Replace("{0}", $($customWIPattern.CustomRuleItemType))
+                $bodyActionStatement = $bodyActionStatement.Replace("{1}", $($customWIPattern.CustomRuleRegexMatchProperty))
+                $bodySwitchBlockContent += '"' + $($customWIPattern.CustomRuleRegex) + '" { ' + $bodyActionStatement + " }`r`n"
+
+                #log that we're evaluating Body patterns
+                if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 3 -Severity "Information" -LogMessage "Building Email Body Switch Pattern: $bodySwitchBlockContent"}
+            }
+        }
+
+        #### $switchResult + $wiActionStatment. $wiActionStatement either performed an update ($true) OR it returned the matched pattern. $switchResult drives further logic as its a BOOL or a STRING ####
+        #attempt to turn the Subject switch string into an actual SWITCH statement, then execute it
+        try
+        {
+            #convert the subject string
+            if ($searchSubject)
+            {
+                #look for an Update to perform. If no update is found, return the matched pattern result
+                $subjectSwitchBlock = [scriptblock]::Create($switchBlockTemplate + $subjectSwitchBlockContent + '}')
+                Invoke-Command -ScriptBlock $subjectSwitchBlock -ArgumentList:@($email.subject) -OutVariable dynSubjSwitchResult
+            }
+            #$switchResult could either be $true, in which case an update was performed
+            #$switchResult could be the matched pattern, in which case no update was performed
+            #switchResult could be null, because no update was perform and no pattern was identified
+            if ($dynSubjSwitchResult[0].Length -ge 1)
+            {
+                $switchResult = $dynSubjSwitchResult
+                if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 5 -Severity "Information" -LogMessage "Email Subject Patten Search will either return true or the matched pattern: $($switchResult.ToString())."}
+            }
+        }
+        catch
+        {
+            if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 6 -Severity "Error" -LogMessage "Email Subject Switch Pattern failed. Examine Event ID 2."}
+        }
+        
+        #attempt to turn the Body switch string into an actual SWITCH statement, then execute it
+        try
+        {
+            #convert the body string
+            if ($searchBody)
+            {
+                $bodySwitchBlock = [scriptblock]::Create($switchBlockTemplate + $bodySwitchBlockContent + '}')
+                Invoke-Command -ScriptBlock $bodySwitchBlock -ArgumentList:@($email.body) -OutVariable dynBodySwitchResult
+            }
+            #$switchResult could either be $true, in which case an update was performed
+            #$switchResult could be the matched pattern, in which case no update was performed
+            #switchResult could be null, because no update was perform and no pattern was identified
+            if ($dynBodySwitchResult[0].Length -ge 1)
+            {
+                $switchResult = $dynBodySwitchResult
+                if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 7 -Severity "Information" -LogMessage "Email Body Patten Search will either return true or the matched pattern: $switchResult."}
+            }
+        }
+        catch
+        {
+            if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 8 -Severity "Error" -LogMessage "Email Subject Switch Pattern failed. Examine Event ID 3."}    
+        }
+
+        #switchResult was either $true OR it contains the custom pattern that was matched
+        if (($switchResult -ne $true) -and ($null -ne $switchResult))
+        {
+            #Identify which pattern in the list of Custom Rule Types it belongs to create a New Work Item, then set the Custom Rule Class Extension property on it
+            $customRuleMatchPattern = $smexcoSettingsCustomRules | Where-Object {$switchResult -match $_.CustomRuleRegex} | Select-Object -first 1
+
+            #switchResult contains a known matched pattern
+            if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 9 -Severity "Information" -LogMessage "The pattern matched a Custom Rule, but nothing was updated. Create a New Work Item of type $($customRuleMatchPattern.CustomRuleItemType). Write $switchResult into it's $($customRuleMatchPattern.CustomRuleRegexMatchProperty) property so subsequent updates can be performed against it."}
+
+            $newWi = New-WorkItem -message $email -wiType $customRuleMatchPattern.CustomRuleItemType -returnWIBool $true
+            Set-SCSMObject -SMObject $newWi -property $customRuleMatchPattern.CustomRuleRegexMatchProperty -value $switchResult[0]
+        }
+
+        #No Work Item was created or updated given the criteria
+        if (($null -eq $switchResult)) {$workItemMatch = $false}
+        else {$workItemMatch = $true}
+    }
+    #evaluate conditions that are not stock Work Items assuming there was no known Work Item action invoked
+    if (($smexcoSettingsCustomRulesUnknownMessageClass.Count -ge 1) -and ($workItemMatch -eq $false))
+    {
+        #log that we're about to evaluate something that was not IR, SR, CR, PR, RR
+        if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 10 -Severity "Information" -LogMessage "Evaluating Patterns for a custom defined Work/Config Item type."}
+
+        #loop through and identify matched patterns before invoking Custom Events
+        foreach ($customWIPattern in $smexcoSettingsCustomRulesUnknownMessageClass)
+        {
+            #match occured in the Subject and a configured custom pattern, invoke custom events
+            if ($customWIPattern.CustomRuleMessagePart -eq "Subject")
+            {
+                #log that we're evaluating Subject patterns
+                if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 2 -Severity "Information" -LogMessage "Evaluating Email Subject Switch Pattern: $($customWIPattern.CustomRuleRegex)"}
+
+                $searchSubject = $true
+                if (($ceScripts) -and ($Email.Subject -match $customWIPattern.CustomRuleRegex)) {Invoke-CustomRuleAction}
+                else {$customItemMatch = $false <#Custom Events are not being used, but a Custom Class was used. Log an event?#>}
+            }
+            #match occured in the Body and a configured custom pattern, invoke custom events
+            if ($customWIPattern.CustomRuleMessagePart -eq "Body")
+            {
+                #log that we're evaluating Body patterns
+                if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 3 -Severity "Information" -LogMessage "Evaluating Email Body Switch Pattern: $($customWIPattern.CustomRuleRegex)"}
+
+                $searchBody = $true
+                if (($ceScripts) -and ($Email.Body -match $customWIPattern.CustomRuleRegex)) {Invoke-CustomRuleAction}
+                else {$customItemMatch = $false <#Custom Events are not being used, but a Custom Class was used. Log an event?#>}
+            }
+        }
+    }
+    #No stock Work Item was created/updated based on a Custom Pattern.
+    #No custom Item was created/updated based on a Custom Pattern.
+    #Create a Work Item e.g. "Default" of the above two switch statements
+    if (($workItemMatch -eq $false) -and ($customItemMatch -eq $false))
+    {
+        if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 11 -Severity "Information" -LogMessage "No Work Item or Config Item was created or updated through Custom Rules. Create a Default Work Item."}
+        New-WorkItem -message $email -wiType $defaultNewWorkItem -returnWIBool $false
+    }
 }
 
 function Undo-WorkItemResolution ($WorkItem)
@@ -4199,6 +4362,9 @@ $saRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Activity.Se
 $daRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Activity.DependentActivity")["PrefixRegex"]
 $raRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Activity.ReviewActivity")["PrefixRegex"]
 
+#custom rules
+$UseCustomRules = $smexcoSettingsMP.UseCustomRules
+
 # Custom Event Handler
 if ($ceScripts) { Invoke-BeforeConnect }
 
@@ -4358,6 +4524,15 @@ if (($loggingLevel -ge 1)-and($inbox.Count -ge 1)){New-SMEXCOEvent -Source "Gene
 # Custom Event Handler
 if ($ceScripts) { Invoke-OnOpenInbox }
 
+#build the formatting of a SWITCH statement using a Here-String
+#!!!! This MUST maintain its formatting/indentation. DO NOT CHANGE !!!!
+$switchBlockTemplate = @'
+param($incomingValue)
+switch -Regex ($incomingValue)
+{
+
+'@
+
 #parse each message
 foreach ($message in $inbox)
 {
@@ -4409,7 +4584,18 @@ foreach ($message in $inbox)
             "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
             #### default action, create work item ####
-            default {new-workitem -message $email -wiType $defaultNewWorkItem}
+            default {
+                if (($smexcoSettingsCustomRules.CustomRuleMessageClassEnum.DisplayName -contains "IPM.Note") -and ($UseCustomRules -eq $true))
+                {
+                    #Custom Patterns has at least one defined use of IPM.Note, and Custom Rules are enabled
+                    Test-EmailPattern -MessageClass $message.ItemClass -Email $email
+                }
+                else
+                {
+                    #No core SCSM Work Item was matched, Custom Rules may not have been used/have matched, create a New Work Item
+                    New-WorkItem $email $defaultNewWorkItem
+                }
+            }
         }
         
         # Custom Event Handler
@@ -4499,7 +4685,18 @@ foreach ($message in $inbox)
                 }}
                 
                 #### default action, create work item ####
-                default {new-workitem -message $email -wiType $defaultNewWorkItem} 
+                default {
+                    if (($smexcoSettingsCustomRules.CustomRuleMessageClassEnum.DisplayName -contains "IPM.Note.SMIME.MultipartSigned") -and ($UseCustomRules -eq $true))
+                    {
+                        #Custom Patterns has at least one defined use of IPM.Note.SMIME.MultipartSigned, and Custom Rules are enabled
+                        Test-EmailPattern -MessageClass $message.ItemClass -Email $email
+                    }
+                    else
+                    {
+                        #No core SCSM Work Item was matched, Custom Rules may not have been used/have matched, create a New Work Item
+                        New-WorkItem $email $defaultNewWorkItem
+                    }
+                }
             }
         }
         #the signature is not valid and invalid signatures should not be processed, call custom actions if enabled
@@ -4575,7 +4772,18 @@ foreach ($message in $inbox)
                 "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### default action, create work item ####
-                default {new-workitem $email $defaultNewWorkItem}
+                default {
+                    if (($smexcoSettingsCustomRules.CustomRuleMessageClassEnum.DisplayName -contains "IPM.Note.SMIME") -and ($UseCustomRules -eq $true))
+                    {
+                        #No Primary Work Item was matched, Custom Patterns has at least one defined use of IPM.Note.SMIME, and Custom Rules are enabled
+                        Test-EmailPattern -MessageClass $message.ItemClass -Email $email
+                    }
+                    else
+                    {
+                        #No core SCSM Work Item was matched, Custom Rules may not have been used/have matched, create a New Work Item
+                        New-WorkItem $email $defaultNewWorkItem
+                    }
+                }
             }
             
             # Custom Event Handler
@@ -4639,7 +4847,18 @@ foreach ($message in $inbox)
                 "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### default action, create work item ####
-                default {new-workitem $email $defaultNewWorkItem}
+                default {
+                    if (($smexcoSettingsCustomRules.CustomRuleMessageClassEnum.DisplayName -contains "IPM.Note.SMIME") -and ($UseCustomRules -eq $true))
+                    {
+                        #No Primary Work Item was matched, Custom Patterns has at least one defined use of IPM.Note.SMIME, and Custom Rules are enabled
+                        Test-EmailPattern -MessageClass $message.ItemClass -Email $email
+                    }
+                    else
+                    {
+                        #No core SCSM Work Item was matched, Custom Rules may not have been used/have matched, create a New Work Item
+                        New-WorkItem $email $defaultNewWorkItem
+                    }
+                }
             }
             
             # Custom Event Handler
@@ -4703,7 +4922,18 @@ foreach ($message in $inbox)
                 "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### default action, create work item ####
-                default {new-workitem -message $email -wiType $defaultNewWorkItem}
+                default {
+                    if (($smexcoSettingsCustomRules.CustomRuleMessageClassEnum.DisplayName -contains "IPM.Note.SMIME") -and ($UseCustomRules -eq $true))
+                    {
+                        #No Primary Work Item was matched, Custom Patterns has at least one defined use of IPM.Note.SMIME, and Custom Rules are enabled
+                        Test-EmailPattern -MessageClass $message.ItemClass -Email $email
+                    }
+                    else
+                    {
+                        #No core SCSM Work Item was matched, Custom Rules may not have been used/have matched, create a New Work Item
+                        New-WorkItem $email $defaultNewWorkItem
+                    }
+                }
             }
             
             # Custom Event Handler
