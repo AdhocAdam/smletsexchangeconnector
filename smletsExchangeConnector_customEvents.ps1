@@ -277,6 +277,53 @@ function Invoke-AfterSetPortalAnnouncement {
 }
 
 function Invoke-CustomRuleAction {
-  # This function occurs when Custom Rule's are enabled and the Custom Rule's Item Type is not IR, SR, CR, PR, RR
+    # This function occurs when Custom Rules are enabled and the Custom Rule's Item Type is not IR, SR, CR, PR, RR
+
+  <#### The matched message pattern coming into this function is identified as $matches[0]
+    $matches[0] = If $customWIPattern.CustomRuleRegex was "[G][0-9]+", then this value would be G0897324985, G9847108123, G975483, etc.
+    $matches[0] = If $customWIPattern.CustomRuleRegex was "\[[C][A][S][E][0-9]+\]", then this value would be [CASE8097], [CASE35975], [CASER745], etc.
+
+  #### The matched message pattern type coming into this function is identified as $customWIPattern
+  #### The pattern to match as defined in the "Custom Rules" pane in the Settings UI
+    $customWIPattern.CustomRuleDisplayName        = [string] The friendly name of the pattern
+    $customWIPattern.CustomRuleMessageClassEnum   = [enum]   The defined Exchange message class (IPM.Note, PM.Schedule.Meeting.Request, REPORT.IPM.Note.NDR, etc.). Use: $customWIPattern.CustomRuleMessageClassEnum.DisplayName :to access the plaintext string of "IPM.Note"
+    $customWIPattern.CustomRuleMessagePart        = [string] Either "Subject" or "Body"
+    $customWIPattern.CustomRuleRegex              = [string] The regular expression
+    $customWIPattern.CustomRuleItemType           = [string] The type of item to create/update. This could be any of the out of box values (IR, SR, CR, PR, RR) or anything you have defined
+    $customWIPattern.CustomRuleRegexMatchProperty = [string] The field on the item where the matched property should be written to
   
+  #### The message coming into the function is identified as $email. If the message was a Meeting Request/Cancellation it will have additional date properties such as [datetime]$_.StartTime and [datetime]$_.EndTime
+    $email.From               = [string] The email address the message was received from
+    $email.To                 = [string] The email address(es) the message was sent to. This could be an array if the message was sent to multiple parties
+    $email.CC                 = [string] The email address(es) the message was cc-ed to. This could be an array if the message was sent to multiple parties
+    $email.Subject            = [string] The email subject
+    $email.Attachments        = [object] The attached file(s). Use: Add-FileToSCSMObject -message $email -smobject $WorkItem/$ConfigItem : to simplify various attachment types
+    $email.Body               = [string] The plain text email body
+    $email.DateTimeSent       = [datetime] The UTC time the message was sent
+    $email.DateTimeReceived   = [datetime] The UTC time the mesage was received
+    $email.ID                 = [ItemId] An Exchange object type that consists of two string properties - $_.UniqueID and $_.ChangeKey
+    $email.ConversationID     = [ConversationId] An Exchange object type that consists of two string properties - $_.UniqueID and $_.ChangeKey - $_.UniqueId is the implied variable in Confirm-WorkItem
+    $email.ConversationTopic  = [string] Typically the subject of the email
+    $email.ItemClass          = [string] The class of the item (IPM.Note, PM.Schedule.Meeting.Request, REPORT.IPM.Note.NDR, etc.)
+
+  #### Using a combination of the above variables, assume the Item to create/update is defined as "System.WorkItem.Incident" or "Microsoft.SystemCenter.BusinessService"
+  #### define -PropertyHashtable to be the series of properties you wish to define/update per the email given the variables from above.
+  #### this could be an IF/ELSE statement or a SWITCH statement to manage a host of customizations
+    $definedClass = Get-SCSMClass -name $customWIPattern.CustomRuleItemType + "$"
+    $objectToFind = Get-SCSMObject -class $definedClass -filter "$($customWIPattern.CustomRuleRegexMatchProperty) -eq $($matches[0])"
+    if ($objectToFind) {Set-SCSMObject -class $definedClass -PropertyHashtable @{}}
+    else {New-SCSMObject -class $definedClass -PropertyHashtable @{}}
+
+    $definedClass = Get-SCSMClass -name $customWIPattern.CustomRuleItemType + "$"
+    switch ($definedClass.Name)
+    {
+      "System.Environment" {}
+      "Microsoft.AD.Printer" {}
+      "Microsoft.Windows.Computer" {}
+      "System.WorkItem.BillableTime" {}
+      "System.WorkItem.Activity.ParallelActivity" {}
+      "Microsoft.SystemCenter.BusinessService" {}
+    }
+  #>
+
 }
