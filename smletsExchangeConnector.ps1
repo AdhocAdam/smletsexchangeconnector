@@ -1382,11 +1382,12 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     else {
                         $PRTemplate = $defaultPRTemplate
                     }
-                    $newWorkItem = new-scsmobject -class $prClass -propertyhashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Problem")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ProblemStatusEnum.Active$"} -PassThru @scsmMGMTParams
+                    $newWorkItem = New-SCSMObject -class $prClass -propertyhashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Problem")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ProblemStatusEnum.Active$"; "Impact" = $irLowImpact; "Urgency" = $irLowUrgency} -PassThru @scsmMGMTParams
                     $prProjection = Get-SCSMObjectProjection -ProjectionName $prTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
-                    if($message.Attachments){Add-FileToSCSMObject -message $message -workItemID $newWorkItem.ID}
-                    if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $newWorkItem.ID}
-                    Set-SCSMObjectTemplate -Projection $prProjection -Template $defaultPRTemplate @scsmMGMTParams
+                    if($message.Attachments){Add-FileToSCSMObject $message $newWorkItem.ID}
+                    if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
+                    Apply-SCSMTemplate -Projection $prProjection -Template $PRTemplate
+                    #Set-SCSMObjectTemplate -Projection $prProjection -Template $defaultPRTemplate @scsmMGMTParams
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     #no Affected User to set on a Problem, set Created By using the Affected User object if it exists
                     if ($affectedUser)
