@@ -20,6 +20,7 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 4.0.0 = #329 - Feature, Custom Rules
 Version: 3.4.1 = #324 - Bug, File attachments allow illegal path characters
 Version: 3.4.0 = #320 - Feature, File Attachments on Activities are pushed to the Parent Work Item
                 #321 - Enhancement, Moved Cireson Search KB to a supported endpoint
