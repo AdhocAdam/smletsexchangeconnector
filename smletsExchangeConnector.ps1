@@ -4890,7 +4890,7 @@ foreach ($message in $inbox)
                 CC                = $response.Cc
                 Subject           = $response.Subject
                 Attachments       = $decryptedAttachments
-                Body              = $(try { $decryptedBodyWOAttachments.GetTextBody("Text").Trim() } catch { $decryptedBodyWOAttachments[0].Text.Trim() })
+                Body              = $(try { $decryptedBodyWOAttachments.GetTextBody("Text").Trim() } catch { if ($decryptedBodyWOAttachments[0].Text.GetType().Name -eq "Object[]"){ $decryptedBodyWOAttachments[0][0].Text.Trim()} else{ $decryptedBodyWOAttachments[0].Text.Trim()} })
                 DateTimeSent      = $message.DateTimeSent
                 DateTimeReceived  = $message.DateTimeReceived
                 ID                = $message.ID
