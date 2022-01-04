@@ -4506,6 +4506,22 @@ if ($processEncryptedMessages -eq $true)
 {
     $inboxFilterString += $encryptedFilterString
 }
+if ($UseCustomRules)
+{
+    #retrieve any custom rule patterns that are not the supported out of box enums
+    $customMessageClasses = $smexcoSettingsCustomRules | Where-Object {$_.CustomRuleMessageClassEnum.Name -notlike "SMLets.Exchange.Connector.MessageClassEnum.*"}
+    if ($customMessageClasses.count -eq 1)
+    {
+        $inboxFilterString += "(`$_.ItemClass -eq '$($smexcoSettingsExternalTicket.CustomRuleMessageClassEnum.DisplayName)')"
+    }
+    elseif ($customMessageClasses.count -ge 2)
+    {
+        foreach ($smexcoSettingsExternalTicket in $customMessageClasses)
+        {
+            $inboxFilterString += "(`$_.ItemClass -eq '$($smexcoSettingsExternalTicket.CustomRuleMessageClassEnum.DisplayName)')"
+        }
+    }
+}
 
 #finalize the where-object string by ensuring to look for all Unread Items
 $inboxFilterString = $inboxFilterString -join ' -or '
@@ -4517,6 +4533,7 @@ else
 {
     $inboxFilterString = "(" + $inboxFilterString + " -or " + $emailFilterString + ")" + " -and " + $unreadFilterString
 }
+if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "General" -EventId 5 -LogMessage "Filtering Mailbox on: $inboxFilterString" -Severity "Information"}
 $inboxFilterString = [scriptblock]::Create("$inboxFilterString")
 
 #filter the inbox
