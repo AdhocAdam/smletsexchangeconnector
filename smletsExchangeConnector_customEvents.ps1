@@ -314,7 +314,7 @@ function Invoke-CustomRuleAction {
     if ($objectToFind) {Set-SCSMObject -class $definedClass -PropertyHashtable @{}}
     else {New-SCSMObject -class $definedClass -PropertyHashtable @{}}
 
-    $definedClass = Get-SCSMClass -name $customWIPattern.CustomRuleItemType + "$"
+    $definedClass = Get-SCSMClass -name ($customWIPattern.CustomRuleItemType + "$")
     switch ($definedClass.Name)
     {
       "System.Environment" {}
