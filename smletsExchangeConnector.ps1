@@ -1073,7 +1073,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     }
                     $newWorkItem = New-SCSMObject -Class $irClass -PropertyHashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Incident")["Prefix"] + "{0}"; "Status" = $irActiveStatus; "Title" = $title; "Description" = $description; "Classification" = $null; "Impact" = $irLowImpact; "Urgency" = $irLowUrgency; "Source" = "IncidentSourceEnum.Email$"} -PassThru @scsmMGMTParams
                     $irProjection = Get-SCSMObjectProjection -ProjectionName $irTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
-                    if($message.Attachments){Add-FileToSCSMObject -message $message -workItemID $newWorkItem.ID}
+                    if($message.Attachments){$message.Attachments | Foreach-Object {Add-FileToSCSMObject -attachment $_ -smobject $newWorkItem}}
                     if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $newWorkItem.ID}
                     Set-SCSMTemplate -Projection $irProjection -Template $IRTemplate
                     #Set-SCSMObjectTemplate -Projection $irProjection -Template $IRTemplate @scsmMGMTParams
@@ -1230,7 +1230,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     }
                     $newWorkItem = new-scsmobject -class $srClass -propertyhashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.ServiceRequest")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ServiceRequestStatusEnum.New$"} -PassThru @scsmMGMTParams
                     $srProjection = Get-SCSMObjectProjection -ProjectionName $srTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
-                    if($message.Attachments){Add-FileToSCSMObject -message $message -workItemID $newWorkItem.ID}
+                    if($message.Attachments){$message.Attachments | Foreach-Object {Add-FileToSCSMObject -attachment $_ -smobject $newWorkItem}}
                     if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $newWorkItem.ID}
                     Set-SCSMTemplate -Projection $srProjection -Template $SRTemplate
                     #Set-SCSMObjectTemplate -projection $srProjection -Template $SRTemplate @scsmMGMTParams
@@ -1387,7 +1387,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     }
                     $newWorkItem = New-SCSMObject -class $prClass -propertyhashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Problem")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ProblemStatusEnum.Active$"; "Impact" = $irLowImpact; "Urgency" = $irLowUrgency} -PassThru @scsmMGMTParams
                     $prProjection = Get-SCSMObjectProjection -ProjectionName $prTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
-                    if($message.Attachments){Add-FileToSCSMObject $message $newWorkItem.ID}
+                    if($message.Attachments){$message.Attachments | Foreach-Object {Add-FileToSCSMObject -attachment $_ -smobject $newWorkItem}}
                     if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
                     Apply-SCSMTemplate -Projection $prProjection -Template $PRTemplate
                     #Set-SCSMObjectTemplate -Projection $prProjection -Template $defaultPRTemplate @scsmMGMTParams
@@ -1532,14 +1532,14 @@ function Update-WorkItem ($message, $wiType, $workItem)
             "ma" {
                     #$workItem = Get-SCSMObject -class $maClass -filter "Name -eq '$($workItem.Name)'" @scsmMGMTParams
                     $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Get_Id().Guid
-                    Add-FileToSCSMObject -message $message -smobject $parentWorkItem
+                    $message.Attachments | Foreach-Object {Add-FileToSCSMObject -attachment $_ -smobject $parentWorkItem}
                  }
             "ra" {
                     #$workItem = Get-SCSMObject -class $raClass -filter "Name -eq '$($workItem.Name)'" @scsmMGMTParams
                     $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Get_Id().Guid
-                    Add-FileToSCSMObject -message $message -smobject $parentWorkItem
+                    $message.Attachments | Foreach-Object {Add-FileToSCSMObject -attachment $_ -smobject $parentWorkItem}
                  }
-            default { Add-FileToSCSMObject -message $message -smobject $workItem }
+            default { $message.Attachments | Foreach-Object {Add-FileToSCSMObject -attachment $_ -smobject $parentWorkItem} }
        }
     }
     #show the user who will perform the update and the [action] they are taking. If there is no [action] it's just a comment
@@ -2262,7 +2262,7 @@ function Add-EmailToWorkItem ($message, $workItemID)
 }
 
 #inspired and modified from Stefan Roth here - https://stefanroth.net/2015/03/28/scsm-passing-attachments-via-web-service-e-g-sma-web-service/
-function Add-FileToSCSMObject ($message, $smobject)
+function Add-FileToSCSMObject ($attachment, $smobject)
 {
     #determine if the incoming object is a WorkItem or ConfigItem
     if ($smobject.ClassName -like "*WorkItem*")
@@ -2287,8 +2287,6 @@ function Add-FileToSCSMObject ($message, $smobject)
     # Custom Event Handler
     if ($ceScripts) { Invoke-BeforeAttachFiles }
     
-    foreach ($attachment in $message.Attachments)
-    {
         #file attachment logging
         if ($loggingLevel -ge 4)
         {
@@ -2491,7 +2489,7 @@ function Add-FileToSCSMObject ($message, $smobject)
             #file could not be added
             if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Add-FileToSCSMObject" -EventID 0 -Severity "Warning" -LogMessage "A File Attachment from $($message.From) could not be added to $($smObject.Name). $($_.Exception)"}
         }
-    }
+    
     # Custom Event Handler
     if ($ceScripts) { Invoke-AfterAttachFiles }
 }
