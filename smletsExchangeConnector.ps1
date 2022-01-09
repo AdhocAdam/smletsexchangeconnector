@@ -188,7 +188,7 @@ function New-SMEXCOEvent
         [parameter(Mandatory=$true, Position=1)]
         [string] $LogMessage,
         [parameter(Mandatory=$true, Position=2)]
-        [ValidateSet("General", "CustomEvents", "Cryptography", "Test-EmailPattern", "New-WorkItem","Update-WorkItem","Add-EmailToWorkItem", "Add-FileToSCSMObject", "Confirm-WorkItem",
+        [ValidateSet("General", "CustomEvents", "Cryptography", "Test-EmailPattern", "New-WorkItem","Update-WorkItem","Add-EmailToSCSMObject", "Add-FileToSCSMObject", "Confirm-WorkItem",
             "Set-WorkItemScheduledTime", "Get-SCSMUserByEmailAddress", "Get-TierMembership", "Get-TierMembers", "Get-AssignedToWorkItemVolume",
             "Set-AssignedToPerSupportGroup", "Get-SCSMWorkItemParent", "New-CMDBUser", "Add-ActionLogEntry", "Get-CiresonPortalAPIToken",
             "Get-CiresonPortalUser", "Get-CiresonPortalGroup", "Get-CiresonPortalAnnouncements", "Search-AvailableCiresonPortalOfferings",
@@ -238,7 +238,7 @@ function New-SMEXCOEvent
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Test-EmailPattern" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "New-WorkItem" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Update-WorkItem" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Add-EmailToWorkItem" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source "Add-EmailToSCSMObject" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Add-FileToSCSMObject" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Confirm-WorkItem" -ErrorAction SilentlyContinue
             New-EventLog -LogName "SMLets Exchange Connector" -Source "Set-WorkItemScheduledTime" -ErrorAction SilentlyContinue
@@ -1074,7 +1074,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     $newWorkItem = New-SCSMObject -Class $irClass -PropertyHashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Incident")["Prefix"] + "{0}"; "Status" = $irActiveStatus; "Title" = $title; "Description" = $description; "Classification" = $null; "Impact" = $irLowImpact; "Urgency" = $irLowUrgency; "Source" = "IncidentSourceEnum.Email$"} -PassThru @scsmMGMTParams
                     $irProjection = Get-SCSMObjectProjection -ProjectionName $irTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     if($message.Attachments){$message.Attachments | Foreach-Object {Add-FileToSCSMObject -attachment $_ -smobject $newWorkItem}}
-                    if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $newWorkItem.ID}
+                    if ($attachEmailToWorkItem -eq $true){Add-EmailToSCSMObject -message $message -smobject $newWorkItem}
                     Set-SCSMTemplate -Projection $irProjection -Template $IRTemplate
                     #Set-SCSMObjectTemplate -Projection $irProjection -Template $IRTemplate @scsmMGMTParams
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
@@ -1231,7 +1231,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     $newWorkItem = new-scsmobject -class $srClass -propertyhashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.ServiceRequest")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ServiceRequestStatusEnum.New$"} -PassThru @scsmMGMTParams
                     $srProjection = Get-SCSMObjectProjection -ProjectionName $srTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     if($message.Attachments){$message.Attachments | Foreach-Object {Add-FileToSCSMObject -attachment $_ -smobject $newWorkItem}}
-                    if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $newWorkItem.ID}
+                    if ($attachEmailToWorkItem -eq $true){Add-EmailToSCSMObject -message $message -smobject $newWorkItem}
                     Set-SCSMTemplate -Projection $srProjection -Template $SRTemplate
                     #Set-SCSMObjectTemplate -projection $srProjection -Template $SRTemplate @scsmMGMTParams
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
@@ -1702,7 +1702,7 @@ function Update-WorkItem ($message, $wiType, $workItem)
                 #relate the user to the work item
                 try {New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 5 -LogMessage "$($commentLeftBy.DisplayName) could not be related to $($newWorkItem.Name)" -Severity "Warning"}}
                 #add any new attachments
-                if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $workItem.ID}
+                if ($attachEmailToWorkItem -eq $true){Add-EmailToSCSMObject -message $message -smobject $workItem}
             }
 
             # Custom Event Handler
@@ -1841,7 +1841,7 @@ function Update-WorkItem ($message, $wiType, $workItem)
                 #relate the user to the work item
                 try {New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 5 -LogMessage "$($commentLeftBy.DisplayName) could not be related to $($newWorkItem.Name)" -Severity "Warning"}}
                 #add any new attachments
-                if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $workItem.ID}
+                if ($attachEmailToWorkItem -eq $true){Add-EmailToSCSMObject -message $message -smobject $workItem}
             }
             # Custom Event Handler
             if ($ceScripts) { Invoke-AfterUpdateSR }
@@ -1915,7 +1915,7 @@ function Update-WorkItem ($message, $wiType, $workItem)
                     #relate the user to the work item
                     try {New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 5 -LogMessage "$($commentLeftBy.DisplayName) could not be related to $($newWorkItem.Name)" -Severity "Warning"}}
                     #add any new attachments
-                    if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $workItem.ID}
+                    if ($attachEmailToWorkItem -eq $true){Add-EmailToSCSMObject -message $message -smobject $workItem}
                     
                     # Custom Event Handler
                     if ($ceScripts) { Invoke-AfterUpdatePR }
@@ -1993,7 +1993,7 @@ function Update-WorkItem ($message, $wiType, $workItem)
                     #relate the user to the work item
                     try {New-SCSMRelationshipObject -Relationship $wiRelatesToCIRelClass -Source $workItem -Target $commentLeftBy -Bulk @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 5 -LogMessage "$($commentLeftBy.DisplayName) could not be related to $($newWorkItem.Name)" -Severity "Warning"}}
                     #add any new attachments
-                    if ($attachEmailToWorkItem -eq $true){Add-EmailToWorkItem -message $message -workItemID $workItem.ID}
+                    if ($attachEmailToWorkItem -eq $true){Add-EmailToSCSMObject -message $message -smobject $workItem}
                     
                     # Custom Event Handler
                     if ($ceScripts) { Invoke-AfterUpdateCR }
@@ -2202,16 +2202,22 @@ function Update-WorkItem ($message, $wiType, $workItem)
     if ($ceScripts) { Invoke-AfterUpdateAnyWorkItem }
 }
 
-function Add-EmailToWorkItem ($message, $workItemID)
+function Add-EmailToSCSMObject ($message, $smobject)
 {
-    # Get attachment limits and attachment count in ticket, if configured to
-    if ($checkAttachmentSettings -eq $true) {
-        $workItem = Get-ScsmObject @scsmMGMTParams -class $wiClass -filter "Name -eq $workItemID"
-        $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $workItem.ClassName
+    #determine if the incoming object is a WorkItem or ConfigItem
+    if ($smobject.ClassName -like "*WorkItem*")
+    {
+        $itemType = "WorkItem"
 
-        # Get count of attachments already in ticket
-        try {$existingAttachmentsCount = (Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $wiHasFileAttachRelClass).Count} catch {$existingAttachmentsCount = 0}
+        # Get attachment limits and attachment count in ticket, if configured to
+        if ($checkAttachmentSettings -eq $true) {
+            $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $smobject.ClassName
+
+            # Get count of attachments already in ticket
+            try {$existingAttachmentsCount = (Get-ScsmRelatedObject @scsmMGMTParams -SMObject $smobject -Relationship $wiHasFileAttachRelClass).Count} catch {$existingAttachmentsCount = 0}
+        }
     }
+    else {$itemType = "ConfigItem"}
     
     try
     {
@@ -2222,8 +2228,8 @@ function Add-EmailToWorkItem ($message, $workItemID)
         if ($ceScripts) { Invoke-BeforeAttachEmail }
         
         # if #checkAttachmentSettings -eq $true, test whether the email size (IN KB!) exceeds the limit and if the number of existing attachments is under the limit
-        if ($checkAttachmentSettings -eq $false -or `
-            (($MemoryStream.Length / 1024) -le $($workItemSettings["MaxAttachmentSize"]) -and $existingAttachmentsCount -le $($workItemSettings["MaxAttachments"])))
+        $workItemAttachmentCriteria = if ($itemType -eq "WorkItem"){$checkAttachmentSettings -eq $false -or (($MemoryStream.Length / 1024) -le $($workItemSettings["MaxAttachmentSize"]) -and $existingAttachmentsCount -le $($workItemSettings["MaxAttachments"]))}
+        if (($itemType -eq "WorkItem" -and $workItemAttachmentCriteria) -or ($itemType -eq "ConfigItem"))
         {
             #Create the attachment object itself and set its properties for SCSM
             $emailAttachment = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
@@ -2236,8 +2242,12 @@ function Add-EmailToWorkItem ($message, $workItemID)
             $emailAttachment.Item($fileAttachmentClass, "Content").Value = $MemoryStream
                 
             #Add the attachment to the work item and commit the changes
-            $WorkItemProjection = Get-SCSMObjectProjection "System.WorkItem.Projection" -Filter "id -eq '$workItemID'" @scsmMGMTParams
-            $WorkItemProjection.__base.Add($emailAttachment, $wiHasFileAttachRelClass.Target)
+            $WorkItemProjection = Get-SCSMObjectProjection "System.$itemType.Projection" -Filter "id -eq '$($smobject.Id)'" @scsmMGMTParams
+            switch ($itemType)
+            {
+                "WorkItem" {$WorkItemProjection.__base.Add($emailAttachment, $wiHasFileAttachRelClass.Target)}
+                "ConfigItem" {$WorkItemProjection.__base.Add($emailAttachment, $ciHasFileAttachRelClass.Target)}
+            }
             $WorkItemProjection.__base.Commit()
                         
             #create the Attached By relationship if possible
@@ -2252,12 +2262,12 @@ function Add-EmailToWorkItem ($message, $workItemID)
         }
         else
         {
-            if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Add-EmailToWorkItem" -EventID 0 -Severity "Warning" -LogMessage "Email from $($message.From) on $workItemID was not attached. Current Attachment Count: $existingAttachmentsCount/$($workItemSettings["MaxAttachments"]). File Size/Allowed Size: $($MemoryStream.Length/1024)/$($workItemSettings["MaxAttachmentSize"])"}
+            if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Add-EmailToSCSMObject" -EventID 0 -Severity "Warning" -LogMessage "Email from $($message.From) on $($smobject.DisplayName) was not attached. Current Attachment Count: $existingAttachmentsCount/$($workItemSettings["MaxAttachments"]). File Size/Allowed Size: $($MemoryStream.Length/1024)/$($workItemSettings["MaxAttachmentSize"])"}
         }
     }
     catch
     {
-        if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Add-EmailToWorkItem" -EventID 1 -Severity "Warning" -LogMessage "Email from $($message.From) on $workItemID could not be attached. $($_.Exception)"}
+        if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Add-EmailToSCSMObject" -EventID 1 -Severity "Warning" -LogMessage "Email from $($message.From) on $($smobject.DisplayName) could not be attached. $($_.Exception)"}
     }
 }
 
@@ -2271,13 +2281,12 @@ function Add-FileToSCSMObject ($attachment, $smobject)
 
         # Get attachment limits and attachment count in ticket, if configured to
         if ($checkAttachmentSettings -eq $true) {
-            $workItem = Get-ScsmObject @scsmMGMTParams -class $wiClass -filter "Name -eq $($smobject.Name)"
-            $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $workItem.ClassName
+            $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $smobject.ClassName
             $attachMaxSize = $workItemSettings["MaxAttachmentSize"]
             $attachMaxCount = $workItemSettings["MaxAttachments"]
     
             # Get count of attachments already in ticket
-            $existingAttachments = Get-ScsmRelatedObject @scsmMGMTParams -SMObject $workItem -Relationship $wiHasFileAttachRelClass
+            $existingAttachments = Get-ScsmRelatedObject @scsmMGMTParams -SMObject $smobject -Relationship $wiHasFileAttachRelClass
             # Only use at before the loop
             try {$existingAttachmentsCount = $existingAttachments.Count } catch { $existingAttachmentsCount = 0 }
         }
@@ -2386,7 +2395,8 @@ function Add-FileToSCSMObject ($attachment, $smobject)
             }
 
             #create the File Attachment object for SCSM
-            if ($MemoryStream.Length -gt $minFileSizeInKB+"kb" -and ($checkAttachmentSettings -eq $false -or ($existingAttachmentsCount -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb")))
+            $workItemAttachmentCriteria = if ($itemType -eq "WorkItem"){$MemoryStream.Length -gt $minFileSizeInKB+"kb" -and ($checkAttachmentSettings -eq $false -or ($existingAttachmentsCount -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb"))}
+            if (($itemType -eq "WorkItem" -and $workItemAttachmentCriteria) -or ($itemType -eq "ConfigItem"))
             {
                 #Create the attachment object itself and set its properties for SCSM
                 $NewFile = new-object Microsoft.EnterpriseManagement.Common.CreatableEnterpriseManagementObject($ManagementGroup, $fileAttachmentClass)
@@ -3162,7 +3172,7 @@ function Set-WorkItemScheduledTime ($calAppt, $workItem)
 
 function Confirm-WorkItem ($message, $returnWorkItem)
 {
-    #If emails are being attached to New Work Items, filter on the File Attachment Description that equals the Exchange Conversation ID as defined in the Add-EmailToWorkItem function
+    #If emails are being attached to New Work Items, filter on the File Attachment Description that equals the Exchange Conversation ID as defined in the Add-EmailToSCSMObject function
     if ($attachEmailToWorkItem -eq $true)
     {
         $emailAttachmentSearchObject = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | select-object -first 1 
