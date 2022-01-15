@@ -5071,6 +5071,35 @@ foreach ($message in $inbox)
         #Move to deleted items
         $message.Delete([Microsoft.Exchange.WebServices.Data.DeleteMode]::MoveToDeletedItems)
     }
+    
+    #Process a custom message class as defined through External Ticketing Pattern if it's enabled
+    else
+    {
+        if ($UseExternalTicketing)
+        {
+            #The message is from an unknown Message Class. Load custom defined Message Classes based on Enums not defined in the SMLets Exchange Connector MP
+            $customMessageClasses = (Get-SCSMEnumeration "SMLets.Exchange.Connector.MessageClassEnum$" | Get-SCSMChildEnumeration) | Select-Object id, displayname, @{Name = "ManagementPack"; Expression = {$_.Identifier.Domain[0]}} | Where-Object {$_.ManagementPack -ne "SMLets.Exchange.Connector"}
+            if ($customMessageClasses.Count -ge 1)
+            {
+                #Identify if a custom pattern from External Ticketing in Settings UI matches the current Message's Class name
+                $customMatchingClasses = $smexcoSettingsExternalTickets | Where-Object {$_.TicketMessageClass.DisplayName -eq $message.ItemClass}
+                if ($customMatchingClasses.Count -ge 1)
+                {
+                    #No Primary Work Item was matched, Custom Patterns has at least one defined use of IPM.Note, and External Ticketing is enabled
+                    Test-EmailPattern -MessageClass $message.ItemClass -Email $email
+                
+                    #mark the message as read on Exchange, move to deleted items
+                    $message.IsRead = $true
+                    $hideInVar01 = $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve)
+                    if ($deleteAfterProcessing){$hideInVar02 = $message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems)} 
+                }
+            }
+        }
+        else
+        {
+            #Unknown Message Class and External Ticketing is not being used. Log an event and move on.
+        }
+    }
 
     #increment the number of messages processed if logging is enabled
     if ($loggingLevel -ge 1){$messagesProcessed++; New-SMEXCOEvent -Source "General" -EventId 3 -LogMessage "Processed: $messagesProcessed of $($inbox.Count)" -Severity "Information"}
