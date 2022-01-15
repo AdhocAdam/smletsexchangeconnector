@@ -3292,7 +3292,7 @@ function Test-EmailPattern
         }
         catch
         {
-            if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 6 -Severity "Error" -LogMessage "Email Subject Switch Pattern failed. Examine Event ID 2."}
+            if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 6 -Severity "Error" -LogMessage "Email Subject Switch Pattern failed. Examine Event ID 2."}
         }
         
         #attempt to turn the Body switch string into an actual SWITCH statement, then execute it
@@ -3315,7 +3315,7 @@ function Test-EmailPattern
         }
         catch
         {
-            if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 8 -Severity "Error" -LogMessage "Email Subject Switch Pattern failed. Examine Event ID 3."}    
+            if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 8 -Severity "Error" -LogMessage "Email Subject Switch Pattern failed. Examine Event ID 3."}    
         }
 
         #switchResult was either $true OR it contains the custom pattern that was matched
@@ -3352,7 +3352,7 @@ function Test-EmailPattern
 
                 $searchSubject = $true
                 if (($ceScripts) -and ($Email.Subject -match $customWIPattern.CustomRuleRegex)) {Invoke-CustomRuleAction}
-                else {$customItemMatch = $false <#Custom Events are not being used, but a Custom Class was used. Log an event?#>}
+                else {$customItemMatch = $false; if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 11 -Severity "Warning" -LogMessage "A Pattern was matched for the Subject, but Custom Events are not being used. A Default Work Item will be created."}}
             }
             #match occured in the Body and a configured custom pattern, invoke custom events
             if ($customWIPattern.CustomRuleMessagePart -eq "Body")
@@ -3362,7 +3362,7 @@ function Test-EmailPattern
 
                 $searchBody = $true
                 if (($ceScripts) -and ($Email.Body -match $customWIPattern.CustomRuleRegex)) {Invoke-CustomRuleAction}
-                else {$customItemMatch = $false <#Custom Events are not being used, but a Custom Class was used. Log an event?#>}
+                else {$customItemMatch = $false; if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 12 -Severity "Warning" -LogMessage "A Pattern was matched for the Body, but Custom Events are not being used. A Default Work Item will be created."}}
             }
         }
     }
@@ -3371,7 +3371,7 @@ function Test-EmailPattern
     #Create a Work Item e.g. "Default" of the above two switch statements
     if (($workItemMatch -eq $false) -and ($customItemMatch -eq $false))
     {
-        if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 11 -Severity "Information" -LogMessage "No Work Item or Config Item was created or updated through Custom Rules. Create a Default Work Item."}
+        if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 13 -Severity "Information" -LogMessage "No Work Item or Config Item was created or updated through Custom Rules. Create a Default Work Item."}
         New-WorkItem -message $email -wiType $defaultNewWorkItem -returnWIBool $false
     }
 }
