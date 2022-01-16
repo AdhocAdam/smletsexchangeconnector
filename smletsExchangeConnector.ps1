@@ -1036,33 +1036,36 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
         #if the sentiment is greater than or equal to what is defined, create a Service Request.
         if ($sentimentScore -ge [int]$minPercentToCreateServiceRequest)
         {
-            $workItemType = "sr"
+            $wiType = "sr"
         }
         else #sentiment is lower than defined value, create an Incident.
         {
-            $workItemType = "ir"
+            $wiType = "ir"
         }
     }
     elseif ($enableKeywordMatchForNewWI -eq $true -and $(Test-KeywordsFoundInMessage -message $message) -eq $true) {
         #Keyword override is true and keyword(s) found in message
-        $workItemType = $workItemOverrideType
+        $wiType = $workItemOverrideType
     }
     elseif ($UseMailboxRedirection -eq $true) {
-        $workItemType = if ($TemplatesForThisMessage) {$TemplatesForThisMessage["DefaultWiType"]} else {$defaultNewWorkItem}
+        $wiType = if ($TemplatesForThisMessage) {$TemplatesForThisMessage["DefaultWiType"]} else {$defaultNewWorkItem}
     }
     elseif ($enableAzureMachineLearning -eq $true){
         $amlProbability = Get-AMLWorkItemProbability -EmailSubject $title -EmailBody $description
-        $workItemType = if ($amlProbability.WorkItemTypeConfidence -ge $amlWorkItemTypeMinPercentConfidence) {$amlProbability.WorkItemType} else {$defaultNewWorkItem}
+        $wiType = if ($amlProbability.WorkItemTypeConfidence -ge $amlWorkItemTypeMinPercentConfidence) {$amlProbability.WorkItemType} else {$defaultNewWorkItem}
+    }
+    elseif ($wiType){
+        $wiType = $wiType
     }
     else {
-        $workItemType = $defaultNewWorkItem
+        $wiType = $defaultNewWorkItem
     }
     
     # Custom Event Handler
     if ($ceScripts) { Invoke-BeforeCreateAnyWorkItem }
     
     #create the Work Item based on the globally defined Work Item type and Template
-    switch ($workItemType)
+    switch ($wiType)
     {
         "ir" {
                     if ($UseMailboxRedirection -eq $true -And $TemplatesForThisMessage.Count -gt 0) {
@@ -1388,8 +1391,8 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     $newWorkItem = New-SCSMObject -class $prClass -propertyhashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Problem")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ProblemStatusEnum.Active$"; "Impact" = $irLowImpact; "Urgency" = $irLowUrgency} -PassThru @scsmMGMTParams
                     $prProjection = Get-SCSMObjectProjection -ProjectionName $prTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     if($message.Attachments){$message.Attachments | Foreach-Object {Add-FileToSCSMObject -attachment $_ -smobject $newWorkItem}}
-                    if ($attachEmailToWorkItem -eq $true){Attach-EmailToWorkItem $message $newWorkItem.ID}
-                    Apply-SCSMTemplate -Projection $prProjection -Template $PRTemplate
+                    if ($attachEmailToWorkItem -eq $true){Add-EmailToSCSMObject -message $message -smobject $newWorkItem}
+                    Set-SCSMTemplate -Projection $prProjection -Template $PRTemplate
                     #Set-SCSMObjectTemplate -Projection $prProjection -Template $defaultPRTemplate @scsmMGMTParams
                     Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
                     #no Affected User to set on a Problem, set Created By using the Affected User object if it exists
@@ -1445,7 +1448,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
     #if verbose logging, show details about the new work item
     if ($loggingLevel -ge 4)
     {
-        $logMessage = "Created $workItemType
+        $logMessage = "Created $wiType
         ID: $($newWorkItem.Name)
         Title: $($newWorkItem.Title)
         Affected User: $($affectedUser.DisplayName)
