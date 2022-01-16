@@ -5072,20 +5072,34 @@ foreach ($message in $inbox)
         $message.Delete([Microsoft.Exchange.WebServices.Data.DeleteMode]::MoveToDeletedItems)
     }
     
-    #Process a custom message class as defined through External Ticketing Pattern if it's enabled
+    #Process a custom message class as defined through it's Custom Rules Pattern if it's enabled
     else
     {
-        if ($UseExternalTicketing)
+        if ($UseCustomRules)
         {
             #The message is from an unknown Message Class. Load custom defined Message Classes based on Enums not defined in the SMLets Exchange Connector MP
             $customMessageClasses = (Get-SCSMEnumeration "SMLets.Exchange.Connector.MessageClassEnum$" | Get-SCSMChildEnumeration) | Select-Object id, displayname, @{Name = "ManagementPack"; Expression = {$_.Identifier.Domain[0]}} | Where-Object {$_.ManagementPack -ne "SMLets.Exchange.Connector"}
             if ($customMessageClasses.Count -ge 1)
             {
                 #Identify if a custom pattern from External Ticketing in Settings UI matches the current Message's Class name
-                $customMatchingClasses = $smexcoSettingsExternalTickets | Where-Object {$_.TicketMessageClass.DisplayName -eq $message.ItemClass}
-                if ($customMatchingClasses.Count -ge 1)
+                $customMatchingClasses = $customMessageClasses | Where-Object {$_.DisplayName -eq $message.ItemClass}
+                if ($customMatchingClasses)
                 {
                     #No Primary Work Item was matched, Custom Patterns has at least one defined use of IPM.Note, and External Ticketing is enabled
+                    $email = [PSCustomObject] @{
+                        From                = $message.From.Address
+                        To                  = $message.ToRecipients
+                        CC                  = $message.CcRecipients
+                        Subject             = $message.Subject
+                        Attachments         = $message.Attachments
+                        Body                = $message.Body.Text
+                        DateTimeSent        = $message.DateTimeSent
+                        DateTimeReceived    = $message.DateTimeReceived
+                        ID                  = $message.ID
+                        ConversationID      = $message.ConversationID
+                        ConversationTopic   = $message.ConversationTopic
+                        ItemClass           = $message.ItemClass
+                    }
                     Test-EmailPattern -MessageClass $message.ItemClass -Email $email
                 
                     #mark the message as read on Exchange, move to deleted items
@@ -5097,7 +5111,7 @@ foreach ($message in $inbox)
         }
         else
         {
-            #Unknown Message Class and External Ticketing is not being used. Log an event and move on.
+            #Unknown Message Class and Custom Rules are not being used. Continue processing. Log an event?
         }
     }
 
