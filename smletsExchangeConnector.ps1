@@ -3352,7 +3352,7 @@ function Test-EmailPattern
 
                 $searchSubject = $true
                 if (($ceScripts) -and ($Email.Subject -match $customWIPattern.CustomRuleRegex)) {Invoke-CustomRuleAction}
-                else {$customItemMatch = $false; if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 11 -Severity "Warning" -LogMessage "A Pattern was matched for the Subject, but Custom Events are not being used. A Default Work Item will be created."}}
+                else {$customItemMatch = $false; if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 11 -Severity "Warning" -LogMessage "Either Custom Events are not being used or the Subject did not match the $($customWIPattern.CustomRuleRegex) pattern."}}
             }
             #match occured in the Body and a configured custom pattern, invoke custom events
             if ($customWIPattern.CustomRuleMessagePart -eq "Body")
@@ -3362,7 +3362,7 @@ function Test-EmailPattern
 
                 $searchBody = $true
                 if (($ceScripts) -and ($Email.Body -match $customWIPattern.CustomRuleRegex)) {Invoke-CustomRuleAction}
-                else {$customItemMatch = $false; if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 12 -Severity "Warning" -LogMessage "A Pattern was matched for the Body, but Custom Events are not being used. A Default Work Item will be created."}}
+                else {$customItemMatch = $false; if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 12 -Severity "Warning" -LogMessage "Either Custom Events are not being used or the Body did not match the $($customWIPattern.CustomRuleRegex) pattern."}}
             }
         }
     }
@@ -3371,7 +3371,7 @@ function Test-EmailPattern
     #Create a Work Item e.g. "Default" of the above two switch statements
     if (($workItemMatch -eq $false) -and ($customItemMatch -eq $false))
     {
-        if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 13 -Severity "Information" -LogMessage "No Work Item or Config Item was created or updated through Custom Rules. Create a Default Work Item."}
+        if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 13 -Severity "Information" -LogMessage "No Work Item or Config Item was created or updated through Custom Rules and Custom Event's 'Invoke-CustomRuleAction' function. Create a Default Work Item."}
         New-WorkItem -message $email -wiType $defaultNewWorkItem -returnWIBool $false
     }
 }
