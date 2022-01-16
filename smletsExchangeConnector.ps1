@@ -3292,7 +3292,7 @@ function Test-EmailPattern
         }
         catch
         {
-            if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 6 -Severity "Error" -LogMessage "Email Subject Switch Pattern failed. Examine Event ID 2."}
+            if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 6 -Severity "Error" -LogMessage "Email Subject Switch Pattern failed. Examine Event ID 2."}
         }
         
         #attempt to turn the Body switch string into an actual SWITCH statement, then execute it
@@ -3315,7 +3315,7 @@ function Test-EmailPattern
         }
         catch
         {
-            if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 8 -Severity "Error" -LogMessage "Email Subject Switch Pattern failed. Examine Event ID 3."}    
+            if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 8 -Severity "Error" -LogMessage "Email Subject Switch Pattern failed. Examine Event ID 3."}    
         }
 
         #switchResult was either $true OR it contains the custom pattern that was matched
@@ -3352,7 +3352,7 @@ function Test-EmailPattern
 
                 $searchSubject = $true
                 if (($ceScripts) -and ($Email.Subject -match $customWIPattern.CustomRuleRegex)) {Invoke-CustomRuleAction}
-                else {$customItemMatch = $false <#Custom Events are not being used, but a Custom Class was used. Log an event?#>}
+                else {$customItemMatch = $false; if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 11 -Severity "Warning" -LogMessage "Either Custom Events are not being used or the Subject did not match the $($customWIPattern.CustomRuleRegex) pattern."}}
             }
             #match occured in the Body and a configured custom pattern, invoke custom events
             if ($customWIPattern.CustomRuleMessagePart -eq "Body")
@@ -3362,7 +3362,7 @@ function Test-EmailPattern
 
                 $searchBody = $true
                 if (($ceScripts) -and ($Email.Body -match $customWIPattern.CustomRuleRegex)) {Invoke-CustomRuleAction}
-                else {$customItemMatch = $false <#Custom Events are not being used, but a Custom Class was used. Log an event?#>}
+                else {$customItemMatch = $false; if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 12 -Severity "Warning" -LogMessage "Either Custom Events are not being used or the Body did not match the $($customWIPattern.CustomRuleRegex) pattern."}}
             }
         }
     }
@@ -3371,7 +3371,7 @@ function Test-EmailPattern
     #Create a Work Item e.g. "Default" of the above two switch statements
     if (($workItemMatch -eq $false) -and ($customItemMatch -eq $false))
     {
-        if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 11 -Severity "Information" -LogMessage "No Work Item or Config Item was created or updated through Custom Rules. Create a Default Work Item."}
+        if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 13 -Severity "Information" -LogMessage "No Work Item or Config Item was created or updated through Custom Rules and Custom Event's 'Invoke-CustomRuleAction' function. Create a Default Work Item."}
         New-WorkItem -message $email -wiType $defaultNewWorkItem -returnWIBool $false
     }
 }
@@ -5072,20 +5072,34 @@ foreach ($message in $inbox)
         $message.Delete([Microsoft.Exchange.WebServices.Data.DeleteMode]::MoveToDeletedItems)
     }
     
-    #Process a custom message class as defined through External Ticketing Pattern if it's enabled
+    #Process a custom message class as defined through it's Custom Rules Pattern if it's enabled
     else
     {
-        if ($UseExternalTicketing)
+        if ($UseCustomRules)
         {
             #The message is from an unknown Message Class. Load custom defined Message Classes based on Enums not defined in the SMLets Exchange Connector MP
             $customMessageClasses = (Get-SCSMEnumeration "SMLets.Exchange.Connector.MessageClassEnum$" | Get-SCSMChildEnumeration) | Select-Object id, displayname, @{Name = "ManagementPack"; Expression = {$_.Identifier.Domain[0]}} | Where-Object {$_.ManagementPack -ne "SMLets.Exchange.Connector"}
             if ($customMessageClasses.Count -ge 1)
             {
                 #Identify if a custom pattern from External Ticketing in Settings UI matches the current Message's Class name
-                $customMatchingClasses = $smexcoSettingsExternalTickets | Where-Object {$_.TicketMessageClass.DisplayName -eq $message.ItemClass}
-                if ($customMatchingClasses.Count -ge 1)
+                $customMatchingClasses = $customMessageClasses | Where-Object {$_.DisplayName -eq $message.ItemClass}
+                if ($customMatchingClasses)
                 {
                     #No Primary Work Item was matched, Custom Patterns has at least one defined use of IPM.Note, and External Ticketing is enabled
+                    $email = [PSCustomObject] @{
+                        From                = $message.From.Address
+                        To                  = $message.ToRecipients
+                        CC                  = $message.CcRecipients
+                        Subject             = $message.Subject
+                        Attachments         = $message.Attachments
+                        Body                = $message.Body.Text
+                        DateTimeSent        = $message.DateTimeSent
+                        DateTimeReceived    = $message.DateTimeReceived
+                        ID                  = $message.ID
+                        ConversationID      = $message.ConversationID
+                        ConversationTopic   = $message.ConversationTopic
+                        ItemClass           = $message.ItemClass
+                    }
                     Test-EmailPattern -MessageClass $message.ItemClass -Email $email
                 
                     #mark the message as read on Exchange, move to deleted items
@@ -5097,7 +5111,7 @@ foreach ($message in $inbox)
         }
         else
         {
-            #Unknown Message Class and External Ticketing is not being used. Log an event and move on.
+            #Unknown Message Class and Custom Rules are not being used. Continue processing. Log an event?
         }
     }
 
