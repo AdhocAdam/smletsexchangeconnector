@@ -4136,15 +4136,16 @@ function Get-AMLWorkItemProbability ($EmailSubject, $EmailBody)
 
         #return custom probability object
         $probabilityResults = $probabilityResponse.Results.output1.value.Values[0]
-        $probabilityMatrix = New-Object -TypeName psobject
-        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemType -Value $probabilityResults[0]
-        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemTypeConfidence -Value (($probabilityResults[1] -as [decimal]) * 100)
-        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassification -Value $probabilityResults[2]
-        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemClassificationConfidence -Value (($probabilityResults[3] -as [decimal]) * 100)
-        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroup -Value $probabilityResults[4]
-        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name WorkItemSupportGroupConfidence -Value (($probabilityResults[5] -as [decimal]) * 100)
-        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name AffectedConfigItem -Value $probabilityResults[6]
-        $probabilityMatrix | Add-Member -MemberType NoteProperty -Name AffectedConfigItemConfidence -Value (($probabilityResults[7] -as [decimal]) * 100)
+        $probabilityMatrix = [PSCustomObject]@{
+            WorkItemType                     = $probabilityResults[0]
+            WorkItemTypeConfidence           = (($probabilityResults[1] -as [decimal]) * 100)
+            WorkItemClassification           = $probabilityResults[2]
+            WorkItemClassificationConfidence = (($probabilityResults[3] -as [decimal]) * 100)
+            WorkItemSupportGroup             = $probabilityResults[4]
+            WorkItemSupportGroupConfidence   = (($probabilityResults[5] -as [decimal]) * 100)
+            AffectedConfigItem               = $probabilityResults[6]
+            AffectedConfigItemConfidence     = (($probabilityResults[7] -as [decimal]) * 100)
+        }
 
         #logging is verbose, record the entire AML prediction
         if ($loggingLevel -ge 4)
