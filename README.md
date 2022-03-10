@@ -23,6 +23,15 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>Custom Rules (v4.0)</i></td>
+  </tr>
+  <tr>
+    <td align="center" width="200"><img src ="/FeatureScreenshots/customRules.png" /></td>
+    <td width="auto">Sync any external system with Service Manager entirely through email. Whether it's a vendor's ticketing system, Microsoft Azure Invoices, an alerting tool, a CRM that sends notifications, or even a project management tool. You can now manage all of it through Work Items or Config Items of any class. Looking for inspiration? Check out the <a href="https://github.com/AdhocAdam/smletsexchangeconnector/wiki/Integrating-External-Ticketing-Systems">wiki</a>.</td>
+  </tr>
+</table>
+<table border="0">
+  <tr>
     <td colspan="3"><i>File Attachments for Activities (v3.4)</i></td>
   </tr>
   <tr>
