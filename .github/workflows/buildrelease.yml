@@ -20,7 +20,7 @@ on:
 jobs:
   # Job 1, Build - Build the Management Pack on Windows Server with Visual Studio
   build:
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
