@@ -23,6 +23,15 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>Azure Government (v4.1)</i></td>
+  </tr>
+  <tr>
+    <td align="center" width="200"><img src ="/FeatureScreenshots/azGov.png" /></td>
+    <td width="auto">No need to manage custom Azure URLs between upgrades. Azure Government customers can now quickly configure connectivity directly from the connector's Admin Settings.</td>
+  </tr>
+</table>
+<table border="0">
+  <tr>
     <td colspan="3"><i>Custom Rules (v4.0)</i></td>
   </tr>
   <tr>
