@@ -53,6 +53,8 @@
                     <TextBox x:Name="txtAzureTenantID" Text="{Binding AzureTenantID, FallbackValue='', Mode=TwoWay}" />
                     <TextBlock Text="Azure Application/Client ID" />
                     <TextBox x:Name="txtAzureClientID" Text="{Binding AzureClientID, FallbackValue='', Mode=TwoWay}" />
+                    <TextBlock Text="Azure Cloud" />
+                    <ComboBox x:Name="cbAzureCloud" ItemsSource="{Binding AzureCloudEnums}" SelectedItem="{Binding AzureCloudEnum}" DisplayMemberPath="DisplayName" />
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
