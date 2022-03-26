@@ -1423,8 +1423,8 @@
         <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum" Accessibility="Public" />
         <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzurePublic" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum" Ordinal="0" />
         <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum" Ordinal="1" />
-        <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.GCCHigh" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment" Ordinal="1" />
-        <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.DOD" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment" Ordinal="2" />
+        <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.GCCHigh" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment" Ordinal="2" />
+        <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.DOD" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment" Ordinal="3" />
       </EnumerationTypes>
       
     </EntityTypes>
