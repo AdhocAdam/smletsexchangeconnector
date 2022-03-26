@@ -3244,7 +3244,7 @@ function Test-EmailPattern
 
         #{0} = IR, SR, PR, CR, RR
         #{1} = the Class Extension that was defined in the Settings MP to write the matched value to
-        $wiActionStatement = '$result = get-scsmobject -class ${0}Class -filter "{1} -eq $($matches[0])"; if ($result) {$isUpdate = $true; update-workitem -message $email -wiType "{0}" -workItemID $result; return $isUpdate} else {return $matches[0]}'          
+        $wiActionStatement = '$result = get-scsmobject -class ${0}Class -filter "{1} -eq $($matches[0])"; if ($result) {$isUpdate = $true; update-workitem -message $email -wiType "{0}" -workItem $result; return $isUpdate} else {return $matches[0]}'          
 
         #loop through and load custom patterns defined within the Settings MP to construct the dynamic switch statements
         foreach ($customWIPattern in $smexcoSettingsCustomRulesKnownMessageClass)
