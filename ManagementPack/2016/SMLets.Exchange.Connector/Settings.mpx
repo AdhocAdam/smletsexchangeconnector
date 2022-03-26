@@ -81,7 +81,7 @@
               MinLength="0"
               Required="false" />
               
-       <Property ID="AzureCloudInstanceEnum"
+       <Property ID="AzureCloudInstance"
                   Type="enum"
                   AutoIncrement="false"
                   Key="false"
