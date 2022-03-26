@@ -80,6 +80,17 @@
               MaxLength="256"
               MinLength="0"
               Required="false" />
+              
+       <Property ID="AzureCloudInstanceEnum"
+                  Type="enum"
+                  AutoIncrement="false"
+                  Key="false"
+                  CaseSensitive="false"
+                  MaxLength="256"
+                  MinLength="0"
+                  Scale="0"
+                  Required="false"
+                  EnumType="SMLets.Exchange.Connector.AzureCloudInstanceEnum" />
 
           <!--File Paths-->
           <Property ID="FilePathEWSDLL"
@@ -1398,14 +1409,22 @@
         </ClassType>
       </ClassTypes>
       
-      <!-- LIST: Messages Types -->
+      <!-- LISTS -->
       <EnumerationTypes>
+        <!-- LIST: Messages Types -->
         <EnumerationValue ID="SMLets.Exchange.Connector.MessageClassEnum" Accessibility="Public" />
         <EnumerationValue ID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Note" Accessibility="Public" Parent="SMLets.Exchange.Connector.MessageClassEnum" Ordinal="0" />
         <EnumerationValue ID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Note.SMIME" Accessibility="Public" Parent="SMLets.Exchange.Connector.MessageClassEnum" Ordinal="1" />
         <EnumerationValue ID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Note.SMIME.MultipartSigned" Accessibility="Public" Parent="SMLets.Exchange.Connector.MessageClassEnum" Ordinal="2" />
         <EnumerationValue ID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Schedule.Meeting.Request" Accessibility="Public" Parent="SMLets.Exchange.Connector.MessageClassEnum" Ordinal="3" />
         <EnumerationValue ID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Schedule.Meeting.Canceled" Accessibility="Public" Parent="SMLets.Exchange.Connector.MessageClassEnum" Ordinal="4" />
+      
+        <!-- LIST: Azure Clouds -->
+        <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum" Accessibility="Public" />
+        <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzurePublic" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum" Ordinal="0" />
+        <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum" Ordinal="1" />
+        <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.GCCHigh" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment" Ordinal="1" />
+        <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.DOD" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment" Ordinal="2" />
       </EnumerationTypes>
       
     </EntityTypes>
@@ -1491,6 +1510,29 @@
           <Name>IPM.Schedule.Meeting.Canceled</Name>
           <Description>A meeting cancellation</Description>
         </DisplayString>
+        
+        <!-- Display Strings for Azure Cloud enum -->
+        <DisplayString ElementID="SMLets.Exchange.Connector.AzureCloudInstanceEnum">
+          <Name>Azure Cloud Instance</Name>
+          <Description>Defines a list of Azure Cloud Instances</Description>
+        </DisplayString>
+        <DisplayString ElementID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzurePublic">
+          <Name>Azure Public</Name>
+          <Description>Microsoft Azure public cloud. Maps to https://login.microsoftonline.com and https://outlook.office.com</Description>
+        </DisplayString>
+        <DisplayString ElementID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment">
+          <Name>Azure US Government (GCC)</Name>
+          <Description>US Government cloud. Maps to https://login.microsoftonline.us and https://outlook.office.com</Description>
+        </DisplayString>
+        <DisplayString ElementID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.GCCHigh">
+          <Name>Azure US Government (GCC High)</Name>
+          <Description>US Government cloud. Maps to https://login.microsoftonline.us and https://outlook.office365.us</Description>
+        </DisplayString>
+        <DisplayString ElementID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.DOD">
+          <Name>Azure US Government (DoD)</Name>
+          <Description>US Government cloud. Maps to https://login.microsoftonline.us and https://dod-outlook.office365.us</Description>
+        </DisplayString>
+        
       </DisplayStrings>
       <KnowledgeArticles></KnowledgeArticles>
     </LanguagePack>
