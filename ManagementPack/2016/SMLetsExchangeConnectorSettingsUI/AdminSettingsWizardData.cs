@@ -3437,6 +3437,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseExchangeOnline"].Value = this.IsExchangeOnline;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureClientID"].Value = this.AzureClientID;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureTenantID"].Value = this.AzureTenantID;
+            emoAdminSetting[null, "AzureCloudInstanceEnum"].Value = this.AzureCloudEnum;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CreateUsersNotInCMDB"].Value = this.CreateUsersNotFoundtInCMDB;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "IncludeWholeEmail"].Value = this.IncludeWholeEmail;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AttachEmailToWorkItem"].Value = this.AttachEmailToWorkItem;
