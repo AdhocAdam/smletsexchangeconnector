@@ -338,6 +338,7 @@ $ExchangeEndpoint = "$($smexcoSettingsMP.ExchangeAutodiscoverURL)"
 $UseExchangeOnline = $smexcoSettingsMP.UseExchangeOnline
 $AzureClientID = "$($smexcoSettingsMP.AzureClientID)"
 $AzureTenantID = "$($smexcoSettingsMP.AzureTenantID)"
+$AzureCloudInstance = "$($smexcoSettingsMP.AzureCloudInstance)"
 
 #defaultNewWorkItem = set to either "ir", "sr", "pr", or "cr"
 #default*RTemplate = define the displayname of the template you'll be using based on what you've set for $defaultNewWorkItem
@@ -4383,6 +4384,20 @@ if ($ceScripts) { Invoke-BeforeConnect }
 #define Exchange assembly and connect to EWS
 [void] [Reflection.Assembly]::LoadFile("$exchangeEWSAPIPath")
 $exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService
+
+#determine which Azure Cloud is being used
+if ($UseExchangeOnline)
+{
+    switch ($AzureCloudInstance.Name)
+    {
+        "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzurePublic"              {$scopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $tokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"}
+        "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment"          {$scopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $tokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"}
+        "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.GCCHigh"  {$scopeURL = "https://outlook.office365.us/EWS.AccessAsUser.All"; $tokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"}
+        "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.DOD"      {$scopeURL = "https://dod-outlook.office365.us/EWS.AccessAsUser.All"; $tokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"}
+        default {$scopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $tokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"}
+    }
+}
+
 #figure out if the workflow should be used
 if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Connector.15d8b765a2f8b63ead14472f9b3c12f0")} | Select-Object Enabled -ExpandProperty Enabled)
 {
@@ -4400,9 +4415,9 @@ if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Co
             client_Id     = $AzureClientID
             Username      = $ewsUsername + "@" + $ewsDomain
             Password      = $ewspassword
-            Scope         = "https://outlook.office.com/EWS.AccessAsUser.All"
+            Scope         = $scopeURL
         }
-        $response = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token" -Method "POST" -Body $ReqTokenBody
+        $response = Invoke-RestMethod -Uri $tokenURL -Method "POST" -Body $ReqTokenBody
         
         #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
         $exchangeService.Url = [System.Uri]$ExchangeEndpoint
@@ -4443,9 +4458,9 @@ else
             client_Id     = $AzureClientID
             Username      = $username
             Password      = $password
-            Scope         = "https://outlook.office.com/EWS.AccessAsUser.All"
+            Scope         = $scopeURL
         }
-        $response = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token" -Method "POST" -Body $ReqTokenBody
+        $response = Invoke-RestMethod -Uri $tokenURL -Method "POST" -Body $ReqTokenBody
         
         #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
         $exchangeService.Url = [System.Uri]$ExchangeEndpoint
