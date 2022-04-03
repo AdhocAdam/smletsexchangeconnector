@@ -2,15 +2,15 @@
 _e.g. Dynamic Analyst Assignment by Volume is selecting the Analyst with the most assigned Work Items_
 
 **Help us reproduce the bug**
-_You can export your configuration to CSV with the following PowerShell function and then upload to this issue. Environment specific and/or identifiable information such as API keys, Exchange URLs, Azure GUIDs are automatically excluded._
+_You can export your configuration to CSV with the following PowerShell function and then upload to this issue. Environment specific and/or identifiable information such as Management Server names, API keys, Exchange URLs, Azure GUIDs are automatically excluded._
 ```powershell
 function Get-SMExcoConfiguration ($computername)
 {
     $mpClass = Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings$" -computername $computername
-    $propertiesToExclude = "workflowemailaddress", "exchangeautodiscoverurl", "azureclientid", "azuretenantid", "securereferenceidews", "AzureCloudInstance",
+    $propertiesToExclude = "SCSMmgmtServer", "workflowemailaddress", "exchangeautodiscoverurl", "azureclientid", "azuretenantid", "securereferenceidews", "AzureCloudInstance",
         "ciresonportalurl", "SecureReferenceIdCiresonPortal",
         "SCSMAnnouncementApprovedMemberType", "SCSMApprovedAnnouncementGroupGUID", "SCSMApprovedAnnouncementGroupDisplayName", "SCSMApprovedAnnouncementUsers",
-        "SCOMApprovedMemberType", "SCOMApprovedGroupGUID", "SCOMApprovedUsers",
+        "SCOMApprovedMemberType", "SCOMApprovedGroupGUID", "SCOMApprovedUsers", "SCOMmgmtServer",
         "ACSTextAnalyticsAPIKey", "AMLAPIKey", "ACSSpeechAPIKey", "ACSVisionAPIKey", "ACSTranslateAPIKey", "AMLurl",
         "DisplayName", "__InternalId", "classname", "typename", "name", "path", "fullname", "ManagementPackClassIds", "LeastDerivedNonAbstractManagementPackClassId", "TimeAdded", "LastModifiedBy", "Values", "IsNew", "haschanges", "id", "managementgroup", "managementgroupid", "groupsasdifferenttype", "viewname", "objectmode"
     $mpClass | Get-SCSMObject -computername $computername | Select-Object * -ExcludeProperty $propertiesToExclude
