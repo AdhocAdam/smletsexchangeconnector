@@ -1203,8 +1203,8 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                         }
                     }
                     
-                    #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
-                    $ciresonSuggestionURLs = Get-CiresonSuggestionURL -SuggestKA:$searchCiresonHTMLKB -AzureKA:$enableAzureCognitiveServicesForKA -SuggestRO:$searchAvailableCiresonPortalOfferings -AzureRO:$enableAzureCognitiveServicesForRO -WorkItem $newWorkItem -AffectedUser $affectedUser
+                    #### Determine auto-response logic for Knowledge Base and/or Request Offering Search. Verify User exists in SCSM (IsNew = $false) vs. created in memory for this run (IsNew = $true) ####
+                    if ($affectedUser.IsNew -eq $false) {$ciresonSuggestionURLs = Get-CiresonSuggestionURL -SuggestKA:$searchCiresonHTMLKB -AzureKA:$enableAzureCognitiveServicesForKA -SuggestRO:$searchAvailableCiresonPortalOfferings -AzureRO:$enableAzureCognitiveServicesForRO -WorkItem $newWorkItem -AffectedUser $affectedUser}
                     if ($null -ne $ciresonSuggestionURLs)
                     {
                         if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
@@ -1361,8 +1361,8 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                         }
                     }
                     
-                    #### Determine auto-response logic for Knowledge Base and/or Request Offering Search ####
-                    $ciresonSuggestionURLs = Get-CiresonSuggestionURL -SuggestKA:$searchCiresonHTMLKB -AzureKA:$enableAzureCognitiveServicesForKA -SuggestRO:$searchAvailableCiresonPortalOfferings -AzureRO:$enableAzureCognitiveServicesForRO -WorkItem $newWorkItem -AffectedUser $affectedUser
+                    #### Determine auto-response logic for Knowledge Base and/or Request Offering Search. Verify User exists in SCSM (IsNew = $false) vs. created in memory for this run (IsNew = $true) ####
+                    if ($affectedUser.IsNew -eq $false) {$ciresonSuggestionURLs = Get-CiresonSuggestionURL -SuggestKA:$searchCiresonHTMLKB -AzureKA:$enableAzureCognitiveServicesForKA -SuggestRO:$searchAvailableCiresonPortalOfferings -AzureRO:$enableAzureCognitiveServicesForRO -WorkItem $newWorkItem -AffectedUser $affectedUser}
                     if ($null -ne $ciresonSuggestionURLs)
                     {
                         if ($ciresonSuggestionURLs[0] -and $ciresonSuggestionURLs[1])
