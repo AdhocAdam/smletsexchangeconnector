@@ -1,17 +1,24 @@
-﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.CustomRules" 
+<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.CustomRules" 
             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:sys="clr-namespace:System;assembly=mscorlib"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
             xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="906.667" Height="540.434"
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" MinWidth="900" MinHeight="540"
             xmlns:local="clr-namespace:SMLetsExchangeConnectorSettingsUI.Validation" >
 
-    <Grid Name="ConfigurationGrid" Margin="10,25,10,10">
-        <!-- header -->
-        <Label Content="Custom Rules" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
-        <TextBlock Margin="10,58,10,0" VerticalAlignment="Top" Height="32" FontWeight="Light" FontSize="14" TextWrapping="Wrap">
+    <Grid Name="ConfigurationGrid" Margin="5px" Width="Auto" Height="Auto">
+        <Grid Margin="5px">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- header -->
+            <Label Content="Custom Rules" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26" Grid.Row="0"/>
+            <TextBlock Margin="10,58,10,0" VerticalAlignment="Top" Height="32" FontWeight="Light" FontSize="14" TextWrapping="Wrap">
             <Run Text="Define patterns beyond known Work Items to perform external system synchronization through email."/>
             <InlineUIContainer>
         		<TextBlock>
@@ -20,99 +27,101 @@
         	</InlineUIContainer>
         </TextBlock>
 
-        <!-- configuration -->
-        <StackPanel Name="stackPanel" Orientation="Vertical" Height="400" VerticalAlignment="Top" Margin="0,95,10,0">
-            <CheckBox Name="chkCustomRules" FlowDirection="LeftToRight" Margin="10,0,0,0" IsChecked="{Binding Path=UseCustomRules, Mode=TwoWay}" >
-                <TextBlock FlowDirection="LeftToRight" Text="Match custom patterns" Width="265.667" />
-            </CheckBox>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="Add" Width="120" Height="25" Margin="0,0,10,0" HorizontalAlignment="Right" IsEnabled="{Binding IsChecked, ElementName=chkCustomRules}" Click="AddButton_Click" />
-                <Button Content="Remove" Width="120" Height="25" HorizontalAlignment="Right" IsEnabled="{Binding IsChecked, ElementName=chkCustomRules}" Click="RemoveButton_Click" />
+            <!-- configuration -->
+            <StackPanel Name="stackPanel" Orientation="Vertical" VerticalAlignment="Top" Grid.Row="1">
+                <CheckBox Name="chkCustomRules" FlowDirection="LeftToRight" Margin="10,0,0,0" IsChecked="{Binding Path=UseCustomRules, Mode=TwoWay}" >
+                    <TextBlock FlowDirection="LeftToRight" Text="Match custom patterns" Width="265.667" />
+                </CheckBox>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Add" Width="120" Height="25" Margin="0,0,10,0" HorizontalAlignment="Right" IsEnabled="{Binding IsChecked, ElementName=chkCustomRules}" Click="AddButton_Click" />
+                    <Button Content="Remove" Width="120" Height="25" HorizontalAlignment="Right" IsEnabled="{Binding IsChecked, ElementName=chkCustomRules}" Click="RemoveButton_Click" />
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
 
-        <!-- Custom Rule configuration rows & columns -->
-        <ListView x:Name="CustomRulesListViewControl" Margin="10,141,10,10" IsEnabled="{Binding ElementName=chkCustomRules, Path=IsChecked}" >
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="Name" Width="Auto">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBox>
-                                    <Binding Path="CustomRuleDisplayName" UpdateSourceTrigger="PropertyChanged">
-                                        <Binding.ValidationRules>
-                                            <local:TextBoxValidationRule />
-                                        </Binding.ValidationRules>
-                                    </Binding>
-                                </TextBox>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Message Class" Width="Auto">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <ComboBox x:Name="cbCRMessageClassEnum" ItemsSource="{Binding Path=CustomRuleMessageClasses}" DisplayMemberPath="DisplayName" >
-                                    <ComboBox.SelectedItem>
-                                        <Binding Path="CustomRuleMessageClassEnum">
+            <ListView x:Name="CustomRulesListViewControl" IsEnabled="{Binding ElementName=chkCustomRules, Path=IsChecked}" Grid.Row="2" Width="Auto" >
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Name">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBox>
+                                        <Binding Path="CustomRuleDisplayName" UpdateSourceTrigger="PropertyChanged">
                                             <Binding.ValidationRules>
-                                                <local:SelectionValidationRule ValidatesOnTargetUpdated="True"/>
+                                                <local:TextBoxValidationRule />
                                             </Binding.ValidationRules>
                                         </Binding>
-                                    </ComboBox.SelectedItem>
-                                </ComboBox>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Message Part" Width="Auto">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <ComboBox SelectedItem="{Binding CustomRuleMessagePart, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" >
-                                    <sys:String>Subject</sys:String>
-                                    <sys:String>Body</sys:String>
-                                </ComboBox>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Regex" Width="Auto">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBox>
-                                    <Binding Path="CustomRuleRegex" UpdateSourceTrigger="PropertyChanged">
-                                        <Binding.ValidationRules>
-                                            <local:TextBoxValidationRule />
-                                        </Binding.ValidationRules>
-                                    </Binding>
-                                </TextBox>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Create/Update" Width="Auto">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <ComboBox Text="{Binding CustomRuleItemType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEditable="True" >
-                                    <sys:String>IR</sys:String>
-                                    <sys:String>SR</sys:String>
-                                    <sys:String>CR</sys:String>
-                                    <sys:String>PR</sys:String>
-                                </ComboBox>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Property to write/match against" Width="Auto">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBox>
-                                    <Binding Path="CustomRuleRegexMatchProperty" UpdateSourceTrigger="PropertyChanged">
-                                        <Binding.ValidationRules>
-                                            <local:TextBoxValidationRule />
-                                        </Binding.ValidationRules>
-                                    </Binding>
-                                </TextBox>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                </GridView>
-            </ListView.View>
-        </ListView>
+                                    </TextBox>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Message Class">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ComboBox x:Name="cbCRMessageClassEnum" ItemsSource="{Binding Path=CustomRuleMessageClasses}" DisplayMemberPath="DisplayName" >
+                                        <ComboBox.SelectedItem>
+                                            <Binding Path="CustomRuleMessageClassEnum">
+                                                <Binding.ValidationRules>
+                                                    <local:SelectionValidationRule ValidatesOnTargetUpdated="True"/>
+                                                </Binding.ValidationRules>
+                                            </Binding>
+                                        </ComboBox.SelectedItem>
+                                    </ComboBox>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Message Part">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ComboBox SelectedItem="{Binding CustomRuleMessagePart, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" >
+                                        <sys:String>Subject</sys:String>
+                                        <sys:String>Body</sys:String>
+                                    </ComboBox>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Regex">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBox>
+                                        <Binding Path="CustomRuleRegex" UpdateSourceTrigger="PropertyChanged">
+                                            <Binding.ValidationRules>
+                                                <local:TextBoxValidationRule />
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Create/Update">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ComboBox Text="{Binding CustomRuleItemType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEditable="True" >
+                                        <sys:String>IR</sys:String>
+                                        <sys:String>SR</sys:String>
+                                        <sys:String>CR</sys:String>
+                                        <sys:String>PR</sys:String>
+                                    </ComboBox>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Property to write/match against">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBox>
+                                        <Binding Path="CustomRuleRegexMatchProperty" UpdateSourceTrigger="PropertyChanged">
+                                            <Binding.ValidationRules>
+                                                <local:TextBoxValidationRule />
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+
+
+        </Grid>
     </Grid>
-</wpfwiz:WizardRegularPageBase> 
+</wpfwiz:WizardRegularPageBase>
