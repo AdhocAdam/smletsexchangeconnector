@@ -233,52 +233,7 @@ function New-SMEXCOEvent
         try 
         {
             #create the Event Log, if it already exists ignore and continue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "General" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "CustomEvents" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Cryptography" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Test-EmailPattern" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "New-WorkItem" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Update-WorkItem" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Add-EmailToSCSMObject" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Add-FileToSCSMObject" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Confirm-WorkItem" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Set-WorkItemScheduledTime" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCSMUserByEmailAddress" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-TierMembership" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-TierMembers" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AssignedToWorkItemVolume" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Set-AssignedToPerSupportGroup" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCSMWorkItemParent" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "New-CMDBUser" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Add-ActionLogEntry" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-CiresonPortalAPIToken" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-CiresonPortalUser" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-CiresonPortalGroup" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-CiresonPortalAnnouncements" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Search-AvailableCiresonPortalOfferings" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Search-CiresonKnowledgeBase" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-CiresonSuggestionURL" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Send-CiresonSuggestionEmail" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Add-CiresonWatchListUser" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Remove-CiresonWatchListUser" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Read-MIMEMessage" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-TemplatesByMailbox" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCSMAuthorizedAnnouncer" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Set-CoreSCSMAnnouncement" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Set-CiresonPortalAnnouncement" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailLanguage" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCOMAuthorizedRequeste" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-SCOMDistributedAppHealth" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Send-EmailFromWorkflowAccount" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Test-KeywordsFoundInMessage" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AMLWorkItemProbability" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailTranslation" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailKeywords" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailSentiment" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailImageAnalysis" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureSpeechEmailAudioText" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-AzureEmailImageText" -ErrorAction SilentlyContinue
-            New-EventLog -LogName "SMLets Exchange Connector" -Source "Get-ACSWorkItemPriority" -ErrorAction SilentlyContinue
+            New-EventLog -LogName "SMLets Exchange Connector" -Source $Source -ErrorAction SilentlyContinue
 
             #Attempt to write to the Windows Event Log
             $evtObject = New-Object System.Diagnostics.EventLog
