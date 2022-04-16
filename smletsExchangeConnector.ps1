@@ -4390,11 +4390,11 @@ if ($UseExchangeOnline)
 {
     switch ($AzureCloudInstance.Name)
     {
-        "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzurePublic"              {$scopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $tokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"}
-        "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment"          {$scopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $tokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"}
-        "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.GCCHigh"  {$scopeURL = "https://outlook.office365.us/EWS.AccessAsUser.All"; $tokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"}
-        "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.DOD"      {$scopeURL = "https://dod-outlook.office365.us/EWS.AccessAsUser.All"; $tokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"}
-        default {$scopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $tokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"}
+        "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzurePublic"              {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"}
+        "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment"          {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"}
+        "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.GCCHigh"  {$azureScopeURL = "https://outlook.office365.us/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"}
+        "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.DOD"      {$azureScopeURL = "https://dod-outlook.office365.us/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"}
+        default {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"}
     }
 }
 
@@ -4415,9 +4415,9 @@ if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Co
             client_Id     = $AzureClientID
             Username      = $ewsUsername + "@" + $ewsDomain
             Password      = $ewspassword
-            Scope         = $scopeURL
+            Scope         = $azureScopeURL
         }
-        $response = Invoke-RestMethod -Uri $tokenURL -Method "POST" -Body $ReqTokenBody
+        $response = Invoke-RestMethod -Uri $azureTokenURL -Method "POST" -Body $ReqTokenBody
         
         #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
         $exchangeService.Url = [System.Uri]$ExchangeEndpoint
@@ -4458,9 +4458,9 @@ else
             client_Id     = $AzureClientID
             Username      = $username
             Password      = $password
-            Scope         = $scopeURL
+            Scope         = $azureScopeURL
         }
-        $response = Invoke-RestMethod -Uri $tokenURL -Method "POST" -Body $ReqTokenBody
+        $response = Invoke-RestMethod -Uri $azureTokenURL -Method "POST" -Body $ReqTokenBody
         
         #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
         $exchangeService.Url = [System.Uri]$ExchangeEndpoint
