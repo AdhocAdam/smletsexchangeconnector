@@ -96,5 +96,11 @@ namespace SMLetsExchangeConnectorSettingsUI
                 txtHTMLSuggestionTemplates.Text = openFolderDialog.SelectedPath + "\\";
             }
         }
+
+        //take the URL defined in the WPF and open a browser to it
+        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            System.Diagnostics.Process.Start(e.Uri.AbsoluteUri);
+        }
     }
 }
