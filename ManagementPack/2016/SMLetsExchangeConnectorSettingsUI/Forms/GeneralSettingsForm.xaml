@@ -38,8 +38,6 @@
 
                 <Label Height="25" Padding="0" Margin="10,10,10,0" x:Name="lblAutodiscoverURL" Content="Autodiscover URL"/>
                 <TextBox Height="25" Margin="10,0,10,10" x:Name="txtAutodiscoverURL" Text="{Binding ExchangeAutodiscoverURL, FallbackValue='', Mode=TwoWay}" />
-                <TextBlock Text="Azure Cloud (Exchange Online and/or Azure AI)" />
-                <ComboBox x:Name="cbAzureCloud" ItemsSource="{Binding AzureCloudEnums}" SelectedItem="{Binding AzureCloudEnum}" DisplayMemberPath="DisplayName" />
                 <StackPanel Orientation="Horizontal">
                     <CheckBox Name="Exchange365" Content="Office 365/Exchange Online" IsChecked="{Binding Path=IsExchangeOnline, Mode=TwoWay}" />
                 </StackPanel>
@@ -55,6 +53,8 @@
                     <TextBox x:Name="txtAzureTenantID" Text="{Binding AzureTenantID, FallbackValue='', Mode=TwoWay}" />
                     <TextBlock Text="Azure Application/Client ID" />
                     <TextBox x:Name="txtAzureClientID" Text="{Binding AzureClientID, FallbackValue='', Mode=TwoWay}" />
+                    <TextBlock Text="Azure Cloud" />
+                    <ComboBox x:Name="cbAzureCloud" ItemsSource="{Binding AzureCloudEnums}" SelectedItem="{Binding AzureCloudEnum}" DisplayMemberPath="DisplayName" />
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
