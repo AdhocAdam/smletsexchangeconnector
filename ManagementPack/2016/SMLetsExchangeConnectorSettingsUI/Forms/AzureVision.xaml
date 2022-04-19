@@ -19,6 +19,9 @@
                     <TextBlock FlowDirection="LeftToRight" Text="Enable Azure Vision on detected pictures" />
                 </CheckBox>
                 <Label />
+                        
+                <TextBlock Text="Azure Cloud" />
+                <ComboBox x:Name="cbAzureCloud" ItemsSource="{Binding AzureCloudEnums}" SelectedItem="{Binding AzureCloudEnum}" DisplayMemberPath="DisplayName" IsEnabled="{Binding ElementName=chkAzureVision, Path=IsChecked}" />
 
                 <Label Height="25" Padding="0" Margin="0,0,0,0" Name="lblAzVisionAPIKey" Content="API Key"/>
                 <TextBox Height="25" Margin="0,-8,0,10" Name="txtAzVisionAPIKey" Text="{Binding AzureVisionAPIKey, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkAzureVision, Path=IsChecked}"/>
