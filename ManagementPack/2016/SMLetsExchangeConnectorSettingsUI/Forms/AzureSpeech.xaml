@@ -1,4 +1,4 @@
-﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.AzureSpeech" 
+<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.AzureSpeech" 
             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
@@ -19,6 +19,9 @@
                     <TextBlock FlowDirection="LeftToRight" Text="Enable Azure Speech on audio files" />
                 </CheckBox>
                 <Label />
+                        
+                <TextBlock Text="Azure Cloud" />
+                <ComboBox x:Name="cbAzureCloud" ItemsSource="{Binding AzureCloudEnums}" SelectedItem="{Binding AzureCloudEnum}" DisplayMemberPath="DisplayName" IsEnabled="{Binding ElementName=chkAzureSpeech, Path=IsChecked}" />
 
                 <Label Height="25" Padding="0" Margin="0,0,0,0" Name="lblAzSpeechAPIKey" Content="API Key"/>
                 <TextBox Height="25" Margin="0,-8,0,10" Name="txtAzSpeechAPIKey" Text="{Binding AzureSpeechAPIKey, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkAzureSpeech, Path=IsChecked}"/>
