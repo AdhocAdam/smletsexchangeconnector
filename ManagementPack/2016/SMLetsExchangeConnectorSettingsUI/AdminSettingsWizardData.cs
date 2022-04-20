@@ -30,6 +30,7 @@ namespace SMLetsExchangeConnectorSettingsUI
         private Boolean boolEnableExchangeOnline = false;
         private String strAzureTenantID = String.Empty;
         private String strAzureAppID = String.Empty;
+        ManagementPackEnumeration azureCloudEnum;
         //run as account - exchange web services
         ManagementPackSecureReference runasaccountews;
 
@@ -376,6 +377,23 @@ namespace SMLetsExchangeConnectorSettingsUI
                 if (this.strAzureAppID != value)
                 {
                     this.strAzureAppID = value;
+                }
+            }
+        }
+        
+        public IList<ManagementPackEnumeration> AzureCloudEnums { get; set; }
+        public ManagementPackEnumeration AzureCloudEnum
+        {
+            get
+            {
+                return azureCloudEnum;
+            }
+            set
+            {
+                if (this.azureCloudEnum != value)
+                {
+                    azureCloudEnum = value;
+                    NotifyPropertyChanged("azureCloudEnum");
                 }
             }
         }
@@ -2632,6 +2650,9 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { this.IsExchangeOnline = false; }
             this.AzureClientID = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureClientID"].ToString();
             this.AzureTenantID = emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureTenantID"].ToString();
+            this.AzureCloudEnums = emg.EntityTypes.GetChildEnumerations(new Guid("ba948e0e-1cc9-6850-8155-e4a6dacc81bf"), TraversalDepth.Recursive);
+            this.AzureCloudEnums = this.AzureCloudEnums.OrderBy(enumitem => enumitem.Ordinal).ToList();
+            this.AzureCloudEnum = (ManagementPackEnumeration)emoAdminSetting[null, "AzureCloudInstance"].Value;
             
             //Run as Account List
             var allSecureReferences = emg.Security.GetSecureReferences();
@@ -3416,6 +3437,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseExchangeOnline"].Value = this.IsExchangeOnline;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureClientID"].Value = this.AzureClientID;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AzureTenantID"].Value = this.AzureTenantID;
+            emoAdminSetting[null, "AzureCloudInstance"].Value = this.AzureCloudEnum;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "CreateUsersNotInCMDB"].Value = this.CreateUsersNotFoundtInCMDB;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "IncludeWholeEmail"].Value = this.IncludeWholeEmail;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "AttachEmailToWorkItem"].Value = this.AttachEmailToWorkItem;

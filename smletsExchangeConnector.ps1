@@ -294,6 +294,16 @@ $ExchangeEndpoint = "$($smexcoSettingsMP.ExchangeAutodiscoverURL)"
 $UseExchangeOnline = $smexcoSettingsMP.UseExchangeOnline
 $AzureClientID = "$($smexcoSettingsMP.AzureClientID)"
 $AzureTenantID = "$($smexcoSettingsMP.AzureTenantID)"
+$AzureCloudInstance = "$($smexcoSettingsMP.AzureCloudInstance)"
+#determine which Azure Cloud (if any) is being used to set required URLs
+switch ($AzureCloudInstance.Name)
+{
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzurePublic"              {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment"          {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.GCCHigh"  {$azureScopeURL = "https://outlook.office365.us/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"}
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.DOD"      {$azureScopeURL = "https://dod-outlook.office365.us/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"}
+    default {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
+}
 
 #defaultNewWorkItem = set to either "ir", "sr", "pr", or "cr"
 #default*RTemplate = define the displayname of the template you'll be using based on what you've set for $defaultNewWorkItem
@@ -3786,7 +3796,7 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
 function Get-AzureEmailSentiment ($messageToEvaluate)
 {
     #define cognitive services URLs
-    $sentimentURI = "https://$azureRegion.api.cognitive.microsoft.com/text/analytics/v2.0/sentiment"
+    $sentimentURI = "https://$azureRegion.api.cognitive.microsoft.$azureTLD/text/analytics/v2.0/sentiment"
 
     #create the JSON request
     $documents = @()
@@ -3823,7 +3833,7 @@ function Get-AzureEmailSentiment ($messageToEvaluate)
 function Get-AzureEmailLanguage ($TextToEvaluate)
 {  
     #build the request
-    $translationServiceURI = "https://api.cognitive.microsofttranslator.com/detect?api-version=3.0"
+    $translationServiceURI = "https://api.cognitive.microsofttranslator.$azureTLD/detect?api-version=3.0"
     $RecoRequestHeader = @{
       'Ocp-Apim-Subscription-Key' = "$azureCogSvcTranslateAPIKey";
       'Content-Type' = "application/json; charset=utf-8"
@@ -3856,7 +3866,7 @@ function Get-AzureEmailLanguage ($TextToEvaluate)
 function Get-AzureEmailTranslation ($TextToTranslate, $SourceLanguage, $TargetLanguage)
 {  
     #build the request
-    $translationServiceURI = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=$($SourceLanguage)&to=$($TargetLanguage)"
+    $translationServiceURI = "https://api.cognitive.microsofttranslator.$azureTLD/translate?api-version=3.0&from=$($SourceLanguage)&to=$($TargetLanguage)"
     $RecoRequestHeader = @{
       'Ocp-Apim-Subscription-Key' = "$azureCogSvcTranslateAPIKey";
       'Content-Type' = "application/json; charset=utf-8"
@@ -3919,7 +3929,7 @@ function Get-ACSWorkItemPriority ($score, $wiClass)
 function Get-AzureEmailKeywords ($messageToEvaluate)
 {
     #define cognitive services URLs
-    $keyPhraseURI = "https://$azureRegion.api.cognitive.microsoft.com/text/analytics/v2.0/keyPhrases"
+    $keyPhraseURI = "https://$azureRegion.api.cognitive.microsoft.$azureTLD/text/analytics/v2.0/keyPhrases"
 
     #create the JSON request
     $documents = @()
@@ -3954,7 +3964,7 @@ function Get-AzureEmailKeywords ($messageToEvaluate)
 function Get-AzureEmailImageAnalysis ($imageToEvalute)
 {
     #azure cognitive services, vision URL
-    $imageAnalysisURI = "https://$azureVisionRegion.api.cognitive.microsoft.com/vision/v3.0/analyze?visualFeatures=Tags"
+    $imageAnalysisURI = "https://$azureVisionRegion.api.cognitive.microsoft.$azureTLD/vision/v3.0/analyze?visualFeatures=Tags"
 
     #adapted from C# per: https://docs.microsoft.com/en-us/azure/cognitive-services/computer-vision/quickstarts/csharp-print-text
     Add-Type -AssemblyName "System.Net.Http"
@@ -3993,7 +4003,7 @@ function Get-AzureEmailImageAnalysis ($imageToEvalute)
 function Get-AzureSpeechEmailAudioText ($waveFileToEvaluate)
 {  
     #build the request
-    $SpeechServiceURI = "https://$azureSpeechRegion.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=en-us"
+    $SpeechServiceURI = "https://$azureSpeechRegion.stt.speech.microsoft.$azureTLD/speech/recognition/conversation/cognitiveservices/v1?language=en-us"
     $RecoRequestHeader = @{
       'Ocp-Apim-Subscription-Key' = "$azureCogSvcSpeechAPIKey";
       'Content-type' = "audio/wav; codecs=audio/pcm; samplerate=16000";
@@ -4029,7 +4039,7 @@ function Get-AzureSpeechEmailAudioText ($waveFileToEvaluate)
 function Get-AzureEmailImageText ($imageToEvalute)
 {
     #azure cognitive services, vision URL
-    $imageTextURI = "https://$azureVisionRegion.api.cognitive.microsoft.com/vision/v3.0/ocr?detectOrientation=true"
+    $imageTextURI = "https://$azureVisionRegion.api.cognitive.microsoft.$azureTLD/vision/v3.0/ocr?detectOrientation=true"
 
     #adapted from C# per: https://docs.microsoft.com/en-us/azure/cognitive-services/computer-vision/quickstarts/csharp-print-text
     Add-Type -AssemblyName "System.Net.Http"
@@ -4335,10 +4345,10 @@ $UseCustomRules = $smexcoSettingsMP.UseCustomRules
 
 # Custom Event Handler
 if ($ceScripts) { Invoke-BeforeConnect }
-
 #define Exchange assembly and connect to EWS
 [void] [Reflection.Assembly]::LoadFile("$exchangeEWSAPIPath")
 $exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService
+
 #figure out if the workflow should be used
 if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Connector.15d8b765a2f8b63ead14472f9b3c12f0")} | Select-Object Enabled -ExpandProperty Enabled)
 {
@@ -4356,9 +4366,9 @@ if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Co
             client_Id     = $AzureClientID
             Username      = $ewsUsername + "@" + $ewsDomain
             Password      = $ewspassword
-            Scope         = "https://outlook.office.com/EWS.AccessAsUser.All"
+            Scope         = $azureScopeURL
         }
-        $response = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token" -Method "POST" -Body $ReqTokenBody
+        $response = Invoke-RestMethod -Uri $azureTokenURL -Method "POST" -Body $ReqTokenBody
         
         #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
         $exchangeService.Url = [System.Uri]$ExchangeEndpoint
@@ -4399,9 +4409,9 @@ else
             client_Id     = $AzureClientID
             Username      = $username
             Password      = $password
-            Scope         = "https://outlook.office.com/EWS.AccessAsUser.All"
+            Scope         = $azureScopeURL
         }
-        $response = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token" -Method "POST" -Body $ReqTokenBody
+        $response = Invoke-RestMethod -Uri $azureTokenURL -Method "POST" -Body $ReqTokenBody
         
         #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
         $exchangeService.Url = [System.Uri]$ExchangeEndpoint
