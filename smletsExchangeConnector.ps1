@@ -2731,9 +2731,15 @@ function New-CMDBUser
     $domain = $domainAndTLD.Split(".")[0]
     $newID = $domain + "_" + $username + "_SMTP"
 
-    #create the new user
-    $newUser = New-SCSMObject -Class $domainUserClass -PropertyHashtable @{"domain" = "$domainAndTLD"; "username" = "$username"; "displayname" = "$userEmail"} @scsmMGMTParams -PassThru -NoCommit:$NoCommit
-    if (($loggingLevel -ge 1) -and ($newUser)){New-SMEXCOEvent -Source "New-CMDBUser" -EventId 0 -LogMessage "New User created in SCSM. Username: $username" -Severity "Information"}
+    #Does user already exist? We need to check because we can get into this function from users that don't have a notification channel mapped
+    $existingUser = Get-SCSMObject -Class $domainUserClass -Filter "Username -eq '$username' -and Domain -eq '$domainAndTLD'";
+    if ($existingUser) {
+        $newUser = $existingUser;
+    } else {
+        #create the new user
+        $newUser = New-SCSMObject -Class $domainUserClass -PropertyHashtable @{"domain" = "$domainAndTLD"; "username" = "$username"; "displayname" = "$userEmail"} @scsmMGMTParams -PassThru -NoCommit:$NoCommit
+        if (($loggingLevel -ge 1) -and ($newUser)){New-SMEXCOEvent -Source "New-CMDBUser" -EventId 0 -LogMessage "New User created in SCSM. Username: $username" -Severity "Information"}
+    }
 
     #create the user notification projection
     $userNoticeProjection = @{__CLASS = "$($domainUserClass.Name)";
