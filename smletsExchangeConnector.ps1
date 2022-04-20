@@ -20,6 +20,11 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 4.1.0 = #355 - Enhancement, Support for defining Azure Cloud Instance (Exchange Online and/or Azure AI services)
+                #366 - Enhancement, DLL form resizies as Settings UI resizes + link to wiki on configuring Custom Events
+                #361 - Enhancement, Multi-mailbox, Custom Rules, History, and About forms stretch as Setting UI resizes
+                #365 - Enhancement, Simplify New-SMEXCOEvent function
+                #363 - Bug, Verify User availablity before Suggesting KA/RO
 Version: 4.0.1 = #357 - Bug, When using Custom Rules, Work Items with a matched pattern don't correctly update
 Version: 4.0.0 = #329 - Feature, Custom Rules
 Version: 3.4.1 = #324 - Bug, File attachments allow illegal path characters
