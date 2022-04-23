@@ -20,6 +20,9 @@
                 </CheckBox>
                 <Label />
 
+                <TextBlock Text="Azure Cloud" />
+                <ComboBox x:Name="cbAzureCloud" ItemsSource="{Binding AzureCloudEnums}" SelectedItem="{Binding AzureCloudEnum}" DisplayMemberPath="DisplayName" IsEnabled="{Binding ElementName=chkAzureTranslate, Path=IsChecked}" />
+                        
                 <Label Height="25" Padding="0" Margin="0,0,0,0" Name="lblAzTranslateAPIKey" Content="API Key"/>
                 <TextBox Height="25" Margin="0,-8,0,10" Name="txtAzTranslateAPIKey" Text="{Binding AzureTranslateAPIKey, FallbackValue='', Mode=TwoWay}" IsEnabled="{Binding ElementName=chkAzureTranslate, Path=IsChecked}"/>
 

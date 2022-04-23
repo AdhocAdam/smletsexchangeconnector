@@ -5,45 +5,66 @@
             xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
             xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="700" Height="621">
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" MinWidth="700" MinHeight="630">
 
-    <Grid Name="ConfigurationGrid" Margin="15,25,15,10">
-        <!-- header -->
-        <Image Margin="493,92,10,0" Height="146" VerticalAlignment="Top" Source="/SMLetsExchangeConnectorSettingsUI;component/AssemblyImages/dll.PNG" />
-        <Label Content="File and Path Configuration" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
-        <TextBlock Margin="0,51,10,0" VerticalAlignment="Top" Height="40.667" FontWeight="Light" FontSize="14" TextWrapping="Wrap" Text="Provide the path to relevant DLL files for the connector" />
+    <Grid Name="ConfigurationGrid">
+        <Grid Margin="5px">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="150" />
+            </Grid.ColumnDefinitions>
 
-        <!-- configuration -->
-        <ScrollViewer Name="scrollViewer" CanContentScroll="True" VerticalScrollBarVisibility="Disabled" HorizontalAlignment="Left" Width="493" Margin="0,92,0,10" >
-            <StackPanel Name="stackPanel" Orientation="Vertical" Height="474" Width="480" VerticalAlignment="Top">
-                <TextBlock Text="Exchange Web Services DLL File Path" />
-                <TextBlock Text="C:\Program Files\Microsoft\Exchange\Web Services\1.2\Microsoft.Exchange.WebServices.dll" FontStyle="Italic" FontSize="10" TextWrapping="Wrap" Margin="10,0,0,0" />
-                <TextBox x:Name="txtEWSapiDll" Height="23" Text="{Binding EWSFilePath, FallbackValue='', Mode=TwoWay}" Margin="10,0" />
-                <Button Content="Browse" Margin="10,5,0,0" Click="btn_BrowseEWSPath" HorizontalAlignment="Left" Width="71" />
+            <!-- header -->
+            <Label Content="File and Path Configuration" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26" Grid.Row="0"/>
+            <TextBlock Margin="0,51,10,0" VerticalAlignment="Top" Height="40.667" FontWeight="Light" FontSize="14" TextWrapping="Wrap" Text="Provide the path to relevant files for the connector" />
 
-                <Label Content="SMLets Exchange Connector PowerShell File Path"/>
-                <TextBlock Text="C:\smletsExchangeConnector\smletsexchangeconnector.ps1" FontStyle="Italic" FontSize="10" TextWrapping="Wrap" Margin="10,0,0,0" />
-                <TextBox x:Name="txtSMExcoPS1" Height="23" Text="{Binding SMExcoFilePath, FallbackValue='', Mode=TwoWay}" Margin="10,0" />
-                <Button Content="Browse" Margin="10,5,0,0" Click="btn_BrowseSMExcoPSPath" HorizontalAlignment="Left" Width="71" />
+            <!-- icon -->
+            <Image VerticalAlignment="Top" HorizontalAlignment="Right" Source="/SMLetsExchangeConnectorSettingsUI;component/AssemblyImages/dll.PNG" Grid.Row="1" Grid.Column="1" />
 
-                <Label Content="Mimekit DLL File Path"/>
-                <TextBlock Text="C:\smletsExchangeConnector\mimekit.dll" FontStyle="Italic" FontSize="10" TextWrapping="Wrap" Margin="10,0,0,0" />
-                <TextBox x:Name="txtMimeKitDLL" Height="23" Text="{Binding MimeKitFilePath, FallbackValue='', Mode=TwoWay}" Margin="10,0" />
-                <Button Content="Browse" Margin="10,5,0,0" Click="btn_BrowseMimeKitPath" HorizontalAlignment="Left" Width="71" />
+            <!-- configuration -->
+            <ScrollViewer Name="scrollViewer" CanContentScroll="True" VerticalScrollBarVisibility="Disabled" Grid.Row="1" Grid.Column="0" Margin="10,0" >
+                <StackPanel Name="stackPanel" Orientation="Vertical" VerticalAlignment="Top">
+                    <TextBlock Text="Exchange Web Services DLL File Path" />
+                    <TextBlock Text="C:\Program Files\Microsoft\Exchange\Web Services\1.2\Microsoft.Exchange.WebServices.dll" FontStyle="Italic" FontSize="10" TextWrapping="Wrap" Margin="10,0,0,0" />
+                    <TextBox x:Name="txtEWSapiDll" Margin="10,0,0,0" Height="23" Text="{Binding EWSFilePath, FallbackValue='', Mode=TwoWay}" />
+                    <Button Content="Browse" Margin="10,5,0,0" Click="btn_BrowseEWSPath" HorizontalAlignment="Left" Width="71" />
 
-                <Label Content="PII Regex File Path"/>
-                <TextBlock Text="C:\smletsExchangeConnector\pii_regex.txt" FontStyle="Italic" FontSize="10" TextWrapping="Wrap" Margin="10,0,0,0" />
-                <TextBox x:Name="txtPIIRegex" Height="23" Text="{Binding PIIRegexFilePath, FallbackValue='', Mode=TwoWay}" Margin="10,0" />
-                <Button Content="Browse" Margin="10,5,0,0" Click="btn_BrowsePIIRegexPath" HorizontalAlignment="Left" Width="71" />
+                    <Label Content="SMLets Exchange Connector PowerShell File Path"/>
+                    <TextBlock Text="C:\smletsExchangeConnector\smletsexchangeconnector.ps1" FontStyle="Italic" FontSize="10" TextWrapping="Wrap" Margin="10,0,0,0" />
+                    <TextBox x:Name="txtSMExcoPS1" Margin="10,0,0,0" Height="23" Text="{Binding SMExcoFilePath, FallbackValue='', Mode=TwoWay}" />
+                    <Button Content="Browse" Margin="10,5,0,0" Click="btn_BrowseSMExcoPSPath" HorizontalAlignment="Left" Width="71" />
 
-                <Label Content="HTML Cireson Suggestion Templates Folder"/>
-                <TextBlock Text="c:\smletsexchangeconnector\htmlEmailTemplates\" FontStyle="Italic" FontSize="10" TextWrapping="Wrap" Margin="10,0,0,0" />
-                <TextBox x:Name="txtHTMLSuggestionTemplates" Height="23" Text="{Binding HTMLSuggestionTemplatesFilePath, FallbackValue='', Mode=TwoWay}" Margin="10,0" />
-                <Button Content="Browse" Margin="10,5,0,0" Click="btn_BrowsePIIHTMLTemplatePath" HorizontalAlignment="Left" Width="71" />
+                    <Label Content="Mimekit DLL File Path"/>
+                    <TextBlock Text="C:\smletsExchangeConnector\mimekit.dll" FontStyle="Italic" FontSize="10" TextWrapping="Wrap" Margin="10,0,0,0" />
+                    <TextBox x:Name="txtMimeKitDLL" Margin="10,0,0,0" Height="23" Text="{Binding MimeKitFilePath, FallbackValue='', Mode=TwoWay}" />
+                    <Button Content="Browse" Margin="10,5,0,0" Click="btn_BrowseMimeKitPath" HorizontalAlignment="Left" Width="71" />
 
-                <Label Content="Custom Events Path" Margin="0,10,0,0"/>
-                <TextBox x:Name="txtCustomEvents" Height="23" Text="{Binding CustomEventsFilePath, FallbackValue='', Mode=TwoWay}" Margin="10,0" />
-            </StackPanel>
-        </ScrollViewer>
+                    <Label Content="PII Regex File Path"/>
+                    <TextBlock Text="C:\smletsExchangeConnector\pii_regex.txt" FontStyle="Italic" FontSize="10" TextWrapping="Wrap" Margin="10,0,0,0" />
+                    <TextBox x:Name="txtPIIRegex" Margin="10,0,0,0" Height="23" Text="{Binding PIIRegexFilePath, FallbackValue='', Mode=TwoWay}" />
+                    <Button Content="Browse" Margin="10,5,0,0" Click="btn_BrowsePIIRegexPath" HorizontalAlignment="Left" Width="71" />
+
+                    <Label Content="HTML Cireson Suggestion Templates Folder"/>
+                    <TextBlock Text="c:\smletsexchangeconnector\htmlEmailTemplates\" FontStyle="Italic" FontSize="10" TextWrapping="Wrap" Margin="10,0,0,0" />
+                    <TextBox x:Name="txtHTMLSuggestionTemplates" Margin="10,0,0,0" Height="23" Text="{Binding HTMLSuggestionTemplatesFilePath, FallbackValue='', Mode=TwoWay}" />
+                    <Button Content="Browse" Margin="10,5,0,0" Click="btn_BrowsePIIHTMLTemplatePath" HorizontalAlignment="Left" Width="71" />
+
+                    <TextBlock Margin="0,10,0,0">
+                        <Run Text="Custom Events Path." />
+                        <InlineUIContainer>
+        		            <TextBlock>
+                                <Hyperlink RequestNavigate="Hyperlink_RequestNavigate" NavigateUri="https://github.com/AdhocAdam/smletsexchangeconnector/wiki/Custom-Events-Examples">Help me configure this.</Hyperlink>
+                            </TextBlock>
+        	            </InlineUIContainer>
+                    </TextBlock>
+                    
+                    <TextBox x:Name="txtCustomEvents" Margin="10,0,0,0" Height="23" Text="{Binding CustomEventsFilePath, FallbackValue='', Mode=TwoWay}" />
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
     </Grid>
-</wpfwiz:WizardRegularPageBase> 
+</wpfwiz:WizardRegularPageBase>

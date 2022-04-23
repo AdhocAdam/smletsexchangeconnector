@@ -1,26 +1,35 @@
 <p align="center">
-  <img width="512" height="512" src="psExchIconReadme.png">
+  <img width="512" height="512" src="psExchIconReadme.png"><br />
+  <h1 align="center">SMLets Exchange Connector</h1>
 </p>
 
-# SCSM Exchange Connector via SMlets
-<p align="left">
+<p align="center">
   <img src="https://github.com/AdhocAdam/smletsexchangeconnector/workflows/Primary%20Branch%20-%20Build/badge.svg?branch=primary" />
   <img src="https://github.com/AdhocAdam/smletsexchangeconnector/workflows/Dev%20Branch%20-%20Build/badge.svg?branch=dev" />
 </p>
-<p align="left">
+<p align="center">
   <a href="https://securitylab.github.com/tools/codeql"><img src="https://github.com/AdhocAdam/smletsexchangeconnector/actions/workflows/codeql-analysis.yml/badge.svg" /></a>
 </p>
 
-This PowerShell script leverages the [SMlets module](https://www.powershellgallery.com/packages/SMLets/) to build an open and flexible Exchange Connector for controlling Microsoft System Center Service Manager 2016+
+This PowerShell script leverages the [SMLets module](https://www.powershellgallery.com/packages/SMLets/) to build an open and flexible Exchange Connector for controlling Microsoft System Center Service Manager 2016+
 
 
 ## So what is this for?
-The stock Exchange Connector is a seperate download that enables SCSM deployments to leverage an Exchange mailbox to process updates to work items. While incredibly useful, some feel limited by its inability to be customized given its nature as a sealed management pack. This PowerShell script replicates all functionality of [Exchange Connector 4.0](https://www.microsoft.com/en-us/download/details.aspx?id=101579), introduces a host of new features, and most importantly enables SCSM Administrators to customize the solution to their needs.
+The stock Exchange Connector is a seperate download that enables SCSM deployments to leverage an Exchange mailbox to process updates to work items. While incredibly useful, some feel limited by its inability to be customized given its nature as a sealed management pack. This PowerShell script replicates all functionality of [Exchange Connector 4.1](https://www.microsoft.com/en-us/download/details.aspx?id=101579), introduces a host of new features, and most importantly enables SCSM Administrators to customize the solution to their needs.
 
 ## Who is this for?
 This is aimed at SCSM administrators looking to further push the automation limits of what their SCSM deployment can do with inbound email processing. As such, you should be comfortable with PowerShell and navigating SCSM via SMlets.
 
 ## What new things can it do?
+<table border="0">
+  <tr>
+    <td colspan="3"><i>Azure Government (v4.1)</i></td>
+  </tr>
+  <tr>
+    <td align="center" width="200"><img src ="/FeatureScreenshots/azGov.png" /></td>
+    <td width="auto">No need to manage custom Azure URLs between upgrades. Azure Government customers can now quickly configure connectivity directly from the connector's Admin Settings to define connectivity to Exchange Online and/or Azure services.</td>
+  </tr>
+</table>
 <table border="0">
   <tr>
     <td colspan="3"><i>Custom Rules (v4.0)</i></td>
