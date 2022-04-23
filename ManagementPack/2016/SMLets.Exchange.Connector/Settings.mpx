@@ -1422,9 +1422,9 @@
         <!-- LIST: Azure Clouds -->
         <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum" Accessibility="Public" />
         <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzurePublic" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum" Ordinal="0" />
-        <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum" Ordinal="1" />
-        <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.GCCHigh" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment" Ordinal="2" />
-        <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.DOD" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment" Ordinal="3" />
+        <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum" Ordinal="1" />
+        <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.GCCHigh" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment" Ordinal="2" />
+        <EnumerationValue ID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.DOD" Accessibility="Public" Parent="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment" Ordinal="3" />
       </EnumerationTypes>
       
     </EntityTypes>
@@ -1520,15 +1520,15 @@
           <Name>Azure Public</Name>
           <Description>Microsoft Azure public cloud. Maps to https://login.microsoftonline.com and https://outlook.office.com</Description>
         </DisplayString>
-        <DisplayString ElementID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment">
+        <DisplayString ElementID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment">
           <Name>Azure US Government (GCC)</Name>
           <Description>US Government cloud. Maps to https://login.microsoftonline.us and https://outlook.office.com</Description>
         </DisplayString>
-        <DisplayString ElementID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.GCCHigh">
+        <DisplayString ElementID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.GCCHigh">
           <Name>Azure US Government (GCC High)</Name>
           <Description>US Government cloud. Maps to https://login.microsoftonline.us and https://outlook.office365.us</Description>
         </DisplayString>
-        <DisplayString ElementID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.DOD">
+        <DisplayString ElementID="SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.DOD">
           <Name>Azure US Government (DoD)</Name>
           <Description>US Government cloud. Maps to https://login.microsoftonline.us and https://dod-outlook.office365.us</Description>
         </DisplayString>

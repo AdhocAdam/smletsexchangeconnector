@@ -299,9 +299,9 @@ $AzureCloudInstance = "$($smexcoSettingsMP.AzureCloudInstance)"
 switch ($AzureCloudInstance.Name)
 {
     "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzurePublic"              {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
-    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment"          {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
-    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.GCCHigh"  {$azureScopeURL = "https://outlook.office365.us/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"}
-    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureGovernment.DOD"      {$azureScopeURL = "https://dod-outlook.office365.us/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"}
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment"          {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.GCCHigh"  {$azureScopeURL = "https://outlook.office365.us/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"}
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.DOD"      {$azureScopeURL = "https://dod-outlook.office365.us/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"}
     default {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
 }
 
