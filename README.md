@@ -1,17 +1,17 @@
 <p align="center">
-  <img width="512" height="512" src="psExchIconReadme.png">
+  <img width="512" height="512" src="psExchIconReadme.png"><br />
+  <h1 align="center">SMLets Exchange Connector</h1>
 </p>
 
-# SCSM Exchange Connector via SMlets
-<p align="left">
+<p align="center">
   <img src="https://github.com/AdhocAdam/smletsexchangeconnector/workflows/Primary%20Branch%20-%20Build/badge.svg?branch=primary" />
   <img src="https://github.com/AdhocAdam/smletsexchangeconnector/workflows/Dev%20Branch%20-%20Build/badge.svg?branch=dev" />
 </p>
-<p align="left">
+<p align="center">
   <a href="https://securitylab.github.com/tools/codeql"><img src="https://github.com/AdhocAdam/smletsexchangeconnector/actions/workflows/codeql-analysis.yml/badge.svg" /></a>
 </p>
 
-This PowerShell script leverages the [SMlets module](https://www.powershellgallery.com/packages/SMLets/) to build an open and flexible Exchange Connector for controlling Microsoft System Center Service Manager 2016+
+This PowerShell script leverages the [SMLets module](https://www.powershellgallery.com/packages/SMLets/) to build an open and flexible Exchange Connector for controlling Microsoft System Center Service Manager 2016+
 
 
 ## So what is this for?
@@ -27,7 +27,7 @@ This is aimed at SCSM administrators looking to further push the automation limi
   </tr>
   <tr>
     <td align="center" width="200"><img src ="/FeatureScreenshots/azGov.png" /></td>
-    <td width="auto">No need to manage custom Azure URLs between upgrades. Azure Government customers can now quickly configure connectivity directly from the connector's Admin Settings.</td>
+    <td width="auto">No need to manage custom Azure URLs between upgrades. Azure Government customers can now quickly configure connectivity directly from the connector's Admin Settings to define connectivity to Exchange Online and/or Azure services.</td>
   </tr>
 </table>
 <table border="0">
