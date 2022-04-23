@@ -4,6 +4,7 @@
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/github/v/release/AdhocAdam/smletsexchangeconnector?logo=github&logoColor=white" alt="GitHub release"/>
   <img src="https://github.com/AdhocAdam/smletsexchangeconnector/workflows/Primary%20Branch%20-%20Build/badge.svg?branch=primary" />
   <img src="https://github.com/AdhocAdam/smletsexchangeconnector/workflows/Dev%20Branch%20-%20Build/badge.svg?branch=dev" />
 </p>
