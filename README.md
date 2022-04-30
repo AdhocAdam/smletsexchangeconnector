@@ -10,6 +10,7 @@
 </p>
 <p align="center">
   <a href="https://securitylab.github.com/tools/codeql"><img src="https://github.com/AdhocAdam/smletsexchangeconnector/actions/workflows/codeql-analysis.yml/badge.svg" /></a>
+  <a href="https://github.com/PowerShell/PSScriptAnalyzer"><img src="https://img.shields.io/badge/Lint-PSScriptAnalyzer-white" alt="Lint: PSScriptAnalyzer"/></a>
 </p>
 
 This PowerShell script leverages the [SMLets module](https://www.powershellgallery.com/packages/SMLets/) to build an open and flexible Exchange Connector for controlling Microsoft System Center Service Manager 2016+
