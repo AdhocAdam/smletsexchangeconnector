@@ -2,7 +2,7 @@
 name: Dev Branch - Build
 
 # Controls when the action will run
-on: 	
+on:
   workflow_dispatch:
     inputs:
       version:
@@ -19,23 +19,23 @@ jobs:
     steps:
       # Checks-out repository under $GITHUB_WORKSPACE, so job can access it
       - uses: actions/checkout@v2
-        with:	
+        with:
           ref: dev
 
       # Add MSBuild to environment path
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
-    
+
       # copy dependencies over
       - name: Copy Dependencies folder from the repo to Build for MP signing and show them
         run: |
           Copy-Item -Path ManagementPack\2016\dependencies -Destination "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Microsoft\VSAC\" -Recurse
           Get-ChildItem "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Microsoft\VSAC\"
-          
+
       # Build the Settings UI dll
       - name: Compile SMLetsExchangeConnectorSettingsUI.dll
         run: msbuild ManagementPack/2016/SMLetsExchangeConnectorSettingsUI/SMLetsExchangeConnectorSettingsUI.csproj
-          
+
       #change the MPB version
       - name: Change the next MPB build version
         run: |
@@ -43,11 +43,11 @@ jobs:
           $build.Project.PropertyGroup[0].Version = "${{ github.event.inputs.version }}"
           $build.Project.PropertyGroup[1].Copyright = "AdhocAdam, " + (Get-Date).Year + "."
           $build.Save("ManagementPack\2016\SMLets.Exchange.Connector\SMLets.Exchange.Connector.mpproj")
-                    
+
       # Convert Management Pack Fragments to single XML, seal it to create the MP, bind the DLL to it, and thus create the MPB
       - name: Sign the XML to create the MP. Then combine the MP and DLL to create the MPB
         run: msbuild ManagementPack/2016/SMLets.Exchange.Connector.sln
-      
+
       #change the Resources.DLL version
       - name: Change the SMLets.Exchange.Connector.Resources.dll File Assembly version
         run: |
@@ -55,18 +55,18 @@ jobs:
           $originalAssembly = Get-Content -path ManagementPack\2016\SMLets.Exchange.Connector.Resources\Properties\AssemblyInfo.cs
           $assemblyFileVersion = $originalAssembly[$originalAssembly.Length - 1]
           $originalAssembly.Replace($assemblyFileVersion, '[assembly: AssemblyFileVersion("' + $newVersion + '")]') | Out-File ManagementPack\2016\SMLets.Exchange.Connector.Resources\Properties\AssemblyInfo.cs
-      
+
       # Create the SMLets.Exchange.Connector.Resources.dll for those using the connector with the SCSM workflow engine
       - name: Compile the SMLets.Exchange.Connector.Resources.dll
         run: msbuild ManagementPack\2016\SMLets.Exchange.Connector.Resources\SMLets.Exchange.Connector.Resources.csproj
-    
+
       # create a temp directory to build the SMLets Exchange Connector folder structure
       - name: Create a local directory C:\smletsexchangeconnector
         run: |
           New-Item -Path "C:\smletsexchangeconnector" -ItemType Directory
           New-Item -Path "C:\smletsexchangeconnector\ManagementPack" -ItemType Directory
           New-Item -Path "C:\smletsexchangeconnector\ManagementPack\2016" -ItemType Directory
-      
+
       #copy files to the temp directory to prepare the artifact upload
       - name: Copy relevant files to C:\smletsexchangeconnector
         run: |
@@ -77,10 +77,10 @@ jobs:
           Copy-Item -Path "pii_regex.txt" -Destination "C:\smletsexchangeconnector\"
           Copy-Item -Path "smletsExchangeConnector.ps1" -Destination "C:\smletsexchangeconnector\"
           Copy-Item -Path "smletsExchangeConnector_customEvents.ps1" -Destination "C:\smletsexchangeconnector\"
-          
+
           Copy-Item -Path "CiresonPortalTasks" -Destination "C:\smletsexchangeconnector" -Recurse
           Copy-Item -Path "HTMLEmailTemplates" -Destination "C:\smletsexchangeconnector" -Recurse
-          
+
           Copy-Item -Path "ManagementPack\2016\SMLets.Exchange.Connector.Resources\bin\Debug\SMLets.Exchange.Connector.Resources.dll" -Destination "C:\smletsexchangeconnector\ManagementPack\2016\"
           Copy-Item -Path "ManagementPack\2016\SMLets.Exchange.Connector\bin\Debug\SMLets.Exchange.Connector.mpb" -Destination "C:\smletsexchangeconnector\ManagementPack\2016\"
 
