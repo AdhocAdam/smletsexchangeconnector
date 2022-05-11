@@ -2501,6 +2501,10 @@ function Get-SCSMUserByEmailAddress ($EmailAddress)
     }
     else
     {
+        $username = $EmailAddress.Split("@")[0]
+        $domainAndTLD = $EmailAddress.Split("@")[1]
+        $existingUser = Get-SCSMObject -Class $domainUserClass -Filter "Username -eq '$username' -and Domain -eq '$domainAndTLD'";
+        if ($existingUser) {return $existingUser}
         if ($loggingLevel -ge 2){New-SMEXCOEvent -Source "Get-SCSMUserByEmailAddress" -EventId 1 -LogMessage "Address: $EmailAddress could not be matched to a user in SCSM" -Severity "Warning"}
         return $null
     }
