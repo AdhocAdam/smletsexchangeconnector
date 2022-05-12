@@ -250,6 +250,7 @@ function New-SMEXCOEvent
         catch
         {
             #couldn't create a Windows Event Log entry
+            Write-Error -Message "SMLets Exchange Connector Windows Event Log could not be created. $($_.Exception)"
         }
     }
     else
@@ -1542,7 +1543,7 @@ function Update-WorkItem ($message, $wiType, $workItem)
         "ir" {
             #$workItem = get-scsmobject -class $irClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
 
-            try {$existingWiStatusName = $workItem.Status.Name} catch {}
+            try {$existingWiStatusName = $workItem.Status.Name} catch {New-SMEXCOEvent -Source "New-WorkItem" -EventID 5 -Severity "Information" -LogMessage "$($workItem.Name) does not exist within SCSM."}
             if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "IncidentStatusEnum.Closed") {
                 $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | foreach-object {Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $_ @scsmMGMTParams).sourceobject.id @scsmMGMTParams} | where-object {$_.Status -ne "IncidentStatusEnum.Closed"}
                 if (($relatedWorkItemFromAttachmentSearch | get-unique).count -eq 1 -and $relatedWorkItemFromAttachmentSearch.Status.Name -ne "IncidentStatusEnum.Closed")
@@ -1563,9 +1564,9 @@ function Update-WorkItem ($message, $wiType, $workItem)
                 }
             }
             else {
-                try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
+                try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Update-WorkItem" -EventID 7 -Severity "Warning" -LogMessage "The Affected User of $($workItem.Name) could not be found."}
                 if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress}
-                try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
+                try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Update-WorkItem" -EventID 8 -Severity "Warning" -LogMessage "The Assigned User of $($workItem.Name) could not be found."}
                 if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                 if ($assignedToSMTP.TargetAddress -eq $affectedUserSMTP.TargetAddress){$assignedToSMTP = $null}
                 #write to the Action log and take action on the Work Item if neccesary
@@ -1597,7 +1598,7 @@ function Update-WorkItem ($message, $wiType, $workItem)
                                 }
                             }
                             "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Undo-WorkItemResolution -WorkItem $workItem; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
-                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem -message $message -wiType "ir" -returnWIBool $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
+                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem -message $message -wiType "ir" -returnWIBool $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{New-SMEXCOEvent -Source "Update-WorkItem" -EventID 9 -Severity "Warning" -LogMessage "$($workItem.Name) could not be related to $($returnedWorkItem.Name)"}; if ($ceScripts) { Invoke-AfterReactivate }}}
                             "\[$addWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($addWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Add-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                             "\[$removeWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($removeWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Remove-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                             {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -EmailAddress $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false}
@@ -1630,7 +1631,7 @@ function Update-WorkItem ($message, $wiType, $workItem)
                                 }
                             }
                             "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Undo-WorkItemResolution -WorkItem $workItem; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
-                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem -message $message - wiType "ir" -returnWIBool $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
+                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem -message $message -wiType "ir" -returnWIBool $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{New-SMEXCOEvent -Source "Update-WorkItem" -EventID 9 -Severity "Warning" -LogMessage "$($workItem.Name) could not be related to $($returnedWorkItem.Name)"}; if ($ceScripts) { Invoke-AfterReactivate }}}
                             "\[$addWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($addWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Add-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                             "\[$removeWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($removeWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Remove-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                             {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -EmailAddress $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false}
@@ -1664,7 +1665,7 @@ function Update-WorkItem ($message, $wiType, $workItem)
                                 }
                             }
                             "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Undo-WorkItemResolution -WorkItem $workItem; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
-                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem -message $message -wiType "ir" -returnWIBool $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{}; if ($ceScripts) { Invoke-AfterReactivate }}}
+                            "\[$reactivateKeyword]" {if (($workItem.Status.Name -eq "IncidentStatusEnum.Closed") -and ($message.Subject -match "\[$irRegex[0-9]+\]")){$message.subject = $message.Subject.Replace("[" + $Matches[0] + "]", ""); $returnedWorkItem = New-WorkItem -message $message -wiType "ir" -returnWIBool $true; try{New-SCSMRelationshipObject -Relationship $wiRelatesToWIRelClass -Source $workItem -Target $returnedWorkItem -Bulk @scsmMGMTParams}catch{New-SMEXCOEvent -Source "Update-WorkItem" -EventID 9 -Severity "Warning" -LogMessage "$($workItem.Name) could not be related to $($returnedWorkItem.Name)"}; if ($ceScripts) { Invoke-AfterReactivate }}}
                             "\[$addWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($addWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Add-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                             "\[$removeWatchlistKeyword]" {if (($enableCiresonIntegration) -and ($removeWatchlistKeyword.Length -gt 1)) {$cpu = Get-CiresonPortalUser -username $commentLeftBy.UserName -domain $commentLeftBy.Domain; if ($cpu) {Remove-CiresonWatchListUser -userguid $cpu.Id -workitemguid $workItem.__InternalId} }}
                             {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -EmailAddress $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false}
@@ -1685,7 +1686,7 @@ function Update-WorkItem ($message, $wiType, $workItem)
         "sr" {
             #$workItem = get-scsmobject -class $srClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
 
-            try {$existingWiStatusName = $workItem.Status.Name} catch {}
+            try {$existingWiStatusName = $workItem.Status.Name} catch {New-SMEXCOEvent -Source "New-WorkItem" -EventID 5 -Severity "Information" -LogMessage "$($workItem.Name) does not exist within SCSM."}
             if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "ServiceRequestStatusEnum.Closed") {
                 $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | foreach-object {Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $_ @scsmMGMTParams).sourceobject.id @scsmMGMTParams} | where-object {$_.Status -ne "ServiceRequestStatusEnum.Closed"}
                 if (($relatedWorkItemFromAttachmentSearch | get-unique).count -eq 1 -and $relatedWorkItemFromAttachmentSearch.Status.Name -ne "ServiceRequestStatusEnum.Closed")
@@ -1706,9 +1707,9 @@ function Update-WorkItem ($message, $wiType, $workItem)
                 }
             }
             else {
-                try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
+                try {$affectedUser = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $affectedUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Update-WorkItem" -EventID 7 -Severity "Warning" -LogMessage "The Affected User of $($workItem.Name) could not be found."}
                 if($affectedUser){$affectedUserSMTP = Get-SCSMRelatedObject -SMObject $affectedUser @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress}
-                try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
+                try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Update-WorkItem" -EventID 8 -Severity "Warning" -LogMessage "The Assigned User of $($workItem.Name) could not be found."}
                 if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                 if ($assignedToSMTP.TargetAddress -eq $affectedUserSMTP.TargetAddress){$assignedToSMTP = $null}
                 switch ($message.From)
@@ -1822,7 +1823,7 @@ function Update-WorkItem ($message, $wiType, $workItem)
         }
         "pr" {
                     #$workItem = get-scsmobject -class $prClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
-                    try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
+                    try {$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Update-WorkItem" -EventID 8 -Severity "Warning" -LogMessage "The Assigned User of $($workItem.Name) could not be found."}
                     if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                     #write to the Action log
                     switch ($message.From)
@@ -1896,7 +1897,7 @@ function Update-WorkItem ($message, $wiType, $workItem)
                 }
         "cr" {
                     #$workItem = get-scsmobject -class $crClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
-                    try{$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
+                    try{$assignedTo = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Update-WorkItem" -EventID 8 -Severity "Warning" -LogMessage "The Assigned User of $($workItem.Name) could not be found."}
                     if($assignedTo){$assignedToSMTP = Get-SCSMRelatedObject -SMObject $assignedTo @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                     #write to the Action log and take action on the Work Item if neccesary
                     switch ($message.From)
@@ -2120,7 +2121,7 @@ function Update-WorkItem ($message, $wiType, $workItem)
                 }
         "ma" {
                     #$workItem = get-scsmobject -class $maClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
-                    try {$activityImplementer = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {}
+                    try {$activityImplementer = get-scsmobject -id (Get-SCSMRelatedObject -SMObject $workItem -Relationship $assignedToUserRelClass @scsmMGMTParams).id @scsmMGMTParams} catch {New-SMEXCOEvent -Source "Update-WorkItem" -EventID 8 -Severity "Warning" -LogMessage "The Activity Implementer of $($workItem.Name) could not be found."}
                     if ($activityImplementer){$activityImplementerSMTP = Get-SCSMRelatedObject -SMObject $activityImplementer @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress}
                     switch ($message.From)
                     {
@@ -2445,6 +2446,7 @@ function Add-FileToSCSMObject ($attachment, $smobject)
                 catch
                 {
                     #file doesn't have a parseable extension or the call to Azure Vision/Speech failed
+                    New-SMEXCOEvent -Source "Add-FileToSCSMObject" -EventID 2 -Severity "Warning" -LogMessage $_.Exception
                 }
                 $NewFile.Item($fileAttachmentClass, "Size").Value = $MemoryStream.Length
                 $NewFile.Item($fileAttachmentClass, "AddedDate").Value = [DateTime]::Now.ToUniversalTime()
@@ -3065,9 +3067,9 @@ function Send-CiresonSuggestionEmail
     if (!$KnowledgeBaseURLs -and $RequestOfferingURLs) {$emailTemplate = get-content ("$htmlSuggestionTemplatePath" + "suggestRO.html") -raw}
 
     #replace tokens in the template with URLs
-    $emailTemplate = try {$emailTemplate.Replace("{0}", $KnowledgeBaseURLs)} catch {}
-    $emailTemplate = try {$emailTemplate.Replace("{1}", $RequestOfferingURLs)} catch {}
-    $emailTemplate = try {$emailTemplate.Replace("{2}", $resolveMailTo)} catch {}
+    $emailTemplate = try {$emailTemplate.Replace("{0}", $KnowledgeBaseURLs)} catch {New-SMEXCOEvent -Source "Send-CiresonSuggestionEmail" -EventID 1 -Severity "Error" -LogMessage "The suggestion email's Knowledge Articles could not be populated. $($_.Exception).)"}
+    $emailTemplate = try {$emailTemplate.Replace("{1}", $RequestOfferingURLs)} catch {New-SMEXCOEvent -Source "Send-CiresonSuggestionEmail" -EventID 2 -Severity "Error" -LogMessage "The suggestion email's Request Offerings could not be populated. $($_.Exception).)"}
+    $emailTemplate = try {$emailTemplate.Replace("{2}", $resolveMailTo)} catch {New-SMEXCOEvent -Source "Send-CiresonSuggestionEmail" -EventID 3 -Severity "Error" -LogMessage "The suggestion email's Resolve/Completed text could not be populated. $($_.Exception).)"}
 
     #send the email to the affected user
     Send-EmailFromWorkflowAccount -subject "[$($WorkItem.id)] - $($WorkItem.title)" -body $emailTemplate -bodyType "HTML" -toRecipients $AffectedUserEmailAddress
