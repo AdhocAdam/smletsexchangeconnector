@@ -300,7 +300,7 @@ $ExchangeEndpoint = "$($smexcoSettingsMP.ExchangeAutodiscoverURL)"
 $UseExchangeOnline = $smexcoSettingsMP.UseExchangeOnline
 $AzureClientID = "$($smexcoSettingsMP.AzureClientID)"
 $AzureTenantID = "$($smexcoSettingsMP.AzureTenantID)"
-$AzureCloudInstance = "$($smexcoSettingsMP.AzureCloudInstance)"
+$AzureCloudInstance = $($smexcoSettingsMP.AzureCloudInstance)
 #determine which Azure Cloud (if any) is being used to set required URLs
 switch ($AzureCloudInstance.Name)
 {
