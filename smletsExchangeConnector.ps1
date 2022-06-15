@@ -20,6 +20,9 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 4.1.1 = #382 - Bug, When Azure Cloud Instance is defined in the Settings, the PowerShell returned a string instead of the full enum
+                #378 - Bug and Enhancement, Several catch blocks did not contain logging events. Assigned User of a Closed Incident cannot correctly reactivate it which would result in a New and Related Work Item
+                #379 - Enhancement, Get-CiresonPortalAPIToken function no longer makes use of ConvertTo-SecureString
 Version: 4.1.0 = #355 - Enhancement, Support for defining Azure Cloud Instance (Exchange Online and/or Azure AI services)
                 #366 - Enhancement, DLL form resizies as Settings UI resizes + link to wiki on configuring Custom Events
                 #361 - Enhancement, Multi-mailbox, Custom Rules, History, and About forms stretch as Setting UI resizes
