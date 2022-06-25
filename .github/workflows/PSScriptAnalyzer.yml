@@ -1,0 +1,67 @@
+name: PSScriptAnalyzer
+on: 
+  schedule:
+     - cron: '17 10 * * 1'
+    
+jobs:
+    lint-with-PSScriptAnalyzer:
+        name: Run PSScriptAnalyzer
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v3
+          
+          - name: Install PSScriptAnalyzer module
+            id: InstallPSScriptAnalyzer
+            shell: pwsh
+            run: |
+              Set-PSRepository PSGallery -InstallationPolicy Trusted
+              Install-Module PSScriptAnalyzer -ErrorAction Stop
+          
+          - name: Lint with PSScriptAnalyzer. Expand for results.
+            id: RunPSScriptAnalyzerAndCommentPR
+            shell: pwsh
+            run: |
+              #### Run PSScriptAnalyzer per VSCode default settings ####
+              $ExcludedRules = @('PSAvoidUsingInvokeExpression')
+              Invoke-ScriptAnalyzer -Path smletsExchangeConnector.ps1 -ExcludeRule $ExcludedRules -Outvariable issues
+              $errors   = $issues.Where({($_.Severity -eq 'Error') -or ($_.Severity -eq 'ParseError')})
+              $warnings = $issues.Where({$_.Severity -eq 'Warning'})
+              $info     = $issues.Where({$_.Severity -eq 'Information'})
+              
+              #### make the PSScriptAnalyzer Results available for other jobs ####
+              $infoCount = $info.count
+              $warningCount = $warnings.Count
+              $errorCount = $errors.count
+              echo "INFO=$infoCount" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+              echo "WARNINGS=$warningCount" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+              echo "ERRORS=$errorCount" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+
+          - name: Create Error Badge for PSScriptAnalyzer Result
+            uses: schneegans/dynamic-badges-action@v1.4.0
+            with:
+              auth: ${{ secrets.SMEXCOSCRIPTANALYZERGIST }}
+              gistID: a85ec65858e3065359d1d6a9d122e723
+              filename: errors.json
+              label: Errors
+              message: ${{ env.ERRORS }}
+              color: red
+              
+          - name: Create Warning Badge for PSScriptAnalyzer Result
+            uses: schneegans/dynamic-badges-action@v1.4.0
+            with:
+              auth: ${{ secrets.SMEXCOSCRIPTANALYZERGIST }}
+              gistID: a85ec65858e3065359d1d6a9d122e723
+              filename: warnings.json
+              label: Warnings
+              message: ${{ env.WARNINGS }}
+              color: yellow
+              
+          - name: Create Info Badge for PSScriptAnalyzer Result
+            uses: schneegans/dynamic-badges-action@v1.4.0
+            with:
+              auth: ${{ secrets.SMEXCOSCRIPTANALYZERGIST }}
+              gistID: a85ec65858e3065359d1d6a9d122e723
+              filename: info.json
+              label: Information
+              message: ${{ env.INFO }}
+              color: white
