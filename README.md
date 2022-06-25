@@ -9,8 +9,13 @@
   <img src="https://github.com/AdhocAdam/smletsexchangeconnector/workflows/Dev%20Branch%20-%20Build/badge.svg?branch=dev" />
 </p>
 <p align="center">
+    <a href="https://github.com/PowerShell/PSScriptAnalyzer"><img src="https://img.shields.io/badge/Lint-PSScriptAnalyzer-magenta" alt="Lint: PSScriptAnalyzer"/></a>
+    <a href="https://github.com/AdhocAdam/smletsexchangeconnector/actions/workflows/PSScriptAnalyzer.yml"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/AdhocAdam/a85ec65858e3065359d1d6a9d122e723/raw/errors.json" alt="Lint: PSScriptAnalyzerErrors" /></a>
+    <a href="https://github.com/AdhocAdam/smletsexchangeconnector/actions/workflows/PSScriptAnalyzer.yml"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/AdhocAdam/a85ec65858e3065359d1d6a9d122e723/raw/warnings.json" alt="Lint: PSScriptAnalyzerWarnings" /></a>
+    <a href="https://github.com/AdhocAdam/smletsexchangeconnector/actions/workflows/PSScriptAnalyzer.yml"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/AdhocAdam/a85ec65858e3065359d1d6a9d122e723/raw/info.json" alt="Lint: PSScriptAnalyzerInfo" /></a>
+</p>
+<p align="center">
   <a href="https://securitylab.github.com/tools/codeql"><img src="https://github.com/AdhocAdam/smletsexchangeconnector/actions/workflows/codeql-analysis.yml/badge.svg" /></a>
-  <a href="https://github.com/PowerShell/PSScriptAnalyzer"><img src="https://img.shields.io/badge/Lint-PSScriptAnalyzer-white" alt="Lint: PSScriptAnalyzer"/></a>
 </p>
 
 This PowerShell script leverages the [SMLets module](https://www.powershellgallery.com/packages/SMLets/) to build an open and flexible Exchange Connector for controlling Microsoft System Center Service Manager 2016+
