@@ -1,22 +1,22 @@
 name: PSScriptAnalyzer
-on: 
+on:
   schedule:
      - cron: '17 10 * * 1'
-    
+
 jobs:
     lint-with-PSScriptAnalyzer:
         name: Run PSScriptAnalyzer
         runs-on: ubuntu-latest
         steps:
           - uses: actions/checkout@v3
-          
+
           - name: Install PSScriptAnalyzer module
             id: InstallPSScriptAnalyzer
             shell: pwsh
             run: |
               Set-PSRepository PSGallery -InstallationPolicy Trusted
               Install-Module PSScriptAnalyzer -ErrorAction Stop
-          
+
           - name: Lint with PSScriptAnalyzer. Expand for results.
             id: RunPSScriptAnalyzerAndCommentPR
             shell: pwsh
@@ -27,7 +27,7 @@ jobs:
               $errors   = $issues.Where({($_.Severity -eq 'Error') -or ($_.Severity -eq 'ParseError')})
               $warnings = $issues.Where({$_.Severity -eq 'Warning'})
               $info     = $issues.Where({$_.Severity -eq 'Information'})
-              
+
               #### make the PSScriptAnalyzer Results available for other jobs ####
               $infoCount = $info.count
               $warningCount = $warnings.Count
@@ -45,7 +45,7 @@ jobs:
               label: Errors
               message: ${{ env.ERRORS }}
               color: red
-              
+
           - name: Create Warning Badge for PSScriptAnalyzer Result
             uses: schneegans/dynamic-badges-action@v1.4.0
             with:
@@ -55,7 +55,7 @@ jobs:
               label: Warnings
               message: ${{ env.WARNINGS }}
               color: yellow
-              
+
           - name: Create Info Badge for PSScriptAnalyzer Result
             uses: schneegans/dynamic-badges-action@v1.4.0
             with:
