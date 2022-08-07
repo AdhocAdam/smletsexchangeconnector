@@ -29,7 +29,6 @@ namespace SMLetsExchangeConnectorSettingsUI
     /// <summary>
     /// Interaction logic for HistoryForm.xaml
     /// </summary>
-
     public partial class HistoryForm : WizardRegularPageBase
     {
         private HistoryForm adminSettingWizardData = null;
@@ -100,9 +99,11 @@ namespace SMLetsExchangeConnectorSettingsUI
             public string DateAndUser { get; set; }
         }
 
+        /*
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
         {
 
         }
+        */
     }
 }
