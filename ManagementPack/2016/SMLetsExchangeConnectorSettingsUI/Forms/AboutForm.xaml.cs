@@ -43,6 +43,5 @@ namespace SMLetsExchangeConnectorSettingsUI
         {
             System.Diagnostics.Process.Start(e.Uri.AbsoluteUri);
         }
-
     }
 }
