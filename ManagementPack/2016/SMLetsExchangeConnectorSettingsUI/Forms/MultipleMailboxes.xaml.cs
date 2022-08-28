@@ -29,6 +29,7 @@ namespace SMLetsExchangeConnectorSettingsUI
     /// <summary>
     /// Interaction logic for TemplateForm.xaml
     /// </summary>
+
     public partial class MultipleMailboxes : WizardRegularPageBase
     {
         //1. Create a blank Instance of AdminSettingsWizardData called "settings"
@@ -75,12 +76,10 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { }
         }
 
-        /*
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
         {
             
         }
-        */
 
         //take the URL defined in the WPF and open a browser to it
         private void Hyperlink_RequestNavigate(object sender,System.Windows.Navigation.RequestNavigateEventArgs e)

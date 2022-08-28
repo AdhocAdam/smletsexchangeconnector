@@ -24,12 +24,10 @@ namespace SMLetsExchangeConnectorSettingsUI
 {
     internal class AdminTaskHandler : ConsoleCommand
     {
-        /*
         public AdminTaskHandler()
         {
 
         }
-        */
 
         public override void ExecuteCommand(IList<NavigationModelNodeBase> nodes, NavigationModelNodeTask task, ICollection<string> parameters)
         {
@@ -97,5 +95,6 @@ namespace SMLetsExchangeConnectorSettingsUI
                 RequestViewRefresh();
             }
         }
+
     }
 }

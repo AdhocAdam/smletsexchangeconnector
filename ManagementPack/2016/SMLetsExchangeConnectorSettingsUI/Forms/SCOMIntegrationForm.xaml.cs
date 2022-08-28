@@ -20,6 +20,7 @@ namespace SMLetsExchangeConnectorSettingsUI
     /// <summary>
     /// Interaction logic for SCOMIntegrationForm.xaml
     /// </summary>
+
     public partial class SCOMIntegrationForm : WizardRegularPageBase
     {
         private SCOMIntegrationForm adminSettingWizardData = null;
@@ -31,11 +32,9 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.adminSettingWizardData = this.DataContext as SCOMIntegrationForm;
         }
 
-        /*
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
         {
 
         }
-        */
     }
 }

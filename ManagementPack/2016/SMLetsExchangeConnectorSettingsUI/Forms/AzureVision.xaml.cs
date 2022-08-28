@@ -20,6 +20,7 @@ namespace SMLetsExchangeConnectorSettingsUI
     /// <summary>
     /// Interaction logic for AzureTranslate.xaml
     /// </summary>
+
     public partial class AzureVision : WizardRegularPageBase
     {
         AdminSettingWizardData settings;
@@ -33,11 +34,9 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.adminSettingWizardData = this.DataContext as AzureVision;
         }
 
-        /*
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
         {
 
         }
-        */
     }
 }

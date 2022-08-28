@@ -20,6 +20,7 @@ namespace SMLetsExchangeConnectorSettingsUI
     /// <summary>
     /// Interaction logic for SettingsUI.xaml
     /// </summary>
+
     public partial class CiresonIntegrationForm : WizardRegularPageBase
     {
         //1. Create a blank Instance of AdminSettingsWizardData called "settings"
@@ -40,11 +41,9 @@ namespace SMLetsExchangeConnectorSettingsUI
             if (settings.IsCiresonPortalMPImported == false) { chkCiresonIntegration.IsEnabled = false; }
         }
 
-        /*
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
         {
 
         }
-        */
     }
 }

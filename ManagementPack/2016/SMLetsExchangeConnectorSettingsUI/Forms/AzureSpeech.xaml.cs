@@ -20,6 +20,7 @@ namespace SMLetsExchangeConnectorSettingsUI
     /// <summary>
     /// Interaction logic for AzureSpeech.xaml
     /// </summary>
+
     public partial class AzureSpeech : WizardRegularPageBase
     {
         AdminSettingWizardData settings;
@@ -33,11 +34,9 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.adminSettingWizardData = this.DataContext as AzureSpeech;
         }
 
-        /*
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
         {
 
         }
-        */
     }
 }

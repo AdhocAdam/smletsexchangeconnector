@@ -25,6 +25,7 @@ namespace SMLetsExchangeConnectorSettingsUI
     /// <summary>
     /// Interaction logic for TemplateForm.xaml
     /// </summary>
+
     public partial class TemplateForm : WizardRegularPageBase
     {
         //1. Create a blank Instance of AdminSettingsWizardData called "settings"
@@ -45,11 +46,9 @@ namespace SMLetsExchangeConnectorSettingsUI
             if (settings.DefaultWorkItem == "(null)") { cbDefaultWorkItemType.SelectedIndex = 3; }
         }
 
-        /*
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
         {
 
         }
-        */
     }
 }

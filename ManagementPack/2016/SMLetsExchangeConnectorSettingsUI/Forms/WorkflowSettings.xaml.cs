@@ -20,6 +20,7 @@ namespace SMLetsExchangeConnectorSettingsUI
     /// <summary>
     /// Interaction logic for AzureTranslate.xaml
     /// </summary>
+
     public partial class WorkflowSettings : WizardRegularPageBase
     {
         private WorkflowSettings adminSettingWizardData = null;
@@ -31,11 +32,9 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.adminSettingWizardData = this.DataContext as WorkflowSettings;
         }
 
-        /*
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
         {
 
         }
-        */
     }
 }

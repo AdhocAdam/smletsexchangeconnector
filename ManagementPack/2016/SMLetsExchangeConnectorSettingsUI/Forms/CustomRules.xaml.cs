@@ -24,6 +24,7 @@ namespace SMLetsExchangeConnectorSettingsUI
     /// <summary>
     /// Interaction logic for CustomRules.xaml
     /// </summary>
+
     public partial class CustomRules : WizardRegularPageBase
     {
         //1. Create a blank Instance of AdminSettingsWizardData called "settings"
@@ -64,12 +65,10 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { }
         }
 
-        /*
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
         {
 
         }
-        */
 
         //create a class so additional custom rule object can be created per row and later worked with as objects
         public class AdditionalCustomRule
