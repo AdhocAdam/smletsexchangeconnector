@@ -20,7 +20,6 @@ namespace SMLetsExchangeConnectorSettingsUI
     /// <summary>
     /// Interaction logic for ProcessingLogicForm.xaml
     /// </summary>
-
     public partial class ProcessingLogicForm : WizardRegularPageBase
     {
         //1. Create a blank Instance of AdminSettingsWizardData called "settings"
@@ -47,10 +46,12 @@ namespace SMLetsExchangeConnectorSettingsUI
             if (settings.ExternalSRCommentPrivate == "(null)") { CBExternalSRCommentTypePrivate.SelectedIndex = 0; }
         }
 
+        /*
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
         {
 
         }
+        */
 
         //take the URL defined in the WPF and open a browser to it
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
