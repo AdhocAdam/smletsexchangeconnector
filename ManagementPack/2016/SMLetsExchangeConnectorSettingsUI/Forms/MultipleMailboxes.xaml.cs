@@ -18,8 +18,6 @@ using Microsoft.EnterpriseManagement.Configuration;
 using Microsoft.Win32;
 using Microsoft.EnterpriseManagement;
 using Microsoft.EnterpriseManagement.Common;
-
-
 using Microsoft.EnterpriseManagement.Packaging;
 using Microsoft.EnterpriseManagement.ConnectorFramework;
 using System.ComponentModel;
