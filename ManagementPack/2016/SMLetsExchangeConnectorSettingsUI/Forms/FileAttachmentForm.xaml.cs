@@ -20,6 +20,7 @@ namespace SMLetsExchangeConnectorSettingsUI
     /// <summary>
     /// Interaction logic for FileAttachmentForm.xaml
     /// </summary>
+
     public partial class FileAttachmentForm : WizardRegularPageBase
     {
         private FileAttachmentForm adminSettingWizardData = null;
@@ -31,11 +32,9 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.adminSettingWizardData = this.DataContext as FileAttachmentForm;
         }
 
-        /*
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
         {
 
         }
-        */
     }
 }

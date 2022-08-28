@@ -1900,6 +1900,7 @@ namespace SMLetsExchangeConnectorSettingsUI
             }
         }
         
+
         public ManagementPackProperty ACSIncidentSentimentDecExtension
         {
             get
@@ -2226,7 +2227,7 @@ namespace SMLetsExchangeConnectorSettingsUI
         {
             get
             {
-                return incidentAMLClassificationPredictionExtensionEnum;
+                return incidentAMLClassificationPredictionExtensionEnum; ;
             }
             set
             {
