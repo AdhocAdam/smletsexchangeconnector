@@ -3199,7 +3199,6 @@ namespace SMLetsExchangeConnectorSettingsUI
                     catch { }
                     try
                     {
-
                         if (irproperty.Id == (Guid)emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSentimentScoreIncidentClassExtensionGUID"].Value)
                         {
                             this.ACSIncidentSentimentDecExtension = irproperty;
@@ -3285,7 +3284,6 @@ namespace SMLetsExchangeConnectorSettingsUI
                     catch { }
                     try
                     {
-
                         if (srproperty.Id == (Guid)emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSentimentScoreServiceRequestClassExtensionGUID"].Value)
                         {
                             this.ACSServiceRequestSentimentDecExtension = srproperty;
@@ -3599,7 +3597,6 @@ namespace SMLetsExchangeConnectorSettingsUI
 
                 }
             }
-
             //Use Custom Rules
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseCustomRules"].Value = this.UseCustomRules;
 
@@ -3687,7 +3684,6 @@ namespace SMLetsExchangeConnectorSettingsUI
 
                 }
             }
-
             //Keywords
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordFrom"].Value = this.KeywordFrom;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordAcknowledge"].Value = this.KeywordAcknowledge;
