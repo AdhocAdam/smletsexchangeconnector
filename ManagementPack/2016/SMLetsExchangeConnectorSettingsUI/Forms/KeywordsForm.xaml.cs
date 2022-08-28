@@ -20,7 +20,6 @@ namespace SMLetsExchangeConnectorSettingsUI
     /// <summary>
     /// Interaction logic for KeywordsForm.xaml
     /// </summary>
-
     public partial class KeywordsForm : WizardRegularPageBase
     {
         private KeywordsForm adminSettingWizardData = null;
@@ -32,9 +31,11 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.adminSettingWizardData = this.DataContext as KeywordsForm;
         }
 
+        /*
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
         {
 
         }
+        */
     }
 }

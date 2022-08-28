@@ -23,7 +23,6 @@ namespace SMLetsExchangeConnectorSettingsUI
     /// <summary>
     /// Interaction logic for TemplateForm.xaml
     /// </summary>
-
     public partial class DLLForm : WizardRegularPageBase
     {
         private DLLForm adminSettingWizardData = null;
@@ -35,10 +34,12 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.adminSettingWizardData = this.DataContext as DLLForm;
         }
 
+        /*
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
         {
 
         }
+        */
 
         //browse buttons to set the file paths
         //since a mix of WPF dialogs and WinForm dialogs are used, they are explicity referenced
