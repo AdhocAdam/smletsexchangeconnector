@@ -198,14 +198,14 @@ function New-SMEXCOEvent
         [string] $LogMessage,
         [parameter(Mandatory=$true, Position=2)]
         [ValidateSet("General", "CustomEvents", "Cryptography", "Test-EmailPattern", "New-WorkItem","Update-WorkItem","Add-EmailToSCSMObject", "Add-FileToSCSMObject", "Confirm-WorkItem",
-            "Set-WorkItemScheduledTime", "Get-SCSMUserByEmailAddress", "Get-TierMembership", "Get-TierMembers", "Get-AssignedToWorkItemVolume",
+            "Set-WorkItemScheduledTime", "Get-SCSMUserByEmailAddress", "Get-TierMembership", "Get-TierMember", "Get-AssignedToWorkItemVolume",
             "Set-AssignedToPerSupportGroup", "Get-SCSMWorkItemParent", "New-CMDBUser", "Add-ActionLogEntry", "Get-CiresonPortalAPIToken",
-            "Get-CiresonPortalUser", "Get-CiresonPortalGroup", "Get-CiresonPortalAnnouncements", "Search-AvailableCiresonPortalOfferings",
+            "Get-CiresonPortalUser", "Get-CiresonPortalGroup", "Get-CiresonPortalAnnouncement", "Search-AvailableCiresonPortalOffering",
             "Search-CiresonKnowledgeBase", "Get-CiresonSuggestionURL", "Send-CiresonSuggestionEmail", "Add-CiresonWatchListUser",
             "Remove-CiresonWatchListUser", "Read-MIMEMessage", "Get-TemplatesByMailbox", "Get-SCSMAuthorizedAnnouncer", "Set-CoreSCSMAnnouncement",
             "Set-CiresonPortalAnnouncement", "Get-AzureEmailLanguage", "Get-SCOMAuthorizedRequester", "Get-SCOMDistributedAppHealth",
             "Send-EmailFromWorkflowAccount", "Test-KeywordsFoundInMessage", "Get-AMLWorkItemProbability", "Get-AzureEmailTranslation",
-            "Get-AzureEmailKeywords", "Get-AzureEmailSentiment", "Get-AzureEmailImageAnalysis", "Get-AzureSpeechEmailAudioText",
+            "Get-AzureEmailKeyword", "Get-AzureEmailSentiment", "Get-AzureEmailImageAnalysis", "Get-AzureSpeechEmailAudioText",
             "Get-AzureEmailImageText", "Get-ACSWorkItemPriority")]
         [string] $Source,
         [parameter(Mandatory=$true, Position=3)]
@@ -1049,7 +1049,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     else {
                         $IRTemplate = $defaultIRTemplate
                     }
-                    $newWorkItem = New-SCSMObject -Class $irClass -PropertyHashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Incident")["Prefix"] + "{0}"; "Status" = $irActiveStatus; "Title" = $title; "Description" = $description; "Classification" = $null; "Impact" = $irLowImpact; "Urgency" = $irLowUrgency; "Source" = "IncidentSourceEnum.Email$"} -PassThru @scsmMGMTParams
+                    $newWorkItem = New-SCSMObject -Class $irClass -PropertyHashtable @{"ID" = (Get-SCSMWorkItemSetting -WorkItemClass "System.Workitem.Incident")["Prefix"] + "{0}"; "Status" = $irActiveStatus; "Title" = $title; "Description" = $description; "Classification" = $null; "Impact" = $irLowImpact; "Urgency" = $irLowUrgency; "Source" = "IncidentSourceEnum.Email$"} -PassThru @scsmMGMTParams
                     $irProjection = Get-SCSMObjectProjection -ProjectionName $irTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     if($message.Attachments){$message.Attachments | Foreach-Object {Add-FileToSCSMObject -attachment $_ -smobject $newWorkItem}}
                     if ($attachEmailToWorkItem -eq $true){Add-EmailToSCSMObject -message $message -smobject $newWorkItem}
@@ -1206,7 +1206,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     else {
                         $SRTemplate = $defaultSRTemplate
                     }
-                    $newWorkItem = new-scsmobject -class $srClass -propertyhashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.ServiceRequest")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ServiceRequestStatusEnum.New$"} -PassThru @scsmMGMTParams
+                    $newWorkItem = new-scsmobject -class $srClass -propertyhashtable @{"ID" = (Get-SCSMWorkItemSetting -WorkItemClass "System.Workitem.ServiceRequest")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ServiceRequestStatusEnum.New$"} -PassThru @scsmMGMTParams
                     $srProjection = Get-SCSMObjectProjection -ProjectionName $srTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     if($message.Attachments){$message.Attachments | Foreach-Object {Add-FileToSCSMObject -attachment $_ -smobject $newWorkItem}}
                     if ($attachEmailToWorkItem -eq $true){Add-EmailToSCSMObject -message $message -smobject $newWorkItem}
@@ -1363,7 +1363,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     else {
                         $PRTemplate = $defaultPRTemplate
                     }
-                    $newWorkItem = New-SCSMObject -class $prClass -propertyhashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Problem")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ProblemStatusEnum.Active$"; "Impact" = $irLowImpact; "Urgency" = $irLowUrgency} -PassThru @scsmMGMTParams
+                    $newWorkItem = New-SCSMObject -class $prClass -propertyhashtable @{"ID" = (Get-SCSMWorkItemSetting -WorkItemClass "System.Workitem.Problem")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ProblemStatusEnum.Active$"; "Impact" = $irLowImpact; "Urgency" = $irLowUrgency} -PassThru @scsmMGMTParams
                     $prProjection = Get-SCSMObjectProjection -ProjectionName $prTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     if($message.Attachments){$message.Attachments | Foreach-Object {Add-FileToSCSMObject -attachment $_ -smobject $newWorkItem}}
                     if ($attachEmailToWorkItem -eq $true){Add-EmailToSCSMObject -message $message -smobject $newWorkItem}
@@ -1393,7 +1393,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     else {
                         $CRTemplate = $defaultCRTemplate
                     }
-                    $newWorkItem = new-scsmobject -class $crClass -propertyhashtable @{"ID" = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.ChangeRequest")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ChangeStatusEnum.New$"} -PassThru @scsmMGMTParams
+                    $newWorkItem = new-scsmobject -class $crClass -propertyhashtable @{"ID" = (Get-SCSMWorkItemSetting -WorkItemClass "System.Workitem.ChangeRequest")["Prefix"] + "{0}"; "Title" = $title; "Description" = $description; "Status" = "ChangeStatusEnum.New$"} -PassThru @scsmMGMTParams
                     $crProjection = Get-SCSMObjectProjection -ProjectionName $crTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     #Set-SCSMObjectTemplate -Projection $crProjection -Template $defaultCRTemplate @scsmMGMTParams
                     Set-SCSMTemplate -Projection $crProjection -Template $CRTemplate
@@ -2189,7 +2189,7 @@ function Add-EmailToSCSMObject ($message, $smobject)
 
         # Get attachment limits and attachment count in ticket, if configured to
         if ($checkAttachmentSettings -eq $true) {
-            $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $smobject.ClassName
+            $workItemSettings = Get-SCSMWorkItemSetting -WorkItemClass $smobject.ClassName
 
             # Get count of attachments already in ticket
             try {$existingAttachmentsCount = (Get-ScsmRelatedObject @scsmMGMTParams -SMObject $smobject -Relationship $wiHasFileAttachRelClass).Count} catch {$existingAttachmentsCount = 0}
@@ -2259,7 +2259,7 @@ function Add-FileToSCSMObject ($attachment, $smobject)
 
         # Get attachment limits and attachment count in ticket, if configured to
         if ($checkAttachmentSettings -eq $true) {
-            $workItemSettings = Get-SCSMWorkItemSettings -WorkItemClass $smobject.ClassName
+            $workItemSettings = Get-SCSMWorkItemSetting -WorkItemClass $smobject.ClassName
             $attachMaxSize = $workItemSettings["MaxAttachmentSize"]
             $attachMaxCount = $workItemSettings["MaxAttachments"]
 
@@ -2551,14 +2551,14 @@ function Get-TierMembership ($UserSamAccountName, $TierId) {
     return $isMember
 }
 
-function Get-TierMembers ($TierEnumId)
+function Get-TierMember ($TierEnumId)
 {
     $supportTierMembers = $null
 
     try
     {
         #logging
-        if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 0 -Severity "Information" -LogMessage "Get AD Group Associated with enum: $TierEnumId"}
+        if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMember" -EventID 0 -Severity "Information" -LogMessage "Get AD Group Associated with enum: $TierEnumId"}
 
         #define classes
         $mapCls = Get-ScsmClass @scsmMGMTParams -Name "Cireson.SupportGroupMapping$"
@@ -2566,12 +2566,12 @@ function Get-TierMembers ($TierEnumId)
         #pull the group based on support tier mapping
         $mapping = $mapCls | Get-ScsmObject @scsmMGMTParams | Where-Object { $_.SupportGroupId.Guid -eq $TierEnumId }
         $groupId = $mapping.AdGroupId
-        if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 1 -Severity "Information" -LogMessage "Get SCSM object/Group for: $groupId"}
+        if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMember" -EventID 1 -Severity "Information" -LogMessage "Get SCSM object/Group for: $groupId"}
 
         #get the AD group object name
         $grpInScsm = (Get-ScsmObject @scsmMGMTParams -Id $groupId)
         $grpSamAccountName = $grpInScsm.UserName
-        if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 2 -Severity "Information" -LogMessage "AD Group Name: $grpSamAccountName"}
+        if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-TierMember" -EventID 2 -Severity "Information" -LogMessage "AD Group Name: $grpSamAccountName"}
 
         #determine which domain to query, in case of multiple domains and trusts
         $AdRoot = (Get-AdDomain @adParams -Identity $grpInScsm.Domain).DNSRoot
@@ -2582,13 +2582,13 @@ function Get-TierMembers ($TierEnumId)
             [array]$supportTierMembers = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive | foreach-object {Get-SCSMObject -Class $domainUserClass -filter "Username -eq '$($_.samaccountname)'"}
             if ($loggingLevel -ge 4) {
                 $supportTierMembersLogString = $supportTierMembers.Name -join ","
-                New-SMEXCOEvent -Source "Get-TierMembers" -EventID 3 -Severity "Information" -LogMessage "AD Group Members: $supportTierMembersLogString"
+                New-SMEXCOEvent -Source "Get-TierMember" -EventID 3 -Severity "Information" -LogMessage "AD Group Members: $supportTierMembersLogString"
             }
         }
     }
     catch
     {
-        if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Get-TierMembers" -EventID 4 -Severity "Warning" -LogMessage $_.Exception}
+        if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Get-TierMember" -EventID 4 -Severity "Warning" -LogMessage $_.Exception}
     }
     return $supportTierMembers
 }
@@ -2616,7 +2616,7 @@ function Set-AssignedToPerSupportGroup ($SupportGroupID, $WorkItem)
     if ($loggingLevel -ge 1) {New-SMEXCOEvent -Source "Set-AssignedToPerSupportGroup" -EventID 0 -Severity "Information" -LogMessage "Using Dynamic Analyst Assignment: $DynamicWorkItemAssignment"}
 
     #get the template's support group members
-    $supportGroupMembers = Get-TierMembers -TierEnumID $SupportGroupID
+    $supportGroupMembers = Get-TierMember -TierEnumID $SupportGroupID
 
     #based on how Dynamic Work Item assignment was configured, set the Assigned To User
     switch ($DynamicWorkItemAssignment)
@@ -2872,7 +2872,7 @@ function Get-CiresonPortalGroup ($groupEmail)
 }
 
 #retrieve all the announcements on the portal
-function Get-CiresonPortalAnnouncements ($languageCode)
+function Get-CiresonPortalAnnouncement ($languageCode)
 {
     $allAnnouncementsURL = "api/V3/Announcement/GetAllAnnouncements?languageCode=$($languageCode)"
     if($ciresonPortalWindowsAuth)
@@ -2887,7 +2887,7 @@ function Get-CiresonPortalAnnouncements ($languageCode)
 }
 
 #search for available Request Offerings based on content from a New Work Item and notify the Affected user via the Cireson Portal API
-function Search-AvailableCiresonPortalOfferings ($searchQuery, $ciresonPortalUser)
+function Search-AvailableCiresonPortalOffering ($searchQuery, $ciresonPortalUser)
 {
     $serviceCatalogAPIurl = "api/V3/ServiceCatalog/GetServiceCatalog?userId=$($ciresonPortalUser.id)&isScoped=$($ciresonPortalUser.Security.IsServiceCatalogScoped)"
     if ($ciresonPortalWindowsAuth -eq $true)
@@ -3006,7 +3006,7 @@ function Get-CiresonSuggestionURL
     #if at least 1 ACS feature is being used, retrieve the keywords from ACS
     if ($AzureKA -or $AzureRO)
     {
-        $acsKeywordsToSet = (Get-AzureEmailKeywords -messageToEvaluate "$searchQuery")
+        $acsKeywordsToSet = (Get-AzureEmailKeyword -messageToEvaluate "$searchQuery")
     }
 
     #update the hashtable to set the ACS Keywords on the relevant feature(s)
@@ -3030,7 +3030,7 @@ function Get-CiresonSuggestionURL
     switch ($isSuggestionFeatureUsed)
     {
         "SuggestKA" {$kbURLs = Search-CiresonKnowledgeBase -searchQuery $($searchQueriesHash["AzureKA"]); if ($null -eq $kbURLs) {$kbURLs = ""}}
-        "SuggestRO" {$requestURLs = Search-AvailableCiresonPortalOfferings -searchQuery $($searchQueriesHash["AzureRO"]) -ciresonPortalUser $portalUser; if ($null -eq $requestURLs) {$requestURLs = ""}}
+        "SuggestRO" {$requestURLs = Search-AvailableCiresonPortalOffering -searchQuery $($searchQueriesHash["AzureRO"]) -ciresonPortalUser $portalUser; if ($null -eq $requestURLs) {$requestURLs = ""}}
     }
 
     return $kbURLs, $requestURLs
@@ -3427,7 +3427,7 @@ function Get-TemplatesByMailbox ($message)
     }
 }
 
-function Get-SCSMWorkItemSettings ($WorkItemClass) {
+function Get-SCSMWorkItemSetting ($WorkItemClass) {
     switch ($WorkItemClass) {
         "System.WorkItem.Incident" {
             $settingCls = Get-ScsmClass @scsmMGMTParams -Name "System.WorkItem.Incident.GeneralSetting$"
@@ -3697,7 +3697,7 @@ function Set-CiresonPortalAnnouncement ($message, $workItem)
     $ciresonPortalAnnouncer = Get-CiresonPortalUser -username $announcerSCSMObject.username -domain $announcerSCSMObject.domain
 
     #Get any announcements that already exist for the Work Item
-    $allPortalAnnouncements = Get-CiresonPortalAnnouncements -languageCode $ciresonPortalAnnouncer.LanguageCode
+    $allPortalAnnouncements = Get-CiresonPortalAnnouncement -languageCode $ciresonPortalAnnouncer.LanguageCode
     $allPortalAnnouncements = $allPortalAnnouncements | Where-Object{$_.title -match "\[" + $workitem.name + "\]"}
 
     #determine authentication to use (windows/forms)
@@ -3930,7 +3930,7 @@ function Get-ACSWorkItemPriority ($score, $wiClass)
     return $priorityCalc
 }
 
-function Get-AzureEmailKeywords ($messageToEvaluate)
+function Get-AzureEmailKeyword ($messageToEvaluate)
 {
     #define cognitive services URLs
     $keyPhraseURI = "https://$azureRegion.api.cognitive.microsoft.$azureTLD/text/analytics/v2.0/keyPhrases"
@@ -3950,7 +3950,7 @@ function Get-AzureEmailKeywords ($messageToEvaluate)
         #API contacted, log an info event
         if ($loggingLevel -ge 4)
         {
-            New-SMEXCOEvent -Source "Get-AzureEmailKeywords" -EventID 0 -Severity "Information" -LogMessage "Keywords identified from Azure: $($keywordResult.documents.keyPhrases)"
+            New-SMEXCOEvent -Source "Get-AzureEmailKeyword" -EventID 0 -Severity "Information" -LogMessage "Keywords identified from Azure: $($keywordResult.documents.keyPhrases)"
         }
     }
     catch
@@ -3958,7 +3958,7 @@ function Get-AzureEmailKeywords ($messageToEvaluate)
         #API could not be contacted, log an error
         if ($loggingLevel -ge 3)
         {
-            New-SMEXCOEvent -Source "Get-AzureEmailKeywords" -EventID 1 -Severity "Error" -LogMessage $_.Exception
+            New-SMEXCOEvent -Source "Get-AzureEmailKeyword" -EventID 1 -Severity "Error" -LogMessage $_.Exception
         }
     }
 
@@ -4156,7 +4156,7 @@ function Update-SCSMPropertyCollection
     if (($Object.Path -match $pattern) -and (($Matches[0].StartsWith("System.WorkItem.Activity")) -or ($Matches[0].StartsWith("Microsoft.SystemCenter.Orchestrator")) -or ($Matches[0].StartsWith("Cireson.Powershell.Activity"))))
     {
         #Set prefix from activity class
-        $prefix = (Get-SCSMWorkItemSettings -WorkItemClass $Matches[0])["Prefix"]
+        $prefix = (Get-SCSMWorkItemSetting -WorkItemClass $Matches[0])["Prefix"]
 
         #Create template property object
         $propClass = [Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateProperty]
@@ -4334,15 +4334,15 @@ if (($processDigitallySignedMessages -eq $true) -or ($processEncryptedMessages -
 }
 
 #load the Work Item regex patterns before the email processing loop
-$irRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Incident")["PrefixRegex"]
-$srRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.ServiceRequest")["PrefixRegex"]
-$prRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Problem")["PrefixRegex"]
-$crRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.ChangeRequest")["PrefixRegex"]
-$maRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Activity.ManualActivity")["PrefixRegex"]
-$paRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Activity.ParallelActivity")["PrefixRegex"]
-$saRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Activity.SequentialActivity")["PrefixRegex"]
-$daRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Activity.DependentActivity")["PrefixRegex"]
-$raRegex = (get-scsmworkitemsettings -WorkItemClass "System.Workitem.Activity.ReviewActivity")["PrefixRegex"]
+$irRegex = (Get-SCSMWorkItemSetting -WorkItemClass "System.Workitem.Incident")["PrefixRegex"]
+$srRegex = (Get-SCSMWorkItemSetting -WorkItemClass "System.Workitem.ServiceRequest")["PrefixRegex"]
+$prRegex = (Get-SCSMWorkItemSetting -WorkItemClass "System.Workitem.Problem")["PrefixRegex"]
+$crRegex = (Get-SCSMWorkItemSetting -WorkItemClass "System.Workitem.ChangeRequest")["PrefixRegex"]
+$maRegex = (Get-SCSMWorkItemSetting -WorkItemClass "System.Workitem.Activity.ManualActivity")["PrefixRegex"]
+$paRegex = (Get-SCSMWorkItemSetting -WorkItemClass "System.Workitem.Activity.ParallelActivity")["PrefixRegex"]
+$saRegex = (Get-SCSMWorkItemSetting -WorkItemClass "System.Workitem.Activity.SequentialActivity")["PrefixRegex"]
+$daRegex = (Get-SCSMWorkItemSetting -WorkItemClass "System.Workitem.Activity.DependentActivity")["PrefixRegex"]
+$raRegex = (Get-SCSMWorkItemSetting -WorkItemClass "System.Workitem.Activity.ReviewActivity")["PrefixRegex"]
 
 #custom rules
 $UseCustomRules = $smexcoSettingsMP.UseCustomRules
