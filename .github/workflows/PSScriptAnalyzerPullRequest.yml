@@ -1,0 +1,69 @@
+name: PSScriptAnalyzer on Pull Request
+on: 
+  [pull_request]
+jobs:
+    lint-with-PSScriptAnalyzer:
+        name: Install and Run PSScriptAnalyzer
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v3
+          
+          - name: Install PSScriptAnalyzer module
+            id: InstallPSScriptAnalyzer
+            shell: pwsh
+            run: |
+              Set-PSRepository PSGallery -InstallationPolicy Trusted
+              Install-Module PSScriptAnalyzer -ErrorAction Stop
+          
+          - name: Lint with PSScriptAnalyzer. Post Results to Pull Request
+            id: RunPSScriptAnalyzerAndCommentPR
+            shell: pwsh
+            run: |
+              #### Run PSScriptAnalyzer per VSCode default settings ####
+              $ExcludedRules = @('PSAvoidUsingInvokeExpression')
+              Invoke-ScriptAnalyzer -Path smletsExchangeConnector.ps1 -ExcludeRule $ExcludedRules -Outvariable issues
+              $errors   = $issues.Where({($_.Severity -eq 'Error') -or ($_.Severity -eq 'ParseError')})
+              $warnings = $issues.Where({$_.Severity -eq 'Warning'})
+              $info     = $issues.Where({$_.Severity -eq 'Information'})
+              
+              #### Retrieve the Pull Request that triggered this Action ####
+              $ghEvent     = Get-Content -Path $env:GITHUB_EVENT_PATH | ConvertFrom-Json
+              $pullRequestURL = $ghEvent.pull_request.comments_url
+
+              #### Prepare the message to comment ####
+              $nl = [Environment]::NewLine
+              $comment  = '**PSScriptAnalyzer results:**'
+              $comment += $nl + $nl
+              $comment += '{0}<details><summary>EmojiError [{1}] Errors, EmojiWarn [{2}] Warnings, EmojiInfo [{3}] Information</summary><p>{4}{5}```' -f $nl, $errors.Count, $warnings.Count, $info.Count, $nl, $nl
+              
+              if ($errors.Count -gt 0) {
+                  $comment += $nl + ($errors | Format-List -Property RuleName, Severity, ScriptName, Line, Message | Out-String -Width 80).Trim()
+                }
+              if ($warnings.Count -gt 0) {
+                  $comment += $nl+ $nl + ($warnings | Format-List -Property RuleName, Severity, ScriptName, Line, Message | Out-String -Width 80).Trim()
+                }
+              if ($info.Count -gt 0) {
+                  $comment += $nl + $nl + ($info | Format-List -Property RuleName, Severity, ScriptName, Line, Message | Out-String -Width 80).Trim()
+                }
+              $comment += '{0}{1}```{2}</p></details>' -f $nl, $nl, $nl
+              
+              #### Leave a comment on the PR ####
+              if ($errors.Count -ge 0 -or $warnings.Count -ge 0 -or $info.Count -ge 0)
+              {
+                $header = @{Authorization = "Bearer ${{ secrets.GITHUB_TOKEN }}"}
+                $commentBody = $(@{body = $comment} | ConvertTo-Json )
+                
+                # GitHub Actions includes color, remove it from the JSON
+                $commentBody = $commentBody.Replace("\u001b[0m","").Replace("\u001b[32;1m","")
+                
+                # Replace Error, Warning, Info with Emojis  
+                $infoEmoji = ":information_source:"
+                $warningEmoji = ":warning:"
+                $errorEmoji = ":stop_sign:"
+                $commentBody = $commentBody -replace "\bEmojiInfo\b", $infoEmoji
+                $commentBody = $commentBody -replace "\bEmojiWarn\b", $warningEmoji
+                $commentBody = $commentBody -replace "\bEmojiError\b", $errorEmoji
+                
+                # Post the Comment to the Pull Request
+                Invoke-RestMethod -uri $pullRequestURL -method "POST" -headers $header -body $commentBody -ContentType "application/json"
+              }
