@@ -24,7 +24,7 @@
             <!-- configuration -->
             <StackPanel Grid.Row="1" Grid.Column="0">
                 <Label Padding="0" x:Name="lblFromKeyword" Content="Email reply parsing keyword (e.g. From)" Margin="10,0,0,0"/>
-                <TextBox x:Name="txtFromKW" Text="{Binding KeywordFrom, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,0,10" />
+                <TextBox x:Name="txtFromKW" Text="{Binding KeywordFrom, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" Margin="10,0,0,10" />
                 <Label Padding="0" x:Name="lblAckKeyword" Content="[Acknowledge]" Margin="10,0,0,0"/>
                 <TextBox x:Name="txtAckKW" Text="{Binding KeywordAcknowledge, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,0,10" />
                 <Label Padding="0" x:Name="lblReactivateKeyword" Content="[Reactivate]" Margin="10,0,0,0"/>
