@@ -450,8 +450,10 @@ $ciresonPortalServer = "$($smexcoSettingsMP.CiresonPortalURL)"
 $ciresonPortalWindowsAuth = $true
 $ciresonPortalUsername = ""
 $ciresonPortalPassword = ""
-$addWatchlistKeyword = "$($smexcoSettingsMP.CiresonKeywordWatchlistAdd)"
-$removeWatchlistKeyword = "$($smexcoSettingsMP.CiresonKeywordWatchlistRemove)"
+$addWatchlistKeywords = "$($smexcoSettingsMP.CiresonKeywordWatchlistAdd)" | Foreach-Object {$_.Split(",")}
+$removeWatchlistKeywords = "$($smexcoSettingsMP.CiresonKeywordWatchlistRemove)" | Foreach-Object {$_.Split(",")}
+$addWatchlistKeyword = "(" + [string]::Join('|', $addWatchlistKeywords) + ")"
+$removeWatchlistKeyword = "(" + [string]::Join('|', $removeWatchlistKeywords) + ")"
 
 #optional, enable Announcement control in SCSM/Cireson portal from email
 #enableSCSMAnnouncements/enableCiresonPortalAnnouncements: You can create/update announcements
@@ -466,12 +468,15 @@ $removeWatchlistKeyword = "$($smexcoSettingsMP.CiresonKeywordWatchlistRemove)"
     #have a start and end time, these expirationInHours style variables are ignored
 $enableSCSMAnnouncements = $smexcoSettingsMP.EnableSCSMAnnouncements
 $enableCiresonPortalAnnouncements = $smexcoSettingsMP.EnableCiresonSCSMAnnouncements
-$announcementKeyword = $smexcoSettingsMP.SCSMKeywordAnnouncement
+$announcementKeywords = $smexcoSettingsMP.SCSMKeywordAnnouncement | Foreach-Object {$_.Split(",")}
+$announcementKeyword = "(" + [string]::Join('|', $announcementKeywords) + ")"
 $approvedADGroupForSCSMAnnouncements = "$($smexcoSettingsMP.SCSMApprovedAnnouncementGroupDisplayName)"
 $approvedUsersForSCSMAnnouncements = "$($smexcoSettingsMP.SCSMApprovedAnnouncementUsers)"
 $approvedMemberTypeForSCSMAnnouncer = "$($smexcoSettingsMP.SCSMAnnouncementApprovedMemberType)"
-$lowAnnouncemnentPriorityKeyword = $smexcoSettingsMP.AnnouncementKeywordLow
-$criticalAnnouncemnentPriorityKeyword = $smexcoSettingsMP.AnnouncementKeywordHigh
+$lowAnnouncemnentPriorityKeywords = $smexcoSettingsMP.AnnouncementKeywordLow | Foreach-Object {$_.Split(",")}
+$criticalAnnouncemnentPriorityKeywords = $smexcoSettingsMP.AnnouncementKeywordHigh | Foreach-Object {$_.Split(",")}
+$lowAnnouncemnentPriorityKeyword = "(" + [string]::Join('|', $lowAnnouncemnentPriorityKeywords) + ")"
+$criticalAnnouncemnentPriorityKeyword = "(" + [string]::Join('|', $criticalAnnouncemnentPriorityKeywords) + ")"
 $lowAnnouncemnentExpirationInHours = $smexcoSettingsMP.AnnouncementPriorityLowExpirationInHours
 $normalAnnouncemnentExpirationInHours = $smexcoSettingsMP.AnnouncementPriorityNormalExpirationInHours
 $criticalAnnouncemnentExpirationInHours = $smexcoSettingsMP.AnnouncementPriorityCriticalExpirationInHours
@@ -638,22 +643,38 @@ $scomMGMTServer = "$($smexcoSettingsMP.SCOMmgmtServer)"
 $approvedMemberTypeForSCOM = "$($smexcoSettingsMP.SCOMApprovedMemberType)"
 $approvedADGroupForSCOM = if ($smexcoSettingsMP.SCOMApprovedGroupGUID) {Get-SCSMObject -id ($smexcoSettingsMP.SCOMApprovedGroupGUID.Guid) | select-object username -ExpandProperty username}
 $approvedUsersForSCOM = "$($smexcoSettingsMP.SCOMApprovedUsers)"
-$distributedApplicationHealthKeyword = "$($smexcoSettingsMP.SCOMKeywordHealth)"
+$distributedApplicationHealthKeywords = "$($smexcoSettingsMP.SCOMKeywordHealth)" | Foreach-Object {$_.Split(",")}
+$distributedApplicationHealthKeyword = "(" + [string]::Join('|', $distributedApplicationHealthKeywords) + ")"
 
-#define SCSM Work Item keywords to be used
-$acknowledgedKeyword = "$($smexcoSettingsMP.SCSMKeywordAcknowledge)"
-$reactivateKeyword = "$($smexcoSettingsMP.SCSMKeywordReactivate)"
-$resolvedKeyword = "$($smexcoSettingsMP.SCSMKeywordResolved)"
-$closedKeyword = "$($smexcoSettingsMP.SCSMKeywordClosed)"
-$holdKeyword = "$($smexcoSettingsMP.SCSMKeywordHold)"
-$cancelledKeyword = "$($smexcoSettingsMP.SCSMKeywordCancelled)"
-$takeKeyword = "$($smexcoSettingsMP.SCSMKeywordTake)"
-$completedKeyword = "$($smexcoSettingsMP.SCSMKeywordCompleted)"
-$skipKeyword = "$($smexcoSettingsMP.SCSMKeywordSkipped)"
-$approvedKeyword = "$($smexcoSettingsMP.SCSMKeywordApprove)"
-$rejectedKeyword = "$($smexcoSettingsMP.SCSMKeywordReject)"
-$privateCommentKeyword = "$($smexcoSettingsMP.SCSMKeywordPrivate)"
-$powershellKeyword = "$($smexcoSettingsMP.KeywordPowerShell)"
+#retrieve SCSM Work Item keywords to be used
+$acknowledgedKeywords = "$($smexcoSettingsMP.SCSMKeywordAcknowledge)" | Foreach-Object {$_.Split(",")}
+$reactivateKeywords = "$($smexcoSettingsMP.SCSMKeywordReactivate)" | Foreach-Object {$_.Split(",")}
+$resolvedKeywords = "$($smexcoSettingsMP.SCSMKeywordResolved)" | Foreach-Object {$_.Split(",")}
+$closedKeywords = "$($smexcoSettingsMP.SCSMKeywordClosed)" | Foreach-Object {$_.Split(",")}
+$holdKeywords = "$($smexcoSettingsMP.SCSMKeywordHold)" | Foreach-Object {$_.Split(",")}
+$cancelledKeywords = "$($smexcoSettingsMP.SCSMKeywordCancelled)" | Foreach-Object {$_.Split(",")}
+$takeKeywords = "$($smexcoSettingsMP.SCSMKeywordTake)" | Foreach-Object {$_.Split(",")}
+$completedKeywords = "$($smexcoSettingsMP.SCSMKeywordCompleted)" | Foreach-Object {$_.Split(",")}
+$skipKeywords = "$($smexcoSettingsMP.SCSMKeywordSkipped)" | Foreach-Object {$_.Split(",")}
+$approvedKeywords = "$($smexcoSettingsMP.SCSMKeywordApprove)" | Foreach-Object {$_.Split(",")}
+$rejectedKeywords = "$($smexcoSettingsMP.SCSMKeywordReject)" | Foreach-Object {$_.Split(",")}
+$privateCommentKeywords = "$($smexcoSettingsMP.SCSMKeywordPrivate)" | Foreach-Object {$_.Split(",")}
+$powershellKeywords = "$($smexcoSettingsMP.KeywordPowerShell)" | Foreach-Object {$_.Split(",")}
+
+#format SCSM Work Item keywords to be used within the regular expressions throughout the connector
+$acknowledgedKeyword = "(" + [string]::Join('|', $acknowledgedKeywords) + ")"
+$reactivateKeyword = "(" + [string]::Join('|', $reactivateKeywords) + ")"
+$resolvedKeyword = "(" + [string]::Join('|', $resolvedKeywords) + ")"
+$closedKeyword = "(" + [string]::Join('|', $closedKeywords) + ")"
+$holdKeyword = "(" + [string]::Join('|', $holdKeywords) + ")"
+$cancelledKeyword = "(" + [string]::Join('|', $cancelledKeywords) + ")"
+$takeKeyword = "(" + [string]::Join('|', $takeKeywords) + ")"
+$completedKeyword = "(" + [string]::Join('|', $completedKeywords) + ")"
+$skipKeyword = "(" + [string]::Join('|', $skipKeywords) + ")"
+$approvedKeyword = "(" + [string]::Join('|', $approvedKeywords) + ")"
+$rejectedKeyword = "(" + [string]::Join('|', $rejectedKeywords) + ")"
+$privateCommentKeyword = "(" + [string]::Join('|', $privateCommentKeywords) + ")"
+$powershellKeyword = "(" + [string]::Join('|', $powershellKeywords) + ")"
 
 #define the path to the Exchange Web Services API and MimeKit
 #the PII regex file and HTML Suggestion Template paths will only be leveraged if these features are enabled above.
