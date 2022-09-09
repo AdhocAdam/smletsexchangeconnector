@@ -2518,7 +2518,7 @@ function Get-WorkItem ($workItemID, $workItemClass)
 
 function Get-SCSMUserByEmailAddress ($EmailAddress)
 {
-    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq '$EmailAddress'" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
+    $userSMTPNotification = Get-SCSMObject -Class $notificationClass -Filter "TargetAddress -eq $EmailAddress" @scsmMGMTParams | sort-object lastmodified -Descending | select-object -first 1
     if ($userSMTPNotification)
     {
         $user = get-scsmobject -id (Get-SCSMRelationshipObject -ByTarget $userSMTPNotification @scsmMGMTParams).sourceObject.id @scsmMGMTParams
