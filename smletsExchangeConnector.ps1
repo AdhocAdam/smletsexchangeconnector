@@ -769,7 +769,7 @@ $raHasReviewerRelClass = Get-SCSMRelationshipClass -name "System.ReviewActivityH
 $raReviewerIsUserRelClass = Get-SCSMRelationshipClass -name "System.ReviewerIsUser$" @scsmMGMTParams
 $raVotedByUserRelClass = Get-SCSMRelationshipClass -name "System.ReviewerVotedByUser$" @scsmMGMTParams
 
-$userClass = get-scsmclass -name "System.User$" @scsmMGMTParams
+#$userClass = get-scsmclass -name "System.User$" @scsmMGMTParams
 $domainUserClass = get-scsmclass -name "System.Domain.User$" @scsmMGMTParams
 $notificationClass = get-scsmclass -name "System.Notification.Endpoint$" @scsmMGMTParams
 
@@ -785,7 +785,7 @@ $wiAboutCIRelClass = Get-SCSMRelationshipClass -name "System.WorkItemAboutConfig
 $wiRelatesToCIRelClass = Get-SCSMRelationshipClass -name "System.WorkItemRelatesToConfigItem$" @scsmMGMTParams
 $wiRelatesToWIRelClass = Get-SCSMRelationshipClass -name "System.WorkItemRelatesToWorkItem$" @scsmMGMTParams
 $wiContainsActivityRelClass = Get-SCSMRelationshipClass -name "System.WorkItemContainsActivity$" @scsmMGMTParams
-$sysUserHasPrefRelClass = Get-SCSMRelationshipClass -name "System.UserHasPreference$" @scsmMGMTParams
+#$sysUserHasPrefRelClass = Get-SCSMRelationshipClass -name "System.UserHasPreference$" @scsmMGMTParams
 
 $fileAttachmentClass = Get-SCSMClass -Name "System.FileAttachment$" @scsmMGMTParams
 $wiHasFileAttachRelClass = Get-SCSMRelationshipClass -name "System.WorkItemHasFileAttachment$" @scsmMGMTParams
