@@ -4899,10 +4899,11 @@ foreach ($message in $inbox)
         if ($decryptedBody.ContentType.MimeType -eq "application/x-pkcs7-mime")
         {
             #check to see if there are attachments
-            $isVerifiedSig = $decryptedBody.Verify($certStore, [ref]$decryptedBody)
+            $digitalSignatures = $decryptedBody.Verify($certStore, [ref]$decryptedBody)
+            
             $decryptedBodyWOAttachments = $decryptedBody | Where-Object{($_.isattachment -eq $false)}
             $decryptedAttachments = if ($decryptedBody.ContentType.MimeType -eq "multipart/alternative") {$decryptedBody | Where-Object{$_.isattachment -eq $true}} else {$decryptedBody | Select-Object -skip 1}
-
+            $digitalSignatures | Foreach-Object {if ($_.Verify()){New-SMEXCOEvent -Source "Cryptography" -EventID 2 -Severity "Information" -LogMessage "Digital signature is valid"} else {New-SMEXCOEvent -Source "Cryptography" -EventID 3 -Severity "Warning" -LogMessage "Digital signature could not be verified"}}
             $email = [PSCustomObject] @{
                 From              = $response.From.address
                 To                = $response.To
