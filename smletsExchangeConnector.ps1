@@ -4900,7 +4900,17 @@ foreach ($message in $inbox)
         {
             #check to see if there are attachments
             $digitalSignatures = $decryptedBody.Verify($certStore, [ref]$decryptedBody)
-            
+            $digitalSignatures | Foreach-Object {
+                if ($_.Verify()) {
+                    if ($loggingLevel -ge 4)
+                    { New-SMEXCOEvent -Source "Cryptography" -EventID 2 -Severity "Information" -LogMessage "Digital signature is valid" }
+                }
+                else {
+                    if ($loggingLevel -ge 2) {
+                        New-SMEXCOEvent -Source "Cryptography" -EventID 3 -Severity "Warning" -LogMessage "Digital signature could not be verified"
+                    }
+                }
+            }
             $decryptedBodyWOAttachments = $decryptedBody | Where-Object{($_.isattachment -eq $false)}
             $decryptedAttachments = if ($decryptedBody.ContentType.MimeType -eq "multipart/alternative") {$decryptedBody | Where-Object{$_.isattachment -eq $true}} else {$decryptedBody | Select-Object -skip 1}
             $digitalSignatures | Foreach-Object {if ($_.Verify()){New-SMEXCOEvent -Source "Cryptography" -EventID 2 -Severity "Information" -LogMessage "Digital signature is valid"} else {New-SMEXCOEvent -Source "Cryptography" -EventID 3 -Severity "Warning" -LogMessage "Digital signature could not be verified"}}
