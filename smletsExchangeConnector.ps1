@@ -2534,8 +2534,6 @@ function Get-SCSMUserByEmailAddress ($EmailAddress)
 
 # Nested group membership check inspired by Piotr Lewandowski https://gallery.technet.microsoft.com/scriptcenter/Get-nested-group-15f725f2#content
 function Get-TierMembership ($UserSamAccountName, $TierId) {
-    $isMember = $false
-
     try
     {
         #define classes
@@ -2554,22 +2552,23 @@ function Get-TierMembership ($UserSamAccountName, $TierId) {
 
         if ($grpSamAccountName) {
             # Get the group membership
-            [array]$members = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive
+            [array]$members = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive | Where-Object {$_.objectClass -eq "user"}
 
-            # loop through the members of the AD group that underpins this support group, and look for the user
-            $members | ForEach-Object {
-                if ($_.objectClass -eq "user" -and $_.Name -match $UserSamAccountName) {
-                    $isMember = $true
-                }
+            # check if the members of the AD group that underpins this support group contains the user
+            $groupContainsMember = $members | Where-Object {$_.SamAccountName -eq $UserSamAccountName}
+            if ($groupContainsMember) {
+                $isMember = $true
             }
+            else {
+                $isMember = $false
+            }
+            return $isMember
         }
     }
     catch
     {
         if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Get-TierMembership" -EventID 0 -Severity "Warning" -LogMessage $_.Exception}
     }
-
-    return $isMember
 }
 
 function Get-TierMember ($TierEnumId)
