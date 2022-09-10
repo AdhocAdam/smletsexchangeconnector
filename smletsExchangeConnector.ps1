@@ -4169,7 +4169,8 @@ function Get-AMLWorkItemProbability ($EmailSubject, $EmailBody)
 #region #### Modified version of Set-SCSMTemplateWithActivities from Morton Meisler seen here http://blog.ctglobalservices.com/service-manager-scsm/mme/set-scsmtemplatewithactivities-powershell-script/
 function Update-SCSMPropertyCollection
 {
-    Param ([Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateObject]$Object =$(throw "Please provide a valid template object"))
+    Param ([Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateObject]$Object =$(throw "Please provide a valid template object"),
+    $Alias)
 
     #Regex - Find class from template object property between ! and ']
     $pattern = '(?<=!)[^!]+?(?=''\])'
@@ -4212,7 +4213,7 @@ function Set-SCSMTemplate
     #Update Activities in template
     foreach ($TemplateObject in $Template.ObjectCollection)
     {
-        Update-SCSMPropertyCollection -Object $TemplateObject
+        Update-SCSMPropertyCollection -Object $TemplateObject -Alias $alias
     }
     #Apply update template
     Set-SCSMObjectTemplate -Projection $Projection -Template $Template -ErrorAction Stop @scsmMGMTParams
