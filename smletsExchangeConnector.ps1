@@ -4284,7 +4284,7 @@ function Get-SCOMDistributedAppHealth ($message)
         else {<#body not [formed] correctly#>}
 
         #get Distributed Applications that meet search criteria
-        $distributedApps = invoke-command -scriptblock {(Get-SCOMClass | Where-Object {$_.displayname -like "*$appName*"} | Get-SCOMMonitoringObject) | select-object Displayname, healthstate} -ComputerName $scomMGMTServer
+        $distributedApps = Invoke-Command -ScriptBlock {(Get-SCOMClass -Name "System.Service" | Get-SCOMMonitoringObject | Where-Object {$_.displayname -like "*$using:appName*"}) | select-object Displayname, healthstate} -ComputerName $scomMGMTServer
         $healthySCOMApps = @()
         $unhealthySCOMApps = @()
         $notMonitoredSCOMApps = @()
@@ -4294,7 +4294,7 @@ function Get-SCOMDistributedAppHealth ($message)
         #create, define, and load custom PS Object from SCOM DA Objects
         foreach ($distributedApp in $distributedApps)
         {
-            switch ($distributedApp.HealthState)
+            switch ($distributedApp.HealthState.Value)
             {
                 "Success" {$scomDAObject = [PSCustomObject] @{Name = $distributedApp.displayname; Status = "Healthy"}; $healthySCOMApps += $scomDAObject}
                 "Error" {$scomDAObject = [PSCustomObject] @{Name = $distributedApp.displayname; Status = "Critical"}; $unhealthySCOMApps += $scomDAObject}
@@ -4308,7 +4308,8 @@ function Get-SCOMDistributedAppHealth ($message)
         {
             foreach ($unhealthySCOMApp in $unhealthySCOMApps)
             {
-                $unhealthySCOMAppsAlerts += invoke-command -scriptblock {Get-SCOMClass | Where-Object {$_.displayname -like "$($unhealthySCOMApp.displayname)"} | Get-SCOMClassInstance | ForEach-Object{$_.GetRelatedMonitoringObjects()} | Get-SCOMAlert -ResolutionState 0} -computername $scomMGMTServer
+                $unhealthyAppName = $unhealthySCOMApp.Name
+                $unhealthySCOMAppsAlerts += Invoke-Command -scriptblock {Get-SCOMClass -DisplayName "$using:unhealthyAppName" | Get-SCOMClassInstance | Foreach-Object {$_.GetRelatedMonitoringObjects('Recursive')} | Get-SCOMAlert -ResolutionState 0} -computername $scomMGMTServer
             }
         }
 
