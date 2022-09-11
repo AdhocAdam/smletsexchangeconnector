@@ -4309,7 +4309,7 @@ function Get-SCOMDistributedAppHealth ($message)
             foreach ($unhealthySCOMApp in $unhealthySCOMApps)
             {
                 $unhealthyAppName = $unhealthySCOMApp.Name
-                $unhealthySCOMAppsAlerts += Invoke-Command -scriptblock {Get-SCOMClass -DisplayName "$using:unhealthyAppName)" | Get-SCOMClassInstance | Foreach-Object {$_.GetRelatedMonitoringObjects('Recursive')} | Get-SCOMAlert -ResolutionState 0} -computername $scomMGMTServer
+                $unhealthySCOMAppsAlerts += Invoke-Command -scriptblock {Get-SCOMClass -DisplayName "$using:unhealthyAppName" | Get-SCOMClassInstance | Foreach-Object {$_.GetRelatedMonitoringObjects('Recursive')} | Get-SCOMAlert -ResolutionState 0} -computername $scomMGMTServer
             }
         }
 
