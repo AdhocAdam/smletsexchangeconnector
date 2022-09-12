@@ -769,7 +769,7 @@ $raHasReviewerRelClass = Get-SCSMRelationshipClass -name "System.ReviewActivityH
 $raReviewerIsUserRelClass = Get-SCSMRelationshipClass -name "System.ReviewerIsUser$" @scsmMGMTParams
 $raVotedByUserRelClass = Get-SCSMRelationshipClass -name "System.ReviewerVotedByUser$" @scsmMGMTParams
 
-$userClass = get-scsmclass -name "System.User$" @scsmMGMTParams
+#$userClass = get-scsmclass -name "System.User$" @scsmMGMTParams
 $domainUserClass = get-scsmclass -name "System.Domain.User$" @scsmMGMTParams
 $notificationClass = get-scsmclass -name "System.Notification.Endpoint$" @scsmMGMTParams
 
@@ -785,7 +785,7 @@ $wiAboutCIRelClass = Get-SCSMRelationshipClass -name "System.WorkItemAboutConfig
 $wiRelatesToCIRelClass = Get-SCSMRelationshipClass -name "System.WorkItemRelatesToConfigItem$" @scsmMGMTParams
 $wiRelatesToWIRelClass = Get-SCSMRelationshipClass -name "System.WorkItemRelatesToWorkItem$" @scsmMGMTParams
 $wiContainsActivityRelClass = Get-SCSMRelationshipClass -name "System.WorkItemContainsActivity$" @scsmMGMTParams
-$sysUserHasPrefRelClass = Get-SCSMRelationshipClass -name "System.UserHasPreference$" @scsmMGMTParams
+#$sysUserHasPrefRelClass = Get-SCSMRelationshipClass -name "System.UserHasPreference$" @scsmMGMTParams
 
 $fileAttachmentClass = Get-SCSMClass -Name "System.FileAttachment$" @scsmMGMTParams
 $wiHasFileAttachRelClass = Get-SCSMRelationshipClass -name "System.WorkItemHasFileAttachment$" @scsmMGMTParams
@@ -2534,8 +2534,6 @@ function Get-SCSMUserByEmailAddress ($EmailAddress)
 
 # Nested group membership check inspired by Piotr Lewandowski https://gallery.technet.microsoft.com/scriptcenter/Get-nested-group-15f725f2#content
 function Get-TierMembership ($UserSamAccountName, $TierId) {
-    $isMember = $false
-
     try
     {
         #define classes
@@ -2554,22 +2552,23 @@ function Get-TierMembership ($UserSamAccountName, $TierId) {
 
         if ($grpSamAccountName) {
             # Get the group membership
-            [array]$members = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive
+            [array]$members = Get-ADGroupMember @adParams -Server $AdRoot -Identity $grpSamAccountName -Recursive | Where-Object {$_.objectClass -eq "user"}
 
-            # loop through the members of the AD group that underpins this support group, and look for the user
-            $members | ForEach-Object {
-                if ($_.objectClass -eq "user" -and $_.Name -match $UserSamAccountName) {
-                    $isMember = $true
-                }
+            # check if the members of the AD group that underpins this support group contains the user
+            $groupContainsMember = $members | Where-Object {$_.SamAccountName -eq $UserSamAccountName}
+            if ($groupContainsMember) {
+                $isMember = $true
             }
+            else {
+                $isMember = $false
+            }
+            return $isMember
         }
     }
     catch
     {
         if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Get-TierMembership" -EventID 0 -Severity "Warning" -LogMessage $_.Exception}
     }
-
-    return $isMember
 }
 
 function Get-TierMember ($TierEnumId)
@@ -4170,7 +4169,8 @@ function Get-AMLWorkItemProbability ($EmailSubject, $EmailBody)
 #region #### Modified version of Set-SCSMTemplateWithActivities from Morton Meisler seen here http://blog.ctglobalservices.com/service-manager-scsm/mme/set-scsmtemplatewithactivities-powershell-script/
 function Update-SCSMPropertyCollection
 {
-    Param ([Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateObject]$Object =$(throw "Please provide a valid template object"))
+    Param ([Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateObject]$Object =$(throw "Please provide a valid template object"),
+    $Alias)
 
     #Regex - Find class from template object property between ! and ']
     $pattern = '(?<=!)[^!]+?(?=''\])'
@@ -4213,7 +4213,7 @@ function Set-SCSMTemplate
     #Update Activities in template
     foreach ($TemplateObject in $Template.ObjectCollection)
     {
-        Update-SCSMPropertyCollection -Object $TemplateObject
+        Update-SCSMPropertyCollection -Object $TemplateObject -Alias $alias
     }
     #Apply update template
     Set-SCSMObjectTemplate -Projection $Projection -Template $Template -ErrorAction Stop @scsmMGMTParams
@@ -4284,7 +4284,7 @@ function Get-SCOMDistributedAppHealth ($message)
         else {<#body not [formed] correctly#>}
 
         #get Distributed Applications that meet search criteria
-        $distributedApps = invoke-command -scriptblock {(Get-SCOMClass | Where-Object {$_.displayname -like "*$appName*"} | Get-SCOMMonitoringObject) | select-object Displayname, healthstate} -ComputerName $scomMGMTServer
+        $distributedApps = Invoke-Command -ScriptBlock {(Get-SCOMClass -Name "System.Service" | Get-SCOMMonitoringObject | Where-Object {$_.displayname -like "*$using:appName*"}) | select-object Displayname, healthstate} -ComputerName $scomMGMTServer
         $healthySCOMApps = @()
         $unhealthySCOMApps = @()
         $notMonitoredSCOMApps = @()
@@ -4294,7 +4294,7 @@ function Get-SCOMDistributedAppHealth ($message)
         #create, define, and load custom PS Object from SCOM DA Objects
         foreach ($distributedApp in $distributedApps)
         {
-            switch ($distributedApp.HealthState)
+            switch ($distributedApp.HealthState.Value)
             {
                 "Success" {$scomDAObject = [PSCustomObject] @{Name = $distributedApp.displayname; Status = "Healthy"}; $healthySCOMApps += $scomDAObject}
                 "Error" {$scomDAObject = [PSCustomObject] @{Name = $distributedApp.displayname; Status = "Critical"}; $unhealthySCOMApps += $scomDAObject}
@@ -4308,7 +4308,8 @@ function Get-SCOMDistributedAppHealth ($message)
         {
             foreach ($unhealthySCOMApp in $unhealthySCOMApps)
             {
-                $unhealthySCOMAppsAlerts += invoke-command -scriptblock {Get-SCOMClass | Where-Object {$_.displayname -like "$($unhealthySCOMApp.displayname)"} | Get-SCOMClassInstance | ForEach-Object{$_.GetRelatedMonitoringObjects()} | Get-SCOMAlert -ResolutionState 0} -computername $scomMGMTServer
+                $unhealthyAppName = $unhealthySCOMApp.Name
+                $unhealthySCOMAppsAlerts += Invoke-Command -scriptblock {Get-SCOMClass -DisplayName "$using:unhealthyAppName" | Get-SCOMClassInstance | Foreach-Object {$_.GetRelatedMonitoringObjects('Recursive')} | Get-SCOMAlert -ResolutionState 0} -computername $scomMGMTServer
             }
         }
 
@@ -4899,10 +4900,21 @@ foreach ($message in $inbox)
         if ($decryptedBody.ContentType.MimeType -eq "application/x-pkcs7-mime")
         {
             #check to see if there are attachments
-            $isVerifiedSig = $decryptedBody.Verify($certStore, [ref]$decryptedBody)
+            $digitalSignatures = $decryptedBody.Verify($certStore, [ref]$decryptedBody)
+            $digitalSignatures | Foreach-Object {
+                if ($_.Verify()) {
+                    if ($loggingLevel -ge 4)
+                    { New-SMEXCOEvent -Source "Cryptography" -EventID 2 -Severity "Information" -LogMessage "Digital signature is valid" }
+                }
+                else {
+                    if ($loggingLevel -ge 2) {
+                        New-SMEXCOEvent -Source "Cryptography" -EventID 3 -Severity "Warning" -LogMessage "Digital signature could not be verified"
+                    }
+                }
+            }
             $decryptedBodyWOAttachments = $decryptedBody | Where-Object{($_.isattachment -eq $false)}
             $decryptedAttachments = if ($decryptedBody.ContentType.MimeType -eq "multipart/alternative") {$decryptedBody | Where-Object{$_.isattachment -eq $true}} else {$decryptedBody | Select-Object -skip 1}
-
+            $digitalSignatures | Foreach-Object {if ($_.Verify()){New-SMEXCOEvent -Source "Cryptography" -EventID 2 -Severity "Information" -LogMessage "Digital signature is valid"} else {New-SMEXCOEvent -Source "Cryptography" -EventID 3 -Severity "Warning" -LogMessage "Digital signature could not be verified"}}
             $email = [PSCustomObject] @{
                 From              = $response.From.address
                 To                = $response.To
