@@ -1538,7 +1538,7 @@ function Update-WorkItem ($message, $wiType, $workItem)
                     $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Get_Id().Guid
                     $message.Attachments | Foreach-Object {Add-FileToSCSMObject -attachment $_ -smobject $parentWorkItem}
                  }
-            default { $message.Attachments | Foreach-Object {Add-FileToSCSMObject -attachment $_ -smobject $parentWorkItem} }
+            default { $message.Attachments | Foreach-Object {Add-FileToSCSMObject -attachment $_ -smobject $workItem} }
        }
     }
     #show the user who will perform the update and the [action] they are taking. If there is no [action] it's just a comment
