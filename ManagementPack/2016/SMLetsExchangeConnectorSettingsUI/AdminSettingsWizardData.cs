@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,6 +12,7 @@ using Microsoft.Win32;
 using Microsoft.EnterpriseManagement.ConnectorFramework;
 using System.Xml;
 using System.Globalization;
+using Microsoft.EnterpriseManagement.UI.Extensions.Shared;
 
 namespace SMLetsExchangeConnectorSettingsUI
 {
@@ -3087,16 +3088,16 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.SCOMServer = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMmgmtServer"].ToString();
             this.AuthorizedSCOMApproverType = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedMemberType"].ToString();
             this.AuthorizedSCOMUsers = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedUsers"].ToString();
-            try
+            if (emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedGroupGUID"].Value != null)
             {
-                this.SCOMApprovedGroupGUID = (Guid)emoAdminSetting[null, "SCOMApprovedGroupGUID"].Value;
-                EnterpriseManagementObject ScomApprovedGroupEmoObject;
-                ScomApprovedGroupEmoObject = (EnterpriseManagementObject)emg.EntityObjects.GetObject<EnterpriseManagementObject>(this.SCOMApprovedGroupGUID, ObjectQueryOptions.Default);
-                this.SCOMApprovedGroupDisplayName = "CURRENT APPROVED GROUP: " + ScomApprovedGroupEmoObject.DisplayName;
-            }
-            catch
-            {
-                this.SCOMApprovedGroupDisplayName = "NO SCOM GROUP DEFINED";
+                try
+                {
+                    this.SCOMApprovedGroup = ConsoleContextHelper.Instance.GetInstance((Guid)emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedGroupGUID"].Value);
+                }
+                catch
+                {
+                    //"NO SCOM GROUP DEFINED";
+                }
             }
 
             //Artificial Intelligence - Cognitive Services
@@ -3767,8 +3768,15 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedMemberType"].Value = this.AuthorizedSCOMApproverType;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedUsers"].Value = this.AuthorizedSCOMUsers;
             //if the SCOM approved group is set, don't null it
-            try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedGroupGUID"].Value = this.SCOMApprovedGroup["Id"]; }
-            catch { }
+            if (this.SCOMApprovedGroup != null)
+            {
+                try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedGroupGUID"].Value = this.SCOMApprovedGroup["Id"]; }
+                catch { }
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedGroupGUID"].Value = null;
+            }
 
             //Artifical Intelligence - enabled/disabled
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableArtificialIntelligence"].Value = this.IsArtificialIntelligenceEnabled;
