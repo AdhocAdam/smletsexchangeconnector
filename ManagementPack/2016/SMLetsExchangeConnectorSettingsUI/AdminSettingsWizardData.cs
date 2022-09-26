@@ -3759,8 +3759,15 @@ namespace SMLetsExchangeConnectorSettingsUI
             }
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementUsers"].Value = this.SCSMApprovedAnnouncers;
             //if the Announcement group is set, don't null it
-            try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementGroupGUID"].Value = this.SCSMApprovedAnnouncementGroup["Id"]; }
-            catch { }
+            if (this.SCSMApprovedAnnouncementGroup != null)
+            {
+                try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementGroupGUID"].Value = this.SCSMApprovedAnnouncementGroup["Id"]; }
+                catch { }
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementGroupGUID"].Value = null;
+            }
 
             //SCOM Integration
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableSCOMIntegration"].Value = this.IsSCOMIntegrationEnabled;
