@@ -3070,16 +3070,16 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { this.IsCiresonAnnouncementsEnabled = false; }
 
             this.SCSMApprovedAnnouncers = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementUsers"].ToString();
-            try
+            if (emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementGroupGUID"].Value != null)
             {
-                this.SCSMApprovedGroupGUID = (Guid)emoAdminSetting[null, "SCSMApprovedAnnouncementGroupGUID"].Value;
-                EnterpriseManagementObject ScsmApprovedGroupEmoObject;
-                ScsmApprovedGroupEmoObject = (EnterpriseManagementObject)emg.EntityObjects.GetObject<EnterpriseManagementObject>(this.SCSMApprovedGroupGUID, ObjectQueryOptions.Default);
-                this.SCSMApprovedGroupDisplayName = "CURRENT ANNOUNCEMENT GROUP: " + ScsmApprovedGroupEmoObject.DisplayName;
-            }
-            catch
-            {
-                this.SCSMApprovedGroupDisplayName = "NO ANNOUNCEMENT GROUP DEFINED";
+                try
+                {
+                    this.SCSMApprovedAnnouncementGroup = ConsoleContextHelper.Instance.GetInstance((Guid)emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementGroupGUID"].Value);
+                }
+                catch
+                {
+                    //"NO ANNOUNCEMENT GROUP DEFINED";
+                }
             }
 
             //SCOM Integration
