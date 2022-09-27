@@ -1500,7 +1500,7 @@
         </DisplayString>
         <DisplayString ElementID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Note.SMIME.MultipartSigned">
           <Name>IPM.Note.SMIME.MultipartSigned</Name>
-          <Description>A digitally email message</Description>
+          <Description>A digitally signed email message</Description>
         </DisplayString>
         <DisplayString ElementID="SMLets.Exchange.Connector.MessageClassEnum.IPM.Schedule.Meeting.Request">
           <Name>IPM.Schedule.Meeting.Request</Name>
