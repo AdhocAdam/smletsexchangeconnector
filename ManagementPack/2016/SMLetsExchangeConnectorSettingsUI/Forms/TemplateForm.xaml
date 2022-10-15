@@ -1,4 +1,4 @@
-﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.TemplateForm" 
+<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.TemplateForm" 
             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:sys="clr-namespace:System;assembly=mscorlib"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -10,7 +10,7 @@
 
     <Grid Name="ConfigurationGrid" Margin="15,25,15,10">
         <!-- header -->
-        <Image Margin="344,93.05,0,0" Height="146" VerticalAlignment="Top" Source="/SMLetsExchangeConnectorSettingsUI;component/AssemblyImages/psExchangeIcon164x146.png" HorizontalAlignment="Right" Width="167"/>
+        <Image Margin="0,92,51,0" VerticalAlignment="Top" Source="/SMLetsExchangeConnectorSettingsUI;component/AssemblyImages/Templates64x64.png" HorizontalAlignment="Right" Width="90" Height="102"/>
         <Label Content="Template Configuration" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
         <TextBlock Margin="0,51,10,0" VerticalAlignment="Top" Height="40.667" FontWeight="Light" FontSize="14" TextWrapping="Wrap" Text="Define the templates the connector will use when processing mail and what to use as a Default New Work Item" />
 
@@ -70,4 +70,4 @@
             </StackPanel>
         </ScrollViewer>
     </Grid>
-</wpfwiz:WizardRegularPageBase> 
+</wpfwiz:WizardRegularPageBase>
