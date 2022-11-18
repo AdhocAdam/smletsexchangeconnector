@@ -141,6 +141,8 @@
     <Resource Include="AssemblyImages\GitHub120x120.png" />
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="AssemblyImages\EventLog.png" />
+    <Resource Include="AssemblyImages\Templates64x64.png" />
     <Resource Include="AssemblyImages\announcement.png" />
     <Resource Include="AssemblyImages\azureCognitiveServicesIcon150x150.png" />
     <Resource Include="AssemblyImages\ciresonLogo.png" />

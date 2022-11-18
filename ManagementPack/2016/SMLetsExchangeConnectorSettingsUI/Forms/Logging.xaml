@@ -10,6 +10,7 @@
 
     <Grid Name="ConfigurationGrid" Margin="15,25,15,10">
         <!-- header -->
+        <Image Margin="0,92,51,0" VerticalAlignment="Top" Source="/SMLetsExchangeConnectorSettingsUI;component/AssemblyImages/EventLog.png" HorizontalAlignment="Right" Width="128"/>
         <Label Content="Logging" Margin="0,10,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
         <TextBlock Margin="0,51,10,0" VerticalAlignment="Top" Height="40.667" FontWeight="Light" FontSize="14" TextWrapping="Wrap" Text="Define how much or how little logging you would like to enable." />
 
@@ -24,7 +25,7 @@
                             </TextBlock>
                         </InlineUIContainer>
                 </TextBlock>
-                <TextBlock Margin="0,10,0,0" Text="0 = Off, 1 = Info, 2 = Info + Warnings, 3 = Info + Warning + Critical, 4 = Everything/Verbose" Height="45" TextWrapping="Wrap"/>
+                <TextBlock Margin="0,10,0,0" Text="0 = Off &#x0a;1 = Info &#x0a;2 = Info + Warnings &#x0a;3 = Info + Warning + Critical &#x0a;4 = Everything/Verbose" Height="95" TextWrapping="Wrap"/>
                 <ComboBox x:Name="cbLoggingLevel" HorizontalAlignment="Left" Width="171" Margin="0,0,0,0" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding LoggingLevel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                     <sys:String>0</sys:String>
                     <sys:String>1</sys:String>
