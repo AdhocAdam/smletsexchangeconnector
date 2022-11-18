@@ -269,7 +269,16 @@ function New-SMEXCOEvent
     }
 }
 
-#region #### Configuration ####
+#region #### Configuration and Prep SMLets ####
+# Ensure SMLets is loaded in the current session.
+if (-Not (Get-Module SMLets)) {
+    Import-Module SMLets
+    # If the import is unsuccessful and PowerShell 5+ is installed, pull SMLets from the gallery and install.
+    if ($PsVersionTable.PsVersion.Major -ge 5 -And (-Not (Get-Module SMLets))) {
+        Find-Module SMLets | Install-Module
+        Import-Module SMLets
+    }
+}
 #retrieve the SMLets Exchange Connector MP to define configuration
 $smexcoSettingsMP = ((Get-SCSMObject -Class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings$")))
 $smexcoSettingsMPMailboxes = ((Get-SCSMObject -Class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings.AdditionalMailbox$")))
@@ -717,16 +726,7 @@ $ceScripts = if($smexcoSettingsMP.FilePathCustomEvents.EndsWith(".ps1"))
 }
 #endregion #### Configuration ####
 
-#region #### Process User Configs and Prep SMLets ####
-# Ensure SMLets is loaded in the current session.
-if (-Not (Get-Module SMLets)) {
-    Import-Module SMLets
-    # If the import is unsuccessful and PowerShell 5+ is installed, pull SMLets from the gallery and install.
-    if ($PsVersionTable.PsVersion.Major -ge 5 -And (-Not (Get-Module SMLets))) {
-        Find-Module SMLets | Install-Module
-        Import-Module SMLets
-    }
-}
+#region #### Process User Configs ####
 
 # Configure SMLets with -ComputerName and -Credential switches, if applicable.
 $scsmMGMTParams = @{ ComputerName = $scsmMGMTServer }
