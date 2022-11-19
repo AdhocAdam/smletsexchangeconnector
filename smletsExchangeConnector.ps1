@@ -1,3 +1,4 @@
+$startTime = Get-Date
 <#
 .SYNOPSIS
 Provides SCSM Exchange Connector functionality through PowerShell
@@ -4541,7 +4542,7 @@ $inboxFilterString = [scriptblock]::Create("$inboxFilterString")
 
 #filter the inbox
 $inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
-if (($loggingLevel -ge 1)-and($inbox.Count -ge 1)){New-SMEXCOEvent -Source "General" -EventId 2 -LogMessage "Messages to Process: $($inbox.Count)" -Severity "Information"; $messagesProcessed = 0}
+if (($loggingLevel -ge 1)){New-SMEXCOEvent -Source "General" -EventId 2 -LogMessage "Messages to Process: $($inbox.Count)" -Severity "Information"; $messagesProcessed = 0}
 # Custom Event Handler
 if ($ceScripts) { Invoke-OnOpenInbox }
 
@@ -5124,4 +5125,15 @@ foreach ($message in $inbox)
 
     #increment the number of messages processed if logging is enabled
     if ($loggingLevel -ge 1){$messagesProcessed++; New-SMEXCOEvent -Source "General" -EventId 3 -LogMessage "Processed: $messagesProcessed of $($inbox.Count)" -Severity "Information"}
+}
+
+#log the total number of messages processed and the connector's total run time
+if ($loggingLevel -ge 1)
+{
+    $endTime = Get-Date
+    $runtime = $endTime - $startTime
+    New-SMExcoEvent -Source "General" -EventID 6 -Severity "Information" -LogMessage "Processed $($inbox.Count) messages in:
+    Minutes: $($runtime.TotalMinutes)
+    Seconds: $($runtime.TotalSeconds)
+    Milliseconds: $($runtime.TotalMilliseconds)"
 }
