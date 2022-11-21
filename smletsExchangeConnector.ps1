@@ -1,3 +1,4 @@
+$startTime = Get-Date
 <#
 .SYNOPSIS
 Provides SCSM Exchange Connector functionality through PowerShell
@@ -269,7 +270,16 @@ function New-SMEXCOEvent
     }
 }
 
-#region #### Configuration ####
+#region #### Configuration and Prep SMLets ####
+# Ensure SMLets is loaded in the current session.
+if (-Not (Get-Module SMLets)) {
+    Import-Module SMLets
+    # If the import is unsuccessful and PowerShell 5+ is installed, pull SMLets from the gallery and install.
+    if ($PsVersionTable.PsVersion.Major -ge 5 -And (-Not (Get-Module SMLets))) {
+        Find-Module SMLets | Install-Module
+        Import-Module SMLets
+    }
+}
 #retrieve the SMLets Exchange Connector MP to define configuration
 $smexcoSettingsMP = ((Get-SCSMObject -Class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings$")))
 $smexcoSettingsMPMailboxes = ((Get-SCSMObject -Class (Get-SCSMClass -Name "SMLets.Exchange.Connector.AdminSettings.AdditionalMailbox$")))
@@ -717,16 +727,7 @@ $ceScripts = if($smexcoSettingsMP.FilePathCustomEvents.EndsWith(".ps1"))
 }
 #endregion #### Configuration ####
 
-#region #### Process User Configs and Prep SMLets ####
-# Ensure SMLets is loaded in the current session.
-if (-Not (Get-Module SMLets)) {
-    Import-Module SMLets
-    # If the import is unsuccessful and PowerShell 5+ is installed, pull SMLets from the gallery and install.
-    if ($PsVersionTable.PsVersion.Major -ge 5 -And (-Not (Get-Module SMLets))) {
-        Find-Module SMLets | Install-Module
-        Import-Module SMLets
-    }
-}
+#region #### Process User Configs ####
 
 # Configure SMLets with -ComputerName and -Credential switches, if applicable.
 $scsmMGMTParams = @{ ComputerName = $scsmMGMTServer }
@@ -4567,7 +4568,7 @@ $inboxFilterString = [scriptblock]::Create("$inboxFilterString")
 
 #filter the inbox
 $inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
-if (($loggingLevel -ge 1)-and($inbox.Count -ge 1)){New-SMEXCOEvent -Source "General" -EventId 2 -LogMessage "Messages to Process: $($inbox.Count)" -Severity "Information"; $messagesProcessed = 0}
+if (($loggingLevel -ge 1)){New-SMEXCOEvent -Source "General" -EventId 2 -LogMessage "Messages to Process: $($inbox.Count)" -Severity "Information"; $messagesProcessed = 0}
 # Custom Event Handler
 if ($ceScripts) { Invoke-OnOpenInbox }
 
@@ -5150,4 +5151,15 @@ foreach ($message in $inbox)
 
     #increment the number of messages processed if logging is enabled
     if ($loggingLevel -ge 1){$messagesProcessed++; New-SMEXCOEvent -Source "General" -EventId 3 -LogMessage "Processed: $messagesProcessed of $($inbox.Count)" -Severity "Information"}
+}
+
+#log the total number of messages processed and the connector's total run time
+if ($loggingLevel -ge 1)
+{
+    $endTime = Get-Date
+    $runtime = $endTime - $startTime
+    New-SMExcoEvent -Source "General" -EventID 6 -Severity "Information" -LogMessage "Processed $($inbox.Count) messages in:
+    Minutes: $($runtime.TotalMinutes)
+    Seconds: $($runtime.TotalSeconds)
+    Milliseconds: $($runtime.TotalMilliseconds)"
 }
