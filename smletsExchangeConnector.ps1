@@ -4397,20 +4397,20 @@ if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Co
         }
         try{
             $response = Invoke-RestMethod -Uri $azureTokenURL -Method "POST" -Body $ReqTokenBody
-    
+
             #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
             $exchangeService.Url = [System.Uri]$ExchangeEndpoint
             $exchangeService.Credentials = [Microsoft.Exchange.WebServices.Data.OAuthCredentials]($response.Access_Token)
 
             if ($loggingLevel -ge 4){
-                New-SMEXCOEvent -Source "General" -EventID 6 -LogMessage "Successfully retrieved an OAuth token from 365" -Severity "Information"
-            }            
+                New-SMEXCOEvent -Source "General" -EventID 7 -LogMessage "Successfully retrieved an OAuth token from 365" -Severity "Information"
+            }
         }
         catch{
             #couldn't retrieve the OAuth token
             if ($loggingLevel -ge 3)
             {
-                New-SMEXCOEvent -Source "General" -EventId 6 -LogMessage "Could not retrieve OAuth token from 365: $($_.Exception)`nUsername: $($ReqTokenBody.Username)`nClient ID: $($ReqTokenBody.client_Id)" -Severity "Error"
+                New-SMEXCOEvent -Source "General" -EventId 8 -LogMessage "Could not retrieve OAuth token from 365: $($_.Exception)`nUsername: $($ReqTokenBody.Username)`nClient ID: $($ReqTokenBody.client_Id)" -Severity "Error"
             }
         }
     }
@@ -4459,14 +4459,14 @@ else
             $exchangeService.Credentials = [Microsoft.Exchange.WebServices.Data.OAuthCredentials]($response.Access_Token)
 
             if ($loggingLevel -ge 4){
-                New-SMEXCOEvent -Source "General" -EventID 6 -LogMessage "Successfully retrieved an OAuth token from 365" -Severity "Information"
+                New-SMEXCOEvent -Source "General" -EventID 7 -LogMessage "Successfully retrieved an OAuth token from 365" -Severity "Information"
             }
         }
         catch{
             #couldn't retrieve the OAuth token
             if ($loggingLevel -ge 3)
             {
-                New-SMEXCOEvent -Source "General" -EventId 6 -LogMessage "Could not retrieve OAuth token from 365: $($_.Exception)`nUsername: $($ReqTokenBody.Username)`nClient ID: $($ReqTokenBody.client_Id)" -Severity "Error"
+                New-SMEXCOEvent -Source "General" -EventId 8 -LogMessage "Could not retrieve OAuth token from 365: $($_.Exception)`nUsername: $($ReqTokenBody.Username)`nClient ID: $($ReqTokenBody.client_Id)" -Severity "Error"
             }
         }
     }
