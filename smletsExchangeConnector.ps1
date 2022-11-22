@@ -1077,7 +1077,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     if ($attachEmailToWorkItem -eq $true){Add-EmailToSCSMObject -message $message -smobject $newWorkItem}
                     Set-SCSMTemplate -Projection $irProjection -Template $IRTemplate
                     #Set-SCSMObjectTemplate -Projection $irProjection -Template $IRTemplate @scsmMGMTParams
-                    Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
+                    Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description; "Displayname" = "$($newWorkItem.Id) : $title"} @scsmMGMTParams
                     if ($affectedUser)
                     {
                         try {New-SCSMRelationshipObject -Relationship $createdByUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "New-WorkItem" -EventId 3 -LogMessage "The Created By User for $($newWorkItem.Name) could not be set." -Severity "Warning"}}
@@ -1234,7 +1234,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     if ($attachEmailToWorkItem -eq $true){Add-EmailToSCSMObject -message $message -smobject $newWorkItem}
                     Set-SCSMTemplate -Projection $srProjection -Template $SRTemplate
                     #Set-SCSMObjectTemplate -projection $srProjection -Template $SRTemplate @scsmMGMTParams
-                    Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
+                    Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description; "Displayname" = "$($newWorkItem.Id) : $title"} @scsmMGMTParams
                     if ($affectedUser)
                     {
                         try {New-SCSMRelationshipObject -Relationship $createdByUserRelClass -Source $newWorkItem -Target $affectedUser -Bulk @scsmMGMTParams} catch {if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "New-WorkItem" -EventId 3 -LogMessage "The Created By User for $($newWorkItem.Name) could not be set." -Severity "Warning"}}
@@ -1391,7 +1391,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     if ($attachEmailToWorkItem -eq $true){Add-EmailToSCSMObject -message $message -smobject $newWorkItem}
                     Set-SCSMTemplate -Projection $prProjection -Template $PRTemplate
                     #Set-SCSMObjectTemplate -Projection $prProjection -Template $defaultPRTemplate @scsmMGMTParams
-                    Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
+                    Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description; "Displayname" = "$($newWorkItem.Id) : $title"} @scsmMGMTParams
                     #no Affected User to set on a Problem, set Created By using the Affected User object if it exists
                     if ($affectedUser)
                     {
@@ -1419,7 +1419,7 @@ function New-WorkItem ($message, $wiType, $returnWIBool)
                     $crProjection = Get-SCSMObjectProjection -ProjectionName $crTypeProjection.Name -Filter "ID -eq $($newWorkItem.Name)" @scsmMGMTParams
                     #Set-SCSMObjectTemplate -Projection $crProjection -Template $defaultCRTemplate @scsmMGMTParams
                     Set-SCSMTemplate -Projection $crProjection -Template $CRTemplate
-                    Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description} @scsmMGMTParams
+                    Set-ScsmObject -SMObject $newWorkItem -PropertyHashtable @{"Description" = $description; "Displayname" = "$($newWorkItem.Id) : $title"} @scsmMGMTParams
                     #The Affected User relationship exists on Change Requests, but does not exist on the CR Form out of box.
                     #Cireson SCSM Portal customers may wish to set the Sender as the Affected User so that it follows Incident/Service Request style functionality in that the Sender/User
                     #in question can see the CR in the "My Requests" section of their SCSM portal. This can be acheived by uncommenting the New-SCSMRelationshipObject seen below
