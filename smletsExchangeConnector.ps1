@@ -21,6 +21,23 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 5.0.0.rc1 = #397 - Feature, Support for Multiple Keywords
+                #399 - Enhancement, Use Singular Nouns
+                #404 - Enhancement, Remove Unused Variables
+                #405 - Enhancement, Refactor Get-TierMembership
+                #406 - Enhancement, Refactor Set-SCSMTemplate and Update-SCSMPropertyCollection
+                #407 - Enhancement, Variable usage for digitally signed messages
+                #408 - Enhancement, Variable scope modifier for SCOM related actions
+                #409 - Bug, Retrieving a user's email address for SCOM actions uses the wrong property
+                #410 - Bug, Update-WorkItem does not individually attach files from an email
+                #403 - Bug, Get-SCSMUserByEmailAddress fails to find the user if their email contains a PowerShell comparison operator
+                #413 - Enhancement, The Description for the enum for IPM.Note.SMIME.MultipartSigned was missing the word "signed"
+                #412 - Enhancement, Choosing a SCOM Group or Announcement Group no longer makes use of a label to display the selection
+                #417 - Enhancement, Templates and Logging pane in the UI now use relevant iconography
+                #422 - Bug, Certain environments may not load SMLets fast enough
+                #423 - Enhancement, Logging is now more descriptive of the start, process, and finish stages of a run of the connector
+                #424 - Enhancement, More logging and error handling for OAuth token authentication
+                #425 - Enhancement, Set the DisplayName property on Work Items as though they were created in the SCSM Console
 Version: 4.1.1 = #382 - Bug, When Azure Cloud Instance is defined in the Settings, the PowerShell returned a string instead of the full enum
                 #378 - Bug and Enhancement, Several catch blocks did not contain logging events. Assigned User of a Closed Incident cannot correctly reactivate it which would result in a New and Related Work Item
                 #379 - Enhancement, Get-CiresonPortalAPIToken function no longer makes use of ConvertTo-SecureString
