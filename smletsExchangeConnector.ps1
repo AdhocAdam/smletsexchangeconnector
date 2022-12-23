@@ -21,7 +21,7 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
-Version: 5.0.0.rc1 = #397 - Feature, Support for Multiple Keywords
+Version: 5.0.0 = #397 - Feature, Support for Multiple Keywords
                 #399 - Enhancement, Use Singular Nouns
                 #404 - Enhancement, Remove Unused Variables
                 #405 - Enhancement, Refactor Get-TierMembership
@@ -38,6 +38,7 @@ Version: 5.0.0.rc1 = #397 - Feature, Support for Multiple Keywords
                 #423 - Enhancement, Logging is now more descriptive of the start, process, and finish stages of a run of the connector
                 #424 - Enhancement, More logging and error handling for OAuth token authentication
                 #425 - Enhancement, Set the DisplayName property on Work Items as though they were created in the SCSM Console
+                #427 - Bug, Credentials supplied by any other means than using the SCSM Workflow engine when connecting to M365 fails email address validation
 Version: 4.1.1 = #382 - Bug, When Azure Cloud Instance is defined in the Settings, the PowerShell returned a string instead of the full enum
                 #378 - Bug and Enhancement, Several catch blocks did not contain logging events. Assigned User of a Closed Incident cannot correctly reactivate it which would result in a New and Related Work Item
                 #379 - Enhancement, Get-CiresonPortalAPIToken function no longer makes use of ConvertTo-SecureString
