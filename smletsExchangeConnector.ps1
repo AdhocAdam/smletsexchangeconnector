@@ -1,4 +1,3 @@
-$startTime = Get-Date
 <#
 .SYNOPSIS
 Provides SCSM Exchange Connector functionality through PowerShell
@@ -207,6 +206,7 @@ Version: 1.1 = GitHub issue raised on updating work items. Per discussion was pi
                 ensures the brackets aren't passed when performing the search/update.
 #>
 
+$startTime = Get-Date
 #inspired and modified from Kevin Holman/Mark Manty https://kevinholman.com/2016/04/02/writing-events-with-parameters-using-powershell/
 function New-SMEXCOEvent
 {
