@@ -1,61 +1,68 @@
-﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.KeywordsForm" 
+<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.KeywordsForm" 
             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             xmlns:wpfwiz="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfWizardFramework;assembly=Microsoft.EnterpriseManagement.UI.WpfWizardFramework"
             xmlns:smcontrols="clr-namespace:Microsoft.EnterpriseManagement.UI.WpfControls;assembly=Microsoft.EnterpriseManagement.UI.SmControls"
             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" Width="567" Height="647.746">
+            xmlns:Custom="http://schemas.microsoft.com/SystemCenter/Common/UI/Wpf" mc:Ignorable="d" MinWidth="600" MinHeight="647.746">
 
-    <Grid Name="ConfigurationGrid" Margin="10">
-        <!-- header -->
-        <Label Content="Keywords" Margin="0,3,10,0" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26"/>
-        <TextBlock Margin="0,51,10,0" VerticalAlignment="Top" Height="61" FontWeight="Light" FontSize="14" TextWrapping="Wrap"
-                   Text="Configure the keywords to use with the connector. These words must be contained within the body of an email for the action to occur. Note: enter the word and the word alone you wish to use. Do NOT add [], #, :, or any special characters." />
+    <Grid Name="ConfigurationGrid">
+        <Grid Margin="5px">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-        <!-- configuration -->
-        <StackPanel Name="scrollViewer" HorizontalAlignment="Left" Width="240" Margin="0,117,0,10">
-            <StackPanel Name="stackPanelLeft" Orientation="Vertical" Height="485" VerticalAlignment="Top" >
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblFromKeyword" Content="Email reply parsing keyword (e.g. From)"/>
-                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtFromKW" Text="{Binding KeywordFrom, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAckKeyword" Content="[Acknowledge]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtAckKW" Text="{Binding KeywordAcknowledge, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblReactivateKeyword" Content="[Reactivate]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtReactivateKW" Text="{Binding KeywordReactivate, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblResolvedKeyword" Content="[Resolved]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtResolvedKW" Text="{Binding KeywordResolve, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblClosedKeyword" Content="[Closed]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtClosedKW" Text="{Binding KeywordClose, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblHoldKeyword" Content="[Hold]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtHoldKW" Text="{Binding KeywordHold, FallbackValue='', Mode=TwoWay}"  Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAnnouncementKeyword" Content="[Announcement]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" ToolTip="announcement" x:Name="txtBlkAnnouncementKeyword" Text="{Binding KeywordAnnouncement, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblPrivateKeyword" Content="#private"/>
-                <TextBox Height="25" Margin="0,-8,10,10" ToolTip="announcement" x:Name="txtBlkPrivateKeyword" Text="{Binding KeywordPrivate, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblRemoveWatchlistKeyword" Content="[stopwatch] - requires Cireson Portal"/>
-                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtBlkRemoveWatchlistKeyword" Text="{Binding KeywordRemoveWatchlist, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
+            <!-- header -->
+            <Label Content="Keywords" VerticalAlignment="Top" Height="48" FontWeight="Bold" FontSize="26" Grid.Row="0"/>
+            <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Margin="10,41,10,15" VerticalAlignment="Top" FontWeight="Light" FontSize="14" TextWrapping="Wrap" Text="Configure the keywords to use with the connector. These words must be contained within the body of an email for the action to occur. Note: enter the word or words (comma separated) alone you wish to use for the given action. Do NOT add [], #, : or any special characters." />
+
+            <!-- configuration -->
+            <StackPanel Grid.Row="1" Grid.Column="0">
+                <Label Padding="0" x:Name="lblFromKeyword" Content="Email reply parsing keyword (e.g. From)" Margin="10,0,0,0"/>
+                <TextBox x:Name="txtFromKW" Text="{Binding KeywordFrom, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" Margin="10,0,0,10" />
+                <Label Padding="0" x:Name="lblAckKeyword" Content="[Acknowledge]" Margin="10,0,0,0"/>
+                <TextBox x:Name="txtAckKW" Text="{Binding KeywordAcknowledge, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,0,10" />
+                <Label Padding="0" x:Name="lblReactivateKeyword" Content="[Reactivate]" Margin="10,0,0,0"/>
+                <TextBox Name="txtReactivateKW" Text="{Binding KeywordReactivate, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,0,10" />
+                <Label Padding="0"  x:Name="lblResolvedKeyword" Content="[Resolved]" Margin="10,0,0,0"/>
+                <TextBox  Name="txtResolvedKW" Text="{Binding KeywordResolve, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,0,10" />
+                <Label Padding="0"  x:Name="lblClosedKeyword" Content="[Closed]" Margin="10,0,0,0"/>
+                <TextBox  Name="txtClosedKW" Text="{Binding KeywordClose, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,0,10" />
+                <Label Padding="0"  x:Name="lblHoldKeyword" Content="[Hold]" Margin="10,0,0,0"/>
+                <TextBox  Name="txtHoldKW" Text="{Binding KeywordHold, FallbackValue='', Mode=TwoWay}"  Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,0,10" />
+                <Label Padding="0"  x:Name="lblAnnouncementKeyword" Content="[Announcement]" Margin="10,0,0,0"/>
+                <TextBox  ToolTip="announcement" x:Name="txtBlkAnnouncementKeyword" Text="{Binding KeywordAnnouncement, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,0,10" />
+                <Label Padding="0"  x:Name="lblPrivateKeyword" Content="#private" Margin="10,0,0,0"/>
+                <TextBox  ToolTip="announcement" x:Name="txtBlkPrivateKeyword" Text="{Binding KeywordPrivate, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,0,10" />
+                <Label Padding="0"  x:Name="lblRemoveWatchlistKeyword" Content="[stopwatch] - requires Cireson Portal" Margin="10,0,0,0"/>
+                <TextBox  x:Name="txtBlkRemoveWatchlistKeyword" Text="{Binding KeywordRemoveWatchlist, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,0,10" />
             </StackPanel>
-        </StackPanel>
-        <StackPanel x:Name="scrollViewer_Copy" HorizontalAlignment="Left" Width="240" Margin="271,117,0,10">
-            <StackPanel Name="stackPanelRight" Orientation="Vertical" Height="485" VerticalAlignment="Top">
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblCancelKeyword" Content="[Cancelled]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtCancelledKW" Text="{Binding KeywordCancel, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblCompletedKeyword" Content="[Completed]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtCompletedKW" Text="{Binding KeywordComplete, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblSkipKeyword" Content="[Skipped]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtSkipKW" Text="{Binding KeywordSkip, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblApproveKeyword" Content="[Approve]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtApproveKW" Text="{Binding KeywordApprove, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblRejectKeyword" Content="[Reject]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtRejectKW" Text="{Binding KeywordReject, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblTakeKeyword" Content="[Take]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" Name="txtTakeKW" Text="{Binding KeywordTake, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblHealthKeyword" Content="[SCOM Distributed App Health Status]"/>
-                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtSCOMHealthKeyword" Text="{Binding KeywordHealth, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblAddWatchlistKeyword" Content="[watch] - requires Cireson Portal"/>
-                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtAddWatchlistKeyword" Text="{Binding KeywordAddWatchlist, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
-                <Label Height="25" Padding="0" Margin="0,0,0,0" x:Name="lblPowerShellKeyword" Content="[pwsh] - requires Digital Email Signatures"/>
-                <TextBox Height="25" Margin="0,-8,10,10" x:Name="txtPowerShellKeyword" Text="{Binding KeywordPowerShell, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^[a-zA-Z0-9]*$" />
+            <StackPanel Grid.Row="1" Grid.Column="1">
+                <Label Padding="0"  x:Name="lblCancelKeyword" Content="[Cancelled]" Margin="10,0,0,0"/>
+                <TextBox  x:Name="txtCancelledKW" Text="{Binding KeywordCancel, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,10,10" />
+                <Label Padding="0"  x:Name="lblCompletedKeyword" Content="[Completed]" Margin="10,0,0,0"/>
+                <TextBox  Name="txtCompletedKW" Text="{Binding KeywordComplete, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,10,10" />
+                <Label Padding="0"  x:Name="lblSkipKeyword" Content="[Skipped]" Margin="10,0,0,0"/>
+                <TextBox  Name="txtSkipKW" Text="{Binding KeywordSkip, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,10,10" />
+                <Label Padding="0"  x:Name="lblApproveKeyword" Content="[Approve]" Margin="10,0,0,0"/>
+                <TextBox  Name="txtApproveKW" Text="{Binding KeywordApprove, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,10,10" />
+                <Label Padding="0"  x:Name="lblRejectKeyword" Content="[Reject]" Margin="10,0,0,0"/>
+                <TextBox  Name="txtRejectKW" Text="{Binding KeywordReject, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,10,10" />
+                <Label Padding="0"  x:Name="lblTakeKeyword" Content="[Take]" Margin="10,0,0,0"/>
+                <TextBox  Name="txtTakeKW" Text="{Binding KeywordTake, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,10,10" />
+                <Label Padding="0"  x:Name="lblHealthKeyword" Content="[SCOM Distributed App Health Status]" Margin="10,0,0,0"/>
+                <TextBox  x:Name="txtSCOMHealthKeyword" Text="{Binding KeywordHealth, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,10,10" />
+                <Label Padding="0"  x:Name="lblAddWatchlistKeyword" Content="[watch] - requires Cireson Portal" Margin="10,0,0,0"/>
+                <TextBox  x:Name="txtAddWatchlistKeyword" Text="{Binding KeywordAddWatchlist, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,10,10" />
+                <Label Padding="0"  x:Name="lblPowerShellKeyword" Content="[pwsh] - requires Digital Email Signatures" Margin="10,0,0,0"/>
+                <TextBox  x:Name="txtPowerShellKeyword" Text="{Binding KeywordPowerShell, FallbackValue='', Mode=TwoWay}" Custom:Validation.RegexPattern="^([a-zA-Z0-9]+,)*[a-zA-Z0-9]+$" Margin="10,0,10,10" />
             </StackPanel>
-        </StackPanel>
+
+        </Grid>
     </Grid>
-</wpfwiz:WizardRegularPageBase> 
+</wpfwiz:WizardRegularPageBase>

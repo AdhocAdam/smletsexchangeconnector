@@ -1,4 +1,4 @@
-﻿<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.AnnouncementsForm" 
+<wpfwiz:WizardRegularPageBase x:Class="SMLetsExchangeConnectorSettingsUI.AnnouncementsForm" 
             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             xmlns:sys="clr-namespace:System;assembly=mscorlib"
@@ -55,7 +55,6 @@
             <TextBox Height="50" x:Name="txtApprovedMember" Text="{Binding SCSMApprovedAnnouncers}" IsEnabled="{Binding ElementName=chkAnnouncementIntegration, Path=IsChecked}" TextWrapping="Wrap"/>
             <Label Margin="0,0,0,0" Content="Select the AD group approved for creating Announcements" />
             <Custom:SingleInstancePicker IsEnabled="{Binding ElementName=chkAnnouncementIntegration, Path=IsChecked}" Instance="{Binding SCSMApprovedAnnouncementGroup, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" BaseClassId="E2386B9B-5364-E438-A317-93836B979C56" Margin="0,0,10,0" />
-            <Label Margin="0,0,0,0" Content="{Binding SCSMApprovedGroupDisplayName}" />
         </StackPanel>
     </Grid>
-</wpfwiz:WizardRegularPageBase> 
+</wpfwiz:WizardRegularPageBase>

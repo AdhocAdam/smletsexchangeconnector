@@ -20,7 +20,6 @@ namespace SMLetsExchangeConnectorSettingsUI
     /// <summary>
     /// Interaction logic for AboutForm.xaml
     /// </summary>
-
     public partial class AboutForm : WizardRegularPageBase
     {
         private AboutForm adminSettingWizardData = null;
@@ -32,16 +31,17 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.adminSettingWizardData = this.DataContext as AboutForm;
         }
 
+        /*
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
         {
 
         }
+        */
 
         //take the URL defined in the WPF and open a browser to it
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {
             System.Diagnostics.Process.Start(e.Uri.AbsoluteUri);
         }
-
     }
 }

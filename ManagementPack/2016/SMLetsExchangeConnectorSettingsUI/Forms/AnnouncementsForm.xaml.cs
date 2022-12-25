@@ -20,7 +20,6 @@ namespace SMLetsExchangeConnectorSettingsUI
     /// <summary>
     /// Interaction logic for AnnouncementsForm.xaml
     /// </summary>
-
     public partial class AnnouncementsForm : WizardRegularPageBase
     {
         //1. Create a blank Instance of AdminSettingsWizardData called "settings"
@@ -40,10 +39,12 @@ namespace SMLetsExchangeConnectorSettingsUI
             //enable Cireson specific controls if the MP is imported per the AdminSettingsWizardData
             if (settings.IsCiresonPortalMPImported == false) { chkPostAnnouncementToCiresonPortal.IsEnabled = false; }
         }
-
+        
+        /*
         private void WizardRegularPageBase_Loaded(object sender, RoutedEventArgs e)
         {
 
         }
+        */
     }
 }

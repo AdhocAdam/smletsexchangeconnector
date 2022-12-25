@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,6 +12,7 @@ using Microsoft.Win32;
 using Microsoft.EnterpriseManagement.ConnectorFramework;
 using System.Xml;
 using System.Globalization;
+using Microsoft.EnterpriseManagement.UI.Extensions.Shared;
 
 namespace SMLetsExchangeConnectorSettingsUI
 {
@@ -1900,7 +1901,6 @@ namespace SMLetsExchangeConnectorSettingsUI
             }
         }
         
-
         public ManagementPackProperty ACSIncidentSentimentDecExtension
         {
             get
@@ -2227,7 +2227,7 @@ namespace SMLetsExchangeConnectorSettingsUI
         {
             get
             {
-                return incidentAMLClassificationPredictionExtensionEnum; ;
+                return incidentAMLClassificationPredictionExtensionEnum;
             }
             set
             {
@@ -3070,16 +3070,16 @@ namespace SMLetsExchangeConnectorSettingsUI
             catch { this.IsCiresonAnnouncementsEnabled = false; }
 
             this.SCSMApprovedAnnouncers = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementUsers"].ToString();
-            try
+            if (emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementGroupGUID"].Value != null)
             {
-                this.SCSMApprovedGroupGUID = (Guid)emoAdminSetting[null, "SCSMApprovedAnnouncementGroupGUID"].Value;
-                EnterpriseManagementObject ScsmApprovedGroupEmoObject;
-                ScsmApprovedGroupEmoObject = (EnterpriseManagementObject)emg.EntityObjects.GetObject<EnterpriseManagementObject>(this.SCSMApprovedGroupGUID, ObjectQueryOptions.Default);
-                this.SCSMApprovedGroupDisplayName = "CURRENT ANNOUNCEMENT GROUP: " + ScsmApprovedGroupEmoObject.DisplayName;
-            }
-            catch
-            {
-                this.SCSMApprovedGroupDisplayName = "NO ANNOUNCEMENT GROUP DEFINED";
+                try
+                {
+                    this.SCSMApprovedAnnouncementGroup = ConsoleContextHelper.Instance.GetInstance((Guid)emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementGroupGUID"].Value);
+                }
+                catch
+                {
+                    //"NO ANNOUNCEMENT GROUP DEFINED";
+                }
             }
 
             //SCOM Integration
@@ -3088,16 +3088,16 @@ namespace SMLetsExchangeConnectorSettingsUI
             this.SCOMServer = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMmgmtServer"].ToString();
             this.AuthorizedSCOMApproverType = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedMemberType"].ToString();
             this.AuthorizedSCOMUsers = emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedUsers"].ToString();
-            try
+            if (emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedGroupGUID"].Value != null)
             {
-                this.SCOMApprovedGroupGUID = (Guid)emoAdminSetting[null, "SCOMApprovedGroupGUID"].Value;
-                EnterpriseManagementObject ScomApprovedGroupEmoObject;
-                ScomApprovedGroupEmoObject = (EnterpriseManagementObject)emg.EntityObjects.GetObject<EnterpriseManagementObject>(this.SCOMApprovedGroupGUID, ObjectQueryOptions.Default);
-                this.SCOMApprovedGroupDisplayName = "CURRENT APPROVED GROUP: " + ScomApprovedGroupEmoObject.DisplayName;
-            }
-            catch
-            {
-                this.SCOMApprovedGroupDisplayName = "NO SCOM GROUP DEFINED";
+                try
+                {
+                    this.SCOMApprovedGroup = ConsoleContextHelper.Instance.GetInstance((Guid)emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedGroupGUID"].Value);
+                }
+                catch
+                {
+                    //"NO SCOM GROUP DEFINED";
+                }
             }
 
             //Artificial Intelligence - Cognitive Services
@@ -3200,7 +3200,6 @@ namespace SMLetsExchangeConnectorSettingsUI
                     catch { }
                     try
                     {
-
                         if (irproperty.Id == (Guid)emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSentimentScoreIncidentClassExtensionGUID"].Value)
                         {
                             this.ACSIncidentSentimentDecExtension = irproperty;
@@ -3286,7 +3285,6 @@ namespace SMLetsExchangeConnectorSettingsUI
                     catch { }
                     try
                     {
-
                         if (srproperty.Id == (Guid)emoAdminSetting[smletsExchangeConnectorSettingsClass, "ACSSentimentScoreServiceRequestClassExtensionGUID"].Value)
                         {
                             this.ACSServiceRequestSentimentDecExtension = srproperty;
@@ -3600,7 +3598,6 @@ namespace SMLetsExchangeConnectorSettingsUI
 
                 }
             }
-
             //Use Custom Rules
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "UseCustomRules"].Value = this.UseCustomRules;
 
@@ -3688,7 +3685,6 @@ namespace SMLetsExchangeConnectorSettingsUI
 
                 }
             }
-
             //Keywords
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordFrom"].Value = this.KeywordFrom;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMKeywordAcknowledge"].Value = this.KeywordAcknowledge;
@@ -3763,8 +3759,15 @@ namespace SMLetsExchangeConnectorSettingsUI
             }
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementUsers"].Value = this.SCSMApprovedAnnouncers;
             //if the Announcement group is set, don't null it
-            try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementGroupGUID"].Value = this.SCSMApprovedAnnouncementGroup["Id"]; }
-            catch { }
+            if (this.SCSMApprovedAnnouncementGroup != null)
+            {
+                try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementGroupGUID"].Value = this.SCSMApprovedAnnouncementGroup["Id"]; }
+                catch { }
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCSMApprovedAnnouncementGroupGUID"].Value = null;
+            }
 
             //SCOM Integration
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableSCOMIntegration"].Value = this.IsSCOMIntegrationEnabled;
@@ -3772,8 +3775,15 @@ namespace SMLetsExchangeConnectorSettingsUI
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedMemberType"].Value = this.AuthorizedSCOMApproverType;
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedUsers"].Value = this.AuthorizedSCOMUsers;
             //if the SCOM approved group is set, don't null it
-            try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedGroupGUID"].Value = this.SCOMApprovedGroup["Id"]; }
-            catch { }
+            if (this.SCOMApprovedGroup != null)
+            {
+                try { emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedGroupGUID"].Value = this.SCOMApprovedGroup["Id"]; }
+                catch { }
+            }
+            else
+            {
+                emoAdminSetting[smletsExchangeConnectorSettingsClass, "SCOMApprovedGroupGUID"].Value = null;
+            }
 
             //Artifical Intelligence - enabled/disabled
             emoAdminSetting[smletsExchangeConnectorSettingsClass, "EnableArtificialIntelligence"].Value = this.IsArtificialIntelligenceEnabled;
