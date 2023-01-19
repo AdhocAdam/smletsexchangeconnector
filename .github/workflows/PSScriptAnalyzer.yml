@@ -37,7 +37,7 @@ jobs:
               echo "ERRORS=$errorCount" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
 
           - name: Create Error Badge for PSScriptAnalyzer Result
-            uses: schneegans/dynamic-badges-action@v1.4.0
+            uses: schneegans/dynamic-badges-action@v1.6.0
             with:
               auth: ${{ secrets.SMEXCOSCRIPTANALYZERGIST }}
               gistID: a85ec65858e3065359d1d6a9d122e723
@@ -47,7 +47,7 @@ jobs:
               color: red
 
           - name: Create Warning Badge for PSScriptAnalyzer Result
-            uses: schneegans/dynamic-badges-action@v1.4.0
+            uses: schneegans/dynamic-badges-action@v1.6.0
             with:
               auth: ${{ secrets.SMEXCOSCRIPTANALYZERGIST }}
               gistID: a85ec65858e3065359d1d6a9d122e723
@@ -57,7 +57,7 @@ jobs:
               color: yellow
 
           - name: Create Info Badge for PSScriptAnalyzer Result
-            uses: schneegans/dynamic-badges-action@v1.4.0
+            uses: schneegans/dynamic-badges-action@v1.6.0
             with:
               auth: ${{ secrets.SMEXCOSCRIPTANALYZERGIST }}
               gistID: a85ec65858e3065359d1d6a9d122e723

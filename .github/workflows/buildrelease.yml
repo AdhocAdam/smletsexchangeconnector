@@ -25,13 +25,13 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out repository under $GITHUB_WORKSPACE, so job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3.3.0
         with:
           ref: ${{ github.event.inputs.branch }}
 
       # Add MSBuild to environment path
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.2
+        uses: microsoft/setup-msbuild@v1.1.3
 
       # copy dependencies over
       - name: Copy Dependencies folder from the repo to Build for MP signing and show them
@@ -117,7 +117,7 @@ jobs:
           prerelease: ${{ github.event.inputs.prerelease }}
 
       # download the Artifacts to Ubuntu that were uploaded in the Windows build step
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3.0.2
         id: download #this will be used as a variable
         with:
            name: SMletsExchangeConnector
