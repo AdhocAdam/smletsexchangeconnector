@@ -24,7 +24,7 @@ jobs:
 
       # Add MSBuild to environment path
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.2
+        uses: microsoft/setup-msbuild@v1.1.3
 
       # copy dependencies over
       - name: Copy Dependencies folder from the repo to Build for MP signing and show them
