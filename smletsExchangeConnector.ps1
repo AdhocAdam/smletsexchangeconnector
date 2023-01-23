@@ -2613,6 +2613,8 @@ function Get-SCSMUserByEmailAddress
 
 # Nested group membership check inspired by Piotr Lewandowski https://gallery.technet.microsoft.com/scriptcenter/Get-nested-group-15f725f2#content
 function Get-TierMembership {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'UserSamAccountName', Justification = 'False positive')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'TierId', Justification = 'False positive')]
     param (
         #The SCSM User who will be determined to be part of the given Tier
         [parameter(Mandatory=$true)]
@@ -3435,6 +3437,7 @@ function Confirm-WorkItem
 
 function Test-EmailPattern
 {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'MessageClass', Justification = 'False positive')]
     param (
         #The Exchange message class, e.g. IPM.Note, IPM.Schedule.Meeting.Request, etc.
         [Parameter(Mandatory=$true)]
