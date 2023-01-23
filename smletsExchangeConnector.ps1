@@ -1632,7 +1632,7 @@ function Update-WorkItem
 
                 try {$existingWiStatusName = $workItem.Status.Name} catch {New-SMEXCOEvent -Source "New-WorkItem" -EventID 5 -Severity "Information" -LogMessage "$($workItem.Name) does not exist within SCSM."}
                 if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "IncidentStatusEnum.Closed") {
-                    $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | foreach-object {Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $_ @scsmMGMTParams).sourceobject.id @scsmMGMTParams} | where-object {$_.Status -ne "IncidentStatusEnum.Closed"}
+                    $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | foreach-object {Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $_ @scsmMGMTParams).sourceobject.id @scsmMGMTParams} | Sort-Object lastmodified -Descending | Select-Object -First 1 | where-object {$_.Status -ne "IncidentStatusEnum.Closed"}
                     if (($relatedWorkItemFromAttachmentSearch | get-unique).count -eq 1 -and $relatedWorkItemFromAttachmentSearch.Status.Name -ne "IncidentStatusEnum.Closed")
                     {
                         Update-WorkItem -message $message -wiType "ir" -workItem $relatedWorkItemFromAttachmentSearch
@@ -1775,7 +1775,7 @@ function Update-WorkItem
 
                 try {$existingWiStatusName = $workItem.Status.Name} catch {New-SMEXCOEvent -Source "New-WorkItem" -EventID 5 -Severity "Information" -LogMessage "$($workItem.Name) does not exist within SCSM."}
                 if ($CreateNewWorkItemWhenClosed -eq $true -And $existingWiStatusName -eq "ServiceRequestStatusEnum.Closed") {
-                    $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | foreach-object {Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $_ @scsmMGMTParams).sourceobject.id @scsmMGMTParams} | where-object {$_.Status -ne "ServiceRequestStatusEnum.Closed"}
+                    $relatedWorkItemFromAttachmentSearch = Get-SCSMObject -Class $fileAttachmentClass -Filter "Description -eq 'ExchangeConversationID:$($message.ConversationID);'" @scsmMGMTParams | foreach-object {Get-SCSMObject -Id (Get-SCSMRelationshipObject -ByTarget $_ @scsmMGMTParams).sourceobject.id @scsmMGMTParams} | Sort-Object lastmodified -Descending | Select-Object -First 1 | where-object {$_.Status -ne "ServiceRequestStatusEnum.Closed"}
                     if (($relatedWorkItemFromAttachmentSearch | get-unique).count -eq 1 -and $relatedWorkItemFromAttachmentSearch.Status.Name -ne "ServiceRequestStatusEnum.Closed")
                     {
                         Update-WorkItem -message $message -wiType "sr" -workItem $relatedWorkItemFromAttachmentSearch
