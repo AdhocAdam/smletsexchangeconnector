@@ -4898,6 +4898,7 @@ catch
     }
     break
 }
+#define search parameters, search on the defined classes and get messages that are older than the current time
 $itemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 1000
 $propertySet = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.BasePropertySet]::FirstClassProperties)
 $propertySet.RequestedBodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::Text
