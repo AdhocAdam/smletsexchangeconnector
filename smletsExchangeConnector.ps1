@@ -2070,150 +2070,150 @@ function Update-WorkItem
                             $reviewingUser = Get-SCSMRelatedObject -SMObject $reviewer -Relationship $raReviewerIsUserRelClass @scsmMGMTParams
                             if ($reviewingUser)
                             {
-                            $reviewingUser = Get-SCSMObject -Id $reviewingUser.Id @scsmMGMTParams
-                            $reviewingUserName = $reviewingUser.UserName #it is necessary to store this in its own variable for the AD filters to work correctly
-                            $reviewingUserSMTP = Get-SCSMRelatedObject -SMObject $reviewingUser @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress
+                                $reviewingUser = Get-SCSMObject -Id $reviewingUser.Id @scsmMGMTParams
+                                $reviewingUserName = $reviewingUser.UserName #it is necessary to store this in its own variable for the AD filters to work correctly
+                                $reviewingUserSMTP = Get-SCSMRelatedObject -SMObject $reviewingUser @scsmMGMTParams | Where-Object{$_.displayname -like "*SMTP"} | select-object TargetAddress
 
-                            if ($commentToAdd.length -gt 256) { $decisionComment = $commentToAdd.substring(0,253)+"..." } else { $decisionComment = $commentToAdd }
+                                if ($commentToAdd.length -gt 256) { $decisionComment = $commentToAdd.substring(0,253)+"..." } else { $decisionComment = $commentToAdd }
 
-                            #Reviewer is a User
-                            if ([bool] (Get-ADUser @adParams -filter {SamAccountName -eq $reviewingUserName}))
-                            {
-                                #approved
-                                if (($reviewingUserSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$approvedKeyword]"))
+                                #Reviewer is a User
+                                if ([bool] (Get-ADUser @adParams -filter {SamAccountName -eq $reviewingUserName}))
                                 {
-                                        Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
-                                        New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk @scsmMGMTParams
-                                        if ($loggingLevel -ge 4)
-                                        {
-                                            $logMessage = "Voting on $($workItem.Name)
-                                            SCSM User: $($commentLeftBy.DisplayName)
-                                            Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
-                                            New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
-                                        }
-                                        # Custom Event Handler
-                                        if ($ceScripts) { Invoke-AfterApproved }
-                                }
-                                #rejected
-                                elseif (($reviewingUserSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$rejectedKeyword]"))
-                                {
-                                        Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
-                                        New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk @scsmMGMTParams
-                                        if ($loggingLevel -ge 4)
-                                        {
-                                            $logMessage = "Voting on $($workItem.Name)
-                                            SCSM User: $($commentLeftBy.DisplayName)
-                                            Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
-                                            New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
-                                        }
-                                        # Custom Event Handler
-                                        if ($ceScripts) { Invoke-AfterRejected }
-                                }
-                                #no keyword, add a comment to parent work item
-                                elseif (($reviewingUserSMTP.TargetAddress -eq $message.From) -and (($commentToAdd -notmatch "\[$approvedKeyword]") -or ($commentToAdd -notmatch "\[$rejectedKeyword]")))
-                                {
-                                    $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Get_Id().Guid
-                                    switch ($parentWorkItem.Classname)
+                                    #approved
+                                    if (($reviewingUserSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$approvedKeyword]"))
                                     {
-                                        "System.WorkItem.ChangeRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
-                                        "System.WorkItem.ServiceRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
-                                        "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
+                                            Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
+                                            New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk @scsmMGMTParams
+                                            if ($loggingLevel -ge 4)
+                                            {
+                                                $logMessage = "Voting on $($workItem.Name)
+                                                SCSM User: $($commentLeftBy.DisplayName)
+                                                Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
+                                                New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
+                                            }
+                                            # Custom Event Handler
+                                            if ($ceScripts) { Invoke-AfterApproved }
                                     }
-                                    if ($loggingLevel -ge 4)
+                                    #rejected
+                                    elseif (($reviewingUserSMTP.TargetAddress -eq $message.From) -and ($commentToAdd -match "\[$rejectedKeyword]"))
                                     {
-                                        $logMessage = "No vote to process for $($workItem.Name). Adding to Parent Work Item $($parentWorkItem.Name)
-                                        SCSM User: $($commentLeftBy.DisplayName)
-                                        Comment: $commentToAdd"
-                                        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
-                                    }
-                                }
-                            }
-                            else {
-                                # Identify the user
-                                $votedOnBehalfOfUser = Get-SCSMUserByEmailAddress -EmailAddress $message.From
-
-                                #Reviewer is in a Group and "Voting on Behalf of Groups" is enabled
-                                if ($voteOnBehalfOfGroups -eq $true -and $votedOnBehalfOfUser.UserName)
-                                {
-                                    #determine which domain to query, in case of multiple domains and trusts
-                                    $AdRoot = (Get-AdDomain @adParams -Identity $reviewingUser.Domain).DNSRoot
-
-                                    $isReviewerGroupMember = Get-ADGroupMember -Server $AdRoot -Identity $reviewingUser.UserName -recursive @adParams | Where-Object { $_.objectClass -eq "user" -and $_.name -eq $votedOnBehalfOfUser.UserName }
-
-                                    #approved on behalf of
-                                    if (($isReviewerGroupMember) -and ($commentToAdd -match "\[$approvedKeyword]"))
-                                    {
-                                        Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
-                                        New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $votedOnBehalfOfUser -Bulk @scsmMGMTParams
-                                        if ($loggingLevel -ge 4)
-                                        {
-                                            $logMessage = "Voting on $($workItem.Name)
-                                            SCSM User: $($commentLeftBy.DisplayName)
-                                            On Behalf of: $($reviewingUser.UserName)
-                                            Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
-                                            New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
-                                        }
-                                        # Custom Event Handler
-                                        if ($ceScripts) { Invoke-AfterApprovedOnBehalf }
-
-                                    }
-                                    #rejected on behalf of
-                                    elseif (($isReviewerGroupMember) -and ($commentToAdd -match "\[$rejectedKeyword]"))
-                                    {
-                                        Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
-                                        New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $votedOnBehalfOfUser -Bulk @scsmMGMTParams
-                                        if ($loggingLevel -ge 4)
-                                        {
-                                            $logMessage = "Voting on $($workItem.Name)
-                                            SCSM User: $($commentLeftBy.DisplayName)
-                                            On Behalf of: $($reviewingUser.UserName)
-                                            Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
-                                            New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
-                                        }
-                                        # Custom Event Handler
-                                        if ($ceScripts) { Invoke-AfterRejectedOnBehalf }
+                                            Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
+                                            New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $reviewingUser -Bulk @scsmMGMTParams
+                                            if ($loggingLevel -ge 4)
+                                            {
+                                                $logMessage = "Voting on $($workItem.Name)
+                                                SCSM User: $($commentLeftBy.DisplayName)
+                                                Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
+                                                New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
+                                            }
+                                            # Custom Event Handler
+                                            if ($ceScripts) { Invoke-AfterRejected }
                                     }
                                     #no keyword, add a comment to parent work item
-                                    elseif (($isReviewerGroupMember) -and (($commentToAdd -notmatch "\[$approvedKeyword]") -or ($commentToAdd -notmatch "\[$rejectedKeyword]")))
+                                    elseif (($reviewingUserSMTP.TargetAddress -eq $message.From) -and (($commentToAdd -notmatch "\[$approvedKeyword]") -or ($commentToAdd -notmatch "\[$rejectedKeyword]")))
                                     {
                                         $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Get_Id().Guid
                                         switch ($parentWorkItem.Classname)
                                         {
-                                            "System.WorkItem.ChangeRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -Action "EndUserComment" -IsPrivate $false}
-                                            "System.WorkItem.ServiceRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -Action "EndUserComment" -IsPrivate $false}
-                                            "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -Action "EndUserComment" -IsPrivate $false}
+                                            "System.WorkItem.ChangeRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
+                                            "System.WorkItem.ServiceRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
+                                            "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
                                         }
                                         if ($loggingLevel -ge 4)
                                         {
-                                            $logMessage = "No vote to process on behalf of for $($workItem.Name)
+                                            $logMessage = "No vote to process for $($workItem.Name). Adding to Parent Work Item $($parentWorkItem.Name)
                                             SCSM User: $($commentLeftBy.DisplayName)
-                                            Vote: $commentToAdd"
+                                            Comment: $commentToAdd"
                                             New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
                                         }
                                     }
-                                    else {
+                                }
+                                else {
+                                    # Identify the user
+                                    $votedOnBehalfOfUser = Get-SCSMUserByEmailAddress -EmailAddress $message.From
+
+                                    #Reviewer is in a Group and "Voting on Behalf of Groups" is enabled
+                                    if ($voteOnBehalfOfGroups -eq $true -and $votedOnBehalfOfUser.UserName)
+                                    {
+                                        #determine which domain to query, in case of multiple domains and trusts
+                                        $AdRoot = (Get-AdDomain @adParams -Identity $reviewingUser.Domain).DNSRoot
+
+                                        $isReviewerGroupMember = Get-ADGroupMember -Server $AdRoot -Identity $reviewingUser.UserName -recursive @adParams | Where-Object { $_.objectClass -eq "user" -and $_.name -eq $votedOnBehalfOfUser.UserName }
+
+                                        #approved on behalf of
+                                        if (($isReviewerGroupMember) -and ($commentToAdd -match "\[$approvedKeyword]"))
+                                        {
+                                            Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Approved$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
+                                            New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $votedOnBehalfOfUser -Bulk @scsmMGMTParams
+                                            if ($loggingLevel -ge 4)
+                                            {
+                                                $logMessage = "Voting on $($workItem.Name)
+                                                SCSM User: $($commentLeftBy.DisplayName)
+                                                On Behalf of: $($reviewingUser.UserName)
+                                                Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
+                                                New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
+                                            }
+                                            # Custom Event Handler
+                                            if ($ceScripts) { Invoke-AfterApprovedOnBehalf }
+
+                                        }
+                                        #rejected on behalf of
+                                        elseif (($isReviewerGroupMember) -and ($commentToAdd -match "\[$rejectedKeyword]"))
+                                        {
+                                            Set-SCSMObject -SMObject $reviewer -PropertyHashtable @{"Decision" = "DecisionEnum.Rejected$"; "DecisionDate" = $message.DateTimeSent.ToUniversalTime(); "Comments" = $decisionComment} @scsmMGMTParams
+                                            New-SCSMRelationshipObject -Relationship $raVotedByUserRelClass -Source $reviewer -Target $votedOnBehalfOfUser -Bulk @scsmMGMTParams
+                                            if ($loggingLevel -ge 4)
+                                            {
+                                                $logMessage = "Voting on $($workItem.Name)
+                                                SCSM User: $($commentLeftBy.DisplayName)
+                                                On Behalf of: $($reviewingUser.UserName)
+                                                Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
+                                                New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
+                                            }
+                                            # Custom Event Handler
+                                            if ($ceScripts) { Invoke-AfterRejectedOnBehalf }
+                                        }
+                                        #no keyword, add a comment to parent work item
+                                        elseif (($isReviewerGroupMember) -and (($commentToAdd -notmatch "\[$approvedKeyword]") -or ($commentToAdd -notmatch "\[$rejectedKeyword]")))
+                                        {
+                                            $parentWorkItem = Get-SCSMWorkItemParent -WorkItemGUID $workItem.Get_Id().Guid
+                                            switch ($parentWorkItem.Classname)
+                                            {
+                                                "System.WorkItem.ChangeRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -Action "EndUserComment" -IsPrivate $false}
+                                                "System.WorkItem.ServiceRequest" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -Action "EndUserComment" -IsPrivate $false}
+                                                "System.WorkItem.Incident" {Add-ActionLogEntry -WIObject $parentWorkItem -Comment $commentToAdd -EnteredBy $votedOnBehalfOfUser -Action "EndUserComment" -IsPrivate $false}
+                                            }
+                                            if ($loggingLevel -ge 4)
+                                            {
+                                                $logMessage = "No vote to process on behalf of for $($workItem.Name)
+                                                SCSM User: $($commentLeftBy.DisplayName)
+                                                Vote: $commentToAdd"
+                                                New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
+                                            }
+                                        }
+                                        else {
+                                            if ($loggingLevel -ge 3)
+                                            {
+                                                #user is not a member of the group. The keyword may or may not exist.
+                                                $logMessage = "AD User: $($votedOnBehalfOfUser.UserName) could not vote on behalf of AD Group:$($reviewingUser.UserName).
+                                                They are either not a member of the AD Group or their Comment did not contain a valid keyword. Their comment was:
+                                                $commentToAdd"
+                                                New-SMEXCOEvent -Source "Update-WorkItem" -EventId 11 -Severity "Error" -LogMessage $logMessage
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
                                         if ($loggingLevel -ge 3)
                                         {
-                                            #user is not a member of the group. The keyword may or may not exist.
-                                            $logMessage = "AD User: $($votedOnBehalfOfUser.UserName) could not vote on behalf of AD Group:$($reviewingUser.UserName).
-                                            They are either not a member of the AD Group or their Comment did not contain a valid keyword. Their comment was:
-                                            $commentToAdd"
-                                            New-SMEXCOEvent -Source "Update-WorkItem" -EventId 11 -Severity "Error" -LogMessage $logMessage
+                                            #Vote on Behalf of AD groups is either disabled, or the user couldn't be found in SCSM
+                                            $logMessage = "Voting On Behalf of AD Groups is currently set to: $($voteOnBehalfOfGroups.ToString())
+                                            SCSM User: User Display/User Name: $($votedOnBehalfOfUser.DisplayName) / $($votedOnBehalfOfUser.Username) 
+                                            Vote: $commentToAdd"
+                                            New-SMEXCOEvent -Source "Update-WorkItem" -EventId 12 -Severity "Error" -LogMessage $logMessage
                                         }
                                     }
                                 }
-                                else
-                                {
-                                    if ($loggingLevel -ge 3)
-                                    {
-                                        #Vote on Behalf of AD groups is either disabled, or the user couldn't be found in SCSM
-                                        $logMessage = "Voting On Behalf of AD Groups is currently set to: $($voteOnBehalfOfGroups.ToString())
-                                        SCSM User: User Display/User Name: $($votedOnBehalfOfUser.DisplayName) / $($votedOnBehalfOfUser.Username) 
-                                        Vote: $commentToAdd"
-                                        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 12 -Severity "Error" -LogMessage $logMessage
-                                    }
-                                }
-                            }
                             }
                         }
 
