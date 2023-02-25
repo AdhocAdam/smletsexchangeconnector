@@ -1681,7 +1681,7 @@ function Update-WorkItem
                                         if ($ceScripts) { Invoke-AfterTake }
                                     }
                                     else {
-                                        #TODO: Send an email to let them know it failed?
+                                        if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 10 -Severity "Error" -LogMessage "Self-Assignment for $($workItem.Name) via the [take] keyword(s) failed for $($commentLeftBy.DisplayName)."}
                                     }
                                 }
                                 "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Undo-WorkItemResolution -WorkItem $workItem; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
@@ -1714,7 +1714,7 @@ function Update-WorkItem
                                         if ($ceScripts) { Invoke-AfterTake }
                                     }
                                     else {
-                                        #TODO: Send an email to let them know it failed?
+                                        if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 10 -Severity "Error" -LogMessage "Self-Assignment for $($workItem.Name) via the [take] keyword(s) failed for $($commentLeftBy.DisplayName)."}
                                     }
                                 }
                                 "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Undo-WorkItemResolution -WorkItem $workItem; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
@@ -1748,7 +1748,7 @@ function Update-WorkItem
                                         if ($ceScripts) { Invoke-AfterTake }
                                     }
                                     else {
-                                        #TODO: Send an email to let them know it failed?
+                                        if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 10 -Severity "Error" -LogMessage "Self-Assignment for $($workItem.Name) via the [take] keyword(s) failed for $($commentLeftBy.DisplayName)."}
                                     }
                                 }
                                 "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "IncidentStatusEnum.Resolved") {Undo-WorkItemResolution -WorkItem $workItem; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}}
@@ -1822,7 +1822,7 @@ function Update-WorkItem
                                         if ($ceScripts) { Invoke-AfterTake }
                                     }
                                     else {
-                                        #TODO: Send an email to let them know it failed?
+                                        if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 10 -Severity "Error" -LogMessage "Self-Assignment for $($workItem.Name) via the [take] keyword(s) failed for $($commentLeftBy.DisplayName)."}
                                     }
                                 }
                                 "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"CompletedDate" = (Get-Date).ToUniversalTime(); "Status" = "ServiceRequestStatusEnum.Completed$"; "Notes" = "$commentToAdd"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $affectedUser -Action "EndUserComment" -IsPrivate $false; if ($defaultServiceRequestImplementationCategory) {Set-SCSMObject -SMObject $workItem -Property ImplementationResults -Value $defaultServiceRequestImplementationCategory}; if ($ceScripts) { Invoke-AfterCompleted }}
@@ -1854,7 +1854,7 @@ function Update-WorkItem
                                         if ($ceScripts) { Invoke-AfterTake }
                                     }
                                     else {
-                                        #TODO: Send an email to let them know it failed?
+                                        if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 10 -Severity "Error" -LogMessage "Self-Assignment for $($workItem.Name) via the [take] keyword(s) failed for $($commentLeftBy.DisplayName)."}
                                     }
                                 }
                                 "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"CompletedDate" = (Get-Date).ToUniversalTime(); "Status" = "ServiceRequestStatusEnum.Completed$"; "Notes" = "$commentToAdd"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "AnalystComment" -IsPrivate $false; if ($defaultServiceRequestImplementationCategory) {Set-SCSMObject -SMObject $workItem -Property ImplementationResults -Value $defaultServiceRequestImplementationCategory}; if ($ceScripts) { Invoke-AfterCompleted }}
@@ -1887,7 +1887,7 @@ function Update-WorkItem
                                         if ($ceScripts) { Invoke-AfterTake }
                                     }
                                     else {
-                                        #TODO: Send an email to let them know it failed?
+                                        if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 10 -Severity "Error" -LogMessage "Self-Assignment for $($workItem.Name) via the [take] keyword(s) failed for $($commentLeftBy.DisplayName)."}
                                     }
                                 }
                                 "\[$completedKeyword]" {Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"CompletedDate" = (Get-Date).ToUniversalTime(); "Status" = "ServiceRequestStatusEnum.Completed$"; "Notes" = "$commentToAdd"} @scsmMGMTParams; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "AnalystComment" -IsPrivate $false; if ($defaultServiceRequestImplementationCategory) {Set-SCSMObject -SMObject $workItem -Property ImplementationResults -Value $defaultServiceRequestImplementationCategory}; if ($ceScripts) { Invoke-AfterCompleted }}
@@ -1934,7 +1934,7 @@ function Update-WorkItem
                                             if ($ceScripts){ Invoke-AfterTake }
                                         }
                                         else {
-                                            #TODO: Send an email to let them know it failed?
+                                            if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 10 -Severity "Error" -LogMessage "Self-Assignment for $($workItem.Name) via the [take] keyword(s) failed for $($commentLeftBy.DisplayName)."}
                                         }
                                     }
                                     "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "ProblemStatusEnum.Resolved") {Undo-WorkItemResolution -WorkItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}
@@ -1963,7 +1963,7 @@ function Update-WorkItem
                                             if ($ceScripts){ Invoke-AfterTake }
                                         }
                                         else {
-                                            #TODO: Send an email to let them know it failed?
+                                            if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 10 -Severity "Error" -LogMessage "Self-Assignment for $($workItem.Name) via the [take] keyword(s) failed for $($commentLeftBy.DisplayName)."}
                                         }
                                     }
                                     "\[$reactivateKeyword]" {if ($workItem.Status.Name -eq "ProblemStatusEnum.Resolved") {Undo-WorkItemResolution -WorkItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "Reactivate" -IsPrivate $false; if ($ceScripts) { Invoke-AfterReactivate }}
@@ -2010,7 +2010,7 @@ function Update-WorkItem
                                             if ($ceScripts) { Invoke-AfterTake }
                                         }
                                         else {
-                                            #TODO: Send an email to let them know it failed?
+                                            if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 10 -Severity "Error" -LogMessage "Self-Assignment for $($workItem.Name) via the [take] keyword(s) failed for $($commentLeftBy.DisplayName)."}
                                         }
                                     }
                                     {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -EmailAddress $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $assignedTo -Action "EndUserComment" -IsPrivate $false}
@@ -2041,7 +2041,7 @@ function Update-WorkItem
                                             if ($ceScripts) { Invoke-AfterTake }
                                         }
                                         else {
-                                            #TODO: Send an email to let them know it failed?
+                                            if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 10 -Severity "Error" -LogMessage "Self-Assignment for $($workItem.Name) via the [take] keyword(s) failed for $($commentLeftBy.DisplayName)."}
                                         }
                                     }
                                     {($commentToAdd -match [Regex]::Escape("["+$announcementKeyword+"]")) -and (Get-SCSMAuthorizedAnnouncer -EmailAddress $message.from -eq $true)} {if ($enableCiresonPortalAnnouncements) {Set-CiresonPortalAnnouncement -message $message -workItem $workItem}; if ($enableSCSMAnnouncements) {Set-CoreSCSMAnnouncement -message $message -workItem $workItem}; Add-ActionLogEntry -WIObject $workItem -Comment $commentToAdd -EnteredBy $commentLeftBy -Action "EndUserComment" -IsPrivate $false}
@@ -2192,12 +2192,26 @@ function Update-WorkItem
                                         }
                                     }
                                     else {
-                                        #not allowing votes on behalf of group, or user is not in an eligible group
+                                        if ($loggingLevel -ge 3)
+                                        {
+                                            #user is not a member of the group. The keyword may or may not exist.
+                                            $logMessage = "AD User: $($votedOnBehalfOfUser.UserName) could not vote on behalf of AD Group:$($reviewingUser.UserName).
+                                            They are either not a member of the AD Group or their Comment did not contain a valid keyword. Their comment was:
+                                            $commentToAdd"
+                                            New-SMEXCOEvent -Source "Update-WorkItem" -EventId 11 -Severity "Error" -LogMessage $logMessage
+                                        }
                                     }
                                 }
                                 else
                                 {
-                                    #not a user or a group
+                                    if ($loggingLevel -ge 3)
+                                    {
+                                        #Vote on Behalf of AD groups is either disabled, or the user couldn't be found in SCSM
+                                        $logMessage = "Voting On Behalf of AD Groups is currently set to: $($voteOnBehalfOfGroups.ToString())
+                                        SCSM User: User Display/User Name: $($votedOnBehalfOfUser.DisplayName) / $($votedOnBehalfOfUser.Username) 
+                                        Vote: $commentToAdd"
+                                        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 12 -Severity "Error" -LogMessage $logMessage
+                                    }
                                 }
                             }
                             }
@@ -2245,7 +2259,7 @@ function Update-WorkItem
                                             if ($ceScripts) { Invoke-AfterTake }
                                         }
                                         else {
-                                            #TODO: Send an email to let them know it failed?
+                                            if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Update-WorkItem" -EventId 10 -Severity "Error" -LogMessage "Self-Assignment for $($workItem.Name) via the [take] keyword(s) failed for $($commentLeftBy.DisplayName)."}
                                         }
                                     }
                                     default {
