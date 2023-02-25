@@ -2208,7 +2208,7 @@ function Update-WorkItem
                                         {
                                             #Vote on Behalf of AD groups is either disabled, or the user couldn't be found in SCSM
                                             $logMessage = "Voting On Behalf of AD Groups is currently set to: $($voteOnBehalfOfGroups.ToString())
-                                            SCSM User: User Display/User Name: $($votedOnBehalfOfUser.DisplayName) / $($votedOnBehalfOfUser.Username) 
+                                            SCSM User: User Display/User Name: $($votedOnBehalfOfUser.DisplayName) / $($votedOnBehalfOfUser.Username)
                                             Vote: $commentToAdd"
                                             New-SMEXCOEvent -Source "Update-WorkItem" -EventId 12 -Severity "Error" -LogMessage $logMessage
                                         }
