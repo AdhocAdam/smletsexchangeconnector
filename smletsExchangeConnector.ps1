@@ -5550,7 +5550,8 @@ foreach ($message in $inbox)
         }
         else
         {
-            #Unknown Message Class and Custom Rules are not being used. Continue processing. Log an event?
+            #Unknown Message Class and Custom Rules are not being used
+            if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 13 -Severity "Warning" -LogMessage "A message of class $($message.ItemClass) was found in the inbox, but it will not be processed as Custom Rules are not enabled. To avoid this message in the future, either create a Custom Rule in the SMLets Exchange Connector Settings so it can be processed or use Exchange Mailbox Rules to keep them out of the Inbox folder."}
         }
     }
 
