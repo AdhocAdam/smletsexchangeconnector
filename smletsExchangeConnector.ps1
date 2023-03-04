@@ -2279,8 +2279,15 @@ function Update-WorkItem
     }
 }
 
-function Add-EmailToSCSMObject ($message, $smobject)
+function Add-EmailToSCSMObject
 {
+    param (
+        #the Exchange message to add to the SCSM Work Item
+        $message,
+        #SCSM Work Item that will have an Exchange message added to it
+        $smobject
+    )
+
     #determine if the incoming object is a WorkItem or ConfigItem
     if ($smobject.ClassName -like "*WorkItem*")
     {
@@ -2349,8 +2356,15 @@ function Add-EmailToSCSMObject ($message, $smobject)
 }
 
 #inspired and modified from Stefan Roth here - https://stefanroth.net/2015/03/28/scsm-passing-attachments-via-web-service-e-g-sma-web-service/
-function Add-FileToSCSMObject ($attachment, $smobject)
+function Add-FileToSCSMObject
 {
+    param (
+        #the attachment on the message to add to the SCSM Work Item
+        $attachment,
+        #SCSM Work Item that will have an attachment added to it
+        $smobject
+    )
+
     #determine if the incoming object is a WorkItem or ConfigItem
     if ($smobject.ClassName -like "*WorkItem*")
     {
