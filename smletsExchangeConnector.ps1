@@ -2064,6 +2064,7 @@ function Update-WorkItem
             #### activities ####
             "ra" {
                         #$workItem = get-scsmobject -class $raClass -filter "Name -eq '$workItemID'" @scsmMGMTParams
+                        $isSenderValidReviewer = $false
                         $reviewers = Get-SCSMRelatedObject -SMObject $workItem -Relationship $raHasReviewerRelClass @scsmMGMTParams
                         foreach ($reviewer in $reviewers)
                         {
@@ -2091,6 +2092,7 @@ function Update-WorkItem
                                                 Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
                                                 New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
                                             }
+                                            $isSenderValidReviewer = $true
                                             # Custom Event Handler
                                             if ($ceScripts) { Invoke-AfterApproved }
                                     }
@@ -2106,6 +2108,7 @@ function Update-WorkItem
                                                 Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
                                                 New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
                                             }
+                                            $isSenderValidReviewer = $true
                                             # Custom Event Handler
                                             if ($ceScripts) { Invoke-AfterRejected }
                                     }
@@ -2126,6 +2129,7 @@ function Update-WorkItem
                                             Comment: $commentToAdd"
                                             New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
                                         }
+                                        $isSenderValidReviewer = $true
                                     }
                                 }
                                 else {
@@ -2153,6 +2157,7 @@ function Update-WorkItem
                                                 Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
                                                 New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
                                             }
+                                            $isSenderValidReviewer = $true
                                             # Custom Event Handler
                                             if ($ceScripts) { Invoke-AfterApprovedOnBehalf }
 
@@ -2170,6 +2175,7 @@ function Update-WorkItem
                                                 Vote: $($commentToAdd -match '(?<=\[).*?(?=\])'|out-null;$matches[0])"
                                                 New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
                                             }
+                                            $isSenderValidReviewer = $true
                                             # Custom Event Handler
                                             if ($ceScripts) { Invoke-AfterRejectedOnBehalf }
                                         }
@@ -2190,6 +2196,7 @@ function Update-WorkItem
                                                 Vote: $commentToAdd"
                                                 New-SMEXCOEvent -Source "Update-WorkItem" -EventId 2 -LogMessage $logMessage -Severity "Information"
                                             }
+                                            $isSenderValidReviewer = $true
                                         }
                                         else {
                                             if ($loggingLevel -ge 3)
@@ -2215,6 +2222,13 @@ function Update-WorkItem
                                     }
                                 }
                             }
+                        }
+
+                        #user wasn't a reviewer, log an event
+                        if (($isSenderValidReviewer -eq $false) -and ($loggingLevel -ge 3))
+                        {
+                            $logMessage = "$($message.From)/$($commentLeftBy.DisplayName) could not be matched to a corresponding Reviewer on $($workItem.Name). Either they are not a Reviewer or their User object in SCSM does not have a valid and related SMTP Notification Channel"
+                            New-SMEXCOEvent -Source "Update-WorkItem" -EventId 13 -LogMessage $logMessage -Severity "Error"
                         }
 
                         # Custom Event Handler
