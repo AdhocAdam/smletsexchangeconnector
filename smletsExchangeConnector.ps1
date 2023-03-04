@@ -2279,8 +2279,15 @@ function Update-WorkItem
     }
 }
 
-function Add-EmailToSCSMObject ($message, $smobject)
+function Add-EmailToSCSMObject
 {
+    param (
+        #the Exchange message to add to the SCSM Work Item
+        $message,
+        #SCSM Work Item that will have an Exchange message added to it
+        $smobject
+    )
+
     #determine if the incoming object is a WorkItem or ConfigItem
     if ($smobject.ClassName -like "*WorkItem*")
     {
@@ -2349,8 +2356,15 @@ function Add-EmailToSCSMObject ($message, $smobject)
 }
 
 #inspired and modified from Stefan Roth here - https://stefanroth.net/2015/03/28/scsm-passing-attachments-via-web-service-e-g-sma-web-service/
-function Add-FileToSCSMObject ($attachment, $smobject)
+function Add-FileToSCSMObject
 {
+    param (
+        #the attachment on the message to add to the SCSM Work Item
+        $attachment,
+        #SCSM Work Item that will have an attachment added to it
+        $smobject
+    )
+
     #determine if the incoming object is a WorkItem or ConfigItem
     if ($smobject.ClassName -like "*WorkItem*")
     {
@@ -5550,8 +5564,8 @@ foreach ($message in $inbox)
         }
         else
         {
-            #Unknown Message Class and Custom Rules are not being used
-            if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 13 -Severity "Warning" -LogMessage "A message of class $($message.ItemClass) was found in the inbox, but it will not be processed as Custom Rules are not enabled. To avoid this message in the future, either create a Custom Rule in the SMLets Exchange Connector Settings so it can be processed or use Exchange Mailbox Rules to keep them out of the Inbox folder."}
+            #Custom Rules are not enabled
+            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Test-EmailPattern" -EventId 13 -Severity "Information" -LogMessage "Custom Rules are not enabled"}
         }
     }
 
