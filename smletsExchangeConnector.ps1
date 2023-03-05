@@ -20,6 +20,14 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 5.0.1 = #441 - Enhancement, Logging for when a user attempts to vote on a Review Activity that they are not a Reviewer on
+                #440 - Enhancement, standardizing remaining functions param blocks and clarify logging event
+                #439 - Enhancement, ItemClass logging event
+                #438 - Documentation, Indented Review Activity code block in Update-WorkItem
+                #437 - Enhancement, Additional logging for take and voting on behalf of AD group
+                #436 - Documentation, Exchange notes
+                #431 - Enhancement, address remaining PSScriptAnalyzer issues
+                #429 - Bug, Get work item by conversation ID fails when multiple files exist
 Version: 5.0.0 = #397 - Feature, Support for Multiple Keywords
                 #399 - Enhancement, Use Singular Nouns
                 #404 - Enhancement, Remove Unused Variables
