@@ -26,7 +26,7 @@ Version: 5.0.1 = #441 - Enhancement, Logging for when a user attempts to vote on
                 #438 - Documentation, Indented Review Activity code block in Update-WorkItem
                 #437 - Enhancement, Additional logging for take and voting on behalf of AD group
                 #436 - Documentation, Exchange notes
-                #431 - Enhancement, address remaining PSScripyAnalyzer issues
+                #431 - Enhancement, address remaining PSScriptAnalyzer issues
                 #429 - Bug, Get work item by conversation ID fails when multiple files exist
 Version: 5.0.0 = #397 - Feature, Support for Multiple Keywords
                 #399 - Enhancement, Use Singular Nouns
