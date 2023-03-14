@@ -4581,7 +4581,8 @@ function Update-SCSMPropertyCollection
 {
     [CmdletBinding(SupportsShouldProcess=$true)]
     Param (
-        [Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateObject]$Object =$(throw "Please provide a valid template object")
+        [Microsoft.EnterpriseManagement.Configuration.ManagementPackObjectTemplateObject]$Object =$(throw "Please provide a valid template object"),
+        $Alias
     )
 
     if($PSCmdlet.ShouldProcess("$($Object.DisplayName)"))
