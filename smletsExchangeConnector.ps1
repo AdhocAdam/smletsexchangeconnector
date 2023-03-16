@@ -4611,7 +4611,7 @@ function Update-SCSMPropertyCollection
             {
                 foreach ($obj in $Object.ObjectCollection)
                 {
-                    Update-SCSMPropertyCollection -Object $obj
+                    Update-SCSMPropertyCollection -Object $obj -Alias $alias
                 }
             }
         }
