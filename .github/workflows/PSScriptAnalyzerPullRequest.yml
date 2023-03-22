@@ -17,7 +17,7 @@ jobs:
               Install-Module FormatMarkdownTable -ErrorAction Stop
 
           - name: Lint with PSScriptAnalyzer
-            id: RunPSScriptAnalyzerError
+            id: RunPSScriptAnalyzer
             shell: pwsh
             run: |
               $ExcludedRules = @('PSAvoidUsingInvokeExpression')
