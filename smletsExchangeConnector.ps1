@@ -1555,7 +1555,7 @@ function Update-WorkItem
             $commentToAdd = $message.body
             if ($commentToAdd.length -ge "4000")
             {
-                $commentToAdd.substring(0, 4000)
+                $commentToAdd = $commentToAdd.substring(0, 4000)
             }
         }
         else
@@ -1568,7 +1568,7 @@ function Update-WorkItem
                     $commentToAdd = $message.body
                     if ($commentToAdd.length -ge "4000")
                     {
-                        $commentToAdd.substring(0, 4000)
+                        $commentToAdd = $commentToAdd.substring(0, 4000)
                     }
                 }
                 else
@@ -1576,7 +1576,7 @@ function Update-WorkItem
                     $commentToAdd = $message.Body.substring(0, $fromKeywordPosition)
                     if ($commentToAdd.length -ge "4000")
                     {
-                        $commentToAdd.substring(0, 4000)
+                        $commentToAdd = $commentToAdd.substring(0, 4000)
                     }
                 }
             }
