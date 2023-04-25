@@ -918,6 +918,10 @@ if ($amlServiceRequestSupportGroupEnumPredictionExtName)
 }
 #endregion
 
+#reply Regex
+$replyRegex = '([R][E][:])|([A][W][:])|([S][V][:])|([A][n][t][w][:])|([V][S][:])|([R][E][F][:])|([V][á][:])|([R][I][F][:])|([S][V][:])|([B][L][S][:])|([A][t][b][\.][:])|([R][E][S][:])|([O][d][p][:])|([Y][N][T][:])|([A][T][B][:])'
+
+
 #region #### Exchange Connector Functions ####
 function New-WorkItem
 {
@@ -5072,7 +5076,7 @@ foreach ($message in $inbox)
             #### Email is a Reply and does not contain a [Work Item ID]
             # Check if Work Item (Title, Body, Sender, CC, etc.) exists
             # and the user was replying too fast to receive Work Item ID notification
-            "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
+            "($replyRegex)(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
             #### default action, create work item ####
             default {
@@ -5164,7 +5168,7 @@ foreach ($message in $inbox)
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
+                "($replyRegex)(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### Email is going to invoke a custom action. The signature MUST be valid to proceed
                 "\[$powershellKeyword]" {if ($validSig -and $ceScripts)
@@ -5260,7 +5264,7 @@ foreach ($message in $inbox)
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
+                "($replyRegex)(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### default action, create work item ####
                 default {
@@ -5335,7 +5339,7 @@ foreach ($message in $inbox)
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
+                "($replyRegex)(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### default action, create work item ####
                 default {
@@ -5421,7 +5425,7 @@ foreach ($message in $inbox)
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
+                "($replyRegex)(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### default action, create work item ####
                 default {
