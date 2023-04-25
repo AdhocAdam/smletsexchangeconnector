@@ -751,16 +751,16 @@ $ceScripts = if($smexcoSettingsMP.FilePathCustomEvents.EndsWith(".ps1"))
         if ($loggingLevel -ge 4)
         {
             New-SMEXCOEvent -Source "CustomEvents" -EventID 0 -Severity "Information" -LogMessage "Custom Events PowerShell loaded successfully" | out-null
-            $true
         }
+        $true
     }
     catch
     {
         if ($loggingLevel -ge 2)
         {
             New-SMEXCOEvent -Source "CustomEvents" -EventID 1 -Severity "Warning" -LogMessage $_.Exception | out-null
-            $false
         }
+        $false
     }
 }
 #endregion #### Configuration ####
