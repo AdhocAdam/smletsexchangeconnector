@@ -919,7 +919,7 @@ if ($amlServiceRequestSupportGroupEnumPredictionExtName)
 #endregion
 
 #reply Regex
-$replyRegex = '([R][E][:])|([A][W][:])|([S][V][:])|([A][n][t][w][:])|([V][S][:])|([R][E][F][:])|([V][á][:])|([R][I][F][:])|([S][V][:])|([B][L][S][:])|([A][t][b][\.][:])|([R][E][S][:])|([O][d][p][:])|([Y][N][T][:])|([A][T][B][:])'
+$replyRegex = '([R][E][:])|([A][W][:])|([S][V][:])|([A][n][t][w][:])|([V][S][:])|([R][E][F][:])|([R][I][F][:])|([S][V][:])|([B][L][S][:])|([A][t][b][\.][:])|([R][E][S][:])|([O][d][p][:])|([Y][N][T][:])|([A][T][B][:])'
 
 
 #region #### Exchange Connector Functions ####
