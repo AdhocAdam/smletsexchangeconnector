@@ -20,6 +20,11 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 5.0.3 = #443 - Bug, Custom Events are incorrectly tied to a Logging Level
+                 #453 - Enhancement, Merge Reply functionality supports multi-language environments
+                 #452 - Bug, Fix for updating Work Items when the Comment is greater than 4000 characters
+                 #456 - Bug, Mail is not added to comment when over 4000 characters
+                 #447 - Bug, Fix for Templates that contain nested Activities
 Version: 5.0.2 = #444 - Bug, Fix for Templates that contain one or many Activities
 Version: 5.0.1 = #441 - Enhancement, Logging for when a user attempts to vote on a Review Activity that they are not a Reviewer on
                 #440 - Enhancement, standardizing remaining functions param blocks and clarify logging event
