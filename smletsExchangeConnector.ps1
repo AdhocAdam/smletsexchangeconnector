@@ -10,7 +10,7 @@ enabling other organizational level processes via email
 
 .NOTES
 Author: Adam Dzyacky
-Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2, Justin Workman, Brad Zima, bennyguk, Jan Schulz, Peter Miklian, Daniel Polivka, Alexander Axberg
+Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2, Justin Workman, Brad Zima, bennyguk, Jan Schulz, Peter Miklian, Daniel Polivka, Alexander Axberg, Simon Zeinhofer
 Reviewers: Tom Hendricks, Brian Wiest
 Inspiration: The Cireson Community, Anders Asp, Stefan Roth, and (of course) Travis Wright for SMlets examples
 Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installed on SCSM workflow server by virtue of stock Exchange Connector).
@@ -20,6 +20,11 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 5.0.3 = #443 - Bug, Custom Events are incorrectly tied to a Logging Level
+                 #453 - Enhancement, Merge Reply functionality supports multi-language environments
+                 #452 - Bug, Fix for updating Work Items when the Comment is greater than 4000 characters
+                 #456 - Bug, Mail is not added to comment when over 4000 characters
+                 #447 - Bug, Fix for Templates that contain nested Activities
 Version: 5.0.2 = #444 - Bug, Fix for Templates that contain one or many Activities
 Version: 5.0.1 = #441 - Enhancement, Logging for when a user attempts to vote on a Review Activity that they are not a Reviewer on
                 #440 - Enhancement, standardizing remaining functions param blocks and clarify logging event
@@ -751,16 +756,16 @@ $ceScripts = if($smexcoSettingsMP.FilePathCustomEvents.EndsWith(".ps1"))
         if ($loggingLevel -ge 4)
         {
             New-SMEXCOEvent -Source "CustomEvents" -EventID 0 -Severity "Information" -LogMessage "Custom Events PowerShell loaded successfully" | out-null
-            $true
         }
+        $true
     }
     catch
     {
         if ($loggingLevel -ge 2)
         {
             New-SMEXCOEvent -Source "CustomEvents" -EventID 1 -Severity "Warning" -LogMessage $_.Exception | out-null
-            $false
         }
+        $false
     }
 }
 #endregion #### Configuration ####
@@ -917,6 +922,10 @@ if ($amlServiceRequestSupportGroupEnumPredictionExtName)
     $amlServiceRequestSupportGroupEnumPredictionExtName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.Id -like "*$amlServiceRequestSupportGroupEnumPredictionExtName*")}).Name
 }
 #endregion
+
+#reply Regex
+$replyRegex = '([R][E][:])|([A][W][:])|([S][V][:])|([A][n][t][w][:])|([V][S][:])|([R][E][F][:])|([R][I][F][:])|([S][V][:])|([B][L][S][:])|([A][t][b][\.][:])|([R][E][S][:])|([O][d][p][:])|([Y][N][T][:])|([A][T][B][:])'
+
 
 #region #### Exchange Connector Functions ####
 function New-WorkItem
@@ -1555,7 +1564,7 @@ function Update-WorkItem
             $commentToAdd = $message.body
             if ($commentToAdd.length -ge "4000")
             {
-                $commentToAdd.substring(0, 4000)
+                $commentToAdd = $commentToAdd.substring(0, 4000)
             }
         }
         else
@@ -1568,7 +1577,7 @@ function Update-WorkItem
                     $commentToAdd = $message.body
                     if ($commentToAdd.length -ge "4000")
                     {
-                        $commentToAdd.substring(0, 4000)
+                        $commentToAdd = $commentToAdd.substring(0, 4000)
                     }
                 }
                 else
@@ -1576,7 +1585,7 @@ function Update-WorkItem
                     $commentToAdd = $message.Body.substring(0, $fromKeywordPosition)
                     if ($commentToAdd.length -ge "4000")
                     {
-                        $commentToAdd.substring(0, 4000)
+                        $commentToAdd = $commentToAdd.substring(0, 4000)
                     }
                 }
             }
@@ -4611,7 +4620,7 @@ function Update-SCSMPropertyCollection
             {
                 foreach ($obj in $Object.ObjectCollection)
                 {
-                    Update-SCSMPropertyCollection -Object $obj
+                    Update-SCSMPropertyCollection -Object $obj -Alias $alias
                 }
             }
         }
@@ -5072,7 +5081,7 @@ foreach ($message in $inbox)
             #### Email is a Reply and does not contain a [Work Item ID]
             # Check if Work Item (Title, Body, Sender, CC, etc.) exists
             # and the user was replying too fast to receive Work Item ID notification
-            "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
+            "($replyRegex)(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
             #### default action, create work item ####
             default {
@@ -5164,7 +5173,7 @@ foreach ($message in $inbox)
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
+                "($replyRegex)(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### Email is going to invoke a custom action. The signature MUST be valid to proceed
                 "\[$powershellKeyword]" {if ($validSig -and $ceScripts)
@@ -5260,7 +5269,7 @@ foreach ($message in $inbox)
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
+                "($replyRegex)(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### default action, create work item ####
                 default {
@@ -5335,7 +5344,7 @@ foreach ($message in $inbox)
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
+                "($replyRegex)(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### default action, create work item ####
                 default {
@@ -5421,7 +5430,7 @@ foreach ($message in $inbox)
                 #### Email is a Reply and does not contain a [Work Item ID]
                 # Check if Work Item (Title, Body, Sender, CC, etc.) exists
                 # and the user was replying too fast to receive Work Item ID notification
-                "([R][E][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
+                "($replyRegex)(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if(!($isUpdate)){if($mergeReplies -eq $true){Confirm-WorkItem -message $email}else{new-workitem -message $email -wiType $defaultNewWorkItem}}}
 
                 #### default action, create work item ####
                 default {
