@@ -2909,9 +2909,21 @@ function New-CMDBUser
         $domain = $domainAndTLD.Split(".")[0]
         $newID = $domain + "_" + $username + "_SMTP"
 
-        #create the new user
-        $newUser = New-SCSMObject -Class $domainUserClass -PropertyHashtable @{"domain" = "$domainAndTLD"; "username" = "$username"; "displayname" = "$userEmail"} @scsmMGMTParams -PassThru -NoCommit:$NoCommit
-        if (($loggingLevel -ge 1) -and ($newUser)){New-SMEXCOEvent -Source "New-CMDBUser" -EventId 0 -LogMessage "New User created in SCSM. Username: $username" -Severity "Information"}
+        #check if the user object already exists, then just add the mail address
+        $newUser = Get-SCSMObject -Class $domainUserClass -Filter "Username -eq '$username' -and Domain -eq '$domainAndTLD'" @scsmMGMTParams
+        if(!$newUser){
+            #create the new user
+            try{
+                $newUser = New-SCSMObject -Class $domainUserClass -PropertyHashtable @{"domain" = "$domainAndTLD"; "username" = "$username"; "displayname" = "$userEmail"} @scsmMGMTParams -PassThru -NoCommit:$NoCommit
+            }
+            catch {
+                New-SMEXCOEvent -Source "New-CMDBUser" -EventId 2 -LogMessage "Error creating user with username $username in SCSM: $($_)" -Severity "Error"
+            }
+            if (($loggingLevel -ge 1) -and ($newUser)){New-SMEXCOEvent -Source "New-CMDBUser" -EventId 0 -LogMessage "New User created in SCSM. Username: $username" -Severity "Information"}
+        }
+        else {
+            if (($loggingLevel -ge 1) -and ($newUser)){New-SMEXCOEvent -Source "New-CMDBUser" -EventId 3 -LogMessage "User already exists in SCSM. Will be updated with e-mail address. Username: $username" -Severity "Information"}
+        }
 
         #create the user notification projection
         $userNoticeProjection = @{__CLASS = "$($domainUserClass.Name)";
