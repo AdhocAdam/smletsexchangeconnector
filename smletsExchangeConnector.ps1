@@ -1,4 +1,3 @@
-$startTime = Get-Date
 <#
 .SYNOPSIS
 Provides SCSM Exchange Connector functionality through PowerShell
