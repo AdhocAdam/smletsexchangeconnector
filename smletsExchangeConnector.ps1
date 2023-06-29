@@ -3680,7 +3680,7 @@ function Undo-WorkItemResolution
     Set-SCSMObject -SMObject $WorkItem -propertyhashtable @{"Status" = $enumValue; $resName = $null; "ResolutionDescription" = $null; "ResolvedDate" = $null} @scsmMGMTParams;
     try
     {
-        $resbyUserObject = Get-SCSMRelationshipObject -BySource $workItem -Filter "RelationshipId -eq '$($workResolvedByUserRelClass.Id)'" @scsmMGMTParams | Remove-scsmrelationship
+        $resbyUserObject = Get-SCSMRelationshipObject -BySource $workItem -Filter "RelationshipId -eq '$($workResolvedByUserRelClass.Id)'" @scsmMGMTParams | Remove-scsmrelationshipobject
     }
     catch
     {
