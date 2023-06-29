@@ -3678,6 +3678,15 @@ function Undo-WorkItemResolution
         "System.WorkItem.Problem" {$enumValue = "ProblemStatusEnum.Active$"; $resName = "Resolution"}
     }
     Set-SCSMObject -SMObject $WorkItem -propertyhashtable @{"Status" = $enumValue; $resName = $null; "ResolutionDescription" = $null; "ResolvedDate" = $null} @scsmMGMTParams;
+    try
+    {
+        $resbyUserObject = Get-SCSMRelationshipObject -BySource $workItem -Filter "RelationshipId -eq '$($workResolvedByUserRelClass.Id)'" @scsmMGMTParams | Remove-scsmrelationship
+    }
+    catch
+    {
+        $logMessage = $_.Exception.Message
+        New-SMEXCOEvent -Source "Update-WorkItem" -EventId 25 -LogMessage $logMessage -Severity "Warning"
+    }
 }
 
 function Read-MIMEMessage
