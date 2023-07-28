@@ -3678,6 +3678,7 @@ function Undo-WorkItemResolution
         "System.WorkItem.Problem" {$enumValue = "ProblemStatusEnum.Active$"; $resName = "Resolution"}
     }
     Set-SCSMObject -SMObject $WorkItem -propertyhashtable @{"Status" = $enumValue; $resName = $null; "ResolutionDescription" = $null; "ResolvedDate" = $null} @scsmMGMTParams;
+    Get-SCSMRelationshipObject -BySource $workItem -Filter "RelationshipId -eq '$($workResolvedByUserRelClass.Id)'" @scsmMGMTParams | Remove-SCSMRelationshipObject
 }
 
 function Read-MIMEMessage
