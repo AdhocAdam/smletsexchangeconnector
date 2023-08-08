@@ -3071,15 +3071,22 @@ function Get-CiresonPortalUser
     )
 
     $isAuthUserAPIurl = "api/V3/User/IsUserAuthorized?userName=$username&domain=$domain"
-    if ($ciresonPortalWindowsAuth -eq $true)
-    {
-        $ciresonPortalUserObject = Invoke-RestMethod -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -UseDefaultCredentials
+    try {
+        if ($ciresonPortalWindowsAuth -eq $true)
+        {
+            $ciresonPortalUserObject = Invoke-RestMethod -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -UseDefaultCredentials
+        }
+        else
+        {
+            $ciresonPortalUserObject = Invoke-RestMethod -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
+        }
+        if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-CiresonPortalUser" -EventID 0 -Severity Information -LogMessage "User/Sender found in Cireson Portal"}
+        return $ciresonPortalUserObject
     }
-    else
-    {
-        $ciresonPortalUserObject = Invoke-RestMethod -Uri ($ciresonPortalServer+$isAuthUserAPIurl) -Method post -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
+    catch {
+        if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Get-CiresonPortalUser" -EventID 1 -Severity Error -LogMessage $_.Exception}
+        return $null
     }
-    return $ciresonPortalUserObject
 }
 
 #retrieve a group from SCSM through the Cireson Web Portal API
@@ -3093,17 +3100,24 @@ function Get-CiresonPortalGroup
 
     $adGroup = Get-ADGroup @adParams -Filter "Mail -eq $groupEmail"
 
-    if($ciresonPortalWindowsAuth)
-    {
-        #wanted to use a get groups style request, but "api/V3/User/GetConsoleGroups" feels costly instead of a search
-        $cwpGroupResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($adGroup.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -UseDefaultCredentials
+    try {
+        if($ciresonPortalWindowsAuth)
+        {
+            #wanted to use a get groups style request, but "api/V3/User/GetConsoleGroups" feels costly instead of a search
+            $cwpGroupResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($adGroup.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -UseDefaultCredentials
+        }
+        else
+        {
+            $cwpGroupResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($adGroup.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
+        }
+        $ciresonPortalGroup = $cwpGroupResponse | select-object @{Name='AccessGroupId'; Expression={$_.Id}}, name | Where-Object{$_.name -eq $($adGroup.Name)}
+        if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-CiresonPortalGroup" -EventID 0 -Severity Information -LogMessage "Group/Sender found in Cireson Portal"}
+        return $ciresonPortalGroup
     }
-    else
-    {
-        $cwpGroupResponse = Invoke-RestMethod -Uri ($ciresonPortalServer+"api/V3/User/GetUserList?userFilter=$($adGroup.Name)&filterByAnalyst=false&groupsOnly=true&maxNumberOfResults=25") -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
+    catch {
+        if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Get-CiresonPortalGroup" -EventID 1 -Severity Error -LogMessage $_.Exception}
+        return $null
     }
-    $ciresonPortalGroup = $cwpGroupResponse | select-object @{Name='AccessGroupId'; Expression={$_.Id}}, name | Where-Object{$_.name -eq $($adGroup.Name)}
-    return $ciresonPortalGroup
 }
 
 #retrieve all the announcements on the portal
@@ -3140,36 +3154,47 @@ function Search-AvailableCiresonPortalOffering
     )
 
     $serviceCatalogAPIurl = "api/V3/ServiceCatalog/GetServiceCatalog?userId=$($ciresonPortalUser.id)&isScoped=$($ciresonPortalUser.Security.IsServiceCatalogScoped)"
-    if ($ciresonPortalWindowsAuth -eq $true)
-    {
-        $serviceCatalogResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -UseDefaultCredentials
-    }
-    else
-    {
-        $serviceCatalogResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
-    }
-
-    #### If the user has access to some Request Offerings, find which RO Titles/Description contain words from their original message ####
-    if ($serviceCatalogResults)
-    {
-        #prepare the results by generating a URL array for the email
-        $matchingRequestURLs = @()
-        foreach ($serviceCatalogResult in $serviceCatalogResults)
+    try {
+        if ($ciresonPortalWindowsAuth -eq $true)
         {
-            $wordsMatched = ($searchQuery.Trim().Split() | Where-Object{($serviceCatalogResult.RequestOfferingTitle -match "\b$_\b") -or ($serviceCatalogResult.RequestOfferingDescription -match "\b$_\b")}).count
-            if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToRO)
-            {
-                $ciresonPortalRequestURL = "`"" + $ciresonPortalServer + "SC/ServiceCatalog/RequestOffering/" + $serviceCatalogResult.RequestOfferingId + "," + $serviceCatalogResult.ServiceOfferingId + "`""
-                $RequestOfferingURL = "<a href=$ciresonPortalRequestURL/>$($serviceCatalogResult.RequestOfferingTitle)</a><br />"
-                $requestOfferingSuggestion = [PSCustomObject] @{
-                    RequestOfferingURL = $RequestOfferingURL
-                    WordsMatched       = $wordsMatched
-                }
-                $matchingRequestURLs += $requestOfferingSuggestion
-            }
+            $serviceCatalogResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -UseDefaultCredentials
         }
-        $matchingRequestURLs = ($matchingRequestURLs | sort-object WordsMatched -Descending).RequestOfferingURL
-        return $matchingRequestURLs
+        else
+        {
+            $serviceCatalogResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$serviceCatalogAPIurl) -Method get -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
+        }
+
+        #### If the user has access to some Request Offerings, find which RO Titles/Description contain words from their original message ####
+        if ($serviceCatalogResults)
+        {
+            #prepare the results by generating a URL array for the email
+            $matchingRequestURLs = @()
+            foreach ($serviceCatalogResult in $serviceCatalogResults)
+            {
+                $wordsMatched = ($searchQuery.Trim().Split() | Where-Object{($serviceCatalogResult.RequestOfferingTitle -match "\b$_\b") -or ($serviceCatalogResult.RequestOfferingDescription -match "\b$_\b")}).count
+                if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToRO)
+                {
+                    $ciresonPortalRequestURL = "`"" + $ciresonPortalServer + "SC/ServiceCatalog/RequestOffering/" + $serviceCatalogResult.RequestOfferingId + "," + $serviceCatalogResult.ServiceOfferingId + "`""
+                    $RequestOfferingURL = "<a href=$ciresonPortalRequestURL/>$($serviceCatalogResult.RequestOfferingTitle)</a><br />"
+                    $requestOfferingSuggestion = [PSCustomObject] @{
+                        RequestOfferingURL = $RequestOfferingURL
+                        WordsMatched       = $wordsMatched
+                    }
+                    $matchingRequestURLs += $requestOfferingSuggestion
+                }
+            }
+            $matchingRequestURLs = ($matchingRequestURLs | sort-object WordsMatched -Descending).RequestOfferingURL
+            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Search-AvailableCiresonPortalOffering" -EventID 0 -Severity Information -LogMessage "$($matchingRequestURLs.Count) relevant ROs found"}
+            return $matchingRequestURLs
+        }
+        else {
+            if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Search-AvailableCiresonPortalOffering" -EventID 1 -Severity Warning -LogMessage "No relevant ROs were found"}
+            return $null
+        }
+    }
+    catch {
+        if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Search-AvailableCiresonPortalOffering" -EventID 2 -Severity Error -LogMessage $_.Exception}
+        return $null
     }
 }
 
@@ -3183,35 +3208,46 @@ function Search-CiresonKnowledgeBase
     )
 
     $kbAPIurl = "api/V3/Article/FullTextSearch?&searchValue=$searchQuery"
-    if ($ciresonPortalWindowsAuth -eq $true)
-    {
-        $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$kbAPIurl) -UseDefaultCredentials
-    }
-    else
-    {
-        $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$kbAPIurl) -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
-    }
-
-    $kbResults =  $kbResults | Where-Object{$_.endusercontent -ne ""} | select-object articleid, title
-
-    if ($kbResults)
-    {
-        $matchingKBURLs = @()
-        foreach ($kbResult in $kbResults)
+    try {
+        if ($ciresonPortalWindowsAuth -eq $true)
         {
-            $wordsMatched = ($searchQuery.Trim().Split() | Where-Object{($kbResult.title -match "\b$_\b")}).count
-            if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToKA)
-            {
-                $KnowledgeArticleURL = "<a href=$ciresonPortalServer" + "KnowledgeBase/View/$($kbResult.articleid)#/>$($kbResult.title)</a><br />"
-                $knowledgeSuggestion = [PSCustomObject] @{
-                    KnowledgeArticleURL = $KnowledgeArticleURL
-                    WordsMatched        = $wordsMatched
-                }
-                $matchingKBURLs += $knowledgeSuggestion
-            }
+            $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$kbAPIurl) -UseDefaultCredentials
         }
-        $matchingKBURLs = ($matchingKBURLs | sort-object WordsMatched -Descending).KnowledgeArticleURL
-        return $matchingKBURLs
+        else
+        {
+            $kbResults = Invoke-RestMethod -Uri ($ciresonPortalServer+$kbAPIurl) -Headers @{"Authorization"=Get-CiresonPortalAPIToken}
+        }
+
+        $kbResults =  $kbResults | Where-Object{$_.endusercontent -ne ""} | select-object articleid, title
+
+        if ($kbResults)
+        {
+            $matchingKBURLs = @()
+            foreach ($kbResult in $kbResults)
+            {
+                $wordsMatched = ($searchQuery.Trim().Split() | Where-Object{($kbResult.title -match "\b$_\b")}).count
+                if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToKA)
+                {
+                    $KnowledgeArticleURL = "<a href=$ciresonPortalServer" + "KnowledgeBase/View/$($kbResult.articleid)#/>$($kbResult.title)</a><br />"
+                    $knowledgeSuggestion = [PSCustomObject] @{
+                        KnowledgeArticleURL = $KnowledgeArticleURL
+                        WordsMatched        = $wordsMatched
+                    }
+                    $matchingKBURLs += $knowledgeSuggestion
+                }
+            }
+            $matchingKBURLs = ($matchingKBURLs | sort-object WordsMatched -Descending).KnowledgeArticleURL
+            if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Search-CiresonKnowledgeBase" -EventID 0 -Severity Information -LogMessage "$($matchingKBURLs.Count) relevant KBs were found"}
+            return $matchingKBURLs
+        }
+        else {
+            if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Search-CiresonKnowledgeBase" -EventID 1 -Severity Warning -LogMessage "No relevant KBs were found"}
+            return $null
+        }
+    }
+    catch {
+        if ($loggingLevel -ge 3) {New-SMEXCOEvent -Source "Search-CiresonKnowledgeBase" -EventID 2 -Severity Error -LogMessage $_.Exception}
+        return $null
     }
 }
 
@@ -3247,6 +3283,8 @@ function Get-CiresonSuggestionURL
     {
         return $null
     }
+
+    if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-CiresonSuggestionURL" -EventID 0 -Severity Information -LogMessage "Retrieving Suggestion URLs from Cireson Portal. Suggest KA: $SuggestKA. SuggestRO: $SuggestRO."}
 
     #check string length
     $wiTitle = if ($WorkItem.title.length -ge 1) {$WorkItem.title.trim()} else {$null}
