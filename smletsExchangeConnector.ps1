@@ -10,7 +10,7 @@ enabling other organizational level processes via email
 
 .NOTES
 Author: Adam Dzyacky
-Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2, Justin Workman, Brad Zima, bennyguk, Jan Schulz, Peter Miklian, Daniel Polivka, Alexander Axberg, Simon Zeinhofer
+Contributors: Martin Blomgren, Leigh Kilday, Tom Hendricks, nradler2, Justin Workman, Brad Zima, bennyguk, Jan Schulz, Peter Miklian, Daniel Polivka, Alexander Axberg, Simon Zeinhofer, Konstantin Slavin-Borovskij
 Reviewers: Tom Hendricks, Brian Wiest
 Inspiration: The Cireson Community, Anders Asp, Stefan Roth, and (of course) Travis Wright for SMlets examples
 Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installed on SCSM workflow server by virtue of stock Exchange Connector).
@@ -20,6 +20,10 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 5.0.4 = #464 - Enhancement, Allow plus addressing in multi-mailbox
+                 #467 - Bug, Resolved by User relationship should be nulled when reactivating a Work Item
+                 #469 - Enhancement, More logging events around Cireson based integration and suggesting KA/RO
+                 #473 - Bug, Emails with signature graphics that feature alt text prevent the suggestion feature from executing
 Version: 5.0.3 = #443 - Bug, Custom Events are incorrectly tied to a Logging Level
                  #453 - Enhancement, Merge Reply functionality supports multi-language environments
                  #452 - Bug, Fix for updating Work Items when the Comment is greater than 4000 characters
