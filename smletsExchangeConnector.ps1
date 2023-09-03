@@ -3171,7 +3171,7 @@ function Search-AvailableCiresonPortalOffering
             $matchingRequestURLs = @()
             foreach ($serviceCatalogResult in $serviceCatalogResults)
             {
-                $wordsMatched = ($searchQuery.Trim().Split() | Where-Object{($serviceCatalogResult.RequestOfferingTitle -match "\b$_\b") -or ($serviceCatalogResult.RequestOfferingDescription -match "\b$_\b")}).count
+                $wordsMatched = ($searchQuery.Trim().Split() | ForEach-Object {[regex]::Escape($_)} | Where-Object{($serviceCatalogResult.RequestOfferingTitle -match "\b$_\b") -or ($serviceCatalogResult.RequestOfferingDescription -match "\b$_\b")}).count
                 if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToRO)
                 {
                     $ciresonPortalRequestURL = "`"" + $ciresonPortalServer + "SC/ServiceCatalog/RequestOffering/" + $serviceCatalogResult.RequestOfferingId + "," + $serviceCatalogResult.ServiceOfferingId + "`""
@@ -3225,7 +3225,7 @@ function Search-CiresonKnowledgeBase
             $matchingKBURLs = @()
             foreach ($kbResult in $kbResults)
             {
-                $wordsMatched = ($searchQuery.Trim().Split() | Where-Object{($kbResult.title -match "\b$_\b")}).count
+                $wordsMatched = ($searchQuery.Trim().Split() | ForEach-Object {[regex]::Escape($_)} | Where-Object{($kbResult.title -match "\b$_\b")}).count
                 if ($wordsMatched -ge $numberOfWordsToMatchFromEmailToKA)
                 {
                     $KnowledgeArticleURL = "<a href=$ciresonPortalServer" + "KnowledgeBase/View/$($kbResult.articleid)#/>$($kbResult.title)</a><br />"
