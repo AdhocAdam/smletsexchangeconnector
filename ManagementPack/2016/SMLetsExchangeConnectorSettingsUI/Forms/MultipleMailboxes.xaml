@@ -43,7 +43,7 @@
                         <GridViewColumn Header="Email Address">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBox Text="{Binding MailboxAddress}" Custom:Validation.RegexPattern="^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$" />
+                                    <TextBox Text="{Binding MailboxAddress}" Custom:Validation.RegexPattern="^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(\+[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z]))*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
