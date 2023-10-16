@@ -2910,7 +2910,7 @@ function New-CMDBUser
         $username = $userEmail.Split("@")[0]
         $domainAndTLD = $userEmail.Split("@")[1]
         $domain = $domainAndTLD.Split(".")[0]
-        $newID = $domain + "_" + $username + "_SMTP(" + [guid]::NewGuid() + ')'
+        $newID = $domain + "_" + $username + "@" + $domainAndTLD + "_SMTP(" + [guid]::NewGuid() + ')'
 
         #create the new user
         try {
