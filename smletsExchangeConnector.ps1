@@ -2910,27 +2910,28 @@ function New-CMDBUser
         $username = $userEmail.Split("@")[0]
         $domainAndTLD = $userEmail.Split("@")[1]
         $domain = $domainAndTLD.Split(".")[0]
-        $newID = $domain + "_" + $username + "_SMTP"
+        $newID = $domain + "_" + $username + "@" + $domainAndTLD + "_SMTP(" + [guid]::NewGuid() + ')'
 
         #create the new user
-        $newUser = New-SCSMObject -Class $domainUserClass -PropertyHashtable @{"domain" = "$domainAndTLD"; "username" = "$username"; "displayname" = "$userEmail"} @scsmMGMTParams -PassThru -NoCommit:$NoCommit
-        if (($loggingLevel -ge 1) -and ($newUser)){New-SMEXCOEvent -Source "New-CMDBUser" -EventId 0 -LogMessage "New User created in SCSM. Username: $username" -Severity "Information"}
-
-        #create the user notification projection
-        $userNoticeProjection = @{__CLASS = "$($domainUserClass.Name)";
-                                    __SEED = $newUser;
-                                    Notification = @{__CLASS = "$($notificationClass)";
-                                                        __OBJECT = @{"ID" = $newID; "TargetAddress" = "$userEmail"; "DisplayName" = "E-mail address"; "ChannelName" = "SMTP"}
-                                                    }
-                                    }
-
-        #create the user's email notification channel
-        $userHasNotification = New-SCSMObjectProjection -Type "$($userHasPrefProjection.Name)" -Projection $userNoticeProjection -PassThru -NoCommit:$NoCommit @scsmMGMTParams
-        if (($loggingLevel -ge 1) -and ($userHasNotification)){New-SMEXCOEvent -Source "New-CMDBUser" -EventId 1 -LogMessage "New User: $username successfully related to their new Notification: $userEmail" -Severity "Information"}
-
+        try {
+            $newUser = New-SCSMObject -Class $domainUserClass -PropertyHashtable @{"domain" = "$domainAndTLD"; "username" = "$username"; "displayname" = "$userEmail"} @scsmMGMTParams -PassThru -NoCommit:$NoCommit
+            if (($loggingLevel -ge 1) -and ($newUser)){New-SMEXCOEvent -Source "New-CMDBUser" -EventId 0 -LogMessage "New User created in SCSM. Username: $username" -Severity "Information"}
+            #create the user notification projection
+            $userNoticeProjection = @{__CLASS = "$($domainUserClass.Name)";
+                                        __SEED = $newUser;
+                                        Notification = @{__CLASS = "$($notificationClass)";
+                                                            __OBJECT = @{"ID" = "$newID"; "TargetAddress" = "$userEmail"; "DisplayName" = "E-mail address"; "ChannelName" = "SMTP"}
+                                                        }
+                                        }
+            #create the user's email notification channel
+            $userHasNotification = New-SCSMObjectProjection -Type "$($userHasPrefProjection.Name)" -Projection $userNoticeProjection -PassThru -NoCommit:$NoCommit @scsmMGMTParams
+            if (($loggingLevel -ge 1) -and ($userHasNotification)){New-SMEXCOEvent -Source "New-CMDBUser" -EventId 1 -LogMessage "New User: $username successfully related to their new Notification: $userEmail" -Severity "Information"}
+        }
+        catch {
+            New-SMEXCOEvent -Source "New-CMDBUser" -EventId 1 -LogMessage "New User: $username could not be created: $PSItem" -Severity "Error"
+        }
         # Custom Event Handler
         if ($ceScripts) { Invoke-AfterUserCreatedInCMDB }
-
         return $newUser
     }
 }
