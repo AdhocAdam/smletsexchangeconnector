@@ -3904,6 +3904,12 @@ function Get-SCSMWorkItemSetting {
             $prefixRegex = ""
             foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
         }
+        "Cireson.WorkItem.Cloud.Activity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.MicrosoftSystemCenterOrchestratorRunbookAutomationActivityBaseIdPrefix
+            $prefixRegex = ""
+            foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
+        }
     }
 
     return @{"MaxAttachments"=$maxAttach;"MaxAttachmentSize"=$maxSize;"Prefix"=$prefix;"PrefixRegex"=$prefixRegex}
@@ -4642,7 +4648,7 @@ function Update-SCSMPropertyCollection
     {
         #Regex - Find class from template object property between ! and ']
         $pattern = '(?<=!)[^!]+?(?=''\])'
-        if (($Object.Path -match $pattern) -and (($Matches[0].StartsWith("System.WorkItem.Activity")) -or ($Matches[0].StartsWith("Microsoft.SystemCenter.Orchestrator")) -or ($Matches[0].StartsWith("Cireson.Powershell.Activity"))))
+        if (($Object.Path -match $pattern) -and (($Matches[0].StartsWith("System.WorkItem.Activity")) -or ($Matches[0].StartsWith("Microsoft.SystemCenter.Orchestrator")) -or ($Matches[0].StartsWith("Cireson.Powershell.Activity") -or ($Matches[0].Equals("Cireson.WorkItem.Cloud.Activity")))))
         {
             #Set prefix from activity class
             $prefix = (Get-SCSMWorkItemSetting -WorkItemClass $Matches[0])["Prefix"]
