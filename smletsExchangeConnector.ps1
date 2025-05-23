@@ -2299,7 +2299,7 @@ function Update-WorkItem
                                         }
                                     }
                                     default {
-                                        if (($workItem.Notes + "$($workItem.Notes)$($commentLeftBy.Name) @ $(get-date): $commentToAdd `n").Length -gt 4000) {
+                                        if (("$($workItem.Notes)$($commentLeftBy.Name) @ $(get-date): $commentToAdd `n").Length -gt 4000) {
                                             if ($loggingLevel -ge 3) {
                                                 New-SMEXCOEvent -Source "Update-WorkItem" -EventId 14 -Severity "Error" -LogMessage "Activity notes entry is too long. Max total length is 4000 characters. This text has not been added to the activity notes and no further text will be added automatically by the SMLets Exchange connector. If you would like to alter this behavior, modify the Invoke-AfterMANoteFailure Custom Event."
                                             }
