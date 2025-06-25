@@ -327,3 +327,8 @@ function Invoke-CustomRuleAction {
   #>
 
 }
+
+function Invoke-AfterMANoteFailure {
+  # This function occurs after an attempt was made to add a Comment to a Manual Activity whose Notes + Comment to Add exceed 4,000 characters.
+  
+}
