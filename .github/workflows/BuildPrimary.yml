@@ -22,6 +22,15 @@ jobs:
         with:
           ref: primary
 
+      - name: Install Developer Targeting 4.5.1 pack
+        shell: pwsh
+        working-directory: "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer"
+        run: |
+          $InstallPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
+          $WorkLoads = '--add Microsoft.Net.Component.4.5.1.SDK --add Microsoft.Net.Component.4.5.1.TargetingPack --add Microsoft.Net.ComponentGroup.4.5.1.DeveloperTools'
+          $Arguments = ('/c', "vs_installer.exe", 'modify', '--installPath', "`"$InstallPath`"", $WorkLoads, $WorkLoads, '--quiet', '--norestart', '--nocache')
+          $process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
+
       # Add MSBuild to environment path
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1.3
