@@ -30,9 +30,6 @@ jobs:
           Start-Process -FilePath NDP451-KB2861696-x86-x64-DevPack.exe -ArgumentList '/quiet', '/norestart' -Wait
           Remove-Item -Force NDP451-KB2861696-x86-x64-DevPack.exe
 
-      - name: Restore dependencies
-        run: dotnet restore
-
       # Add MSBuild to environment path
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1.3
@@ -101,5 +98,6 @@ jobs:
         with:
           name: SMletsExchangeConnector
           path: C:\smletsexchangeconnector\
+
 
 
