@@ -125,5 +125,6 @@
       <SubType>Content</SubType>
     </EmbeddedResource>
   </ItemGroup>
-  <Import Project="$(MSBuildExtensionsPath)\Microsoft\VSAC\Microsoft.SystemCenter.OperationsManager.targets" />
+  <Import Project="D:\a\smletsexchangeconnector\smletsexchangeconnector\ManagementPack\2016\SMLets.Exchange.Connector\dependencies\Microsoft.SystemCenter.OperationsManager.targets" />
+
 </Project>
