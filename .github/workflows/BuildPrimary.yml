@@ -40,6 +40,10 @@ jobs:
           Copy-Item -Path ManagementPack\2016\dependencies -Destination "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VSAC\" -Recurse
           Get-ChildItem "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VSAC\"
 
+      - name: Restore dependencies
+        working-directory: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\Enterprise\\MSBuild\\Microsoft\\VSAC\\"
+        run: dotnet restore
+
       # Build the Settings UI dll
       - name: Compile SMLetsExchangeConnectorSettingsUI.dll
         run: msbuild ManagementPack/2016/SMLetsExchangeConnectorSettingsUI/SMLetsExchangeConnectorSettingsUI.csproj
@@ -98,6 +102,4 @@ jobs:
         with:
           name: SMletsExchangeConnector
           path: C:\smletsexchangeconnector\
-
-
-
+          
