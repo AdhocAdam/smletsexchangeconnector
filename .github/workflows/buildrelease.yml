@@ -20,7 +20,7 @@ on:
 jobs:
   # Job 1, Build - Build the Management Pack on Windows Server with Visual Studio
   build:
-    runs-on: windows-2019
+    runs-on: windows-2022
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -36,8 +36,8 @@ jobs:
       # copy dependencies over
       - name: Copy Dependencies folder from the repo to Build for MP signing and show them
         run: |
-          Copy-Item -Path ManagementPack\2016\dependencies -Destination "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Microsoft\VSAC\" -Recurse
-          Get-ChildItem "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Microsoft\VSAC\"
+          Copy-Item -Path ManagementPack\2016\dependencies -Destination "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VSAC\" -Recurse
+          Get-ChildItem "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VSAC\"
 
       # Build the Settings UI dll
       - name: Compile SMLetsExchangeConnectorSettingsUI.dll
