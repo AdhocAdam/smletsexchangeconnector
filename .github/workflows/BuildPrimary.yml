@@ -24,7 +24,7 @@ jobs:
 
       - name: Install Developer Targeting 4.5.1 pack
         shell: pwsh
-        working-directory: "C:\\Program Files\\Microsoft Visual Studio\\Installer"
+        working-directory: "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer"
         run: |
           Invoke-WebRequest -Uri https://download.microsoft.com/download/9/6/0/96075294-6820-4F01-924A-474E0023E407/NDP451-KB2861696-x86-x64-DevPack.exe -OutFile NDP451-KB2861696-x86-x64-DevPack.exe
           Start-Process -FilePath NDP451-KB2861696-x86-x64-DevPack.exe -ArgumentList '/quiet', '/norestart' -Wait
@@ -37,11 +37,11 @@ jobs:
       # copy dependencies over
       - name: Copy Dependencies folder from the repo to Build for MP signing and show them
         run: |
-          Copy-Item -Path ManagementPack\2016\dependencies -Destination "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VSAC\" -Recurse
-          Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VSAC\"
+          Copy-Item -Path ManagementPack\2016\dependencies -Destination "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VSAC\" -Recurse
+          Get-ChildItem "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VSAC\"
 
       - name: Restore dependencies
-        working-directory: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\MSBuild\\Microsoft\\VSAC\\"
+        working-directory: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\Enterprise\\MSBuild\\Microsoft\\VSAC\\"
         run: dotnet restore
 
       # Build the Settings UI dll
@@ -103,4 +103,3 @@ jobs:
           name: SMletsExchangeConnector
           path: C:\smletsexchangeconnector\
           
-
