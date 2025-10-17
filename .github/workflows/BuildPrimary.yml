@@ -26,10 +26,12 @@ jobs:
         shell: pwsh
         working-directory: "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer"
         run: |
-          $InstallPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
-          $WorkLoads = '--add Microsoft.Net.Component.4.5.1.SDK --add Microsoft.Net.Component.4.5.1.TargetingPack --add Microsoft.Net.ComponentGroup.4.5.1.DeveloperTools'
-          $Arguments = ('/c', "vs_installer.exe", 'modify', '--installPath', "`"$InstallPath`"", $WorkLoads, $WorkLoads, '--quiet', '--norestart', '--nocache')
-          $process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
+          Invoke-WebRequest -Uri https://download.microsoft.com/download/9/6/0/96075294-6820-4F01-924A-474E0023E407/NDP451-KB2861696-x86-x64-DevPack.exe -OutFile NDP451-KB2861696-x86-x64-DevPack.exe
+          Start-Process -FilePath NDP451-KB2861696-x86-x64-DevPack.exe -ArgumentList '/quiet', '/norestart' -Wait
+          Remove-Item -Force NDP451-KB2861696-x86-x64-DevPack.exe
+
+      - name: Restore dependencies
+        run: dotnet restore
 
       # Add MSBuild to environment path
       - name: Add msbuild to PATH
@@ -99,4 +101,5 @@ jobs:
         with:
           name: SMletsExchangeConnector
           path: C:\smletsexchangeconnector\
+
 
