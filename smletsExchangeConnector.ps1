@@ -20,6 +20,9 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 5.0.5 = #494 - Bug, Update-WorkItem on MAs does not take MA Notes into account
+                 #497 - Bug, Event log exposes password when not using Run As Accounts
+                 #480 - Bug, Missing Cloud Activity Prefix
 Version: 5.0.4 = #464 - Enhancement, Allow plus addressing in multi-mailbox
                  #467 - Bug, Resolved by User relationship should be nulled when reactivating a Work Item
                  #469 - Enhancement, More logging events around Cireson based integration and suggesting KA/RO
@@ -2299,7 +2302,15 @@ function Update-WorkItem
                                         }
                                     }
                                     default {
-                                        Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Notes" = "$($workItem.Notes)$($commentLeftBy.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams
+                                        if (("$($workItem.Notes)$($commentLeftBy.Name) @ $(get-date): $commentToAdd `n").Length -gt 4000) {
+                                            if ($loggingLevel -ge 3) {
+                                                New-SMEXCOEvent -Source "Update-WorkItem" -EventId 14 -Severity "Error" -LogMessage "Activity notes entry is too long. Max total length is 4000 characters. This text has not been added to the activity notes. If you would like to alter this behavior, modify the Invoke-AfterMANoteFailure Custom Event."
+                                            }
+                                            if ($ceScripts) { Invoke-AfterMANoteFailure }
+                                        }
+                                        else {
+                                            Set-SCSMObject -SMObject $workItem -PropertyHashtable @{"Notes" = "$($workItem.Notes)$($commentLeftBy.Name) @ $(get-date): $commentToAdd `n"} @scsmMGMTParams
+                                        }
                                     }
                                 }
                             }
@@ -3904,6 +3915,12 @@ function Get-SCSMWorkItemSetting {
             $prefixRegex = ""
             foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
         }
+        "Cireson.WorkItem.Cloud.Activity" {
+            $ActivitySettingsObj = Get-SCSMObject -Class (Get-SCSMClass -Name "System.GlobalSetting.ActivitySettings$" @scsmMGMTParams) @scsmMGMTParams
+            $prefix = $ActivitySettingsObj.MicrosoftSystemCenterOrchestratorRunbookAutomationActivityBaseIdPrefix
+            $prefixRegex = ""
+            foreach ($char in $prefix.tochararray()) {$prefixRegex += "[" + $char + "]"}
+        }
     }
 
     return @{"MaxAttachments"=$maxAttach;"MaxAttachmentSize"=$maxSize;"Prefix"=$prefix;"PrefixRegex"=$prefixRegex}
@@ -4642,7 +4659,7 @@ function Update-SCSMPropertyCollection
     {
         #Regex - Find class from template object property between ! and ']
         $pattern = '(?<=!)[^!]+?(?=''\])'
-        if (($Object.Path -match $pattern) -and (($Matches[0].StartsWith("System.WorkItem.Activity")) -or ($Matches[0].StartsWith("Microsoft.SystemCenter.Orchestrator")) -or ($Matches[0].StartsWith("Cireson.Powershell.Activity"))))
+        if (($Object.Path -match $pattern) -and (($Matches[0].StartsWith("System.WorkItem.Activity")) -or ($Matches[0].StartsWith("Microsoft.SystemCenter.Orchestrator")) -or ($Matches[0].StartsWith("Cireson.Powershell.Activity") -or ($Matches[0].Equals("Cireson.WorkItem.Cloud.Activity")))))
         {
             #Set prefix from activity class
             $prefix = (Get-SCSMWorkItemSetting -WorkItemClass $Matches[0])["Prefix"]
@@ -4935,7 +4952,7 @@ else
         #validate the Run As Account format to ensure it is an email address
         if (!(($username + "@" + $domain) -match "^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$"))
         {
-            New-SMEXCOEvent -Source "General" -EventId 4 -LogMessage "The address/SCSM Run As Account used to sign into 365 is not a valid email address and is currently entered as $($username + "@" + $password). This will prevent a successful connection. To fix this, go to the Run As account in SCSM and for the username enter it as an email address like user@domain.tld" -Severity "Error"
+            New-SMEXCOEvent -Source "General" -EventId 4 -LogMessage "The address/SCSM Run As Account used to sign into 365 is not a valid email address and is currently entered as $($username + "@" + $domain). This will prevent a successful connection. To fix this, go to the Run As account in SCSM and for the username enter it as an email address like user@domain.tld" -Severity "Error"
         }
         #request an access token from Azure
         $ReqTokenBody = @{
