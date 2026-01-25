@@ -5029,42 +5029,48 @@ else
     }
 }
 
-#define search parameters and search on the defined classes
-$inboxFolderName = [Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox
-#authenticate to Exchange
-try
-{
-    $inboxFolder = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($exchangeService,$inboxFolderName)
-    #the authentication bind to Exchange service and Inbox folder worked, log an information event
-    if ($loggingLevel -ge 4)
-    {
-        New-SMEXCOEvent -Source "General" -EventId 0 -LogMessage "Successfully connected to Exchange" -Severity "Information"
-    }
-}
-catch
-{
-    #couldn't retrieve the Inbox, log an error and exit the connector
-    if ($loggingLevel -ge 3)
-    {
-        New-SMEXCOEvent -Source "General" -EventId 1 -LogMessage $_.Exception -Severity "Error"
-    }
-    break
-}
-#define search parameters, search on the defined classes and get messages that are older than the current time
-$itemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 1000
-$propertySet = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.BasePropertySet]::FirstClassProperties)
-$propertySet.RequestedBodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::Text
-$mimeContentSchema = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.ItemSchema]::MimeContent)
-$dateTimeItem = [Microsoft.Exchange.WebServices.Data.ItemSchema]::DateTimeReceived
-$now = get-date
-$searchFilter = New-Object -TypeName Microsoft.Exchange.WebServices.Data.SearchFilter+IsLessThanOrEqualTo -ArgumentList $dateTimeItem,$now
+#determine how the $inbox will be retrieved, Online = MSGraph. On Premise = EWS.
+if ($UseExchangeOnline) {
 
-#build the itemClass filter based on settings
-$inboxFilterString = New-InboxFilterString
-
-#filter the inbox
-$inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
-if (($loggingLevel -ge 1)){New-SMEXCOEvent -Source "General" -EventId 2 -LogMessage "Messages to Process: $($inbox.Count)" -Severity "Information"; $messagesProcessed = 0}
+}
+else {
+    #define search parameters and search on the defined classes
+    $inboxFolderName = [Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox
+    #authenticate to Exchange
+    try
+    {
+        $inboxFolder = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($exchangeService,$inboxFolderName)
+        #the authentication bind to Exchange service and Inbox folder worked, log an information event
+        if ($loggingLevel -ge 4)
+        {
+            New-SMEXCOEvent -Source "General" -EventId 0 -LogMessage "Successfully connected to Exchange" -Severity "Information"
+        }
+    }
+    catch
+    {
+        #couldn't retrieve the Inbox, log an error and exit the connector
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "General" -EventId 1 -LogMessage $_.Exception -Severity "Error"
+        }
+        break
+    }
+    #define search parameters, search on the defined classes and get messages that are older than the current time
+    $itemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 1000
+    $propertySet = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.BasePropertySet]::FirstClassProperties)
+    $propertySet.RequestedBodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::Text
+    $mimeContentSchema = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.ItemSchema]::MimeContent)
+    $dateTimeItem = [Microsoft.Exchange.WebServices.Data.ItemSchema]::DateTimeReceived
+    $now = get-date
+    $searchFilter = New-Object -TypeName Microsoft.Exchange.WebServices.Data.SearchFilter+IsLessThanOrEqualTo -ArgumentList $dateTimeItem,$now
+    
+    #build the itemClass filter based on settings
+    $inboxFilterString = New-InboxFilterString
+    
+    #filter the inbox
+    $inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
+    if (($loggingLevel -ge 1)){New-SMEXCOEvent -Source "General" -EventId 2 -LogMessage "Messages to Process: $($inbox.Count)" -Severity "Information"; $messagesProcessed = 0}
+}
 # Custom Event Handler
 if ($ceScripts) { Invoke-OnOpenInbox }
 
@@ -5660,5 +5666,6 @@ if ($loggingLevel -ge 1)
     Seconds: $($runtime.TotalSeconds)
     Milliseconds: $($runtime.TotalMilliseconds)"
 }
+
 
 
