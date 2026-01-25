@@ -4740,6 +4740,51 @@ function Remove-PII
     }
 }
 
+function New-InboxFilterString {
+    #build the Where-Object scriptblock based on defined configuration
+    #by default the connector will ALWAYS process regular emails as seen in the $emailFilterString variable
+    $emailFilterString = '($_.ItemClass -eq "IPM.Note")'
+    $calendarFilterString = '($_.ItemClass -eq "IPM.Schedule.Meeting.Request") -or ($_.ItemClass -eq "IPM.Schedule.Meeting.Canceled")'
+    $digitallySignedFilterString = '($_.ItemClass -eq "IPM.Note.SMIME.MultipartSigned")'
+    $encryptedFilterString = '($_.ItemClass -eq "IPM.Note.SMIME")'
+    $unreadFilterString = '($_.isRead -eq $false)'
+    $inboxFilterString = @()
+    if ($processCalendarAppointment -eq $true) {
+        $inboxFilterString += $calendarFilterString
+    }
+    if ($processDigitallySignedMessages -eq $true) {
+        $inboxFilterString += $digitallySignedFilterString
+    }
+    if ($processEncryptedMessages -eq $true) {
+        $inboxFilterString += $encryptedFilterString
+    }
+    if ($UseCustomRules) {
+        #retrieve any custom rule patterns that are not the supported out of box enums
+        $customMessageClasses = $smexcoSettingsCustomRules | Where-Object { $_.CustomRuleMessageClassEnum.Name -notlike "SMLets.Exchange.Connector.MessageClassEnum.*" }
+        if ($customMessageClasses.count -eq 1) {
+            $inboxFilterString += "(`$_.ItemClass -eq '$($smexcoSettingsExternalTicket.CustomRuleMessageClassEnum.DisplayName)')"
+        }
+        elseif ($customMessageClasses.count -ge 2) {
+            foreach ($smexcoSettingsExternalTicket in $customMessageClasses) {
+                $inboxFilterString += "(`$_.ItemClass -eq '$($smexcoSettingsExternalTicket.CustomRuleMessageClassEnum.DisplayName)')"
+            }
+        }
+    }
+
+    #finalize the where-object string by ensuring to look for all Unread Items
+    $inboxFilterString = $inboxFilterString -join ' -or '
+    if ($inboxFilterString.length -eq 0) {
+        $inboxFilterString = "(" + $emailFilterString + ")" + " -and " + $unreadFilterString
+    }
+    else {
+        $inboxFilterString = "(" + $inboxFilterString + " -or " + $emailFilterString + ")" + " -and " + $unreadFilterString
+    }
+    if ($loggingLevel -ge 4) { New-SMEXCOEvent -Source "General" -EventId 5 -LogMessage "Filtering Mailbox on: $inboxFilterString" -Severity "Information" }
+    $inboxFilterString = [scriptblock]::Create("$inboxFilterString")
+    return $inboxFilterString
+}
+
+
 #region #### SCOM Request Functions ####
 function Get-SCOMAuthorizedRequester
 {
@@ -5028,55 +5073,8 @@ $dateTimeItem = [Microsoft.Exchange.WebServices.Data.ItemSchema]::DateTimeReceiv
 $now = get-date
 $searchFilter = New-Object -TypeName Microsoft.Exchange.WebServices.Data.SearchFilter+IsLessThanOrEqualTo -ArgumentList $dateTimeItem,$now
 
-#build the Where-Object scriptblock based on defined configuration
-#by default the connector will ALWAYS process regular emails as seen in the $emailFilterString variable
-$emailFilterString = '($_.ItemClass -eq "IPM.Note")'
-$calendarFilterString = '($_.ItemClass -eq "IPM.Schedule.Meeting.Request") -or ($_.ItemClass -eq "IPM.Schedule.Meeting.Canceled")'
-$digitallySignedFilterString = '($_.ItemClass -eq "IPM.Note.SMIME.MultipartSigned")'
-$encryptedFilterString = '($_.ItemClass -eq "IPM.Note.SMIME")'
-$unreadFilterString = '($_.isRead -eq $false)'
-$inboxFilterString = @()
-if ($processCalendarAppointment -eq $true)
-{
-    $inboxFilterString += $calendarFilterString
-}
-if ($processDigitallySignedMessages -eq $true)
-{
-    $inboxFilterString += $digitallySignedFilterString
-}
-if ($processEncryptedMessages -eq $true)
-{
-    $inboxFilterString += $encryptedFilterString
-}
-if ($UseCustomRules)
-{
-    #retrieve any custom rule patterns that are not the supported out of box enums
-    $customMessageClasses = $smexcoSettingsCustomRules | Where-Object {$_.CustomRuleMessageClassEnum.Name -notlike "SMLets.Exchange.Connector.MessageClassEnum.*"}
-    if ($customMessageClasses.count -eq 1)
-    {
-        $inboxFilterString += "(`$_.ItemClass -eq '$($smexcoSettingsExternalTicket.CustomRuleMessageClassEnum.DisplayName)')"
-    }
-    elseif ($customMessageClasses.count -ge 2)
-    {
-        foreach ($smexcoSettingsExternalTicket in $customMessageClasses)
-        {
-            $inboxFilterString += "(`$_.ItemClass -eq '$($smexcoSettingsExternalTicket.CustomRuleMessageClassEnum.DisplayName)')"
-        }
-    }
-}
-
-#finalize the where-object string by ensuring to look for all Unread Items
-$inboxFilterString = $inboxFilterString -join ' -or '
-if ($inboxFilterString.length -eq 0)
-{
-    $inboxFilterString = "(" + $emailFilterString + ")" + " -and " + $unreadFilterString
-}
-else
-{
-    $inboxFilterString = "(" + $inboxFilterString + " -or " + $emailFilterString + ")" + " -and " + $unreadFilterString
-}
-if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "General" -EventId 5 -LogMessage "Filtering Mailbox on: $inboxFilterString" -Severity "Information"}
-$inboxFilterString = [scriptblock]::Create("$inboxFilterString")
+#build the itemClass filter based on settings
+$inboxFilterString = New-InboxFilterString
 
 #filter the inbox
 $inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
@@ -5676,3 +5674,4 @@ if ($loggingLevel -ge 1)
     Seconds: $($runtime.TotalSeconds)
     Milliseconds: $($runtime.TotalMilliseconds)"
 }
+
