@@ -4936,36 +4936,29 @@ $exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeServic
 if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Connector.15d8b765a2f8b63ead14472f9b3c12f0")} | Select-Object Enabled -ExpandProperty Enabled)
 {
     #the workflow exists and it is enabled, determine how to connect to Exchange
-    if ($UseExchangeOnline)
-    {
+    if ($UseExchangeOnline) {
         #validate the Run As Account format to ensure it is an email address
-        if (!(($ewsUsername + "@" + $ewsDomain) -match "^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$"))
-        {
+        if (!(($ewsUsername + "@" + $ewsDomain) -match "^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$")) {
             New-SMEXCOEvent -Source "General" -EventId 4 -LogMessage "The address/SCSM Run As Account used to sign into 365 is not a valid email address and is currently entered as $($ewsUsername + "@" + $ewsDomain). This will prevent a successful connection. To fix this, go to the Run As account in SCSM and for the username enter it as an email address like user@domain.tld" -Severity "Error"
         }
+
         #request an access token from Azure
         $ReqTokenBody = @{
-            Grant_Type    = "Password"
-            client_Id     = $AzureClientID
-            Username      = $ewsUsername + "@" + $ewsDomain
-            Password      = $ewspassword
-            Scope         = $azureScopeURL
+            Grant_Type = "Password"
+            client_Id  = $AzureClientID
+            Username   = $ewsUsername + "@" + $ewsDomain
+            Password   = $ewspassword
+            Scope      = $azureScopeURL
         }
-        try{
-            $response = Invoke-RestMethod -Uri $azureTokenURL -Method "POST" -Body $ReqTokenBody
-
-            #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
-            $exchangeService.Url = [System.Uri]$ExchangeEndpoint
-            $exchangeService.Credentials = [Microsoft.Exchange.WebServices.Data.OAuthCredentials]($response.Access_Token)
-
-            if ($loggingLevel -ge 4){
-                New-SMEXCOEvent -Source "General" -EventID 7 -LogMessage "Successfully retrieved an OAuth token from 365" -Severity "Information"
+        try {
+            $tokenReqResponse = Invoke-RestMethod -Uri $azureTokenURL -Method "POST" -Body $ReqTokenBody
+            if ($loggingLevel -ge 4) {
+                New-SMEXCOEvent -Source "General" -EventID 7 -LogMessage "Successfully retrieved an OAuth token from 365. Scope: $($tokenReqResponse.scope)" -Severity "Information"
             }
         }
-        catch{
+        catch {
             #couldn't retrieve the OAuth token
-            if ($loggingLevel -ge 3)
-            {
+            if ($loggingLevel -ge 3) {
                 New-SMEXCOEvent -Source "General" -EventId 8 -LogMessage "Could not retrieve OAuth token from 365: $($_.Exception)`nUsername: $($ReqTokenBody.Username)`nClient ID: $($ReqTokenBody.client_Id)" -Severity "Error"
             }
         }
@@ -4992,36 +4985,29 @@ if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Co
 else
 {
     #the workflow either doesn't exist or it's not enabled, determine how to connect to Exchange
-    if ($UseExchangeOnline)
-    {
+    if ($UseExchangeOnline) {
         #validate the Run As Account format to ensure it is an email address
-        if (!(($username + "@" + $domain) -match "^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$"))
-        {
+        if (!(($username + "@" + $domain) -match "^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$")) {
             New-SMEXCOEvent -Source "General" -EventId 4 -LogMessage "The address/SCSM Run As Account used to sign into 365 is not a valid email address and is currently entered as $($username + "@" + $domain). This will prevent a successful connection. To fix this, go to the Run As account in SCSM and for the username enter it as an email address like user@domain.tld" -Severity "Error"
         }
+
         #request an access token from Azure
         $ReqTokenBody = @{
-            Grant_Type    = "Password"
-            client_Id     = $AzureClientID
-            Username      = $username
-            Password      = $password
-            Scope         = $azureScopeURL
+            Grant_Type = "Password"
+            client_Id  = $AzureClientID
+            Username   = $username
+            Password   = $password
+            Scope      = $azureScopeURL
         }
-        try{
-            $response = Invoke-RestMethod -Uri $azureTokenURL -Method "POST" -Body $ReqTokenBody
-
-            #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
-            $exchangeService.Url = [System.Uri]$ExchangeEndpoint
-            $exchangeService.Credentials = [Microsoft.Exchange.WebServices.Data.OAuthCredentials]($response.Access_Token)
-
-            if ($loggingLevel -ge 4){
-                New-SMEXCOEvent -Source "General" -EventID 7 -LogMessage "Successfully retrieved an OAuth token from 365" -Severity "Information"
+        try {
+            $tokenReqResponse = Invoke-RestMethod -Uri $azureTokenURL -Method "POST" -Body $ReqTokenBody
+            if ($loggingLevel -ge 4) {
+                New-SMEXCOEvent -Source "General" -EventID 7 -LogMessage "Successfully retrieved an OAuth token from 365. Scope: $($tokenReqResponse.scope)" -Severity "Information"
             }
         }
-        catch{
+        catch {
             #couldn't retrieve the OAuth token
-            if ($loggingLevel -ge 3)
-            {
+            if ($loggingLevel -ge 3) {
                 New-SMEXCOEvent -Source "General" -EventId 8 -LogMessage "Could not retrieve OAuth token from 365: $($_.Exception)`nUsername: $($ReqTokenBody.Username)`nClient ID: $($ReqTokenBody.client_Id)" -Severity "Error"
             }
         }
@@ -5674,4 +5660,5 @@ if ($loggingLevel -ge 1)
     Seconds: $($runtime.TotalSeconds)
     Milliseconds: $($runtime.TotalMilliseconds)"
 }
+
 
