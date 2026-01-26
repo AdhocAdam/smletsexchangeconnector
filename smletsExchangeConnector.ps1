@@ -5140,6 +5140,12 @@ foreach ($message in $inbox)
             ItemClass           = $message.ItemClass
         }
 
+        #if we have the HasAttachments property, we're using Exchange Online/Graph. Call graph for attachments and set them in the existing property
+        if ($message.HasAttachments) {
+            $attachmentEndpoint = Invoke-RestMethod -uri "https://graph.microsoft.com/v1.0/me/messages/$($email.ID)/attachments" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
+            $email.Attachments = $attachmentEndpoint.value
+        }
+
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessEmail }
 
