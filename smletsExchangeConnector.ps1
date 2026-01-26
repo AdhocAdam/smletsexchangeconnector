@@ -2350,10 +2350,18 @@ function Add-EmailToSCSMObject
     }
     else {$itemType = "ConfigItem"}
 
-    try
-    {
-        $messageMime = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
-        $MemoryStream = New-Object System.IO.MemoryStream($messageMime.MimeContent.Content,0,$messageMime.MimeContent.Content.Length)
+    try {
+        if ($useExchangeOnline) {
+            $messageMimeUrl = "https://graph.microsoft.com/v1.0/me/messages/$($message.Id)/`$value"
+            $messageMime = Invoke-RestMethod -uri $messageMimeUrl -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
+            $messageBytes = [System.Text.Encoding]::UTF8.GetBytes($messageMime)
+            $memoryStream = New-Object System.IO.MemoryStream
+            $memoryStream.Write($messageBytes, 0, $messageBytes.Length)
+        }
+        else {
+            $messageMime = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService, $message.id, $mimeContentSchema)
+            $MemoryStream = New-Object System.IO.MemoryStream($messageMime.MimeContent.Content, 0, $messageMime.MimeContent.Content.Length)
+        }
 
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeAttachEmail }
