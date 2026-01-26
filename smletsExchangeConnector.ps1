@@ -2453,93 +2453,98 @@ function Add-FileToSCSMObject
 
         try
         {
-            #determine if a File Attachment
-            if ($attachment.GetType().Name -eq "FileAttachment")
-            {
-                $attachment.Load()
-                if ($attachment.GetType().BaseType.Name -like "Mime*")
-                {
-                    #This is a signed/encrypted attachment
-                    $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
-                    $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
-                    $AttachmentContent = [convert]::FromBase64String($base64attachment)
-
-                    #Create a new MemoryStream object out of the attachment data
-                    $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
-                }
-                else
-                {
-                    #this is a regular File Attachment
-                    $base64attachment = [System.Convert]::ToBase64String($attachment.Content)
-                    $AttachmentContent = [convert]::FromBase64String($base64attachment)
-
-                    #Create a new MemoryStream object out of the attachment data
-                    $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
-                }
+            if ($UseExchangeOnline) {
+                $bytes = [System.Convert]::FromBase64String($attachment.contentBytes)
+                $MemoryStream = New-Object System.IO.MemoryStream(, $bytes)
             }
-            #determine if an Item Attachment
-            elseif ($attachment.GetType().Name -eq "ItemAttachment")
-            {
-                if ($attachment.GetType().BaseType.Name -like "Mime*")
+            else {
+                #determine if a File Attachment
+                if ($attachment.GetType().Name -eq "FileAttachment")
                 {
-                    #This is a signed/encrypted attachment
-                    $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
-                    $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
-                    $AttachmentContent = [convert]::FromBase64String($base64attachment)
+                    $attachment.Load()
+                    if ($attachment.GetType().BaseType.Name -like "Mime*")
+                    {
+                        #This is a signed/encrypted attachment
+                        $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
+                        $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
+                        $AttachmentContent = [convert]::FromBase64String($base64attachment)
 
-                    #Create a new MemoryStream object out of the attachment data
-                    $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
+                        #Create a new MemoryStream object out of the attachment data
+                        $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
+                    }
+                    else
+                    {
+                        #this is a regular File Attachment
+                        $base64attachment = [System.Convert]::ToBase64String($attachment.Content)
+                        $AttachmentContent = [convert]::FromBase64String($base64attachment)
+
+                        #Create a new MemoryStream object out of the attachment data
+                        $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
+                    }
                 }
+                #determine if an Item Attachment
+                elseif ($attachment.GetType().Name -eq "ItemAttachment")
+                {
+                    if ($attachment.GetType().BaseType.Name -like "Mime*")
+                    {
+                        #This is a signed/encrypted attachment
+                        $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
+                        $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
+                        $AttachmentContent = [convert]::FromBase64String($base64attachment)
+
+                        #Create a new MemoryStream object out of the attachment data
+                        $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
+                    }
+                    else
+                    {
+                        $attachment.Load($mimeContentSchema)
+                        $base64attachment = [System.Convert]::ToBase64String($attachment.Item.MimeContent.Content)
+                        $AttachmentContent = [convert]::FromBase64String($base64attachment)
+
+                        #Create a new MemoryStream object out of the attachment data
+                        $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
+
+                        #update the $attachment variable's name
+                        if ($attachment.Item.GetType().Name -eq "EmailMessage")
+                        {
+                            $attachment | Add-Member -NotePropertyName DisplayName -NotePropertyValue ($attachment.Name + ".eml")
+                            $attachment | Add-Member -NotePropertyName Extension -NotePropertyValue ".eml"
+                        }
+                    }
+                }
+                #must be part of a digitally signed/encrypted message, determine Mime Object type
                 else
                 {
-                    $attachment.Load($mimeContentSchema)
-                    $base64attachment = [System.Convert]::ToBase64String($attachment.Item.MimeContent.Content)
-                    $AttachmentContent = [convert]::FromBase64String($base64attachment)
-
-                    #Create a new MemoryStream object out of the attachment data
-                    $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
-
-                    #update the $attachment variable's name
-                    if ($attachment.Item.GetType().Name -eq "EmailMessage")
+                    #generic mime attachment
+                    if ($attachment.GetType().Name -eq "MimePart")
                     {
-                        $attachment | Add-Member -NotePropertyName DisplayName -NotePropertyValue ($attachment.Name + ".eml")
+                        #Create a new MemoryStream object out of the attachment data
+                        $MemoryStream = New-Object System.IO.MemoryStream #($signedAttachArray,0,$signedAttachArray.Length)
+                        $attachment.Content.DecodeTo($MemoryStream)
+
+                        #update the $attachment variable's name
+                        $attachment | Add-Member -NotePropertyName Name -NotePropertyValue $attachment.FileName
+                    }
+                    #exchange object that is a mime type
+                    if ($attachment.GetType().Name -eq "MessagePart")
+                    {
+                        #This is an attached email
+                        $MemoryStream = New-Object System.IO.MemoryStream
+                        $attachment.WriteTo($MemoryStream)
+
+                        #$attachment.Load($mimeContentSchema)
+                        $base64attachment = [System.Convert]::ToBase64String($MemoryStream.ToArray())
+                        $AttachmentContent = [convert]::FromBase64String($base64attachment)
+
+                        #Create a new MemoryStream object out of the attachment data
+                        $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
+
+                        #update the $attachment variable's name
+                        $attachment | Add-Member -NotePropertyName Name -NotePropertyValue "message.eml"
                         $attachment | Add-Member -NotePropertyName Extension -NotePropertyValue ".eml"
                     }
                 }
             }
-            #must be part of a digitally signed/encrypted message, determine Mime Object type
-            else
-            {
-                #generic mime attachment
-                if ($attachment.GetType().Name -eq "MimePart")
-                {
-                    #Create a new MemoryStream object out of the attachment data
-                    $MemoryStream = New-Object System.IO.MemoryStream #($signedAttachArray,0,$signedAttachArray.Length)
-                    $attachment.Content.DecodeTo($MemoryStream)
-
-                    #update the $attachment variable's name
-                    $attachment | Add-Member -NotePropertyName Name -NotePropertyValue $attachment.FileName
-                }
-                #exchange object that is a mime type
-                if ($attachment.GetType().Name -eq "MessagePart")
-                {
-                    #This is an attached email
-                    $MemoryStream = New-Object System.IO.MemoryStream
-                    $attachment.WriteTo($MemoryStream)
-
-                    #$attachment.Load($mimeContentSchema)
-                    $base64attachment = [System.Convert]::ToBase64String($MemoryStream.ToArray())
-                    $AttachmentContent = [convert]::FromBase64String($base64attachment)
-
-                    #Create a new MemoryStream object out of the attachment data
-                    $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
-
-                    #update the $attachment variable's name
-                    $attachment | Add-Member -NotePropertyName Name -NotePropertyValue "message.eml"
-                    $attachment | Add-Member -NotePropertyName Extension -NotePropertyValue ".eml"
-                }
-            }
-
             #create the File Attachment object for SCSM
             $workItemAttachmentCriteria = if ($itemType -eq "WorkItem"){$MemoryStream.Length -gt $minFileSizeInKB+"kb" -and ($checkAttachmentSettings -eq $false -or ($existingAttachmentsCount -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb"))}
             if (($itemType -eq "WorkItem" -and $workItemAttachmentCriteria) -or ($itemType -eq "ConfigItem"))
