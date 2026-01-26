@@ -4797,6 +4797,37 @@ function New-InboxFilterString {
     return $inboxFilterString
 }
 
+function Update-ExchangeMessage {
+    param (
+        #the message that will be marked as read and optionally be moved to Deleted Items for Exchange On Premise/Online
+        $item,
+        #should the item be moved to deleted items
+        [bool]$delete
+    )
+
+    #mark the message as read, then move to Delete Items if configured
+    if ($UseExchangeOnline) {
+        #skips deleted items, and deletes the message from the mailbox
+        #$deleteMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)"
+
+        #mark the item as read
+        $readMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)"
+        $readMessageBody = @{"isRead" = $true } | ConvertTo-Json
+        Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $readMessageUrl -body $readMessageBody -Method "PATCH" -ContentType "application/json"
+
+        #move to Deleted Items folder
+        if ($delete) {
+            $moveMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)/move"
+            $moveMessageBody = @{"destinationId" = "deleteditems" } | ConvertTo-Json
+            Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $moveMessageUrl -body $moveMessageBody -Method "POST" -ContentType "application/json"
+        }
+    }
+    else {
+        $item.IsRead = $true
+        $item.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
+        if ($delete) { $item.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null }
+    }
+}
 
 #region #### SCOM Request Functions ####
 function Get-SCOMAuthorizedRequester
@@ -5201,9 +5232,7 @@ foreach ($message in $inbox)
         if ($ceScripts) { Invoke-AfterProcessEmail }
 
         #mark the message as read on Exchange, move to deleted items
-        $message.IsRead = $true
-        $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
-        if ($deleteAfterProcessing){$message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null}
+        Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
     }
 
     #### Process a Digitally Signed message ####
@@ -5309,9 +5338,7 @@ foreach ($message in $inbox)
         if ($ceScripts) { Invoke-AfterProcessEmail }
 
         #mark the message as read on Exchange, move to deleted items
-        $message.IsRead = $true
-        $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
-        if ($deleteAfterProcessing){$message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null}
+        Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
 
         # Custom Event Handler
         if ($ceScripts) { Invoke-AfterProcessSignedEmail }
@@ -5389,9 +5416,7 @@ foreach ($message in $inbox)
             if ($ceScripts) { Invoke-AfterProcessEmail }
 
             #mark the message as read on Exchange, move to deleted items
-            $message.IsRead = $true
-            $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
-            if ($deleteAfterProcessing){$message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null}
+            Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
 
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
@@ -5464,9 +5489,7 @@ foreach ($message in $inbox)
             if ($ceScripts) { Invoke-AfterProcessEmail }
 
             #mark the message as read on Exchange, move to deleted items
-            $message.IsRead = $true
-            $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
-            if ($deleteAfterProcessing){$message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null}
+            Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
 
             # Custom Event Handler
             if ($ceScripts) { Invoke-AfterProcessSignedEmail }
@@ -5550,9 +5573,7 @@ foreach ($message in $inbox)
             if ($ceScripts) { Invoke-AfterProcessEmail }
 
             #mark the message as read on Exchange, move to deleted items
-            $message.IsRead = $true
-            $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
-            if ($deleteAfterProcessing){$message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null}
+            Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
 
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
@@ -5599,7 +5620,12 @@ foreach ($message in $inbox)
             #### 3rd party classes, work items, etc. add here ####
 
             #### default action, create/schedule a new default work item ####
-            default {$returnedNewWorkItemToSchedule = new-workitem -message $appointment -wiType $defaultNewWorkItem $true; Set-WorkItemScheduledTime -calAppt $appointment -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)}
+            default {
+                $returnedNewWorkItemToSchedule = new-workitem -message $appointment -wiType $defaultNewWorkItem $true
+                Set-WorkItemScheduledTime -calAppt $appointment -workItem $returnedNewWorkItemToSchedule
+                $message.Accept($true)
+                Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
+            }
         }
 
         # Custom Event Handler
@@ -5647,14 +5673,18 @@ foreach ($message in $inbox)
             "([C][a][n][c][e][l][e][d][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){$result = Confirm-WorkItem -message $appointment -returnWorkItem $true; Set-WorkItemScheduledTime -calAppt $appointment -workItem $result} else{new-workitem -message $appointment -wiType $defaultNewWorkItem}}
 
             #### default action, create/schedule a new default work item ####
-            default {$returnedNewWorkItemToSchedule = new-workitem -message $appointment -wiType $defaultNewWorkItem $true; Set-WorkItemScheduledTime -calAppt $appointment -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)}
+            default {
+                $returnedNewWorkItemToSchedule = new-workitem -message $appointment -wiType $defaultNewWorkItem $true
+                Set-WorkItemScheduledTime -calAppt $appointment -workItem $returnedNewWorkItemToSchedule
+                $message.Accept($true)
+            }
         }
 
         # Custom Event Handler
         if ($ceScripts) { Invoke-AfterProcessCancelMeeting }
 
         #Move to deleted items
-        $message.Delete([Microsoft.Exchange.WebServices.Data.DeleteMode]::MoveToDeletedItems)
+        Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
     }
 
     #Process a custom message class as defined through it's Custom Rules Pattern if it's enabled
@@ -5688,9 +5718,7 @@ foreach ($message in $inbox)
                     Test-EmailPattern -MessageClass $message.ItemClass -Email $email
 
                     #mark the message as read on Exchange, move to deleted items
-                    $message.IsRead = $true
-                    $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
-                    if ($deleteAfterProcessing){$message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null}
+                    Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
                 }
             }
         }
