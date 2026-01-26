@@ -5031,7 +5031,35 @@ else
 
 #determine how the $inbox will be retrieved, Online = MSGraph. On Premise = EWS.
 if ($UseExchangeOnline) {
+    # https://learn.microsoft.com/en-us/office/client-developer/outlook/mapi/pidtagmessageclass-canonical-property
+    ### make a call to retrieve the Message Class property (e.g. IPM.Note, IPM.Schedule.Meeting.Request, etc.) since it isn't included in default call: ($filter = Id eq String 0x001a) wherein %20 represents a space
+    $baseUrl = "https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages"
+    $1000itemsUrl = "&`$top=1000"
+    #combining unreadFilterURL with itemClass prevents the itemClass from being returned
+    #$unreadFilterURL = "?`$filter=isRead eq false&"
+    $itemClassUrl = "/?`$expand=SingleValueExtendedProperties(`$filter=(Id%20eq%20'String%200x001a'))"
+    $mailUrl = $baseUrl + $itemClassUrl + $1000itemsUrl
 
+    #rebuild the Graph response/message to closely mirror the EWS response/message
+    $data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"; Prefer = "outlook.body-content-type='text'" } -Uri $mailUrl -Method "GET" | Select-Object value -ExpandProperty value
+    $inbox = $data | Select-Object @{Name = 'From'; Expression = { [PSCustomObject]@{Address = $_.From.emailAddress.address } } },
+    @{Name = 'ToRecipients'; Expression = { [PSCustomObject]@{Address = $_.toRecipients.emailAddress.address } } },
+    @{Name = 'CcRecipients'; Expression = { [PSCustomObject]@{Address = $_.ccRecipients.emailAddress.address } } },
+    subject,
+    @{Name = 'Body'; Expression = { [PSCustomObject]@{Text = $_.Body.content } } },
+    @{Name = 'DateTimeSent'; Expression = { $_.sentDateTime } },
+    @{Name = 'DateTimeReceived'; Expression = { $_.receivedDateTime } },
+    id,
+    conversationid,
+    hasattachments,
+    isRead,
+    @{Name = 'ItemClass'; Expression = { $_.singleValueExtendedProperties | Where-Object { $_.id -eq 'String 0x1a' } | Select-Object value -ExpandProperty value } }
+
+    #since we can't seem to filter unread and retrieve the itemClass in a single call, filter to unread
+    $inbox = $inbox | Where-Object { $_.IsRead -eq $false }
+    #build the itemClass filter based on settings
+    $inboxFilterString = New-InboxFilterString
+    $inbox = $inbox | Where-Object $inboxFilterString
 }
 else {
     #define search parameters and search on the defined classes
@@ -5666,6 +5694,7 @@ if ($loggingLevel -ge 1)
     Seconds: $($runtime.TotalSeconds)
     Milliseconds: $($runtime.TotalMilliseconds)"
 }
+
 
 
 
