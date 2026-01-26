@@ -5000,9 +5000,11 @@ $UseCustomRules = $smexcoSettingsMP.UseCustomRules
 
 # Custom Event Handler
 if ($ceScripts) { Invoke-BeforeConnect }
-#define Exchange assembly and connect to EWS
-[void] [Reflection.Assembly]::LoadFile("$exchangeEWSAPIPath")
-$exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService
+#if we aren't connecting to Exchange Online, define Exchange assembly and connect to EWS
+if (!$UseExchangeOnline) {
+    [void] [Reflection.Assembly]::LoadFile("$exchangeEWSAPIPath")
+    $exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService
+}
 
 #figure out if the workflow should be used
 if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Connector.15d8b765a2f8b63ead14472f9b3c12f0")} | Select-Object Enabled -ExpandProperty Enabled)
@@ -5771,3 +5773,4 @@ if ($loggingLevel -ge 1)
     Seconds: $($runtime.TotalSeconds)
     Milliseconds: $($runtime.TotalMilliseconds)"
 }
+
