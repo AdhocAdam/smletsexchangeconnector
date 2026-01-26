@@ -5114,8 +5114,10 @@ switch -Regex ($incomingValue)
 #parse each message
 foreach ($message in $inbox)
 {
-    #load the entire message
-    $message.Load($propertySet)
+    if (!$UseExchangeOnline) {
+        #if we're not using Exchange Online, load all of the message properties
+        $message.Load($propertySet)
+    }
 
     #initialize a variable to determine if valid update
     $isUpdate = $null
@@ -5694,7 +5696,3 @@ if ($loggingLevel -ge 1)
     Seconds: $($runtime.TotalSeconds)
     Milliseconds: $($runtime.TotalMilliseconds)"
 }
-
-
-
-
