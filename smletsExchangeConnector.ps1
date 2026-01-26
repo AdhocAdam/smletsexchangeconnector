@@ -3463,13 +3463,41 @@ function Send-EmailFromWorkflowAccount
         $toRecipients
     )
 
-    $emailToSendOut = New-Object Microsoft.Exchange.WebServices.Data.EmailMessage -ArgumentList $exchangeService
-    $emailToSendOut.Subject = $subject
-    $emailToSendOut.Body = New-Object Microsoft.Exchange.WebServices.Data.MessageBody
-    $emailToSendOut.Body.Text = $body
-    $emailToSendOut.Body.BodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::$bodyType
-    $emailToSendOut.ToRecipients.Add($toRecipients)
-    $emailToSendOut.Send()
+    if ($UseExchangeOnline) {
+        #https://learn.microsoft.com/en-us/graph/api/user-sendmail?view=graph-rest-1.0&tabs=powershell
+        $sendUrl = "https://graph.microsoft.com/v1.0/me/sendMail"
+        $recipients = @()
+        foreach ($address in $ToRecipients) {
+            $recipients += @{
+                emailAddress = @{
+                    address = $address
+                }
+            }
+        }
+
+        $emailToSendOut = @{
+            message         = @{
+                subject      = $Subject
+                body         = @{
+                    contentType = $BodyType
+                    content     = $Body
+                }
+                toRecipients = $recipients
+            }
+            saveToSentItems = $true
+        } | ConvertTo-Json -Depth 5
+
+        Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $sendUrl -body $emailToSendOut -Method "POST" -ContentType "application/json"
+    }
+    else {
+        $emailToSendOut = New-Object Microsoft.Exchange.WebServices.Data.EmailMessage -ArgumentList $exchangeService
+        $emailToSendOut.Subject = $subject
+        $emailToSendOut.Body = New-Object Microsoft.Exchange.WebServices.Data.MessageBody
+        $emailToSendOut.Body.Text = $body
+        $emailToSendOut.Body.BodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::$bodyType
+        $emailToSendOut.ToRecipients.Add($toRecipients)
+        $emailToSendOut.Send()
+    }
 
     if ($loggingLevel -ge 4)
     {
