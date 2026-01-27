@@ -5250,8 +5250,8 @@ foreach ($message in $inbox)
             ItemClass           = $message.ItemClass
         }
 
-        #if we have the HasAttachments property, we're using Exchange Online/Graph. Call graph for attachments and set them in the existing property
-        if ($message.HasAttachments) {
+        #if we have the HasAttachments property and we're using Exchange Online/Graph. Call graph for attachments and set them in the existing property
+        if ($message.HasAttachments -and $UseExchangeOnline) {
             $attachmentEndpoint = Invoke-RestMethod -uri "https://graph.microsoft.com/v1.0/me/messages/$($email.ID)/attachments" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
             $email.Attachments = $attachmentEndpoint.value
         }
@@ -5695,7 +5695,7 @@ foreach ($message in $inbox)
                 $returnedNewWorkItemToSchedule = new-workitem -message $appointment -wiType $defaultNewWorkItem $true
                 Set-WorkItemScheduledTime -calAppt $appointment -workItem $returnedNewWorkItemToSchedule
                 Update-ExchangeMeeting -meeting $message -type "accept"
-                Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
+                if ($UseExchangeOnline) {Update-ExchangeMessage -item $message -delete $deleteAfterProcessing}
             }
         }
 
@@ -5760,7 +5760,7 @@ foreach ($message in $inbox)
 
         #Move to deleted items
         Update-ExchangeMeeting -Meeting $message -type "decline";
-        Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
+        if ($UseExchangeOnline) {Update-ExchangeMessage -item $message -delete $deleteAfterProcessing}
     }
 
     #Process a custom message class as defined through it's Custom Rules Pattern if it's enabled
@@ -5819,5 +5819,6 @@ if ($loggingLevel -ge 1)
     Seconds: $($runtime.TotalSeconds)
     Milliseconds: $($runtime.TotalMilliseconds)"
 }
+
 
 
