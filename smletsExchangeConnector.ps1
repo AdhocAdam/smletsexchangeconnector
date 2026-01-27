@@ -5819,6 +5819,3 @@ if ($loggingLevel -ge 1)
     Seconds: $($runtime.TotalSeconds)
     Milliseconds: $($runtime.TotalMilliseconds)"
 }
-
-
-
