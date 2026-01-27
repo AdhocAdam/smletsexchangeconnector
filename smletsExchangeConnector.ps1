@@ -3518,19 +3518,23 @@ function Set-WorkItemScheduledTime
         $workItem
     )
 
-    if ($PSCmdlet.ShouldProcess("$workItem","Set Scheduled Start/End Time"))
-    {
-        try
-        {
-            switch ($calAppt.ItemClass)
-            {
-                "IPM.Schedule.Meeting.Request" {Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $calAppt.StartTime.ToUniversalTime(); "ScheduledEndDate" = $calAppt.EndTime.ToUniversalTime()} @scsmMGMTParams}
-                "IPM.Schedule.Meeting.Canceled" {Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $null; "ScheduledEndDate" = $null} @scsmMGMTParams}
+    if ($PSCmdlet.ShouldProcess("$workItem", "Set Scheduled Start/End Time")) {
+        try {
+            switch ($calAppt.ItemClass) {
+                "IPM.Schedule.Meeting.Request" {
+                    if ($UseExchangeOnline) {
+                        #datetimes are already in UTC for Graph
+                        Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $calAppt.StartTime; "ScheduledEndDate" = $calAppt.EndTime } @scsmMGMTParams
+                    }
+                    else {
+                        Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $calAppt.StartTime.ToUniversalTime(); "ScheduledEndDate" = $calAppt.EndTime.ToUniversalTime() } @scsmMGMTParams
+                    }
+                }
+                "IPM.Schedule.Meeting.Canceled" { Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $null; "ScheduledEndDate" = $null } @scsmMGMTParams }
             }
         }
-        catch
-        {
-            if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Set-WorkItemScheduledTime" -EventId 1 -LogMessage "Meeting $($calAppt.ItemClass.Split(".")[3]) for $($workItem.Name). Scheduled Start/End Times could not be updated." -Severity "Warning"}
+        catch {
+            if ($loggingLevel -ge 2) { New-SMEXCOEvent -Source "Set-WorkItemScheduledTime" -EventId 1 -LogMessage "Meeting $($calAppt.ItemClass.Split(".")[3]) for $($workItem.Name). Scheduled Start/End Times could not be updated." -Severity "Warning" }
         }
 
         if ($loggingLevel -ge 1)
@@ -4857,6 +4861,34 @@ function Update-ExchangeMessage {
     }
 }
 
+function Update-ExchangeMeeting {
+    param (
+        #the meeting to accept/decline
+        [parameter(Mandatory = $true, Position = 0)]
+        $Meeting,
+        #process new meeting or cancellation, "accept" or "decline" to match Graph and its endpoints
+        #despite the name, decline is accepting a cancellation and removing from the calendar for Graph
+        #this parameter is irrelevant for EWS/On Premise
+        [parameter(Mandatory = $false, Position = 1)]
+        [ValidateSet("accept", "decline")]
+        $Type
+    )
+
+    if ($useExchangeOnline) {
+        #get the meeting
+        $getMeetingUrl = "https://graph.microsoft.com/v1.0/me/messages/$($Meeting.Id)?`$expand=microsoft.graph.eventMessage/event"
+        $graphEvent = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -uri $getMeetingUrl -Method "GET"
+
+        #accept/decline the meeting
+        $acceptMeetingURL = "https://graph.microsoft.com/v1.0/me/events/$($graphEvent.event.id)/$Type"
+        $acceptMeetingBody = @{"SendResponse" = $true } | ConvertTo-Json
+        Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -uri $acceptMeetingURL -body $acceptMeetingBody -Method "POST" -ContentType "application/json"
+    }
+    else {
+        $Meeting.Accept($true)
+    }
+}
+
 #region #### SCOM Request Functions ####
 function Get-SCOMAuthorizedRequester
 {
@@ -5127,6 +5159,9 @@ if ($UseExchangeOnline) {
     conversationid,
     hasattachments,
     isRead,
+    meetingMessageType,
+    startDateTime,
+    endDateTime,
     @{Name = 'ItemClass'; Expression = { $_.singleValueExtendedProperties | Where-Object { $_.id -eq 'String 0x1a' } | Select-Object value -ExpandProperty value } }
 
     #since we can't seem to filter unread and retrieve the itemClass in a single call, filter to unread
@@ -5629,23 +5664,28 @@ foreach ($message in $inbox)
             ItemClass         = $message.ItemClass
         }
 
+        if ($UseExchangeOnline) {
+            [datetime]$appointment.StartTime = $message.startDateTime.dateTime
+            [datetime]$appointment.EndTime = $message.endDateTime.dateTime
+        }
+
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessAppointment }
 
         switch -Regex ($appointment.subject)
         {
             #### primary work item types ####
-            "\[$irRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $irClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "ir" -workItem $result}}
-            "\[$srRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $srClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "sr" -workItem $result}}
-            "\[$prRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $prClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "pr" -workItem $result}}
-            "\[$crRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $crClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "cr" -workItem $result}}
-            "\[$rrRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $rrClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "rr" -workItem $result}}
+            "\[$irRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $irClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "ir" -workItem $result}}
+            "\[$srRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $srClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "sr" -workItem $result}}
+            "\[$prRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $prClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "pr" -workItem $result}}
+            "\[$crRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $crClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "cr" -workItem $result}}
+            "\[$rrRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $rrClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "rr" -workItem $result}}
 
             #### activities ####
-            "\[$maRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $maClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "ma" -workItem $result}}
-            "\[$paRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $paClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "pa" -workItem $result}}
-            "\[$saRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $saClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "sa" -workItem $result}}
-            "\[$daRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $daClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "da" -workItem $result}}
+            "\[$maRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $maClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "ma" -workItem $result}}
+            "\[$paRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $paClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "pa" -workItem $result}}
+            "\[$saRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $saClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "sa" -workItem $result}}
+            "\[$daRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $daClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "da" -workItem $result}}
 
             #### 3rd party classes, work items, etc. add here ####
 
@@ -5653,7 +5693,7 @@ foreach ($message in $inbox)
             default {
                 $returnedNewWorkItemToSchedule = new-workitem -message $appointment -wiType $defaultNewWorkItem $true
                 Set-WorkItemScheduledTime -calAppt $appointment -workItem $returnedNewWorkItemToSchedule
-                $message.Accept($true)
+                Update-ExchangeMeeting -meeting $message -type "accept"
                 Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
             }
         }
@@ -5681,6 +5721,11 @@ foreach ($message in $inbox)
             ItemClass         = $message.ItemClass
         }
 
+        if ($UseExchangeOnline) {
+            [datetime]$appointment.StartTime = $message.startDateTime.dateTime
+            [datetime]$appointment.EndTime = $message.endDateTime.dateTime
+        }
+
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessCancelMeeting }
 
@@ -5706,7 +5751,6 @@ foreach ($message in $inbox)
             default {
                 $returnedNewWorkItemToSchedule = new-workitem -message $appointment -wiType $defaultNewWorkItem $true
                 Set-WorkItemScheduledTime -calAppt $appointment -workItem $returnedNewWorkItemToSchedule
-                $message.Accept($true)
             }
         }
 
@@ -5714,6 +5758,7 @@ foreach ($message in $inbox)
         if ($ceScripts) { Invoke-AfterProcessCancelMeeting }
 
         #Move to deleted items
+        Update-ExchangeMeeting -Meeting $message -type "decline";
         Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
     }
 
