@@ -20,7 +20,7 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
-Version: 6.0.0 = #476 - Enhancement, Support for Microsoft Graph/Retirement of EWS for Exchange Online 
+Version: 6.0.0 = #476 - Enhancement, Support for Microsoft Graph/Retirement of EWS for Exchange Online
 Version: 5.0.5 = #494 - Bug, Update-WorkItem on MAs does not take MA Notes into account
                  #497 - Bug, Event log exposes password when not using Run As Accounts
                  #480 - Bug, Missing Cloud Activity Prefix
@@ -5201,10 +5201,10 @@ else {
     $dateTimeItem = [Microsoft.Exchange.WebServices.Data.ItemSchema]::DateTimeReceived
     $now = get-date
     $searchFilter = New-Object -TypeName Microsoft.Exchange.WebServices.Data.SearchFilter+IsLessThanOrEqualTo -ArgumentList $dateTimeItem,$now
-    
+
     #build the itemClass filter based on settings
     $inboxFilterString = New-InboxFilterString
-    
+
     #filter the inbox
     $inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
     if (($loggingLevel -ge 1)){New-SMEXCOEvent -Source "General" -EventId 2 -LogMessage "Messages to Process: $($inbox.Count)" -Severity "Information"; $messagesProcessed = 0}
