@@ -4866,6 +4866,7 @@ function Update-ExchangeMessage {
 }
 
 function Update-ExchangeMeeting {
+    [CmdletBinding(SupportsShouldProcess=$true)]
     param (
         #the meeting to accept/decline
         [parameter(Mandatory = $true, Position = 0)]
@@ -4878,18 +4879,20 @@ function Update-ExchangeMeeting {
         $Type
     )
 
-    if ($useExchangeOnline) {
-        #get the meeting
-        $getMeetingUrl = "https://graph.microsoft.com/v1.0/me/messages/$($Meeting.Id)?`$expand=microsoft.graph.eventMessage/event"
-        $graphEvent = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -uri $getMeetingUrl -Method "GET"
+    if ($PSCmdlet.ShouldProcess("$Meeting","Update Exchange Meeting $($Meeting.Id)")) {
+        if ($useExchangeOnline) {
+            #get the meeting
+            $getMeetingUrl = "https://graph.microsoft.com/v1.0/me/messages/$($Meeting.Id)?`$expand=microsoft.graph.eventMessage/event"
+            $graphEvent = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -uri $getMeetingUrl -Method "GET"
 
-        #accept/decline the meeting
-        $acceptMeetingURL = "https://graph.microsoft.com/v1.0/me/events/$($graphEvent.event.id)/$Type"
-        $acceptMeetingBody = @{"SendResponse" = $true } | ConvertTo-Json
-        Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -uri $acceptMeetingURL -body $acceptMeetingBody -Method "POST" -ContentType "application/json"
-    }
-    else {
-        $Meeting.Accept($true)
+            #accept/decline the meeting
+            $acceptMeetingURL = "https://graph.microsoft.com/v1.0/me/events/$($graphEvent.event.id)/$Type"
+            $acceptMeetingBody = @{"SendResponse" = $true } | ConvertTo-Json
+            Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -uri $acceptMeetingURL -body $acceptMeetingBody -Method "POST" -ContentType "application/json"
+        }
+        else {
+            $Meeting.Accept($true)
+        }
     }
 }
 
@@ -5822,3 +5825,4 @@ if ($loggingLevel -ge 1)
     Seconds: $($runtime.TotalSeconds)
     Milliseconds: $($runtime.TotalMilliseconds)"
 }
+
