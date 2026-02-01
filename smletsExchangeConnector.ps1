@@ -4831,6 +4831,7 @@ function Get-InboxFilterString {
 }
 
 function Update-ExchangeMessage {
+    [CmdletBinding(SupportsShouldProcess=$true)]
     param (
         #the message that will be marked as read and optionally be moved to Deleted Items for Exchange On Premise/Online
         $item,
@@ -4838,27 +4839,29 @@ function Update-ExchangeMessage {
         [bool]$delete
     )
 
-    #mark the message as read, then move to Delete Items if configured
-    if ($UseExchangeOnline) {
-        #skips deleted items, and deletes the message from the mailbox
-        #$deleteMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)"
+    if ($PSCmdlet.ShouldProcess("$item","Update Exchange Message $($item.Id)")) {
+        #mark the message as read, then move to Delete Items if configured
+        if ($UseExchangeOnline) {
+            #skips deleted items, and deletes the message from the mailbox
+            #$deleteMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)"
 
-        #mark the item as read
-        $readMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)"
-        $readMessageBody = @{"isRead" = $true } | ConvertTo-Json
-        Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $readMessageUrl -body $readMessageBody -Method "PATCH" -ContentType "application/json"
+            #mark the item as read
+            $readMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)"
+            $readMessageBody = @{"isRead" = $true } | ConvertTo-Json
+            Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $readMessageUrl -body $readMessageBody -Method "PATCH" -ContentType "application/json"
 
-        #move to Deleted Items folder
-        if ($delete) {
-            $moveMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)/move"
-            $moveMessageBody = @{"destinationId" = "deleteditems" } | ConvertTo-Json
-            Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $moveMessageUrl -body $moveMessageBody -Method "POST" -ContentType "application/json"
+            #move to Deleted Items folder
+            if ($delete) {
+                $moveMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)/move"
+                $moveMessageBody = @{"destinationId" = "deleteditems" } | ConvertTo-Json
+                Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $moveMessageUrl -body $moveMessageBody -Method "POST" -ContentType "application/json"
+            }
         }
-    }
-    else {
-        $item.IsRead = $true
-        $item.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
-        if ($delete) { $item.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null }
+        else {
+            $item.IsRead = $true
+            $item.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
+            if ($delete) { $item.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null }
+        }
     }
 }
 
