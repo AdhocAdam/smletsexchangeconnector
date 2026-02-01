@@ -4786,7 +4786,7 @@ function Remove-PII
     }
 }
 
-function New-InboxFilterString {
+function Get-InboxFilterString {
     #build the Where-Object scriptblock based on defined configuration
     #by default the connector will ALWAYS process regular emails as seen in the $emailFilterString variable
     $emailFilterString = '($_.ItemClass -eq "IPM.Note")'
@@ -5168,7 +5168,7 @@ if ($UseExchangeOnline) {
     #since we can't seem to filter unread and retrieve the itemClass in a single call, filter to unread
     $inbox = $inbox | Where-Object { $_.IsRead -eq $false }
     #build the itemClass filter based on settings
-    $inboxFilterString = New-InboxFilterString
+    $inboxFilterString = Get-InboxFilterString
     $inbox = $inbox | Where-Object $inboxFilterString
 }
 else {
@@ -5203,7 +5203,7 @@ else {
     $searchFilter = New-Object -TypeName Microsoft.Exchange.WebServices.Data.SearchFilter+IsLessThanOrEqualTo -ArgumentList $dateTimeItem,$now
 
     #build the itemClass filter based on settings
-    $inboxFilterString = New-InboxFilterString
+    $inboxFilterString = Get-InboxFilterString
 
     #filter the inbox
     $inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
