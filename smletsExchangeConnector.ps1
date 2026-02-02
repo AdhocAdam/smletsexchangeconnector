@@ -4786,7 +4786,7 @@ function Remove-PII
     }
 }
 
-function New-InboxFilterString {
+function Get-InboxFilterString {
     #build the Where-Object scriptblock based on defined configuration
     #by default the connector will ALWAYS process regular emails as seen in the $emailFilterString variable
     $emailFilterString = '($_.ItemClass -eq "IPM.Note")'
@@ -4831,6 +4831,7 @@ function New-InboxFilterString {
 }
 
 function Update-ExchangeMessage {
+    [CmdletBinding(SupportsShouldProcess=$true)]
     param (
         #the message that will be marked as read and optionally be moved to Deleted Items for Exchange On Premise/Online
         $item,
@@ -4838,31 +4839,34 @@ function Update-ExchangeMessage {
         [bool]$delete
     )
 
-    #mark the message as read, then move to Delete Items if configured
-    if ($UseExchangeOnline) {
-        #skips deleted items, and deletes the message from the mailbox
-        #$deleteMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)"
+    if ($PSCmdlet.ShouldProcess("$item","Update Exchange Message $($item.Id)")) {
+        #mark the message as read, then move to Delete Items if configured
+        if ($UseExchangeOnline) {
+            #skips deleted items, and deletes the message from the mailbox
+            #$deleteMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)"
 
-        #mark the item as read
-        $readMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)"
-        $readMessageBody = @{"isRead" = $true } | ConvertTo-Json
-        Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $readMessageUrl -body $readMessageBody -Method "PATCH" -ContentType "application/json"
+            #mark the item as read
+            $readMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)"
+            $readMessageBody = @{"isRead" = $true } | ConvertTo-Json
+            Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $readMessageUrl -body $readMessageBody -Method "PATCH" -ContentType "application/json"
 
-        #move to Deleted Items folder
-        if ($delete) {
-            $moveMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)/move"
-            $moveMessageBody = @{"destinationId" = "deleteditems" } | ConvertTo-Json
-            Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $moveMessageUrl -body $moveMessageBody -Method "POST" -ContentType "application/json"
+            #move to Deleted Items folder
+            if ($delete) {
+                $moveMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)/move"
+                $moveMessageBody = @{"destinationId" = "deleteditems" } | ConvertTo-Json
+                Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $moveMessageUrl -body $moveMessageBody -Method "POST" -ContentType "application/json"
+            }
         }
-    }
-    else {
-        $item.IsRead = $true
-        $item.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
-        if ($delete) { $item.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null }
+        else {
+            $item.IsRead = $true
+            $item.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
+            if ($delete) { $item.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null }
+        }
     }
 }
 
 function Update-ExchangeMeeting {
+    [CmdletBinding(SupportsShouldProcess=$true)]
     param (
         #the meeting to accept/decline
         [parameter(Mandatory = $true, Position = 0)]
@@ -4875,18 +4879,20 @@ function Update-ExchangeMeeting {
         $Type
     )
 
-    if ($useExchangeOnline) {
-        #get the meeting
-        $getMeetingUrl = "https://graph.microsoft.com/v1.0/me/messages/$($Meeting.Id)?`$expand=microsoft.graph.eventMessage/event"
-        $graphEvent = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -uri $getMeetingUrl -Method "GET"
+    if ($PSCmdlet.ShouldProcess("$Meeting","Update Exchange Meeting $($Meeting.Id)")) {
+        if ($useExchangeOnline) {
+            #get the meeting
+            $getMeetingUrl = "https://graph.microsoft.com/v1.0/me/messages/$($Meeting.Id)?`$expand=microsoft.graph.eventMessage/event"
+            $graphEvent = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -uri $getMeetingUrl -Method "GET"
 
-        #accept/decline the meeting
-        $acceptMeetingURL = "https://graph.microsoft.com/v1.0/me/events/$($graphEvent.event.id)/$Type"
-        $acceptMeetingBody = @{"SendResponse" = $true } | ConvertTo-Json
-        Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -uri $acceptMeetingURL -body $acceptMeetingBody -Method "POST" -ContentType "application/json"
-    }
-    else {
-        $Meeting.Accept($true)
+            #accept/decline the meeting
+            $acceptMeetingURL = "https://graph.microsoft.com/v1.0/me/events/$($graphEvent.event.id)/$Type"
+            $acceptMeetingBody = @{"SendResponse" = $true } | ConvertTo-Json
+            Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -uri $acceptMeetingURL -body $acceptMeetingBody -Method "POST" -ContentType "application/json"
+        }
+        else {
+            $Meeting.Accept($true)
+        }
     }
 }
 
@@ -5168,7 +5174,7 @@ if ($UseExchangeOnline) {
     #since we can't seem to filter unread and retrieve the itemClass in a single call, filter to unread
     $inbox = $inbox | Where-Object { $_.IsRead -eq $false }
     #build the itemClass filter based on settings
-    $inboxFilterString = New-InboxFilterString
+    $inboxFilterString = Get-InboxFilterString
     $inbox = $inbox | Where-Object $inboxFilterString
 }
 else {
@@ -5203,7 +5209,7 @@ else {
     $searchFilter = New-Object -TypeName Microsoft.Exchange.WebServices.Data.SearchFilter+IsLessThanOrEqualTo -ArgumentList $dateTimeItem,$now
 
     #build the itemClass filter based on settings
-    $inboxFilterString = New-InboxFilterString
+    $inboxFilterString = Get-InboxFilterString
 
     #filter the inbox
     $inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
@@ -5819,3 +5825,4 @@ if ($loggingLevel -ge 1)
     Seconds: $($runtime.TotalSeconds)
     Milliseconds: $($runtime.TotalMilliseconds)"
 }
+
