@@ -368,7 +368,7 @@ $AzureCloudInstance = $($smexcoSettingsMP.AzureCloudInstance)
 #determine which Azure Cloud (if any) is being used to set required URLs
 switch ($AzureCloudInstance.Name)
 {
-    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzurePublic"              {$azureScopeURL = "https://graph.microsoft.com/Mail.ReadWrite"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzurePublic"              {$azureScopeURL = "https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/Calendars.ReadWrite"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
     "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment"          {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
     "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.GCCHigh"  {$azureScopeURL = "https://outlook.office365.us/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"}
     "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.DOD"      {$azureScopeURL = "https://dod-outlook.office365.us/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"}
