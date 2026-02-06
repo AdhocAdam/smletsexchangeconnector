@@ -368,11 +368,11 @@ $AzureCloudInstance = $($smexcoSettingsMP.AzureCloudInstance)
 #determine which Azure Cloud (if any) is being used to set required URLs
 switch ($AzureCloudInstance.Name)
 {
-    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzurePublic"              {$azureScopeURL = "https://graph.microsoft.com/Mail.ReadWrite"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
-    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment"          {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
-    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.GCCHigh"  {$azureScopeURL = "https://outlook.office365.us/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"}
-    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.DOD"      {$azureScopeURL = "https://dod-outlook.office365.us/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"}
-    default {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzurePublic"              {$azureScopeURL = "https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/Calendars.ReadWrite"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"; $azureSubdomain = "graph"}
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment"          {$azureScopeURL = "https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/Calendars.ReadWrite"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"; $azureSubdomain = "graph"}
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.GCCHigh"  {$azureScopeURL = "https://graph.microsoft.us/Mail.ReadWrite https://graph.microsoft.us/Mail.Send https://graph.microsoft.us/Calendars.ReadWrite"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"; $azureSubdomain = "graph"}
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.DOD"      {$azureScopeURL = "https://dod-graph.microsoft.us/Mail.ReadWrite https://dod-graph.microsoft.us/Mail.Send https://dod-graph.microsoft.us/Calendars.ReadWrite"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"; $azureSubdomain = "dod-graph"}
+    default {$azureScopeURL = "https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/Calendars.ReadWrite"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"; $azureSubdomain = "graph"}
 }
 
 #defaultNewWorkItem = set to either "ir", "sr", "pr", or "cr"
@@ -2353,7 +2353,7 @@ function Add-EmailToSCSMObject
 
     try {
         if ($useExchangeOnline) {
-            $messageMimeUrl = "https://graph.microsoft.com/v1.0/me/messages/$($message.Id)/`$value"
+            $messageMimeUrl = "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($message.Id)/`$value"
             $messageMime = Invoke-RestMethod -uri $messageMimeUrl -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
             $messageBytes = [System.Text.Encoding]::UTF8.GetBytes($messageMime)
             $memoryStream = New-Object System.IO.MemoryStream
@@ -3466,7 +3466,7 @@ function Send-EmailFromWorkflowAccount
 
     if ($UseExchangeOnline) {
         #https://learn.microsoft.com/en-us/graph/api/user-sendmail?view=graph-rest-1.0&tabs=powershell
-        $sendUrl = "https://graph.microsoft.com/v1.0/me/sendMail"
+        $sendUrl = "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/sendMail"
         $recipients = @()
         foreach ($address in $ToRecipients) {
             $recipients += @{
@@ -4846,13 +4846,13 @@ function Update-ExchangeMessage {
             #$deleteMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)"
 
             #mark the item as read
-            $readMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)"
+            $readMessageUrl = "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($item.Id)"
             $readMessageBody = @{"isRead" = $true } | ConvertTo-Json
             Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $readMessageUrl -body $readMessageBody -Method "PATCH" -ContentType "application/json"
 
             #move to Deleted Items folder
             if ($delete) {
-                $moveMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)/move"
+                $moveMessageUrl = "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($item.Id)/move"
                 $moveMessageBody = @{"destinationId" = "deleteditems" } | ConvertTo-Json
                 Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $moveMessageUrl -body $moveMessageBody -Method "POST" -ContentType "application/json"
             }
@@ -4882,11 +4882,11 @@ function Update-ExchangeMeeting {
     if ($PSCmdlet.ShouldProcess("$Meeting","Update Exchange Meeting $($Meeting.Id)")) {
         if ($useExchangeOnline) {
             #get the meeting
-            $getMeetingUrl = "https://graph.microsoft.com/v1.0/me/messages/$($Meeting.Id)?`$expand=microsoft.graph.eventMessage/event"
+            $getMeetingUrl = "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($Meeting.Id)?`$expand=microsoft.graph.eventMessage/event"
             $graphEvent = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -uri $getMeetingUrl -Method "GET"
 
             #accept/decline the meeting
-            $acceptMeetingURL = "https://graph.microsoft.com/v1.0/me/events/$($graphEvent.event.id)/$Type"
+            $acceptMeetingURL = "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/events/$($graphEvent.event.id)/$Type"
             $acceptMeetingBody = @{"SendResponse" = $true } | ConvertTo-Json
             Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -uri $acceptMeetingURL -body $acceptMeetingBody -Method "POST" -ContentType "application/json"
         }
@@ -5146,7 +5146,7 @@ else
 if ($UseExchangeOnline) {
     # https://learn.microsoft.com/en-us/office/client-developer/outlook/mapi/pidtagmessageclass-canonical-property
     ### make a call to retrieve the Message Class property (e.g. IPM.Note, IPM.Schedule.Meeting.Request, etc.) since it isn't included in default call: ($filter = Id eq String 0x001a) wherein %20 represents a space
-    $baseUrl = "https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages"
+    $baseUrl = "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/mailFolders/Inbox/messages"
     $1000itemsUrl = "&`$top=1000"
     #combining unreadFilterURL with itemClass prevents the itemClass from being returned
     #$unreadFilterURL = "?`$filter=isRead eq false&"
@@ -5155,7 +5155,7 @@ if ($UseExchangeOnline) {
 
     #rebuild the Graph response/message to closely mirror the EWS response/message
     $data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"; Prefer = "outlook.body-content-type='text'" } -Uri $mailUrl -Method "GET" | Select-Object value -ExpandProperty value
-    $inbox = $data | Select-Object @{Name = 'From'; Expression = { [PSCustomObject]@{Address = $_.From.emailAddress.address } } },
+    [array]$inbox = @($data | Select-Object @{Name = 'From'; Expression = { [PSCustomObject]@{Address = $_.From.emailAddress.address } } },
     @{Name = 'ToRecipients'; Expression = { [PSCustomObject]@{Address = $_.toRecipients.emailAddress.address } } },
     @{Name = 'CcRecipients'; Expression = { [PSCustomObject]@{Address = $_.ccRecipients.emailAddress.address } } },
     subject,
@@ -5169,13 +5169,13 @@ if ($UseExchangeOnline) {
     meetingMessageType,
     startDateTime,
     endDateTime,
-    @{Name = 'ItemClass'; Expression = { $_.singleValueExtendedProperties | Where-Object { $_.id -eq 'String 0x1a' } | Select-Object value -ExpandProperty value } }
+    @{Name = 'ItemClass'; Expression = { $_.singleValueExtendedProperties | Where-Object { $_.id -eq 'String 0x1a' } | Select-Object value -ExpandProperty value } })
 
     #since we can't seem to filter unread and retrieve the itemClass in a single call, filter to unread
     $inbox = $inbox | Where-Object { $_.IsRead -eq $false }
     #build the itemClass filter based on settings
     $inboxFilterString = Get-InboxFilterString
-    $inbox = $inbox | Where-Object $inboxFilterString
+    $inbox = $inbox | Where-Object $inboxFilterString | Sort-Object DateTimeReceived
 }
 else {
     #define search parameters and search on the defined classes
@@ -5213,8 +5213,8 @@ else {
 
     #filter the inbox
     $inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
-    if (($loggingLevel -ge 1)){New-SMEXCOEvent -Source "General" -EventId 2 -LogMessage "Messages to Process: $($inbox.Count)" -Severity "Information"; $messagesProcessed = 0}
 }
+if (($loggingLevel -ge 1)){New-SMEXCOEvent -Source "General" -EventId 2 -LogMessage "Messages to Process: $($inbox.Count)" -Severity "Information"; $messagesProcessed = 0}
 # Custom Event Handler
 if ($ceScripts) { Invoke-OnOpenInbox }
 
@@ -5258,7 +5258,7 @@ foreach ($message in $inbox)
 
         #if we have the HasAttachments property and we're using Exchange Online/Graph. Call graph for attachments and set them in the existing property
         if ($message.HasAttachments -and $UseExchangeOnline) {
-            $attachmentEndpoint = Invoke-RestMethod -uri "https://graph.microsoft.com/v1.0/me/messages/$($email.ID)/attachments" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
+            $attachmentEndpoint = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($email.ID)/attachments" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
             $email.Attachments = $attachmentEndpoint.value
         }
 
