@@ -5155,7 +5155,7 @@ if ($UseExchangeOnline) {
 
     #rebuild the Graph response/message to closely mirror the EWS response/message
     $data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"; Prefer = "outlook.body-content-type='text'" } -Uri $mailUrl -Method "GET" | Select-Object value -ExpandProperty value
-    $inbox = $data | Select-Object @{Name = 'From'; Expression = { [PSCustomObject]@{Address = $_.From.emailAddress.address } } },
+    [array]$inbox = @($data | Select-Object @{Name = 'From'; Expression = { [PSCustomObject]@{Address = $_.From.emailAddress.address } } },
     @{Name = 'ToRecipients'; Expression = { [PSCustomObject]@{Address = $_.toRecipients.emailAddress.address } } },
     @{Name = 'CcRecipients'; Expression = { [PSCustomObject]@{Address = $_.ccRecipients.emailAddress.address } } },
     subject,
@@ -5169,7 +5169,7 @@ if ($UseExchangeOnline) {
     meetingMessageType,
     startDateTime,
     endDateTime,
-    @{Name = 'ItemClass'; Expression = { $_.singleValueExtendedProperties | Where-Object { $_.id -eq 'String 0x1a' } | Select-Object value -ExpandProperty value } }
+    @{Name = 'ItemClass'; Expression = { $_.singleValueExtendedProperties | Where-Object { $_.id -eq 'String 0x1a' } | Select-Object value -ExpandProperty value } })
 
     #since we can't seem to filter unread and retrieve the itemClass in a single call, filter to unread
     $inbox = $inbox | Where-Object { $_.IsRead -eq $false }
@@ -5825,4 +5825,3 @@ if ($loggingLevel -ge 1)
     Seconds: $($runtime.TotalSeconds)
     Milliseconds: $($runtime.TotalMilliseconds)"
 }
-
