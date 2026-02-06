@@ -5175,7 +5175,7 @@ if ($UseExchangeOnline) {
     $inbox = $inbox | Where-Object { $_.IsRead -eq $false }
     #build the itemClass filter based on settings
     $inboxFilterString = Get-InboxFilterString
-    $inbox = $inbox | Where-Object $inboxFilterString
+    $inbox = $inbox | Where-Object $inboxFilterString | Sort-Object DateTimeReceived
 }
 else {
     #define search parameters and search on the defined classes
