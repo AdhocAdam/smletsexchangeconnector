@@ -3789,9 +3789,17 @@ function Read-MIMEMessage
     )
 
     #Get the Mime Content of the message via MimeKit
-    $messageWithMimeContent = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
-    $mimeMessageMemoryStream = New-Object System.IO.MemoryStream($messageWithMimeContent.MimeContent.Content,0,$messageWithMimeContent.MimeContent.Content.Length)
-    $parsedMimeMessage = New-Object MimeKit.MimeParser($mimeMessageMemoryStream)
+    if ($UseExchangeOnline) {
+        $messageWithMimeContent = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($message.ID)/`$value" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"}
+        $mimeBytes = [System.Text.Encoding]::UTF8.GetBytes($messageWithMimeContent)
+        $mimeMessageMemoryStream = New-Object System.IO.MemoryStream(,$mimeBytes)
+        $parsedMimeMessage = [MimeKit.MimeMessage]::Load($mimeMessageMemoryStream)
+    }
+    else {
+        $messageWithMimeContent = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
+        $mimeMessageMemoryStream = New-Object System.IO.MemoryStream($messageWithMimeContent.MimeContent.Content,0,$messageWithMimeContent.MimeContent.Content.Length)
+        $parsedMimeMessage = New-Object MimeKit.MimeParser($mimeMessageMemoryStream)
+    }
 
     return $parsedMimeMessage
 }
@@ -5328,6 +5336,12 @@ foreach ($message in $inbox)
             ConversationID    = $message.ConversationID
             ConversationTopic = $message.ConversationTopic
             ItemClass         = $message.ItemClass
+        }
+
+        #if we have the HasAttachments property and we're using Exchange Online/Graph. Call graph for attachments and set them in the existing property
+        if ($message.HasAttachments -and $UseExchangeOnline) {
+            $attachmentEndpoint = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($email.ID)/attachments" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
+            $email.Attachments = $attachmentEndpoint.value
         }
 
         # Custom Event Handler
