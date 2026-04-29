@@ -929,6 +929,29 @@ if ($amlServiceRequestSupportGroupEnumPredictionExtName)
 {
     $amlServiceRequestSupportGroupEnumPredictionExtName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.Id -like "*$amlServiceRequestSupportGroupEnumPredictionExtName*")}).Name
 }
+
+#receive Sub Activity Classes from base Class
+$childClassList = [System.Collections.ArrayList]::new()
+
+function get-subClasses($baseClass){
+
+    $f = $baseClass.GetDerivedTypes()
+
+    foreach($cl in $f)
+    {
+        if($cl.abstract -eq $true)
+        {
+            get-subClasses $cl
+        }
+        else
+        {
+            $childClassList.add($cl.Name) | Out-Null
+        }
+    }
+
+}
+
+get-subClasses -baseClass $activityBaseClass
 #endregion
 
 #reply Regex
@@ -2884,27 +2907,21 @@ function Get-SCSMWorkItemParent
             #Retrieve Parent
             if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 1 -Severity "Information" -LogMessage "[PROCESS] Activity: $($ActivityObject.Name)"}
             if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 2 -Severity "Information" -LogMessage "[PROCESS] Retrieving WI Parent"}
-            $ParentRelatedObject = Get-SCSMRelationshipObject -ByTarget $ActivityObject @scsmMGMTParams | Where-Object{$_.RelationshipID -eq $wiContainsActivityRelClass.id.Guid}
+            $ParentRelatedObject = Get-SCSMRelationshipObject -ByTarget $ActivityObject -relationship $wiContainsActivityRelClass -Recursive:$true @scsmMGMTParams | ? {$_.SourceObject.ClassName -in (`
+            'System.WorkItem.ServiceRequest',`
+            'System.WorkItem.ChangeRequest',`
+            'System.WorkItem.ReleaseRecord',`
+            'System.WorkItem.Incident',`
+            'System.WorkItem.Problem')}
             $ParentObject = $ParentRelatedObject.SourceObject
 
             if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 3 -Severity "Information" -LogMessage "[PROCESS] Activity: $($ActivityObject.Name) - Parent: $($ParentObject.Name)"}
+            
+            #Don't know if this is needed anymore, because the function will always return the top Parent now: if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 4 -Severity "Information" -LogMessage "[PROCESS] This is the top level parent"}
 
-            If ($ParentObject.ClassName -eq 'System.WorkItem.ServiceRequest' `
-            -or $ParentObject.ClassName -eq 'System.WorkItem.ChangeRequest' `
-            -or $ParentObject.ClassName -eq 'System.WorkItem.ReleaseRecord' `
-            -or $ParentObject.ClassName -eq 'System.WorkItem.Incident' `
-            -or $ParentObject.ClassName -eq 'System.WorkItem.Problem')
-            {
-                if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 4 -Severity "Information" -LogMessage "[PROCESS] This is the top level parent"}
-
-                #return parent object Work Item
-                Return $ParentObject
-            }
-            Else
-            {
-                if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "Get-SCSMWorkItemParent" -EventID 5 -Severity "Information" -LogMessage "[PROCESS] Not the top level parent. Running against this object"}
-                Get-SCSMWorkItemParent -WorkItemGUID $ParentObject.Id.GUID @scsmMGMTParams
-            }
+            #return parent object Work Item
+            Return $ParentObject
+            
         }
         CATCH
         {
@@ -4713,7 +4730,7 @@ function Update-SCSMPropertyCollection
     {
         #Regex - Find class from template object property between ! and ']
         $pattern = '(?<=!)[^!]+?(?=''\])'
-        if (($Object.Path -match $pattern) -and (($Matches[0].StartsWith("System.WorkItem.Activity")) -or ($Matches[0].StartsWith("Microsoft.SystemCenter.Orchestrator")) -or ($Matches[0].StartsWith("Cireson.Powershell.Activity") -or ($Matches[0].Equals("Cireson.WorkItem.Cloud.Activity")))))
+        if (($Object.Path -match $pattern) -and ($Matches[0] -in $childClassList))
         {
             #Set prefix from activity class
             $prefix = (Get-SCSMWorkItemSetting -WorkItemClass $Matches[0])["Prefix"]
@@ -4734,7 +4751,7 @@ function Update-SCSMPropertyCollection
             {
                 foreach ($obj in $Object.ObjectCollection)
                 {
-                    Update-SCSMPropertyCollection -Object $obj -Alias $alias
+                    Update-SCSMPropertyCollection -Object $obj -Alias $Alias
                 }
             }
         }
@@ -5164,8 +5181,8 @@ if ($UseExchangeOnline) {
     #rebuild the Graph response/message to closely mirror the EWS response/message
     $data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"; Prefer = "outlook.body-content-type='text'" } -Uri $mailUrl -Method "GET" | Select-Object value -ExpandProperty value
     [array]$inbox = @($data | Select-Object @{Name = 'From'; Expression = { [PSCustomObject]@{Address = $_.From.emailAddress.address } } },
-    @{Name = 'ToRecipients'; Expression = { [PSCustomObject]@{Address = $_.toRecipients.emailAddress.address } } },
-    @{Name = 'CcRecipients'; Expression = { [PSCustomObject]@{Address = $_.ccRecipients.emailAddress.address } } },
+    @{Name = 'ToRecipients'; Expression = { $_.toRecipients | ForEach-Object {[PSCustomObject]@{Name  = $_.emailAddress.name;Address = $_.emailAddress.address }}}},
+    @{Name = 'CcRecipients'; Expression = { $_.ccRecipients | ForEach-Object {[PSCustomObject]@{Name  = $_.emailAddress.name;Address = $_.emailAddress.address }}}},
     subject,
     @{Name = 'Body'; Expression = { [PSCustomObject]@{Text = $_.Body.content } } },
     @{Name = 'DateTimeSent'; Expression = { [datetime]$_.sentDateTime } },
