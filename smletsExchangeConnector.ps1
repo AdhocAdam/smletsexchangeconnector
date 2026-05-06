@@ -930,28 +930,6 @@ if ($amlServiceRequestSupportGroupEnumPredictionExtName)
     $amlServiceRequestSupportGroupEnumPredictionExtName = ($srClass.GetProperties(1, 1) | where-object {($_.SystemType.Name -eq "Enum") -and ($_.Id -like "*$amlServiceRequestSupportGroupEnumPredictionExtName*")}).Name
 }
 
-#receive Sub Activity Classes from base Class
-$childClassList = [System.Collections.ArrayList]::new()
-
-function get-subClasses($baseClass){
-
-    $f = $baseClass.GetDerivedTypes()
-
-    foreach($cl in $f)
-    {
-        if($cl.abstract -eq $true)
-        {
-            get-subClasses $cl
-        }
-        else
-        {
-            $childClassList.add($cl.Name) | Out-Null
-        }
-    }
-
-}
-
-get-subClasses -baseClass $activityBaseClass
 #endregion
 
 #reply Regex
