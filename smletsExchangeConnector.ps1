@@ -4713,7 +4713,7 @@ function Update-SCSMPropertyCollection
     {
         #Regex - Find class from template object property between ! and ']
         $pattern = '(?<=!)[^!]+?(?=''\])'
-        if (($Object.Path -match $pattern) -and ($Matches[0] -in $childClassList))
+        if (($Object.Path -match $pattern) -and (($Matches[0].StartsWith("System.WorkItem.Activity")) -or ($Matches[0].StartsWith("Microsoft.SystemCenter.Orchestrator")) -or ($Matches[0].StartsWith("Cireson.Powershell.Activity") -or ($Matches[0].Equals("Cireson.WorkItem.Cloud.Activity")))))
         {
             #Set prefix from activity class
             $prefix = (Get-SCSMWorkItemSetting -WorkItemClass $Matches[0])["Prefix"]
