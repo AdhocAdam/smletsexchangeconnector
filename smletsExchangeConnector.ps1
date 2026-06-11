@@ -5283,7 +5283,7 @@ foreach ($message in $inbox)
         }
 
         #if we have the HasAttachments property and we're using Exchange Online/Graph. Call graph for attachments and set them in the existing property
-        if ($message.HasAttachments -and $UseExchangeOnline) {
+        if ($UseExchangeOnline) {
             $attachmentEndpoint = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($email.ID)/attachments" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
             $email.Attachments = $attachmentEndpoint.value
         }
@@ -5357,7 +5357,7 @@ foreach ($message in $inbox)
         }
 
         #if we have the HasAttachments property and we're using Exchange Online/Graph. Call graph for attachments and set them in the existing property
-        if ($message.HasAttachments -and $UseExchangeOnline) {
+        if ($UseExchangeOnline) {
             $attachmentEndpoint = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($email.ID)/attachments" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
             $email.Attachments = $attachmentEndpoint.value
         }
