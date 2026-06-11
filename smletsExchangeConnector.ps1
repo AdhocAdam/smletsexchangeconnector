@@ -5181,7 +5181,7 @@ if ($UseExchangeOnline) {
                     }
                 })
                 Subject             = $item.Subject
-                Body                = $item.body.content
+                Body                = [PSCustomObject]@{Text = $item.Body.content}
                 DateTimeSent        = [datetime]$item.sentDateTime
                 DateTimeReceived    = [datetime]$item.receivedDateTime
                 id                  = $item.id
