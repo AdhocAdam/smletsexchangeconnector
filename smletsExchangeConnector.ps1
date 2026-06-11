@@ -5163,7 +5163,7 @@ if ($UseExchangeOnline) {
 
     #rebuild the Graph response/message to closely mirror the EWS response/message
     $data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"; Prefer = "outlook.body-content-type='text'" } -Uri $mailUrl -Method "GET" | Select-Object value -ExpandProperty value
-    $inbox = @()
+    [array]$inbox = @()
     foreach ($item in $data) {
         if ($item.IsRead -eq $false) {
             $graphMessage = [PSCustomObject] @{
