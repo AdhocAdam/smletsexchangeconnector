@@ -3853,7 +3853,7 @@ function Get-TemplatesByMailbox
                 $msgHeadersGraphURL = "https://graph.microsoft.com/v1.0/me/messages/$($message.Id)/?`$select=singleValueExtendedProperties&`$expand=singleValueExtendedProperties(`$filter=id%20eq%20'String%200x007D')"
                 $msgHeadersResponse = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"; Prefer = "outlook.body-content-type='text'" } -Uri $msgHeadersGraphURL -Method "GET"
                 $msgHeaders = $msgHeadersResponse.singleValueExtendedProperties.value
-                #split on new lines, regex match for the line that contains Return-Path: , and then remove "Return-Path: " so just the email address remains 
+                #split on new lines, regex match for the line that contains Return-Path: , and then remove "Return-Path: " so just the email address remains
                 $ReturnPath = ($msgHeaders -split "`r?`n" | Where-Object { $_ -match '^Return-Path:' }).Replace("Return-Path: ", "")
             }
             else {
