@@ -3849,9 +3849,18 @@ function Get-TemplatesByMailbox
         else {
             # If not found in the To OR CC field, look in headers (BCC won't be readable)
             # Resent-From is the ideal field, but usually removed before the object is accessed.  Return-Path is a good second choice
-            $HeaderSchema = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.EmailMessageSchema]::InternetMessageHeaders)
-            $msgWithHeaders = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.Id,$HeaderSchema)
-            $ReturnPath = $msgWithHeaders.InternetMessageHeaders.Find("Return-Path").Value
+            if ($UseExchangeOnline) {
+                $msgHeadersGraphURL = "https://graph.microsoft.com/v1.0/me/messages/$($message.Id)/?`$select=singleValueExtendedProperties&`$expand=singleValueExtendedProperties(`$filter=id%20eq%20'String%200x007D')"
+                $msgHeadersResponse = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"; Prefer = "outlook.body-content-type='text'" } -Uri $msgHeadersGraphURL -Method "GET"
+                $msgHeaders = $msgHeadersResponse.singleValueExtendedProperties.value
+                #split on new lines, regex match for the line that contains Return-Path: , and then remove "Return-Path: " so just the email address remains 
+                $ReturnPath = ($msgHeaders -split "`r?`n" | Where-Object { $_ -match '^Return-Path:' }).Replace("Return-Path: ", "")
+            }
+            else {
+                $HeaderSchema = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.EmailMessageSchema]::InternetMessageHeaders)
+                $msgWithHeaders = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.Id,$HeaderSchema)
+                $ReturnPath = $msgWithHeaders.InternetMessageHeaders.Find("Return-Path").Value
+            }
             if ($Mailboxes[$ReturnPath]) {
                 $MailboxToUse = $ReturnPath
             }
