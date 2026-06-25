@@ -20,6 +20,7 @@ Requires: PowerShell 4+, SMlets, and Exchange Web Services API (already installe
     Signed/Encrypted option: .NET 4.5 is required to use MimeKit.dll
 Misc: The Release Record functionality does not exist in this as no out of box (or 3rd party) Type Projection exists to serve this purpose.
     You would have to create your own Type Projection in order to leverage this.
+Version: 6.0.0 = #476 - Enhancement, Support for Microsoft Graph/Retirement of EWS for Exchange Online
 Version: 5.0.5 = #494 - Bug, Update-WorkItem on MAs does not take MA Notes into account
                  #497 - Bug, Event log exposes password when not using Run As Accounts
                  #480 - Bug, Missing Cloud Activity Prefix
@@ -367,11 +368,11 @@ $AzureCloudInstance = $($smexcoSettingsMP.AzureCloudInstance)
 #determine which Azure Cloud (if any) is being used to set required URLs
 switch ($AzureCloudInstance.Name)
 {
-    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzurePublic"              {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
-    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment"          {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
-    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.GCCHigh"  {$azureScopeURL = "https://outlook.office365.us/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"}
-    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.DOD"      {$azureScopeURL = "https://dod-outlook.office365.us/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"}
-    default {$azureScopeURL = "https://outlook.office.com/EWS.AccessAsUser.All"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"}
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzurePublic"              {$azureScopeURL = "https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/Calendars.ReadWrite"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"; $azureSubdomain = "graph"}
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment"          {$azureScopeURL = "https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/Calendars.ReadWrite"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"; $azureSubdomain = "graph"}
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.GCCHigh"  {$azureScopeURL = "https://graph.microsoft.us/Mail.ReadWrite https://graph.microsoft.us/Mail.Send https://graph.microsoft.us/Calendars.ReadWrite"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"; $azureSubdomain = "graph"}
+    "SMLets.Exchange.Connector.AzureCloudInstanceEnum.AzureUsGovernment.DOD"      {$azureScopeURL = "https://dod-graph.microsoft.us/Mail.ReadWrite https://dod-graph.microsoft.us/Mail.Send https://dod-graph.microsoft.us/Calendars.ReadWrite"; $azureTokenURL = "https://login.microsoftonline.us/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "us"; $azureSubdomain = "dod-graph"}
+    default {$azureScopeURL = "https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/Calendars.ReadWrite"; $azureTokenURL = "https://login.microsoftonline.com/$AzureTenantID/oauth2/v2.0/token"; $azureTLD = "com"; $azureSubdomain = "graph"}
 }
 
 #defaultNewWorkItem = set to either "ir", "sr", "pr", or "cr"
@@ -2350,10 +2351,18 @@ function Add-EmailToSCSMObject
     }
     else {$itemType = "ConfigItem"}
 
-    try
-    {
-        $messageMime = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
-        $MemoryStream = New-Object System.IO.MemoryStream($messageMime.MimeContent.Content,0,$messageMime.MimeContent.Content.Length)
+    try {
+        if ($useExchangeOnline) {
+            $messageMimeUrl = "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($message.Id)/`$value"
+            $messageMime = Invoke-RestMethod -uri $messageMimeUrl -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
+            $messageBytes = [System.Text.Encoding]::UTF8.GetBytes($messageMime)
+            $memoryStream = New-Object System.IO.MemoryStream
+            $memoryStream.Write($messageBytes, 0, $messageBytes.Length)
+        }
+        else {
+            $messageMime = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService, $message.id, $mimeContentSchema)
+            $MemoryStream = New-Object System.IO.MemoryStream($messageMime.MimeContent.Content, 0, $messageMime.MimeContent.Content.Length)
+        }
 
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeAttachEmail }
@@ -2445,93 +2454,98 @@ function Add-FileToSCSMObject
 
         try
         {
-            #determine if a File Attachment
-            if ($attachment.GetType().Name -eq "FileAttachment")
-            {
-                $attachment.Load()
-                if ($attachment.GetType().BaseType.Name -like "Mime*")
-                {
-                    #This is a signed/encrypted attachment
-                    $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
-                    $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
-                    $AttachmentContent = [convert]::FromBase64String($base64attachment)
-
-                    #Create a new MemoryStream object out of the attachment data
-                    $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
-                }
-                else
-                {
-                    #this is a regular File Attachment
-                    $base64attachment = [System.Convert]::ToBase64String($attachment.Content)
-                    $AttachmentContent = [convert]::FromBase64String($base64attachment)
-
-                    #Create a new MemoryStream object out of the attachment data
-                    $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
-                }
+            if ($UseExchangeOnline) {
+                $bytes = [System.Convert]::FromBase64String($attachment.contentBytes)
+                $MemoryStream = New-Object System.IO.MemoryStream(, $bytes)
             }
-            #determine if an Item Attachment
-            elseif ($attachment.GetType().Name -eq "ItemAttachment")
-            {
-                if ($attachment.GetType().BaseType.Name -like "Mime*")
+            else {
+                #determine if a File Attachment
+                if ($attachment.GetType().Name -eq "FileAttachment")
                 {
-                    #This is a signed/encrypted attachment
-                    $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
-                    $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
-                    $AttachmentContent = [convert]::FromBase64String($base64attachment)
+                    $attachment.Load()
+                    if ($attachment.GetType().BaseType.Name -like "Mime*")
+                    {
+                        #This is a signed/encrypted attachment
+                        $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
+                        $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
+                        $AttachmentContent = [convert]::FromBase64String($base64attachment)
 
-                    #Create a new MemoryStream object out of the attachment data
-                    $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
+                        #Create a new MemoryStream object out of the attachment data
+                        $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
+                    }
+                    else
+                    {
+                        #this is a regular File Attachment
+                        $base64attachment = [System.Convert]::ToBase64String($attachment.Content)
+                        $AttachmentContent = [convert]::FromBase64String($base64attachment)
+
+                        #Create a new MemoryStream object out of the attachment data
+                        $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
+                    }
                 }
+                #determine if an Item Attachment
+                elseif ($attachment.GetType().Name -eq "ItemAttachment")
+                {
+                    if ($attachment.GetType().BaseType.Name -like "Mime*")
+                    {
+                        #This is a signed/encrypted attachment
+                        $signedAttachArray = $attachment.ContentObject.Stream.ToArray()
+                        $base64attachment = [System.Convert]::ToBase64String($signedAttachArray)
+                        $AttachmentContent = [convert]::FromBase64String($base64attachment)
+
+                        #Create a new MemoryStream object out of the attachment data
+                        $MemoryStream = New-Object System.IO.MemoryStream($signedAttachArray,0,$signedAttachArray.Length)
+                    }
+                    else
+                    {
+                        $attachment.Load($mimeContentSchema)
+                        $base64attachment = [System.Convert]::ToBase64String($attachment.Item.MimeContent.Content)
+                        $AttachmentContent = [convert]::FromBase64String($base64attachment)
+
+                        #Create a new MemoryStream object out of the attachment data
+                        $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
+
+                        #update the $attachment variable's name
+                        if ($attachment.Item.GetType().Name -eq "EmailMessage")
+                        {
+                            $attachment | Add-Member -NotePropertyName DisplayName -NotePropertyValue ($attachment.Name + ".eml")
+                            $attachment | Add-Member -NotePropertyName Extension -NotePropertyValue ".eml"
+                        }
+                    }
+                }
+                #must be part of a digitally signed/encrypted message, determine Mime Object type
                 else
                 {
-                    $attachment.Load($mimeContentSchema)
-                    $base64attachment = [System.Convert]::ToBase64String($attachment.Item.MimeContent.Content)
-                    $AttachmentContent = [convert]::FromBase64String($base64attachment)
-
-                    #Create a new MemoryStream object out of the attachment data
-                    $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
-
-                    #update the $attachment variable's name
-                    if ($attachment.Item.GetType().Name -eq "EmailMessage")
+                    #generic mime attachment
+                    if ($attachment.GetType().Name -eq "MimePart")
                     {
-                        $attachment | Add-Member -NotePropertyName DisplayName -NotePropertyValue ($attachment.Name + ".eml")
+                        #Create a new MemoryStream object out of the attachment data
+                        $MemoryStream = New-Object System.IO.MemoryStream #($signedAttachArray,0,$signedAttachArray.Length)
+                        $attachment.Content.DecodeTo($MemoryStream)
+
+                        #update the $attachment variable's name
+                        $attachment | Add-Member -NotePropertyName Name -NotePropertyValue $attachment.FileName
+                    }
+                    #exchange object that is a mime type
+                    if ($attachment.GetType().Name -eq "MessagePart")
+                    {
+                        #This is an attached email
+                        $MemoryStream = New-Object System.IO.MemoryStream
+                        $attachment.WriteTo($MemoryStream)
+
+                        #$attachment.Load($mimeContentSchema)
+                        $base64attachment = [System.Convert]::ToBase64String($MemoryStream.ToArray())
+                        $AttachmentContent = [convert]::FromBase64String($base64attachment)
+
+                        #Create a new MemoryStream object out of the attachment data
+                        $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
+
+                        #update the $attachment variable's name
+                        $attachment | Add-Member -NotePropertyName Name -NotePropertyValue "message.eml"
                         $attachment | Add-Member -NotePropertyName Extension -NotePropertyValue ".eml"
                     }
                 }
             }
-            #must be part of a digitally signed/encrypted message, determine Mime Object type
-            else
-            {
-                #generic mime attachment
-                if ($attachment.GetType().Name -eq "MimePart")
-                {
-                    #Create a new MemoryStream object out of the attachment data
-                    $MemoryStream = New-Object System.IO.MemoryStream #($signedAttachArray,0,$signedAttachArray.Length)
-                    $attachment.Content.DecodeTo($MemoryStream)
-
-                    #update the $attachment variable's name
-                    $attachment | Add-Member -NotePropertyName Name -NotePropertyValue $attachment.FileName
-                }
-                #exchange object that is a mime type
-                if ($attachment.GetType().Name -eq "MessagePart")
-                {
-                    #This is an attached email
-                    $MemoryStream = New-Object System.IO.MemoryStream
-                    $attachment.WriteTo($MemoryStream)
-
-                    #$attachment.Load($mimeContentSchema)
-                    $base64attachment = [System.Convert]::ToBase64String($MemoryStream.ToArray())
-                    $AttachmentContent = [convert]::FromBase64String($base64attachment)
-
-                    #Create a new MemoryStream object out of the attachment data
-                    $MemoryStream = New-Object System.IO.MemoryStream($AttachmentContent,0,$AttachmentContent.length)
-
-                    #update the $attachment variable's name
-                    $attachment | Add-Member -NotePropertyName Name -NotePropertyValue "message.eml"
-                    $attachment | Add-Member -NotePropertyName Extension -NotePropertyValue ".eml"
-                }
-            }
-
             #create the File Attachment object for SCSM
             $workItemAttachmentCriteria = if ($itemType -eq "WorkItem"){$MemoryStream.Length -gt $minFileSizeInKB+"kb" -and ($checkAttachmentSettings -eq $false -or ($existingAttachmentsCount -lt $attachMaxCount -And $MemoryStream.Length -le "$attachMaxSize"+"mb"))}
             if (($itemType -eq "WorkItem" -and $workItemAttachmentCriteria) -or ($itemType -eq "ConfigItem"))
@@ -3450,13 +3464,41 @@ function Send-EmailFromWorkflowAccount
         $toRecipients
     )
 
-    $emailToSendOut = New-Object Microsoft.Exchange.WebServices.Data.EmailMessage -ArgumentList $exchangeService
-    $emailToSendOut.Subject = $subject
-    $emailToSendOut.Body = New-Object Microsoft.Exchange.WebServices.Data.MessageBody
-    $emailToSendOut.Body.Text = $body
-    $emailToSendOut.Body.BodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::$bodyType
-    $emailToSendOut.ToRecipients.Add($toRecipients)
-    $emailToSendOut.Send()
+    if ($UseExchangeOnline) {
+        #https://learn.microsoft.com/en-us/graph/api/user-sendmail?view=graph-rest-1.0&tabs=powershell
+        $sendUrl = "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/sendMail"
+        $recipients = @()
+        foreach ($address in $ToRecipients) {
+            $recipients += @{
+                emailAddress = @{
+                    address = $address
+                }
+            }
+        }
+
+        $emailToSendOut = @{
+            message         = @{
+                subject      = $Subject
+                body         = @{
+                    contentType = $BodyType
+                    content     = $Body
+                }
+                toRecipients = $recipients
+            }
+            saveToSentItems = $true
+        } | ConvertTo-Json -Depth 5
+
+        Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $sendUrl -body $emailToSendOut -Method "POST" -ContentType "application/json"
+    }
+    else {
+        $emailToSendOut = New-Object Microsoft.Exchange.WebServices.Data.EmailMessage -ArgumentList $exchangeService
+        $emailToSendOut.Subject = $subject
+        $emailToSendOut.Body = New-Object Microsoft.Exchange.WebServices.Data.MessageBody
+        $emailToSendOut.Body.Text = $body
+        $emailToSendOut.Body.BodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::$bodyType
+        $emailToSendOut.ToRecipients.Add($toRecipients)
+        $emailToSendOut.Send()
+    }
 
     if ($loggingLevel -ge 4)
     {
@@ -3477,19 +3519,23 @@ function Set-WorkItemScheduledTime
         $workItem
     )
 
-    if ($PSCmdlet.ShouldProcess("$workItem","Set Scheduled Start/End Time"))
-    {
-        try
-        {
-            switch ($calAppt.ItemClass)
-            {
-                "IPM.Schedule.Meeting.Request" {Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $calAppt.StartTime.ToUniversalTime(); "ScheduledEndDate" = $calAppt.EndTime.ToUniversalTime()} @scsmMGMTParams}
-                "IPM.Schedule.Meeting.Canceled" {Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $null; "ScheduledEndDate" = $null} @scsmMGMTParams}
+    if ($PSCmdlet.ShouldProcess("$workItem", "Set Scheduled Start/End Time")) {
+        try {
+            switch ($calAppt.ItemClass) {
+                "IPM.Schedule.Meeting.Request" {
+                    if ($UseExchangeOnline) {
+                        #datetimes are already in UTC for Graph
+                        Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $calAppt.StartTime; "ScheduledEndDate" = $calAppt.EndTime } @scsmMGMTParams
+                    }
+                    else {
+                        Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $calAppt.StartTime.ToUniversalTime(); "ScheduledEndDate" = $calAppt.EndTime.ToUniversalTime() } @scsmMGMTParams
+                    }
+                }
+                "IPM.Schedule.Meeting.Canceled" { Set-SCSMObject -SMObject $workItem -propertyhashtable @{"ScheduledStartDate" = $null; "ScheduledEndDate" = $null } @scsmMGMTParams }
             }
         }
-        catch
-        {
-            if ($loggingLevel -ge 2) {New-SMEXCOEvent -Source "Set-WorkItemScheduledTime" -EventId 1 -LogMessage "Meeting $($calAppt.ItemClass.Split(".")[3]) for $($workItem.Name). Scheduled Start/End Times could not be updated." -Severity "Warning"}
+        catch {
+            if ($loggingLevel -ge 2) { New-SMEXCOEvent -Source "Set-WorkItemScheduledTime" -EventId 1 -LogMessage "Meeting $($calAppt.ItemClass.Split(".")[3]) for $($workItem.Name). Scheduled Start/End Times could not be updated." -Severity "Warning" }
         }
 
         if ($loggingLevel -ge 1)
@@ -3743,9 +3789,17 @@ function Read-MIMEMessage
     )
 
     #Get the Mime Content of the message via MimeKit
-    $messageWithMimeContent = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
-    $mimeMessageMemoryStream = New-Object System.IO.MemoryStream($messageWithMimeContent.MimeContent.Content,0,$messageWithMimeContent.MimeContent.Content.Length)
-    $parsedMimeMessage = New-Object MimeKit.MimeParser($mimeMessageMemoryStream)
+    if ($UseExchangeOnline) {
+        $messageWithMimeContent = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($message.ID)/`$value" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"}
+        $mimeBytes = [System.Text.Encoding]::UTF8.GetBytes($messageWithMimeContent)
+        $mimeMessageMemoryStream = New-Object System.IO.MemoryStream(,$mimeBytes)
+        $parsedMimeMessage = [MimeKit.MimeMessage]::Load($mimeMessageMemoryStream)
+    }
+    else {
+        $messageWithMimeContent = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
+        $mimeMessageMemoryStream = New-Object System.IO.MemoryStream($messageWithMimeContent.MimeContent.Content,0,$messageWithMimeContent.MimeContent.Content.Length)
+        $parsedMimeMessage = New-Object MimeKit.MimeParser($mimeMessageMemoryStream)
+    }
 
     return $parsedMimeMessage
 }
@@ -3795,9 +3849,18 @@ function Get-TemplatesByMailbox
         else {
             # If not found in the To OR CC field, look in headers (BCC won't be readable)
             # Resent-From is the ideal field, but usually removed before the object is accessed.  Return-Path is a good second choice
-            $HeaderSchema = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.EmailMessageSchema]::InternetMessageHeaders)
-            $msgWithHeaders = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.Id,$HeaderSchema)
-            $ReturnPath = $msgWithHeaders.InternetMessageHeaders.Find("Return-Path").Value
+            if ($UseExchangeOnline) {
+                $msgHeadersGraphURL = "https://graph.microsoft.com/v1.0/me/messages/$($message.Id)/?`$select=singleValueExtendedProperties&`$expand=singleValueExtendedProperties(`$filter=id%20eq%20'String%200x007D')"
+                $msgHeadersResponse = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"; Prefer = "outlook.body-content-type='text'" } -Uri $msgHeadersGraphURL -Method "GET"
+                $msgHeaders = $msgHeadersResponse.singleValueExtendedProperties.value
+                #split on new lines, regex match for the line that contains Return-Path: , and then remove "Return-Path: " so just the email address remains
+                $ReturnPath = ($msgHeaders -split "`r?`n" | Where-Object { $_ -match '^Return-Path:' }).Replace("Return-Path: ", "")
+            }
+            else {
+                $HeaderSchema = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.EmailMessageSchema]::InternetMessageHeaders)
+                $msgWithHeaders = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.Id,$HeaderSchema)
+                $ReturnPath = $msgWithHeaders.InternetMessageHeaders.Find("Return-Path").Value
+            }
             if ($Mailboxes[$ReturnPath]) {
                 $MailboxToUse = $ReturnPath
             }
@@ -4740,6 +4803,116 @@ function Remove-PII
     }
 }
 
+function Get-InboxFilterString {
+    #build the Where-Object scriptblock based on defined configuration
+    #by default the connector will ALWAYS process regular emails as seen in the $emailFilterString variable
+    $emailFilterString = '($_.ItemClass -eq "IPM.Note")'
+    $calendarFilterString = '($_.ItemClass -eq "IPM.Schedule.Meeting.Request") -or ($_.ItemClass -eq "IPM.Schedule.Meeting.Canceled")'
+    $digitallySignedFilterString = '($_.ItemClass -eq "IPM.Note.SMIME.MultipartSigned")'
+    $encryptedFilterString = '($_.ItemClass -eq "IPM.Note.SMIME")'
+    $unreadFilterString = '($_.isRead -eq $false)'
+    $inboxFilterString = @()
+    if ($processCalendarAppointment -eq $true) {
+        $inboxFilterString += $calendarFilterString
+    }
+    if ($processDigitallySignedMessages -eq $true) {
+        $inboxFilterString += $digitallySignedFilterString
+    }
+    if ($processEncryptedMessages -eq $true) {
+        $inboxFilterString += $encryptedFilterString
+    }
+    if ($UseCustomRules) {
+        #retrieve any custom rule patterns that are not the supported out of box enums
+        $customMessageClasses = $smexcoSettingsCustomRules | Where-Object { $_.CustomRuleMessageClassEnum.Name -notlike "SMLets.Exchange.Connector.MessageClassEnum.*" }
+        if ($customMessageClasses.count -eq 1) {
+            $inboxFilterString += "(`$_.ItemClass -eq '$($smexcoSettingsExternalTicket.CustomRuleMessageClassEnum.DisplayName)')"
+        }
+        elseif ($customMessageClasses.count -ge 2) {
+            foreach ($smexcoSettingsExternalTicket in $customMessageClasses) {
+                $inboxFilterString += "(`$_.ItemClass -eq '$($smexcoSettingsExternalTicket.CustomRuleMessageClassEnum.DisplayName)')"
+            }
+        }
+    }
+
+    #finalize the where-object string by ensuring to look for all Unread Items
+    $inboxFilterString = $inboxFilterString -join ' -or '
+    if ($inboxFilterString.length -eq 0) {
+        $inboxFilterString = "(" + $emailFilterString + ")" + " -and " + $unreadFilterString
+    }
+    else {
+        $inboxFilterString = "(" + $inboxFilterString + " -or " + $emailFilterString + ")" + " -and " + $unreadFilterString
+    }
+    if ($loggingLevel -ge 4) { New-SMEXCOEvent -Source "General" -EventId 5 -LogMessage "Filtering Mailbox on: $inboxFilterString" -Severity "Information" }
+    $inboxFilterString = [scriptblock]::Create("$inboxFilterString")
+    return $inboxFilterString
+}
+
+function Update-ExchangeMessage {
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    param (
+        #the message that will be marked as read and optionally be moved to Deleted Items for Exchange On Premise/Online
+        $item,
+        #should the item be moved to deleted items
+        [bool]$delete
+    )
+
+    if ($PSCmdlet.ShouldProcess("$item","Update Exchange Message $($item.Id)")) {
+        #mark the message as read, then move to Delete Items if configured
+        if ($UseExchangeOnline) {
+            #skips deleted items, and deletes the message from the mailbox
+            #$deleteMessageUrl = "https://graph.microsoft.com/v1.0/me/messages/$($item.Id)"
+
+            #mark the item as read
+            $readMessageUrl = "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($item.Id)"
+            $readMessageBody = @{"isRead" = $true } | ConvertTo-Json
+            Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $readMessageUrl -body $readMessageBody -Method "PATCH" -ContentType "application/json"
+
+            #move to Deleted Items folder
+            if ($delete) {
+                $moveMessageUrl = "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($item.Id)/move"
+                $moveMessageBody = @{"destinationId" = "deleteditems" } | ConvertTo-Json
+                Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -Uri $moveMessageUrl -body $moveMessageBody -Method "POST" -ContentType "application/json"
+            }
+        }
+        else {
+            $item.IsRead = $true
+            $item.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
+            if ($delete) { $item.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null }
+        }
+    }
+}
+
+function Update-ExchangeMeeting {
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    param (
+        #the meeting to accept/decline
+        [parameter(Mandatory = $true, Position = 0)]
+        $Meeting,
+        #process new meeting or cancellation, "accept" or "decline" to match Graph and its endpoints
+        #despite the name, decline is accepting a cancellation and removing from the calendar for Graph
+        #this parameter is irrelevant for EWS/On Premise
+        [parameter(Mandatory = $false, Position = 1)]
+        [ValidateSet("accept", "decline")]
+        $Type
+    )
+
+    if ($PSCmdlet.ShouldProcess("$Meeting","Update Exchange Meeting $($Meeting.Id)")) {
+        if ($useExchangeOnline) {
+            #get the meeting
+            $getMeetingUrl = "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($Meeting.Id)?`$expand=microsoft.graph.eventMessage/event"
+            $graphEvent = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -uri $getMeetingUrl -Method "GET"
+
+            #accept/decline the meeting
+            $acceptMeetingURL = "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/events/$($graphEvent.event.id)/$Type"
+            $acceptMeetingBody = @{"SendResponse" = $true } | ConvertTo-Json
+            Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" } -uri $acceptMeetingURL -body $acceptMeetingBody -Method "POST" -ContentType "application/json"
+        }
+        else {
+            $Meeting.Accept($true)
+        }
+    }
+}
+
 #region #### SCOM Request Functions ####
 function Get-SCOMAuthorizedRequester
 {
@@ -4883,44 +5056,39 @@ $UseCustomRules = $smexcoSettingsMP.UseCustomRules
 
 # Custom Event Handler
 if ($ceScripts) { Invoke-BeforeConnect }
-#define Exchange assembly and connect to EWS
-[void] [Reflection.Assembly]::LoadFile("$exchangeEWSAPIPath")
-$exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService
+#if we aren't connecting to Exchange Online, define Exchange assembly and connect to EWS
+if (!$UseExchangeOnline) {
+    [void] [Reflection.Assembly]::LoadFile("$exchangeEWSAPIPath")
+    $exchangeService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService
+}
 
 #figure out if the workflow should be used
 if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Connector.15d8b765a2f8b63ead14472f9b3c12f0")} | Select-Object Enabled -ExpandProperty Enabled)
 {
     #the workflow exists and it is enabled, determine how to connect to Exchange
-    if ($UseExchangeOnline)
-    {
+    if ($UseExchangeOnline) {
         #validate the Run As Account format to ensure it is an email address
-        if (!(($ewsUsername + "@" + $ewsDomain) -match "^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$"))
-        {
+        if (!(($ewsUsername + "@" + $ewsDomain) -match "^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$")) {
             New-SMEXCOEvent -Source "General" -EventId 4 -LogMessage "The address/SCSM Run As Account used to sign into 365 is not a valid email address and is currently entered as $($ewsUsername + "@" + $ewsDomain). This will prevent a successful connection. To fix this, go to the Run As account in SCSM and for the username enter it as an email address like user@domain.tld" -Severity "Error"
         }
+
         #request an access token from Azure
         $ReqTokenBody = @{
-            Grant_Type    = "Password"
-            client_Id     = $AzureClientID
-            Username      = $ewsUsername + "@" + $ewsDomain
-            Password      = $ewspassword
-            Scope         = $azureScopeURL
+            Grant_Type = "Password"
+            client_Id  = $AzureClientID
+            Username   = $ewsUsername + "@" + $ewsDomain
+            Password   = $ewspassword
+            Scope      = $azureScopeURL
         }
-        try{
-            $response = Invoke-RestMethod -Uri $azureTokenURL -Method "POST" -Body $ReqTokenBody
-
-            #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
-            $exchangeService.Url = [System.Uri]$ExchangeEndpoint
-            $exchangeService.Credentials = [Microsoft.Exchange.WebServices.Data.OAuthCredentials]($response.Access_Token)
-
-            if ($loggingLevel -ge 4){
-                New-SMEXCOEvent -Source "General" -EventID 7 -LogMessage "Successfully retrieved an OAuth token from 365" -Severity "Information"
+        try {
+            $tokenReqResponse = Invoke-RestMethod -Uri $azureTokenURL -Method "POST" -Body $ReqTokenBody
+            if ($loggingLevel -ge 4) {
+                New-SMEXCOEvent -Source "General" -EventID 7 -LogMessage "Successfully retrieved an OAuth token from 365. Scope: $($tokenReqResponse.scope)" -Severity "Information"
             }
         }
-        catch{
+        catch {
             #couldn't retrieve the OAuth token
-            if ($loggingLevel -ge 3)
-            {
+            if ($loggingLevel -ge 3) {
                 New-SMEXCOEvent -Source "General" -EventId 8 -LogMessage "Could not retrieve OAuth token from 365: $($_.Exception)`nUsername: $($ReqTokenBody.Username)`nClient ID: $($ReqTokenBody.client_Id)" -Severity "Error"
             }
         }
@@ -4947,36 +5115,29 @@ if ($scsmLFXConfigMP.GetRules() | Where-Object {($_.Name -eq "SMLets.Exchange.Co
 else
 {
     #the workflow either doesn't exist or it's not enabled, determine how to connect to Exchange
-    if ($UseExchangeOnline)
-    {
+    if ($UseExchangeOnline) {
         #validate the Run As Account format to ensure it is an email address
-        if (!(($username + "@" + $domain) -match "^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$"))
-        {
+        if (!(($username + "@" + $domain) -match "^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$")) {
             New-SMEXCOEvent -Source "General" -EventId 4 -LogMessage "The address/SCSM Run As Account used to sign into 365 is not a valid email address and is currently entered as $($username + "@" + $domain). This will prevent a successful connection. To fix this, go to the Run As account in SCSM and for the username enter it as an email address like user@domain.tld" -Severity "Error"
         }
+
         #request an access token from Azure
         $ReqTokenBody = @{
-            Grant_Type    = "Password"
-            client_Id     = $AzureClientID
-            Username      = $username
-            Password      = $password
-            Scope         = $azureScopeURL
+            Grant_Type = "Password"
+            client_Id  = $AzureClientID
+            Username   = $username
+            Password   = $password
+            Scope      = $azureScopeURL
         }
-        try{
-            $response = Invoke-RestMethod -Uri $azureTokenURL -Method "POST" -Body $ReqTokenBody
-
-            #instead of a username/password, use the OAuth access_token as the means to authenticate to Exchange
-            $exchangeService.Url = [System.Uri]$ExchangeEndpoint
-            $exchangeService.Credentials = [Microsoft.Exchange.WebServices.Data.OAuthCredentials]($response.Access_Token)
-
-            if ($loggingLevel -ge 4){
-                New-SMEXCOEvent -Source "General" -EventID 7 -LogMessage "Successfully retrieved an OAuth token from 365" -Severity "Information"
+        try {
+            $tokenReqResponse = Invoke-RestMethod -Uri $azureTokenURL -Method "POST" -Body $ReqTokenBody
+            if ($loggingLevel -ge 4) {
+                New-SMEXCOEvent -Source "General" -EventID 7 -LogMessage "Successfully retrieved an OAuth token from 365. Scope: $($tokenReqResponse.scope)" -Severity "Information"
             }
         }
-        catch{
+        catch {
             #couldn't retrieve the OAuth token
-            if ($loggingLevel -ge 3)
-            {
+            if ($loggingLevel -ge 3) {
                 New-SMEXCOEvent -Source "General" -EventId 8 -LogMessage "Could not retrieve OAuth token from 365: $($_.Exception)`nUsername: $($ReqTokenBody.Username)`nClient ID: $($ReqTokenBody.client_Id)" -Severity "Error"
             }
         }
@@ -4998,88 +5159,96 @@ else
     }
 }
 
-#define search parameters and search on the defined classes
-$inboxFolderName = [Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox
-#authenticate to Exchange
-try
-{
-    $inboxFolder = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($exchangeService,$inboxFolderName)
-    #the authentication bind to Exchange service and Inbox folder worked, log an information event
-    if ($loggingLevel -ge 4)
-    {
-        New-SMEXCOEvent -Source "General" -EventId 0 -LogMessage "Successfully connected to Exchange" -Severity "Information"
-    }
-}
-catch
-{
-    #couldn't retrieve the Inbox, log an error and exit the connector
-    if ($loggingLevel -ge 3)
-    {
-        New-SMEXCOEvent -Source "General" -EventId 1 -LogMessage $_.Exception -Severity "Error"
-    }
-    break
-}
-#define search parameters, search on the defined classes and get messages that are older than the current time
-$itemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 1000
-$propertySet = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.BasePropertySet]::FirstClassProperties)
-$propertySet.RequestedBodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::Text
-$mimeContentSchema = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.ItemSchema]::MimeContent)
-$dateTimeItem = [Microsoft.Exchange.WebServices.Data.ItemSchema]::DateTimeReceived
-$now = get-date
-$searchFilter = New-Object -TypeName Microsoft.Exchange.WebServices.Data.SearchFilter+IsLessThanOrEqualTo -ArgumentList $dateTimeItem,$now
+#determine how the $inbox will be retrieved, Online = MSGraph. On Premise = EWS.
+if ($UseExchangeOnline) {
+    # https://learn.microsoft.com/en-us/office/client-developer/outlook/mapi/pidtagmessageclass-canonical-property
+    ### make a call to retrieve the Message Class property (e.g. IPM.Note, IPM.Schedule.Meeting.Request, etc.) since it isn't included in default call: ($filter = Id eq String 0x001a) wherein %20 represents a space
+    $baseUrl = "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/mailFolders/Inbox/messages"
+    $1000itemsUrl = "&`$top=1000"
+    #combining unreadFilterURL with itemClass prevents the itemClass from being returned
+    #$unreadFilterURL = "?`$filter=isRead eq false&"
+    $itemClassUrl = "/?`$expand=SingleValueExtendedProperties(`$filter=(Id%20eq%20'String%200x001a'))"
+    $mailUrl = $baseUrl + $itemClassUrl + $1000itemsUrl
 
-#build the Where-Object scriptblock based on defined configuration
-#by default the connector will ALWAYS process regular emails as seen in the $emailFilterString variable
-$emailFilterString = '($_.ItemClass -eq "IPM.Note")'
-$calendarFilterString = '($_.ItemClass -eq "IPM.Schedule.Meeting.Request") -or ($_.ItemClass -eq "IPM.Schedule.Meeting.Canceled")'
-$digitallySignedFilterString = '($_.ItemClass -eq "IPM.Note.SMIME.MultipartSigned")'
-$encryptedFilterString = '($_.ItemClass -eq "IPM.Note.SMIME")'
-$unreadFilterString = '($_.isRead -eq $false)'
-$inboxFilterString = @()
-if ($processCalendarAppointment -eq $true)
-{
-    $inboxFilterString += $calendarFilterString
-}
-if ($processDigitallySignedMessages -eq $true)
-{
-    $inboxFilterString += $digitallySignedFilterString
-}
-if ($processEncryptedMessages -eq $true)
-{
-    $inboxFilterString += $encryptedFilterString
-}
-if ($UseCustomRules)
-{
-    #retrieve any custom rule patterns that are not the supported out of box enums
-    $customMessageClasses = $smexcoSettingsCustomRules | Where-Object {$_.CustomRuleMessageClassEnum.Name -notlike "SMLets.Exchange.Connector.MessageClassEnum.*"}
-    if ($customMessageClasses.count -eq 1)
-    {
-        $inboxFilterString += "(`$_.ItemClass -eq '$($smexcoSettingsExternalTicket.CustomRuleMessageClassEnum.DisplayName)')"
-    }
-    elseif ($customMessageClasses.count -ge 2)
-    {
-        foreach ($smexcoSettingsExternalTicket in $customMessageClasses)
-        {
-            $inboxFilterString += "(`$_.ItemClass -eq '$($smexcoSettingsExternalTicket.CustomRuleMessageClassEnum.DisplayName)')"
+    #rebuild the Graph response/message to closely mirror the EWS response/message
+    $data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"; Prefer = "outlook.body-content-type='text'" } -Uri $mailUrl -Method "GET" | Select-Object value -ExpandProperty value
+    [array]$inbox = @()
+    foreach ($item in $data) {
+        if ($item.IsRead -eq $false) {
+            $graphMessage = [PSCustomObject] @{
+                From                = [PSCustomObject]$item.From.emailAddress
+                ToRecipients        = $item.toRecipients.foreach({
+                    [PSCustomObject]@{
+                        Name = $_.emailAddress.Name
+                        Address = $_.emailAddress.Address
+                    }
+                })
+                CcRecipients        = $item.ccRecipients.foreach({
+                    [PSCustomObject]@{
+                        Name = $_.emailAddress.Name
+                        Address = $_.emailAddress.Address
+                    }
+                })
+                Subject             = $item.Subject
+                Body                = [PSCustomObject]@{Text = $item.Body.content}
+                DateTimeSent        = [datetime]$item.sentDateTime
+                DateTimeReceived    = [datetime]$item.receivedDateTime
+                id                  = $item.id
+                conversationid      = $item.conversationid
+                hasattachments      = $item.hasAttachments
+                isRead              = $item.isRead
+                meetingMessageType  = $item.meetingMessageType
+                startDateTime       = $item.startDateTime
+                endDateTime         = $item.endDateTime
+                ItemClass           = $item.singleValueExtendedProperties | Where-Object { $_.id -eq 'String 0x1a' } | Select-Object value -ExpandProperty value
+            }
+
+            #add the modified graph message to the inbox variable to use similiar to EWS
+            $inbox += $graphMessage
         }
     }
-}
 
-#finalize the where-object string by ensuring to look for all Unread Items
-$inboxFilterString = $inboxFilterString -join ' -or '
-if ($inboxFilterString.length -eq 0)
-{
-    $inboxFilterString = "(" + $emailFilterString + ")" + " -and " + $unreadFilterString
+    #build the itemClass filter based on settings
+    $inboxFilterString = Get-InboxFilterString
+    $inbox = $inbox | Where-Object $inboxFilterString | Sort-Object DateTimeReceived
 }
-else
-{
-    $inboxFilterString = "(" + $inboxFilterString + " -or " + $emailFilterString + ")" + " -and " + $unreadFilterString
-}
-if ($loggingLevel -ge 4) {New-SMEXCOEvent -Source "General" -EventId 5 -LogMessage "Filtering Mailbox on: $inboxFilterString" -Severity "Information"}
-$inboxFilterString = [scriptblock]::Create("$inboxFilterString")
+else {
+    #define search parameters and search on the defined classes
+    $inboxFolderName = [Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox
+    #authenticate to Exchange
+    try
+    {
+        $inboxFolder = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($exchangeService,$inboxFolderName)
+        #the authentication bind to Exchange service and Inbox folder worked, log an information event
+        if ($loggingLevel -ge 4)
+        {
+            New-SMEXCOEvent -Source "General" -EventId 0 -LogMessage "Successfully connected to Exchange" -Severity "Information"
+        }
+    }
+    catch
+    {
+        #couldn't retrieve the Inbox, log an error and exit the connector
+        if ($loggingLevel -ge 3)
+        {
+            New-SMEXCOEvent -Source "General" -EventId 1 -LogMessage $_.Exception -Severity "Error"
+        }
+        break
+    }
+    #define search parameters, search on the defined classes and get messages that are older than the current time
+    $itemView = New-Object -TypeName Microsoft.Exchange.WebServices.Data.ItemView -ArgumentList 1000
+    $propertySet = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.BasePropertySet]::FirstClassProperties)
+    $propertySet.RequestedBodyType = [Microsoft.Exchange.WebServices.Data.BodyType]::Text
+    $mimeContentSchema = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.ItemSchema]::MimeContent)
+    $dateTimeItem = [Microsoft.Exchange.WebServices.Data.ItemSchema]::DateTimeReceived
+    $now = get-date
+    $searchFilter = New-Object -TypeName Microsoft.Exchange.WebServices.Data.SearchFilter+IsLessThanOrEqualTo -ArgumentList $dateTimeItem,$now
 
-#filter the inbox
-$inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
+    #build the itemClass filter based on settings
+    $inboxFilterString = Get-InboxFilterString
+
+    #filter the inbox
+    $inbox = $exchangeService.FindItems($inboxFolder.Id,$searchFilter,$itemView) | where-object $inboxFilterString | Sort-Object DateTimeReceived
+}
 if (($loggingLevel -ge 1)){New-SMEXCOEvent -Source "General" -EventId 2 -LogMessage "Messages to Process: $($inbox.Count)" -Severity "Information"; $messagesProcessed = 0}
 # Custom Event Handler
 if ($ceScripts) { Invoke-OnOpenInbox }
@@ -5096,8 +5265,10 @@ switch -Regex ($incomingValue)
 #parse each message
 foreach ($message in $inbox)
 {
-    #load the entire message
-    $message.Load($propertySet)
+    if (!$UseExchangeOnline) {
+        #if we're not using Exchange Online, load all of the message properties
+        $message.Load($propertySet)
+    }
 
     #initialize a variable to determine if valid update
     $isUpdate = $null
@@ -5118,6 +5289,12 @@ foreach ($message in $inbox)
             ConversationID      = $message.ConversationID
             ConversationTopic   = $message.ConversationTopic
             ItemClass           = $message.ItemClass
+        }
+
+        #Call graph for attachments and set them in the existing property
+        if ($UseExchangeOnline) {
+            $attachmentEndpoint = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($email.ID)/attachments" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
+            $email.Attachments = $attachmentEndpoint.value
         }
 
         # Custom Event Handler
@@ -5162,9 +5339,7 @@ foreach ($message in $inbox)
         if ($ceScripts) { Invoke-AfterProcessEmail }
 
         #mark the message as read on Exchange, move to deleted items
-        $message.IsRead = $true
-        $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
-        if ($deleteAfterProcessing){$message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null}
+        Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
     }
 
     #### Process a Digitally Signed message ####
@@ -5188,6 +5363,12 @@ foreach ($message in $inbox)
             ConversationID    = $message.ConversationID
             ConversationTopic = $message.ConversationTopic
             ItemClass         = $message.ItemClass
+        }
+
+        #Call graph for attachments and set them in the existing property
+        if ($UseExchangeOnline) {
+            $attachmentEndpoint = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($email.ID)/attachments" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
+            $email.Attachments = $attachmentEndpoint.value
         }
 
         # Custom Event Handler
@@ -5270,9 +5451,7 @@ foreach ($message in $inbox)
         if ($ceScripts) { Invoke-AfterProcessEmail }
 
         #mark the message as read on Exchange, move to deleted items
-        $message.IsRead = $true
-        $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
-        if ($deleteAfterProcessing){$message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null}
+        Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
 
         # Custom Event Handler
         if ($ceScripts) { Invoke-AfterProcessSignedEmail }
@@ -5350,9 +5529,7 @@ foreach ($message in $inbox)
             if ($ceScripts) { Invoke-AfterProcessEmail }
 
             #mark the message as read on Exchange, move to deleted items
-            $message.IsRead = $true
-            $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
-            if ($deleteAfterProcessing){$message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null}
+            Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
 
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
@@ -5425,9 +5602,7 @@ foreach ($message in $inbox)
             if ($ceScripts) { Invoke-AfterProcessEmail }
 
             #mark the message as read on Exchange, move to deleted items
-            $message.IsRead = $true
-            $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
-            if ($deleteAfterProcessing){$message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null}
+            Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
 
             # Custom Event Handler
             if ($ceScripts) { Invoke-AfterProcessSignedEmail }
@@ -5511,9 +5686,7 @@ foreach ($message in $inbox)
             if ($ceScripts) { Invoke-AfterProcessEmail }
 
             #mark the message as read on Exchange, move to deleted items
-            $message.IsRead = $true
-            $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
-            if ($deleteAfterProcessing){$message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null}
+            Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
 
             # Custom Event Handler
             if ($ceScripts) { Invoke-BeforeProcessEncryptedEmail }
@@ -5539,28 +5712,38 @@ foreach ($message in $inbox)
             ItemClass         = $message.ItemClass
         }
 
+        if ($UseExchangeOnline) {
+            [datetime]$appointment.StartTime = $message.startDateTime.dateTime
+            [datetime]$appointment.EndTime = $message.endDateTime.dateTime
+        }
+
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessAppointment }
 
         switch -Regex ($appointment.subject)
         {
             #### primary work item types ####
-            "\[$irRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $irClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "ir" -workItem $result}}
-            "\[$srRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $srClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "sr" -workItem $result}}
-            "\[$prRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $prClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "pr" -workItem $result}}
-            "\[$crRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $crClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "cr" -workItem $result}}
-            "\[$rrRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $rrClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "rr" -workItem $result}}
+            "\[$irRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $irClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "ir" -workItem $result}}
+            "\[$srRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $srClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "sr" -workItem $result}}
+            "\[$prRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $prClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "pr" -workItem $result}}
+            "\[$crRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $crClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "cr" -workItem $result}}
+            "\[$rrRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $rrClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "rr" -workItem $result}}
 
             #### activities ####
-            "\[$maRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $maClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "ma" -workItem $result}}
-            "\[$paRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $paClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "pa" -workItem $result}}
-            "\[$saRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $saClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "sa" -workItem $result}}
-            "\[$daRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $daClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; $message.Accept($true); Update-WorkItem -message $appointment -wiType "da" -workItem $result}}
+            "\[$maRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $maClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "ma" -workItem $result}}
+            "\[$paRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $paClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "pa" -workItem $result}}
+            "\[$saRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $saClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "sa" -workItem $result}}
+            "\[$daRegex[0-9]+\]" {$result = Get-WorkItem -workItemID $matches[0] -workItemClass $daClass; if ($result){Set-WorkItemScheduledTime -calAppt $appointment -workItem $result; Update-ExchangeMeeting -Meeting $message -type "Accept"; Update-WorkItem -message $appointment -wiType "da" -workItem $result}}
 
             #### 3rd party classes, work items, etc. add here ####
 
             #### default action, create/schedule a new default work item ####
-            default {$returnedNewWorkItemToSchedule = new-workitem -message $appointment -wiType $defaultNewWorkItem $true; Set-WorkItemScheduledTime -calAppt $appointment -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)}
+            default {
+                $returnedNewWorkItemToSchedule = new-workitem -message $appointment -wiType $defaultNewWorkItem $true
+                Set-WorkItemScheduledTime -calAppt $appointment -workItem $returnedNewWorkItemToSchedule
+                Update-ExchangeMeeting -meeting $message -type "accept"
+                if ($UseExchangeOnline) {Update-ExchangeMessage -item $message -delete $deleteAfterProcessing}
+            }
         }
 
         # Custom Event Handler
@@ -5586,6 +5769,11 @@ foreach ($message in $inbox)
             ItemClass         = $message.ItemClass
         }
 
+        if ($UseExchangeOnline) {
+            [datetime]$appointment.StartTime = $message.startDateTime.dateTime
+            [datetime]$appointment.EndTime = $message.endDateTime.dateTime
+        }
+
         # Custom Event Handler
         if ($ceScripts) { Invoke-BeforeProcessCancelMeeting }
 
@@ -5608,14 +5796,18 @@ foreach ($message in $inbox)
             "([C][a][n][c][e][l][e][d][:])(?!.*\[(($irRegex)|($srRegex)|($prRegex)|($crRegex)|($maRegex)|($raRegex))[0-9]+\])(.+)" {if($mergeReplies -eq $true){$result = Confirm-WorkItem -message $appointment -returnWorkItem $true; Set-WorkItemScheduledTime -calAppt $appointment -workItem $result} else{new-workitem -message $appointment -wiType $defaultNewWorkItem}}
 
             #### default action, create/schedule a new default work item ####
-            default {$returnedNewWorkItemToSchedule = new-workitem -message $appointment -wiType $defaultNewWorkItem $true; Set-WorkItemScheduledTime -calAppt $appointment -workItem $returnedNewWorkItemToSchedule ; $message.Accept($true)}
+            default {
+                $returnedNewWorkItemToSchedule = new-workitem -message $appointment -wiType $defaultNewWorkItem $true
+                Set-WorkItemScheduledTime -calAppt $appointment -workItem $returnedNewWorkItemToSchedule
+            }
         }
 
         # Custom Event Handler
         if ($ceScripts) { Invoke-AfterProcessCancelMeeting }
 
         #Move to deleted items
-        $message.Delete([Microsoft.Exchange.WebServices.Data.DeleteMode]::MoveToDeletedItems)
+        Update-ExchangeMeeting -Meeting $message -type "decline";
+        if ($UseExchangeOnline) {Update-ExchangeMessage -item $message -delete $deleteAfterProcessing}
     }
 
     #Process a custom message class as defined through it's Custom Rules Pattern if it's enabled
@@ -5649,9 +5841,7 @@ foreach ($message in $inbox)
                     Test-EmailPattern -MessageClass $message.ItemClass -Email $email
 
                     #mark the message as read on Exchange, move to deleted items
-                    $message.IsRead = $true
-                    $message.Update([Microsoft.Exchange.WebServices.Data.ConflictResolutionMode]::AutoResolve) | Out-Null
-                    if ($deleteAfterProcessing){$message.Move([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::DeletedItems) | Out-Null}
+                    Update-ExchangeMessage -item $message -delete $deleteAfterProcessing
                 }
             }
         }

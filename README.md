@@ -31,6 +31,15 @@ This is aimed at SCSM administrators looking to further push the automation limi
 ## What new things can it do?
 <table border="0">
   <tr>
+    <td colspan="3"><i>Microsoft Graph (v6.0)</i></td>
+  </tr>
+  <tr>
+    <td align="center" width="200"><img src ="/FeatureScreenshots/msgraph.png" /></td>
+    <td width="auto">Exchange Online deployments now make use of native Microsoft Graph permissions rather than Exchange Web Services</td>
+  </tr>
+</table>
+<table border="0">
+  <tr>
     <td colspan="3"><i>Multiple Keywords (v5.0)</i></td>
   </tr>
   <tr>
