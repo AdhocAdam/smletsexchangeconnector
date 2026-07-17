@@ -811,6 +811,7 @@ $srClass = get-scsmclass -name "System.WorkItem.ServiceRequest$" @scsmMGMTParams
 $prClass = get-scsmclass -name "System.WorkItem.Problem$" @scsmMGMTParams
 $crClass = get-scsmclass -name "System.Workitem.ChangeRequest$" @scsmMGMTParams
 $rrClass = get-scsmclass -name "System.Workitem.ReleaseRecord$" @scsmMGMTParams
+$acClass = get-scsmclass -name "System.WorkItem.Activity$" @scsmMGMTParams
 $maClass = get-scsmclass -name "System.WorkItem.Activity.ManualActivity$" @scsmMGMTParams
 $raClass = get-scsmclass -name "System.WorkItem.Activity.ReviewActivity$" @scsmMGMTParams
 $paClass = get-scsmclass -name "System.WorkItem.Activity.ParallelActivity$" @scsmMGMTParams
@@ -3054,6 +3055,25 @@ function Add-ActionLogEntry {
     }
 }
 
+function Get-SCSMDerivedClass
+{
+    param (
+        #Takes a single class as defined by the output of Get-SCSMClass
+        [parameter(Mandatory=$true)]
+        $Class
+    )
+
+    $derivedClasses = $Class.GetDerivedTypes()
+    foreach ($dc in $derivedClasses) {
+        if ($dc.abstract -eq $true) {
+            Get-SCSMDerivedClass $dc
+        }
+        else {
+            $dc.Name
+        }
+    }
+}
+
 #if using windows authentication, retrieve a Cireson Web API token
 function Get-CiresonPortalAPIToken
 {
@@ -4722,7 +4742,7 @@ function Update-SCSMPropertyCollection
     {
         #Regex - Find class from template object property between ! and ']
         $pattern = '(?<=!)[^!]+?(?=''\])'
-        if (($Object.Path -match $pattern) -and (($Matches[0].StartsWith("System.WorkItem.Activity")) -or ($Matches[0].StartsWith("Microsoft.SystemCenter.Orchestrator")) -or ($Matches[0].StartsWith("Cireson.Powershell.Activity") -or ($Matches[0].Equals("Cireson.WorkItem.Cloud.Activity")))))
+        if (($Object.Path -match $pattern) -and ($Matches[0] -in (Get-SCSMDerivedClass -Class $acClass)))
         {
             #Set prefix from activity class
             $prefix = (Get-SCSMWorkItemSetting -WorkItemClass $Matches[0])["Prefix"]
