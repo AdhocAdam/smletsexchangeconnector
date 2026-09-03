@@ -37,6 +37,14 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3.3.0
 
+    - name: Install Developer Targeting 4.5.1 pack
+      shell: pwsh
+      working-directory: "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer"
+      run: |
+        Invoke-WebRequest -Uri https://download.microsoft.com/download/9/6/0/96075294-6820-4F01-924A-474E0023E407/NDP451-KB2861696-x86-x64-DevPack.exe -OutFile NDP451-KB2861696-x86-x64-DevPack.exe
+        Start-Process -FilePath NDP451-KB2861696-x86-x64-DevPack.exe -ArgumentList '/quiet', '/norestart' -Wait
+        Remove-Item -Force NDP451-KB2861696-x86-x64-DevPack.exe
+
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
