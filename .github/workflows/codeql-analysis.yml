@@ -112,4 +112,4 @@ jobs:
       run: msbuild ManagementPack\2016\SMLets.Exchange.Connector.Resources\SMLets.Exchange.Connector.Resources.csproj
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@v4
