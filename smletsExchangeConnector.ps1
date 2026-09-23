@@ -3790,10 +3790,15 @@ function Read-MIMEMessage
 
     #Get the Mime Content of the message via MimeKit
     if ($UseExchangeOnline) {
-        $messageWithMimeContent = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($message.ID)/`$value" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"}
-        $mimeBytes = [System.Text.Encoding]::UTF8.GetBytes($messageWithMimeContent)
-        $mimeMessageMemoryStream = New-Object System.IO.MemoryStream(,$mimeBytes)
-        $parsedMimeMessage = [MimeKit.MimeMessage]::Load($mimeMessageMemoryStream)
+        try {
+            $messageWithMimeContent = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($message.ID)/`$value" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"}
+            $mimeBytes = [System.Text.Encoding]::UTF8.GetBytes($messageWithMimeContent)
+            $mimeMessageMemoryStream = New-Object System.IO.MemoryStream(,$mimeBytes)
+            $parsedMimeMessage = [MimeKit.MimeMessage]::Load($mimeMessageMemoryStream)
+        }
+        catch {
+            New-SMEXCOEvent -Source "Read-MIMEMessage" -EventID 0 -Severity "Error" -LogMessage $_.Exception
+        }
     }
     else {
         $messageWithMimeContent = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
@@ -5293,8 +5298,13 @@ foreach ($message in $inbox)
 
         #Call graph for attachments and set them in the existing property
         if ($UseExchangeOnline) {
-            $attachmentEndpoint = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($email.ID)/attachments" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
-            $email.Attachments = $attachmentEndpoint.value
+            try {
+                $attachmentEndpoint = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($email.ID)/attachments" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
+                $email.Attachments = $attachmentEndpoint.value
+            }
+            catch {
+                New-SMEXCOEvent -Source "General" -EventID 9 -Severity "Error" -LogMessage $_.Exception
+            }
         }
 
         # Custom Event Handler
