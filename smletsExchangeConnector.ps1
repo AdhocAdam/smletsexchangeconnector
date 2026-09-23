@@ -3790,10 +3790,15 @@ function Read-MIMEMessage
 
     #Get the Mime Content of the message via MimeKit
     if ($UseExchangeOnline) {
-        $messageWithMimeContent = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($message.ID)/`$value" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"}
-        $mimeBytes = [System.Text.Encoding]::UTF8.GetBytes($messageWithMimeContent)
-        $mimeMessageMemoryStream = New-Object System.IO.MemoryStream(,$mimeBytes)
-        $parsedMimeMessage = [MimeKit.MimeMessage]::Load($mimeMessageMemoryStream)
+        try {
+            $messageWithMimeContent = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($message.ID)/`$value" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"}
+            $mimeBytes = [System.Text.Encoding]::UTF8.GetBytes($messageWithMimeContent)
+            $mimeMessageMemoryStream = New-Object System.IO.MemoryStream(,$mimeBytes)
+            $parsedMimeMessage = [MimeKit.MimeMessage]::Load($mimeMessageMemoryStream)
+        }
+        catch {
+            New-SMEXCOEvent -Source "Read-MIMEMessage" -EventID 0 -Severity "Error" -LogMessage $_.Exception
+        }
     }
     else {
         $messageWithMimeContent = [Microsoft.Exchange.WebServices.Data.EmailMessage]::Bind($exchangeService,$message.id,$mimeContentSchema)
@@ -5171,46 +5176,51 @@ if ($UseExchangeOnline) {
     $mailUrl = $baseUrl + $itemClassUrl + $1000itemsUrl
 
     #rebuild the Graph response/message to closely mirror the EWS response/message
-    $data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"; Prefer = "outlook.body-content-type='text'" } -Uri $mailUrl -Method "GET" | Select-Object value -ExpandProperty value
-    [array]$inbox = @()
-    foreach ($item in $data) {
-        if ($item.IsRead -eq $false) {
-            $graphMessage = [PSCustomObject] @{
-                From                = [PSCustomObject]$item.From.emailAddress
-                ToRecipients        = $item.toRecipients.foreach({
-                    [PSCustomObject]@{
-                        Name = $_.emailAddress.Name
-                        Address = $_.emailAddress.Address
-                    }
-                })
-                CcRecipients        = $item.ccRecipients.foreach({
-                    [PSCustomObject]@{
-                        Name = $_.emailAddress.Name
-                        Address = $_.emailAddress.Address
-                    }
-                })
-                Subject             = $item.Subject
-                Body                = [PSCustomObject]@{Text = $item.Body.content}
-                DateTimeSent        = [datetime]$item.sentDateTime
-                DateTimeReceived    = [datetime]$item.receivedDateTime
-                id                  = $item.id
-                conversationid      = $item.conversationid
-                hasattachments      = $item.hasAttachments
-                isRead              = $item.isRead
-                meetingMessageType  = $item.meetingMessageType
-                startDateTime       = $item.startDateTime
-                endDateTime         = $item.endDateTime
-                ItemClass           = $item.singleValueExtendedProperties | Where-Object { $_.id -eq 'String 0x1a' } | Select-Object value -ExpandProperty value
+    try {
+        $data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)"; Prefer = "outlook.body-content-type='text'" } -Uri $mailUrl -Method "GET" | Select-Object value -ExpandProperty value
+        [array]$inbox = @()
+        foreach ($item in $data) {
+            if ($item.IsRead -eq $false) {
+                $graphMessage = [PSCustomObject] @{
+                    From                = [PSCustomObject]$item.From.emailAddress
+                    ToRecipients        = $item.toRecipients.foreach({
+                        [PSCustomObject]@{
+                            Name = $_.emailAddress.Name
+                            Address = $_.emailAddress.Address
+                        }
+                    })
+                    CcRecipients        = $item.ccRecipients.foreach({
+                        [PSCustomObject]@{
+                            Name = $_.emailAddress.Name
+                            Address = $_.emailAddress.Address
+                        }
+                    })
+                    Subject             = $item.Subject
+                    Body                = [PSCustomObject]@{Text = $item.Body.content}
+                    DateTimeSent        = [datetime]$item.sentDateTime
+                    DateTimeReceived    = [datetime]$item.receivedDateTime
+                    id                  = $item.id
+                    conversationid      = $item.conversationid
+                    hasattachments      = $item.hasAttachments
+                    isRead              = $item.isRead
+                    meetingMessageType  = $item.meetingMessageType
+                    startDateTime       = $item.startDateTime
+                    endDateTime         = $item.endDateTime
+                    ItemClass           = $item.singleValueExtendedProperties | Where-Object { $_.id -eq 'String 0x1a' } | Select-Object value -ExpandProperty value
+                }
+
+                #add the modified graph message to the inbox variable to use similiar to EWS
+                $inbox += $graphMessage
             }
-
-            #add the modified graph message to the inbox variable to use similiar to EWS
-            $inbox += $graphMessage
         }
-    }
 
-    #build the itemClass filter based on settings
-    $inboxFilterString = Get-InboxFilterString
-    $inbox = $inbox | Where-Object $inboxFilterString | Sort-Object DateTimeReceived
+        #build the itemClass filter based on settings
+        $inboxFilterString = Get-InboxFilterString
+        $inbox = $inbox | Where-Object $inboxFilterString | Sort-Object DateTimeReceived
+    }
+    catch {
+        New-SMEXCOEvent -Source "General" -EventId 9 -LogMessage $_.Exception -Severity "Error"
+    }
 }
 else {
     #define search parameters and search on the defined classes
@@ -5293,8 +5303,13 @@ foreach ($message in $inbox)
 
         #Call graph for attachments and set them in the existing property
         if ($UseExchangeOnline) {
-            $attachmentEndpoint = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($email.ID)/attachments" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
-            $email.Attachments = $attachmentEndpoint.value
+            try {
+                $attachmentEndpoint = Invoke-RestMethod -uri "https://$azureSubdomain.microsoft.$azureTLD/v1.0/me/messages/$($email.ID)/attachments" -Headers @{Authorization = "Bearer $($tokenReqResponse.access_token)" }
+                $email.Attachments = $attachmentEndpoint.value
+            }
+            catch {
+                New-SMEXCOEvent -Source "General" -EventID 10 -Severity "Error" -LogMessage $_.Exception
+            }
         }
 
         # Custom Event Handler
